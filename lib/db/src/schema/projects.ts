@@ -47,6 +47,7 @@ export const progressEntriesTable = pgTable("project_progress_entries", {
     .notNull()
     .references(() => projectsTable.id, { onDelete: "cascade" }),
   notes: text("notes").notNull(),
+  photoPath: text("photo_path"),
   completionPercent: integer("completion_percent").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()

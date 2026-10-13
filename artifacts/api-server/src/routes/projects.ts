@@ -1,4 +1,5 @@
 import { and, desc, eq, ilike, or } from "drizzle-orm";
+import { randomUUID } from "node:crypto";
 import { Router, type IRouter, type Response } from "express";
 import {
   AddProgressBody,
@@ -13,6 +14,8 @@ import {
   GetProjectsQueryParams,
   GetProjectsResponse,
   GetProjectsResponseItem,
+  RequestProgressPhotoUploadBody,
+  RequestProgressPhotoUploadResponse,
   UpdateProjectBody,
   UpdateProjectParams,
   UpdateProjectResponse,
@@ -27,6 +30,42 @@ import { requireAuth } from "../middlewares/requireAuth";
 
 const router: IRouter = Router();
 router.use(requireAuth);
+const allowedPhotoTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
+const maxPhotoSize = 10 * 1024 * 1024;
+
+function storageLocation(relativePath: string) {
+  const privateDir = process.env.PRIVATE_OBJECT_DIR;
+  if (!privateDir) throw new Error("PRIVATE_OBJECT_DIR is not configured.");
+  const normalizedDir = privateDir.startsWith("/") ? privateDir : `/${privateDir}`;
+  const fullPath = `${normalizedDir.replace(/\/+$/, "")}/${relativePath}`;
+  const [, bucketName, ...objectParts] = fullPath.split("/");
+  if (!bucketName || objectParts.length === 0) {
+    throw new Error("PRIVATE_OBJECT_DIR is invalid.");
+  }
+  return { bucketName, objectName: objectParts.join("/") };
+}
+
+async function signedObjectUrl(
+  bucketName: string,
+  objectName: string,
+  method: "GET" | "PUT",
+): Promise<string> {
+  const response = await fetch("http://127.0.0.1:1106/object-storage/signed-object-url", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      bucket_name: bucketName,
+      object_name: objectName,
+      method,
+      expires_at: new Date(Date.now() + (method === "PUT" ? 900 : 300) * 1000).toISOString(),
+    }),
+    signal: AbortSignal.timeout(30_000),
+  });
+  if (!response.ok) throw new Error(`Storage URL signing failed (${response.status}).`);
+  const result = (await response.json()) as { signed_url?: string };
+  if (!result.signed_url) throw new Error("Storage returned no signed URL.");
+  return result.signed_url;
+}
 
 function dateOnly(value: Date | null | undefined): string | null {
   return value ? value.toISOString().slice(0, 10) : null;
@@ -207,6 +246,95 @@ router.get("/projects/:projectId", async (req, res): Promise<void> => {
   });
 });
 
+router.post(
+  "/projects/:projectId/progress-photo-upload",
+  async (req, res): Promise<void> => {
+    const params = GetProjectParams.safeParse(req.params);
+    const parsed = RequestProgressPhotoUploadBody.safeParse(req.body);
+    if (
+      !params.success ||
+      !parsed.success ||
+      parsed.data.size > maxPhotoSize ||
+      !allowedPhotoTypes.has(parsed.data.contentType)
+    ) {
+      res.status(400).json({ error: "Choose a JPEG, PNG, or WebP photo up to 10 MB." });
+      return;
+    }
+
+    const ownerId = getOwnerId(res);
+    const [project] = await db
+      .select({ id: projectsTable.id })
+      .from(projectsTable)
+      .where(and(eq(projectsTable.id, params.data.projectId), eq(projectsTable.ownerId, ownerId)));
+    if (!project) {
+      res.status(404).json({ error: "Project not found." });
+      return;
+    }
+
+    try {
+      const relativePath = `progress/${project.id}/${randomUUID()}`;
+      const { bucketName, objectName } = storageLocation(relativePath);
+      const uploadURL = await signedObjectUrl(bucketName, objectName, "PUT");
+      res.json(
+        RequestProgressPhotoUploadResponse.parse({
+          uploadURL,
+          photoPath: `/objects/${relativePath}`,
+        }),
+      );
+    } catch (error) {
+      req.log.error({ err: error, projectId: project.id }, "Could not create progress photo upload URL");
+      res.status(500).json({ error: "Could not prepare the photo upload." });
+    }
+  },
+);
+
+router.get(
+  "/projects/:projectId/progress/:entryId/photo",
+  async (req, res): Promise<void> => {
+    const params = AddProgressParams.safeParse({
+      projectId: req.params.projectId,
+    });
+    const entryId = req.params.entryId;
+    if (
+      !params.success ||
+      typeof entryId !== "string" ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(entryId)
+    ) {
+      res.status(400).json({ error: "Invalid progress photo request." });
+      return;
+    }
+
+    const [entry] = await db
+      .select({ photoPath: progressEntriesTable.photoPath })
+      .from(progressEntriesTable)
+      .innerJoin(projectsTable, eq(progressEntriesTable.projectId, projectsTable.id))
+      .where(
+        and(
+          eq(progressEntriesTable.id, entryId),
+          eq(progressEntriesTable.projectId, params.data.projectId),
+          eq(projectsTable.ownerId, getOwnerId(res)),
+        ),
+      );
+    if (!entry?.photoPath) {
+      res.status(404).json({ error: "Progress photo not found." });
+      return;
+    }
+
+    const expectedPrefix = `/objects/progress/${params.data.projectId}/`;
+    if (!entry.photoPath.startsWith(expectedPrefix)) {
+      res.status(404).json({ error: "Progress photo not found." });
+      return;
+    }
+    try {
+      const { bucketName, objectName } = storageLocation(entry.photoPath.slice("/objects/".length));
+      res.redirect(302, await signedObjectUrl(bucketName, objectName, "GET"));
+    } catch (error) {
+      req.log.error({ err: error, projectId: params.data.projectId, entryId }, "Could not serve progress photo");
+      res.status(500).json({ error: "Could not load the progress photo." });
+    }
+  },
+);
+
 router.patch("/projects/:projectId", async (req, res): Promise<void> => {
   const params = UpdateProjectParams.safeParse(req.params);
   const parsed = UpdateProjectBody.safeParse(req.body);
@@ -301,6 +429,14 @@ router.post(
       res.status(404).json({ error: "Project not found." });
       return;
     }
+    const photoPath = parsed.data.photoPath;
+    if (
+      photoPath &&
+      !new RegExp(`^/objects/progress/${project.id}/[0-9a-f-]{36}$`, "i").test(photoPath)
+    ) {
+      res.status(400).json({ error: "The photo must belong to this project." });
+      return;
+    }
 
     const [entry] = await db.transaction(async (tx) => {
       const [created] = await tx
@@ -308,6 +444,7 @@ router.post(
         .values({
           projectId: project.id,
           notes: parsed.data.notes.trim(),
+          photoPath: parsed.data.photoPath ?? null,
           completionPercent: parsed.data.completionPercent,
         })
         .returning();

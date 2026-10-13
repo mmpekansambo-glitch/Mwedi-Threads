@@ -35,6 +35,8 @@ export interface ProgressEntry {
   id: string;
   projectId: string;
   notes: string;
+  /** @nullable */
+  photoPath: string | null;
   /**
      * @minimum 0
      * @maximum 100
@@ -139,6 +141,36 @@ export interface CreateProgress {
      * @maximum 100
      */
   completionPercent: number;
+  /** @minLength 1 */
+  photoPath?: string;
+}
+
+export type ProgressPhotoUploadRequestContentType = typeof ProgressPhotoUploadRequestContentType[keyof typeof ProgressPhotoUploadRequestContentType];
+
+
+export const ProgressPhotoUploadRequestContentType = {
+  'image/jpeg': 'image/jpeg',
+  'image/png': 'image/png',
+  'image/webp': 'image/webp',
+} as const;
+
+export interface ProgressPhotoUploadRequest {
+  /**
+     * @minLength 1
+     * @maxLength 255
+     */
+  name: string;
+  /**
+     * @minimum 1
+     * @maximum 10485760
+     */
+  size: number;
+  contentType: ProgressPhotoUploadRequestContentType;
+}
+
+export interface ProgressPhotoUploadResponse {
+  uploadURL: string;
+  photoPath: string;
 }
 
 export type DashboardRecentProgressItem = {

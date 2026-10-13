@@ -5,7 +5,7 @@ import { ClerkProvider, SignIn, SignUp, useAuth, useClerk, useUser } from '@cler
 import { publishableKeyFromHost } from '@clerk/react/internal';
 import { shadcn } from '@clerk/themes';
 import {
-  useAddProgress, useCreateProject, useDeleteProject, useGetDashboard,
+  requestProgressPhotoUpload, useAddProgress, useCreateProject, useDeleteProject, useGetDashboard,
   useGetProject, useGetProjects, useUpdateProject,
   getGetDashboardQueryKey, getGetProjectQueryKey, getGetProjectsQueryKey,
 } from '@workspace/api-client-react';
@@ -337,11 +337,23 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
   const [editing, setEditing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showProgress, setShowProgress] = useState(false);
+  const [progressPhoto, setProgressPhoto] = useState<File | null>(null);
+  const [progressPhotoPreview, setProgressPhotoPreview] = useState('');
+  const [progressPhotoError, setProgressPhotoError] = useState('');
   const [, setLocation] = useLocation();
   const client = useQueryClient();
   const update = useUpdateProject();
   const remove = useDeleteProject();
   const project = query.data;
+  useEffect(() => {
+    if (!progressPhoto) {
+      setProgressPhotoPreview('');
+      return;
+    }
+    const preview = URL.createObjectURL(progressPhoto);
+    setProgressPhotoPreview(preview);
+    return () => URL.revokeObjectURL(preview);
+  }, [progressPhoto]);
   const editForm = useForm<ProjectFormValues>({
     defaultValues: { title: '', craft: 'knitting', status: 'planning', description: '', patternName: '', patternDesigner: '', yarn: '', tools: '', startedAt: '', targetDate: '' },
   });
@@ -372,11 +384,44 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
     };
     update.mutate({ projectId, data: payload }, { onSuccess: () => { invalidate(); setEditing(false); } });
   });
-  const submitProgress = progressForm.handleSubmit((values) => {
+  const submitProgress = progressForm.handleSubmit(async (values) => {
     const payload: CreateProgress = { notes: values.notes.trim(), completionPercent: Number(values.completionPercent) };
-    addProgress.mutate({ projectId, data: payload }, {
-      onSuccess: () => { invalidate(); setShowProgress(false); progressForm.reset({ notes: '', completionPercent: Math.max(Number(values.completionPercent), project?.completionPercent || 0) }); },
-    });
+    setProgressPhotoError('');
+    try {
+      if (progressPhoto) {
+        if (progressPhoto.size > 10 * 1024 * 1024) {
+          setProgressPhotoError('Choose a photo smaller than 10 MB.');
+          return;
+        }
+        if (!['image/jpeg', 'image/png', 'image/webp'].includes(progressPhoto.type)) {
+          setProgressPhotoError('Choose a JPEG, PNG, or WebP photo.');
+          return;
+        }
+        const contentType = progressPhoto.type as 'image/jpeg' | 'image/png' | 'image/webp';
+        const upload = await requestProgressPhotoUpload(projectId, {
+          name: progressPhoto.name || 'progress-photo',
+          size: progressPhoto.size,
+          contentType,
+        });
+        const uploaded = await fetch(upload.uploadURL, {
+          method: 'PUT',
+          headers: { 'Content-Type': contentType },
+          body: progressPhoto,
+        });
+        if (!uploaded.ok) throw new Error('The photo upload did not finish.');
+        payload.photoPath = upload.photoPath;
+      }
+      addProgress.mutate({ projectId, data: payload }, {
+        onSuccess: () => {
+          invalidate();
+          setShowProgress(false);
+          setProgressPhoto(null);
+          progressForm.reset({ notes: '', completionPercent: Math.max(Number(values.completionPercent), project?.completionPercent || 0) });
+        },
+      });
+    } catch {
+      setProgressPhotoError('We couldn’t upload that photo. Try again or save without it.');
+    }
   });
   const addProgress = useAddProgress();
   const deleteProject = () => remove.mutate({ projectId }, {
@@ -409,8 +454,8 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
       <div className="detail-primary">
         <article className="progress-hero loom-card"><div className="progress-hero-copy"><span className="eyebrow">THE LONG AND LOVELY MIDDLE</span><h2 className="serif">Look how far<br/>you've come.</h2><p>Your progress doesn't need to be perfect to count.</p></div><div className="progress-ring" style={{ '--progress': `${project.completionPercent * 3.6}deg` } as CSSProperties}><div><strong>{project.completionPercent}<small>%</small></strong><span>complete</span></div></div><span className="hero-ornament">〰</span></article>
         <div className="progress-log-heading"><div><span className="eyebrow">NOTES FROM THE MAKING</span><h2 className="serif">Progress journal</h2></div><button className="button button-primary button-small" onClick={() => { setShowProgress(!showProgress); progressForm.setValue('completionPercent', project.completionPercent); }} data-testid="button-add-progress">{showProgress ? <X size={15}/> : <Plus size={15}/>} {showProgress ? 'Close note' : 'Add a note'}</button></div>
-        {showProgress && <Form {...progressForm}><form className="progress-form loom-card" onSubmit={submitProgress} noValidate><div className="field-block"><label htmlFor="progress-notes">What did you work on?</label><textarea id="progress-notes" rows={3} placeholder="A few rows, a tricky bit figured out, a lovely color change…" {...progressForm.register('notes', { required: 'Add a note about this session.', maxLength: { value: 2000, message: 'Keep your note under 2,000 characters.' } })} data-testid="input-progress-notes"/>{progressForm.formState.errors.notes && <span className="field-error">{progressForm.formState.errors.notes.message}</span>}</div><div className="progress-form-row"><div className="field-block"><label htmlFor="progress-percent">Overall completion</label><div className="percent-input"><input id="progress-percent" type="number" min={0} max={100} {...progressForm.register('completionPercent', { valueAsNumber: true, min: 0, max: 100 })} data-testid="input-progress-percent"/><span>%</span></div></div><div className="progress-form-hint"><Sparkles size={15}/> A little progress is still progress.</div></div>{addProgress.isError && <p className="mutation-error">Your note didn't stick this time. Please try again.</p>}<div className="form-actions"><button type="button" className="button button-quiet" onClick={() => setShowProgress(false)} data-testid="button-cancel-progress">Cancel</button><button type="submit" className="button button-primary" disabled={addProgress.isPending} data-testid="button-save-progress">{addProgress.isPending ? 'Saving note…' : 'Save progress'} <ArrowRight size={15}/></button></div></form></Form>}
-        {project.progress.length ? <div className="timeline">{[...project.progress].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((entry) => <article className="timeline-entry" key={entry.id} data-testid={`entry-progress-${entry.id}`}><span className="timeline-marker"><Feather size={13}/></span><div className="timeline-card loom-card"><div className="timeline-entry-top"><time>{new Intl.DateTimeFormat('en', { weekday: 'long', month: 'long', day: 'numeric' }).format(new Date(entry.createdAt))}</time><b>{entry.completionPercent}% complete</b></div><p>{entry.notes}</p><ProgressBar value={entry.completionPercent}/></div></article>)}</div> : <div className="journal-empty"><span className="journal-empty-icon"><Feather size={20}/></span><h3>The first stitch in your journal</h3><p>When you've spent a little time with this project, leave yourself a note here.</p><button className="button button-outline" onClick={() => setShowProgress(true)} data-testid="button-first-progress">Add your first note <ArrowRight size={15}/></button></div>}
+        {showProgress && <Form {...progressForm}><form className="progress-form loom-card" onSubmit={submitProgress} noValidate><div className="field-block"><label htmlFor="progress-notes">What did you work on?</label><textarea id="progress-notes" rows={3} placeholder="A few rows, a tricky bit figured out, a lovely color change…" {...progressForm.register('notes', { required: 'Add a note about this session.', maxLength: { value: 2000, message: 'Keep your note under 2,000 characters.' } })} data-testid="input-progress-notes"/>{progressForm.formState.errors.notes && <span className="field-error">{progressForm.formState.errors.notes.message}</span>}</div><div className="field-block progress-photo-field"><label htmlFor="progress-photo">Add a progress photo (optional)</label><input id="progress-photo" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { setProgressPhoto(event.target.files?.[0] ?? null); setProgressPhotoError(''); }} data-testid="input-progress-photo"/>{progressPhotoPreview && <div className="progress-photo-preview"><img src={progressPhotoPreview} alt="Selected progress photo preview"/><button type="button" className="button button-quiet" onClick={() => setProgressPhoto(null)}>Remove photo</button></div>}</div><div className="progress-form-row"><div className="field-block"><label htmlFor="progress-percent">Overall completion</label><div className="percent-input"><input id="progress-percent" type="number" min={0} max={100} {...progressForm.register('completionPercent', { valueAsNumber: true, min: 0, max: 100 })} data-testid="input-progress-percent"/><span>%</span></div></div><div className="progress-form-hint"><Sparkles size={15}/> A little progress is still progress.</div></div>{(addProgress.isError || progressPhotoError) && <p className="mutation-error">{progressPhotoError || "Your note didn't stick this time. Please try again."}</p>}<div className="form-actions"><button type="button" className="button button-quiet" onClick={() => { setShowProgress(false); setProgressPhoto(null); }} data-testid="button-cancel-progress">Cancel</button><button type="submit" className="button button-primary" disabled={addProgress.isPending} data-testid="button-save-progress">{addProgress.isPending ? 'Saving note…' : 'Save progress'} <ArrowRight size={15}/></button></div></form></Form>}
+        {project.progress.length ? <div className="timeline">{[...project.progress].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((entry) => <article className="timeline-entry" key={entry.id} data-testid={`entry-progress-${entry.id}`}><span className="timeline-marker"><Feather size={13}/></span><div className="timeline-card loom-card"><div className="timeline-entry-top"><time>{new Intl.DateTimeFormat('en', { weekday: 'long', month: 'long', day: 'numeric' }).format(new Date(entry.createdAt))}</time><b>{entry.completionPercent}% complete</b></div><p>{entry.notes}</p>{entry.photoPath && <img className="timeline-photo" src={`/api/projects/${projectId}/progress/${entry.id}/photo`} alt={`Progress photo for ${project.title}`} loading="lazy"/>}<ProgressBar value={entry.completionPercent}/></div></article>)}</div> : <div className="journal-empty"><span className="journal-empty-icon"><Feather size={20}/></span><h3>The first stitch in your journal</h3><p>When you've spent a little time with this project, leave yourself a note here.</p><button className="button button-outline" onClick={() => setShowProgress(true)} data-testid="button-first-progress">Add your first note <ArrowRight size={15}/></button></div>}
       </div>
       <aside className="detail-aside">
         <div className="aside-card loom-card"><span className="eyebrow">A FEW DETAILS</span><h3 className="serif">On the table</h3><dl className="detail-list">

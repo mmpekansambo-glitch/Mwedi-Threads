@@ -28,6 +28,8 @@ import type {
   HealthStatus,
   NotFoundResponse,
   ProgressEntry,
+  ProgressPhotoUploadRequest,
+  ProgressPhotoUploadResponse,
   Project,
   ProjectDetail,
   UnauthorizedResponse,
@@ -716,4 +718,175 @@ export const useAddProgress = <TError = ErrorType<BadRequestResponse | Unauthori
       > => {
       return useMutation(getAddProgressMutationOptions(options));
     }
+
+export const getRequestProgressPhotoUploadUrl = (projectId: string,) => {
+
+
+
+
+  return `/api/projects/${projectId}/progress-photo-upload`
+}
+
+/**
+ * @summary Request a private upload URL for a project progress photo
+ */
+export const requestProgressPhotoUpload = async (projectId: string,
+    progressPhotoUploadRequest: ProgressPhotoUploadRequest, options?: Parameters<typeof customFetch>[1]): Promise<ProgressPhotoUploadResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<ProgressPhotoUploadResponse>(getRequestProgressPhotoUploadUrl(projectId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(progressPhotoUploadRequest)
+  }
+);}
+
+
+
+
+
+export const getRequestProgressPhotoUploadMutationKey = () => ['requestProgressPhotoUpload'] as const;
+
+export const getRequestProgressPhotoUploadMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestProgressPhotoUpload>>, TError,RequestProgressPhotoUploadMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestProgressPhotoUpload>>, TError,RequestProgressPhotoUploadMutationVariables, TContext> => {
+
+const mutationKey = getRequestProgressPhotoUploadMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestProgressPhotoUpload>>, RequestProgressPhotoUploadMutationVariables> = (props) => {
+          const {projectId,data} = props ?? {};
+
+          return  requestProgressPhotoUpload(projectId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequestProgressPhotoUploadMutationResult = NonNullable<Awaited<ReturnType<typeof requestProgressPhotoUpload>>>
+    export type RequestProgressPhotoUploadMutationBody = BodyType<ProgressPhotoUploadRequest>
+    export type RequestProgressPhotoUploadMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse>
+    export type RequestProgressPhotoUploadMutationVariables = {projectId: string;data: BodyType<ProgressPhotoUploadRequest>}
+
+    /**
+ * @summary Request a private upload URL for a project progress photo
+ */
+export const useRequestProgressPhotoUpload = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestProgressPhotoUpload>>, TError,RequestProgressPhotoUploadMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof requestProgressPhotoUpload>>,
+        TError,
+        RequestProgressPhotoUploadMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRequestProgressPhotoUploadMutationOptions(options));
+    }
+
+export const getGetProgressPhotoUrl = (projectId: string,
+    entryId: string,) => {
+
+
+
+
+  return `/api/projects/${projectId}/progress/${entryId}/photo`
+}
+
+/**
+ * @summary View an image attached to a project progress entry
+ */
+export const getProgressPhoto = async (projectId: string,
+    entryId: string, options?: Parameters<typeof customFetch>[1]): Promise<unknown> => {
+
+  return customFetch<unknown>(getGetProgressPhotoUrl(projectId,entryId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetProgressPhotoQueryKey = (projectId: string,
+    entryId: string,) => {
+    return [
+    `/api/projects/${projectId}/progress/${entryId}/photo`
+    ] as const;
+    }
+
+
+export const getGetProgressPhotoQueryOptions = <TData = Awaited<ReturnType<typeof getProgressPhoto>>, TError = ErrorType<void | UnauthorizedResponse | NotFoundResponse>>(projectId: string,
+    entryId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProgressPhoto>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetProgressPhotoQueryKey(projectId,entryId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProgressPhoto>>> = ({ signal }) => getProgressPhoto(projectId,entryId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: projectId !== null && projectId !== undefined && entryId !== null && entryId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getProgressPhoto>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetProgressPhotoQueryResult = NonNullable<Awaited<ReturnType<typeof getProgressPhoto>>>
+export type GetProgressPhotoQueryError = ErrorType<void | UnauthorizedResponse | NotFoundResponse>
+
+
+/**
+ * @summary View an image attached to a project progress entry
+ */
+
+export function useGetProgressPhoto<TData = Awaited<ReturnType<typeof getProgressPhoto>>, TError = ErrorType<void | UnauthorizedResponse | NotFoundResponse>>(
+ projectId: string,
+    entryId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProgressPhoto>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetProgressPhotoQueryOptions(projectId,entryId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 

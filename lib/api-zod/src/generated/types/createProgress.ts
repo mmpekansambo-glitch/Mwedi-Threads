@@ -17,4 +17,6 @@ export interface CreateProgress {
      * @maximum 100
      */
   completionPercent: number;
+  /** @minLength 1 */
+  photoPath?: string;
 }

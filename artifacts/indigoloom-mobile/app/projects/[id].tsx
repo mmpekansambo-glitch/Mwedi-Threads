@@ -1,9 +1,14 @@
-import { useState } from 'react';
-import { useAddProgress, useDeleteProject, useGetProject, getGetDashboardQueryKey, getGetProjectQueryKey, getGetProjectsQueryKey } from '@workspace/api-client-react';
+import { useEffect, useState } from 'react';
+import { useAddProgress, useDeleteProject, useGetProject, getGetDashboardQueryKey, getGetProjectQueryKey, getGetProjectsQueryKey, requestProgressPhotoUpload } from '@workspace/api-client-react';
+import { useAuth } from '@clerk/expo';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { Feather } from '@expo/vector-icons';
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { File } from 'expo-file-system';
+import { fetch as expoFetch } from 'expo/fetch';
+import * as ImagePicker from 'expo-image-picker';
+import { Image } from 'expo-image';
+import { Alert, Linking, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FormFieldLabel, LoomButton, LoomText, ProgressBar, SignedInGate, StatusChip, fonts } from '@/components/loom';
 import { useColors } from '@/hooks/useColors';
@@ -18,6 +23,8 @@ export default function ProjectDetailScreen() {
   const remove = useDeleteProject();
   const [notes, setNotes] = useState('');
   const [completion, setCompletion] = useState('');
+  const [photo, setPhoto] = useState<ImagePicker.ImagePickerAsset | null>(null);
+  const [photoUploading, setPhotoUploading] = useState(false);
   const [message, setMessage] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
   const project = query.data;
@@ -29,21 +36,82 @@ export default function ProjectDetailScreen() {
     void client.invalidateQueries({ queryKey: getGetProjectsQueryKey() });
   };
 
-  const saveProgress = () => {
+  const saveProgress = async () => {
     const percent = Number(completion);
     if (!notes.trim() || !Number.isInteger(percent) || percent < 0 || percent > 100) {
       setMessage('Add a note and a whole-number completion value between 0 and 100.');
       return;
     }
     setMessage('');
-    addProgress.mutate({ projectId: id, data: { notes: notes.trim(), completionPercent: percent } }, {
+    let photoPath: string | undefined;
+    if (photo) {
+      try {
+        setPhotoUploading(true);
+        const file = new File(photo.uri);
+        const contentType = photo.mimeType || 'image/jpeg';
+        const size = photo.fileSize ?? file.size;
+        if (size > 10 * 1024 * 1024) {
+          setMessage('Choose a photo smaller than 10 MB.');
+          return;
+        }
+        if (!['image/jpeg', 'image/png', 'image/webp'].includes(contentType)) {
+          setMessage('Choose a JPEG, PNG, or WebP photo.');
+          return;
+        }
+        const upload = await requestProgressPhotoUpload(id, {
+          name: photo.fileName || 'progress-photo',
+          size: Math.max(1, size),
+          contentType: contentType as 'image/jpeg' | 'image/png' | 'image/webp',
+        });
+        const response = await expoFetch(upload.uploadURL, {
+          method: 'PUT',
+          headers: { 'Content-Type': contentType },
+          body: file,
+        });
+        if (!response.ok) throw new Error('Photo upload failed.');
+        photoPath = upload.photoPath;
+      } catch {
+        setMessage('We could not upload this photo. Please try again or remove it.');
+        return;
+      } finally {
+        setPhotoUploading(false);
+      }
+    }
+    addProgress.mutate({
+      projectId: id,
+      data: { notes: notes.trim(), completionPercent: percent, ...(photoPath ? { photoPath } : {}) },
+    }, {
       onSuccess: () => {
         setNotes('');
         setCompletion('');
+        setPhoto(null);
         invalidate();
       },
       onError: () => setMessage('We could not save this note. Please try again.'),
     });
+  };
+
+  const pickPhoto = async () => {
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert('Photo library access', 'Allow access to choose a progress photo in Settings.', [
+          { text: 'Not now', style: 'cancel' },
+          { text: 'Open Settings', onPress: () => { void Linking.openSettings(); } },
+        ]);
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        quality: 0.85,
+      });
+      if (!result.canceled) {
+        const selected = result.assets[0];
+        if (selected) setPhoto(selected);
+      }
+    } catch {
+      setMessage('We could not open your photo library. Please try again.');
+    }
   };
 
   const deleteProject = () => {
@@ -93,10 +161,19 @@ export default function ProjectDetailScreen() {
               <LoomText style={[styles.help, { color: colors.mutedForeground }]}>A few words after a session. Your progress adds up, quietly.</LoomText>
               <FormFieldLabel>What changed today?</FormFieldLabel>
               <TextInput value={notes} onChangeText={setNotes} placeholder="Rows completed, a tricky section, a new color…" placeholderTextColor={colors.mutedForeground} multiline numberOfLines={3} textAlignVertical="top" style={[...inputStyle, styles.notesInput]} testID="input-progress-notes" />
+              <FormFieldLabel>Progress photo (optional)</FormFieldLabel>
+              <View style={styles.photoControls}>
+                <Pressable accessibilityRole="button" onPress={pickPhoto} style={[styles.photoButton, { borderColor: colors.border }]} testID="button-pick-progress-photo">
+                  <Feather name="image" size={16} color={colors.primary} />
+                  <LoomText style={{ color: colors.primary, fontFamily: fonts.semibold, fontSize: 12 }}>{photo ? 'Choose another photo' : 'Choose a photo'}</LoomText>
+                </Pressable>
+                {photo ? <Pressable accessibilityRole="button" accessibilityLabel="Remove selected photo" onPress={() => setPhoto(null)} style={styles.removePhotoButton}><Feather name="x" size={18} color={colors.mutedForeground} /></Pressable> : null}
+              </View>
+              {photo ? <Image source={{ uri: photo.uri }} style={styles.photoPreview} contentFit="cover" accessibilityLabel="Selected progress photo preview" /> : null}
               <FormFieldLabel>Completion (0–100%)</FormFieldLabel>
               <TextInput value={completion || String(project.completionPercent)} onChangeText={setCompletion} placeholder="0–100" placeholderTextColor={colors.mutedForeground} keyboardType="number-pad" style={inputStyle} testID="input-progress-percent" />
               {message ? <LoomText accessibilityRole="alert" style={{ color: colors.destructive, fontSize: 12, marginBottom: 11 }}>{message}</LoomText> : null}
-              <LoomButton title="Save progress note" icon="feather" onPress={saveProgress} busy={addProgress.isPending} disabled={!notes.trim()} testID="button-save-progress" />
+              <LoomButton title="Save progress note" icon="feather" onPress={saveProgress} busy={addProgress.isPending || photoUploading} disabled={!notes.trim()} testID="button-save-progress" />
             </View>
             <View style={styles.sectionHeading}><LoomText serif style={[styles.sectionTitle, { color: colors.foreground }]}>The journey so far</LoomText><LoomText style={{ color: colors.mutedForeground, fontSize: 11 }}>{project.progress.length} notes</LoomText></View>
             {project.progress.length ? project.progress.map((entry) => (
@@ -105,6 +182,7 @@ export default function ProjectDetailScreen() {
                 <View style={{ flex: 1 }}>
                   <LoomText style={[styles.entryMeta, { color: colors.primary }]}>{entry.completionPercent}% complete · {new Date(entry.createdAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}</LoomText>
                   <LoomText style={[styles.entryNotes, { color: colors.foreground }]}>{entry.notes}</LoomText>
+                  {entry.photoPath ? <SavedProgressPhoto projectId={id} entryId={entry.id} /> : null}
                 </View>
               </View>
             )) : <LoomText style={[styles.noNotes, { color: colors.mutedForeground }]}>No notes yet. Add one after your next making session.</LoomText>}
@@ -121,6 +199,31 @@ export default function ProjectDetailScreen() {
         )}
       </View>
     </SignedInGate>
+  );
+}
+
+function SavedProgressPhoto({ projectId, entryId }: { projectId: string; entryId: string }) {
+  const { getToken } = useAuth();
+  const [token, setToken] = useState<string | null>(null);
+  useEffect(() => {
+    let active = true;
+    void getToken().then((value) => {
+      if (active) setToken(value ?? null);
+    });
+    return () => { active = false; };
+  }, [getToken]);
+  const domain = process.env.EXPO_PUBLIC_DOMAIN;
+  if (!domain || !token) return null;
+  return (
+    <Image
+      source={{
+        uri: `https://${domain}/api/projects/${projectId}/progress/${entryId}/photo`,
+        headers: { Authorization: `Bearer ${token}` },
+      }}
+      style={styles.savedPhoto}
+      contentFit="cover"
+      accessibilityLabel="Photo from this progress entry"
+    />
   );
 }
 
@@ -146,11 +249,16 @@ const styles = StyleSheet.create({
   help: { fontSize: 12, lineHeight: 17, marginTop: 4, marginBottom: 15 },
   input: { minHeight: 45, borderWidth: 1, borderRadius: 9, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, fontFamily: fonts.body, marginBottom: 12 },
   notesInput: { minHeight: 84, paddingTop: 12 },
+  photoControls: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
+  photoButton: { minHeight: 42, borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  removePhotoButton: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
+  photoPreview: { width: '100%', height: 190, borderRadius: 12, marginBottom: 12 },
   sectionHeading: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 10, marginBottom: 11 },
   progressEntry: { borderWidth: 1, borderRadius: 13, padding: 13, flexDirection: 'row', gap: 10, marginBottom: 8 },
   entryMarker: { width: 7, height: 7, borderRadius: 4, marginTop: 5 },
   entryMeta: { fontFamily: fonts.semibold, fontSize: 10 },
   entryNotes: { fontSize: 12, lineHeight: 18, marginTop: 5 },
+  savedPhoto: { width: '100%', height: 220, borderRadius: 12, marginTop: 10, backgroundColor: '#eee' },
   noNotes: { fontSize: 12, paddingVertical: 15 },
   deleteSection: { alignItems: 'flex-end', marginTop: 8 },
   confirm: { borderWidth: 1, borderRadius: 12, padding: 11, flexDirection: 'row', alignItems: 'center', gap: 7 },

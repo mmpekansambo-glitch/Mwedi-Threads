@@ -10,6 +10,8 @@ export interface ProgressEntry {
   id: string;
   projectId: string;
   notes: string;
+  /** @nullable */
+  photoPath: string | null;
   /**
      * @minimum 0
      * @maximum 100

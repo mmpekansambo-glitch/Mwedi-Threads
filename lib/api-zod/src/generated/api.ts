@@ -166,6 +166,7 @@ export const GetProjectResponse = zod.object({
   "id": zod.string().uuid(),
   "projectId": zod.string().uuid(),
   "notes": zod.string(),
+  "photoPath": zod.string().nullable(),
   "completionPercent": zod.number().int().min(getProjectResponseTwoProgressItemCompletionPercentMin).max(getProjectResponseTwoProgressItemCompletionPercentMax),
   "createdAt": zod.coerce.date()
 }))
@@ -247,9 +248,11 @@ export const addProgressBodyCompletionPercentMax = 100;
 
 
 
+
 export const AddProgressBody = zod.object({
   "notes": zod.string().min(1).max(addProgressBodyNotesMax),
-  "completionPercent": zod.number().int().min(addProgressBodyCompletionPercentMin).max(addProgressBodyCompletionPercentMax)
+  "completionPercent": zod.number().int().min(addProgressBodyCompletionPercentMin).max(addProgressBodyCompletionPercentMax),
+  "photoPath": zod.string().min(1).optional()
 })
 
 export const addProgressResponseCompletionPercentMin = 0;
@@ -261,8 +264,45 @@ export const AddProgressResponse = zod.object({
   "id": zod.string().uuid(),
   "projectId": zod.string().uuid(),
   "notes": zod.string(),
+  "photoPath": zod.string().nullable(),
   "completionPercent": zod.number().int().min(addProgressResponseCompletionPercentMin).max(addProgressResponseCompletionPercentMax),
   "createdAt": zod.coerce.date()
 })
+
+
+/**
+ * @summary Request a private upload URL for a project progress photo
+ */
+export const RequestProgressPhotoUploadParams = zod.object({
+  "projectId": zod.coerce.string().uuid()
+})
+
+export const requestProgressPhotoUploadBodyNameMax = 255;
+
+export const requestProgressPhotoUploadBodySizeMax = 10485760;
+
+
+
+export const RequestProgressPhotoUploadBody = zod.object({
+  "name": zod.string().min(1).max(requestProgressPhotoUploadBodyNameMax),
+  "size": zod.number().int().min(1).max(requestProgressPhotoUploadBodySizeMax),
+  "contentType": zod.enum(['image/jpeg', 'image/png', 'image/webp'])
+})
+
+export const RequestProgressPhotoUploadResponse = zod.object({
+  "uploadURL": zod.string().url(),
+  "photoPath": zod.string()
+})
+
+
+/**
+ * @summary View an image attached to a project progress entry
+ */
+export const GetProgressPhotoParams = zod.object({
+  "projectId": zod.coerce.string().uuid(),
+  "entryId": zod.coerce.string().uuid()
+})
+
+export const GetProgressPhotoResponse = zod.void()
 
 
