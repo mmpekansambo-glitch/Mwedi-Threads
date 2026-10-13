@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 48" fill="none">
+  <rect width="48" height="48" rx="15" fill="#51458A"/>
+  <path d="M10 12c10.8 0 10.8 24 21.6 24S53.2 12 42.4 12 31.6 36 20.8 36" stroke="#F2AD8E" stroke-width="3" stroke-linecap="round"/>
+  <path d="M10 19.5c10.8 0 10.8 9 21.6 9s21.6-9 10.8-9-10.8 9-21.6 9" stroke="#FFF9EF" stroke-width="2" stroke-linecap="round"/>
+  <text x="59" y="32" fill="#302C43" font-family="DM Sans, sans-serif" font-size="20" font-weight="700">IndigoLoom</text>
+</svg>

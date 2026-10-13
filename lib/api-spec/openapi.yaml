@@ -3,13 +3,17 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: IndigoLoom project catalog and progress tracking API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: projects
+    description: Knitting and crochet project catalog
+  - name: dashboard
+    description: Project overview and recent progress
 paths:
   /healthz:
     get:
@@ -24,7 +28,178 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /dashboard:
+    get:
+      operationId: getDashboard
+      tags: [dashboard]
+      summary: Get the signed-in user's project overview
+      responses:
+        "200":
+          description: Project summary and recent activity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dashboard"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /projects:
+    get:
+      operationId: getProjects
+      tags: [projects]
+      summary: List the signed-in user's projects
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: status
+          schema:
+            $ref: "#/components/schemas/ProjectStatus"
+        - in: query
+          name: craft
+          schema:
+            $ref: "#/components/schemas/CraftType"
+      responses:
+        "200":
+          description: Matching projects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Project"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      operationId: createProject
+      tags: [projects]
+      summary: Add a project to the catalog
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProject"
+      responses:
+        "201":
+          description: Project created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /projects/{projectId}:
+    parameters:
+      - in: path
+        name: projectId
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: getProject
+      tags: [projects]
+      summary: Get a project and its progress log
+      responses:
+        "200":
+          description: Project details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updateProject
+      tags: [projects]
+      summary: Update project details or status
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProject"
+      responses:
+        "200":
+          description: Updated project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteProject
+      tags: [projects]
+      summary: Delete a project and its progress log
+      responses:
+        "204":
+          description: Project deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /projects/{projectId}/progress:
+    parameters:
+      - in: path
+        name: projectId
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      operationId: addProgress
+      tags: [projects]
+      summary: Record a project progress update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProgress"
+      responses:
+        "201":
+          description: Progress entry created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProgressEntry"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
 components:
+  responses:
+    Unauthorized:
+      description: Sign in is required
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: The requested project was not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    BadRequest:
+      description: The request is invalid
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
   schemas:
     HealthStatus:
       type: object
@@ -33,4 +208,207 @@ components:
           type: string
       required:
         - status
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+    CraftType:
+      type: string
+      enum: [knitting, crochet]
+    ProjectStatus:
+      type: string
+      enum: [planning, in_progress, paused, completed]
+    ProgressEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        notes:
+          type: string
+        completionPercent:
+          type: integer
+          minimum: 0
+          maximum: 100
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, projectId, notes, completionPercent, createdAt]
+    Project:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        craft:
+          $ref: "#/components/schemas/CraftType"
+        status:
+          $ref: "#/components/schemas/ProjectStatus"
+        description:
+          type: [string, "null"]
+        patternName:
+          type: [string, "null"]
+        patternDesigner:
+          type: [string, "null"]
+        yarn:
+          type: [string, "null"]
+        tools:
+          type: [string, "null"]
+        startedAt:
+          type: [string, "null"]
+          format: date
+        targetDate:
+          type: [string, "null"]
+          format: date
+        completionPercent:
+          type: integer
+          minimum: 0
+          maximum: 100
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - title
+        - craft
+        - status
+        - description
+        - patternName
+        - patternDesigner
+        - yarn
+        - tools
+        - startedAt
+        - targetDate
+        - completionPercent
+        - createdAt
+        - updatedAt
+    ProjectDetail:
+      allOf:
+        - $ref: "#/components/schemas/Project"
+        - type: object
+          properties:
+            progress:
+              type: array
+              items:
+                $ref: "#/components/schemas/ProgressEntry"
+          required: [progress]
+    CreateProject:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 160
+        craft:
+          $ref: "#/components/schemas/CraftType"
+        status:
+          $ref: "#/components/schemas/ProjectStatus"
+        description:
+          type: [string, "null"]
+        patternName:
+          type: [string, "null"]
+        patternDesigner:
+          type: [string, "null"]
+        yarn:
+          type: [string, "null"]
+        tools:
+          type: [string, "null"]
+        startedAt:
+          type: [string, "null"]
+          format: date
+        targetDate:
+          type: [string, "null"]
+          format: date
+      required: [title, craft]
+    UpdateProject:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 160
+        craft:
+          $ref: "#/components/schemas/CraftType"
+        status:
+          $ref: "#/components/schemas/ProjectStatus"
+        description:
+          type: [string, "null"]
+        patternName:
+          type: [string, "null"]
+        patternDesigner:
+          type: [string, "null"]
+        yarn:
+          type: [string, "null"]
+        tools:
+          type: [string, "null"]
+        startedAt:
+          type: [string, "null"]
+          format: date
+        targetDate:
+          type: [string, "null"]
+          format: date
+        completionPercent:
+          type: integer
+          minimum: 0
+          maximum: 100
+      minProperties: 1
+    CreateProgress:
+      type: object
+      properties:
+        notes:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        completionPercent:
+          type: integer
+          minimum: 0
+          maximum: 100
+      required: [notes, completionPercent]
+    Dashboard:
+      type: object
+      properties:
+        totalProjects:
+          type: integer
+        activeProjects:
+          type: integer
+        completedProjects:
+          type: integer
+        recentProjects:
+          type: array
+          items:
+            $ref: "#/components/schemas/Project"
+        recentProgress:
+          type: array
+          items:
+            type: object
+            properties:
+              projectTitle:
+                type: string
+              projectId:
+                type: string
+                format: uuid
+              notes:
+                type: string
+              completionPercent:
+                type: integer
+              createdAt:
+                type: string
+                format: date-time
+            required: [projectTitle, projectId, notes, completionPercent, createdAt]
+      required:
+        - totalProjects
+        - activeProjects
+        - completedProjects
+        - recentProjects
+        - recentProgress
 

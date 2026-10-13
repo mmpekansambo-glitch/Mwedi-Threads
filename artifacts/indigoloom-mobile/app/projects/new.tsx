@@ -1,0 +1,122 @@
+import { useState } from 'react';
+import { useCreateProject, getGetDashboardQueryKey, getGetProjectsQueryKey } from '@workspace/api-client-react';
+import type { CreateProject } from '@workspace/api-client-react';
+import { Feather } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { useQueryClient } from '@tanstack/react-query';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
+import { FormFieldLabel, LoomButton, LoomText, SignedInGate, fonts } from '@/components/loom';
+import { useColors } from '@/hooks/useColors';
+
+export default function NewProjectScreen() {
+  const colors = useColors();
+  const insets = useSafeAreaInsets();
+  const client = useQueryClient();
+  const create = useCreateProject();
+  const [title, setTitle] = useState('');
+  const [craft, setCraft] = useState<'knitting' | 'crochet'>('knitting');
+  const [patternName, setPatternName] = useState('');
+  const [patternDesigner, setPatternDesigner] = useState('');
+  const [yarn, setYarn] = useState('');
+  const [tools, setTools] = useState('');
+  const [startedAt, setStartedAt] = useState('');
+  const [targetDate, setTargetDate] = useState('');
+  const [description, setDescription] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const fieldStyle = [styles.input, { color: colors.foreground, backgroundColor: colors.card, borderColor: colors.input }];
+  const inputProps = { placeholderTextColor: colors.mutedForeground };
+  const save = () => {
+    setErrorMessage('');
+    if (!title.trim()) {
+      setErrorMessage('Give your project a name to get started.');
+      return;
+    }
+    const payload: CreateProject = {
+      title: title.trim(),
+      craft,
+      status: 'planning',
+      description: description.trim() || null,
+      patternName: patternName.trim() || null,
+      patternDesigner: patternDesigner.trim() || null,
+      yarn: yarn.trim() || null,
+      tools: tools.trim() || null,
+      startedAt: startedAt.trim() || null,
+      targetDate: targetDate.trim() || null,
+    };
+    create.mutate({ data: payload }, {
+      onSuccess: (project) => {
+        void client.invalidateQueries({ queryKey: getGetProjectsQueryKey() });
+        void client.invalidateQueries({ queryKey: getGetDashboardQueryKey() });
+        router.replace({ pathname: '/projects/[id]', params: { id: project.id } });
+      },
+      onError: () => setErrorMessage('We could not save this project just now. Your details are still here — please try again.'),
+    });
+  };
+
+  return (
+    <SignedInGate>
+      <View style={[styles.screen, { backgroundColor: colors.background }]}>
+        <View style={[styles.nav, { paddingTop: insets.top + 9, borderBottomColor: colors.border }]}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={() => router.back()} style={styles.back}><Feather name="arrow-left" size={19} color={colors.primary} /></Pressable>
+          <LoomText style={[styles.navTitle, { color: colors.foreground }]}>A fresh cast-on</LoomText>
+          <View style={{ width: 38 }} />
+        </View>
+        <KeyboardAwareScrollViewCompat contentContainerStyle={styles.form} bottomOffset={80} keyboardShouldPersistTaps="handled">
+          <LoomText serif style={[styles.heading, { color: colors.foreground }]}>Start a project</LoomText>
+          <LoomText style={[styles.intro, { color: colors.mutedForeground }]}>Give your idea a place to take shape.</LoomText>
+          <View style={[styles.formCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <LoomText style={[styles.sectionLabel, { color: colors.primary }]}>THE BEGINNINGS</LoomText>
+            <FormFieldLabel>Project name *</FormFieldLabel>
+            <TextInput {...inputProps} value={title} onChangeText={setTitle} maxLength={160} placeholder="e.g. Juniper cardigan" style={fieldStyle} testID="input-project-title" />
+            <FormFieldLabel>Craft</FormFieldLabel>
+            <View style={styles.choiceRow}>
+              {(['knitting', 'crochet'] as const).map((item) => {
+                const active = craft === item;
+                return <Pressable key={item} onPress={() => setCraft(item)} style={[styles.choice, { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.softPlum : colors.background }]}><Feather name={item === 'knitting' ? 'git-merge' : 'corner-down-right'} size={15} color={active ? colors.primary : colors.mutedForeground} /><LoomText style={{ color: active ? colors.primary : colors.mutedForeground, fontFamily: fonts.semibold, fontSize: 12 }}>{item === 'knitting' ? 'Knitting' : 'Crochet'}</LoomText></Pressable>;
+              })}
+            </View>
+            <View style={[styles.divider, { borderColor: colors.border }]} />
+            <LoomText style={[styles.sectionLabel, { color: colors.primary }]}>THE LOVELY DETAILS</LoomText>
+            <FormFieldLabel>Pattern name</FormFieldLabel>
+            <TextInput {...inputProps} value={patternName} onChangeText={setPatternName} placeholder="Pattern or source" style={fieldStyle} />
+            <FormFieldLabel>Designer</FormFieldLabel>
+            <TextInput {...inputProps} value={patternDesigner} onChangeText={setPatternDesigner} placeholder="Who made the pattern?" style={fieldStyle} />
+            <FormFieldLabel>Yarn</FormFieldLabel>
+            <TextInput {...inputProps} value={yarn} onChangeText={setYarn} placeholder="Fiber, color, weight…" style={fieldStyle} />
+            <FormFieldLabel>Tools</FormFieldLabel>
+            <TextInput {...inputProps} value={tools} onChangeText={setTools} placeholder="Needle or hook size…" style={fieldStyle} />
+            <FormFieldLabel>Started on (YYYY-MM-DD)</FormFieldLabel>
+            <TextInput {...inputProps} value={startedAt} onChangeText={setStartedAt} placeholder="Optional" style={fieldStyle} />
+            <FormFieldLabel>Target date (YYYY-MM-DD)</FormFieldLabel>
+            <TextInput {...inputProps} value={targetDate} onChangeText={setTargetDate} placeholder="Optional" style={fieldStyle} />
+            <FormFieldLabel>Notes to future you</FormFieldLabel>
+            <TextInput {...inputProps} value={description} onChangeText={setDescription} placeholder="What made you fall for this one?" multiline numberOfLines={4} textAlignVertical="top" style={[...fieldStyle, styles.multiline]} />
+            {errorMessage ? <LoomText accessibilityRole="alert" style={[styles.error, { color: colors.destructive }]}>{errorMessage}</LoomText> : null}
+            <LoomButton title="Save this project" icon="arrow-right" onPress={save} busy={create.isPending} disabled={!title.trim()} testID="button-save-project" />
+          </View>
+        </KeyboardAwareScrollViewCompat>
+      </View>
+    </SignedInGate>
+  );
+}
+
+const styles = StyleSheet.create({
+  screen: { flex: 1 },
+  nav: { minHeight: 48, paddingHorizontal: 17, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1 },
+  navTitle: { fontFamily: fonts.semibold, fontSize: 13 },
+  back: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
+  form: { width: '100%', maxWidth: 650, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 23, paddingBottom: 40 },
+  heading: { fontSize: 32 },
+  intro: { fontSize: 13, marginTop: 6, marginBottom: 18 },
+  formCard: { borderWidth: 1, borderRadius: 18, padding: 17 },
+  sectionLabel: { fontFamily: fonts.bold, fontSize: 9, letterSpacing: 1.1, marginBottom: 13 },
+  input: { minHeight: 45, borderWidth: 1, borderRadius: 9, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, fontFamily: fonts.body, marginBottom: 14 },
+  choiceRow: { flexDirection: 'row', gap: 9, marginBottom: 14 },
+  choice: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 42, borderWidth: 1, borderRadius: 10 },
+  divider: { borderTopWidth: 1, marginVertical: 8 },
+  multiline: { minHeight: 94, paddingTop: 12 },
+  error: { fontSize: 12, lineHeight: 18, marginBottom: 12 },
+});
