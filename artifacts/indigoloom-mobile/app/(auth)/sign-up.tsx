@@ -91,7 +91,7 @@ export default function SignUpScreen() {
       const redirectUrl =
         Platform.OS === 'web'
           ? AuthSession.makeRedirectUri()
-          : AuthSession.makeRedirectUri({ scheme: 'indigoloom', path: 'oauth' });
+          : AuthSession.makeRedirectUri({ scheme: 'mwedi', path: 'oauth' });
       const result = await startSSOFlow({ strategy: 'oauth_google', redirectUrl });
       if (result.createdSessionId) {
         await result.setActive!({

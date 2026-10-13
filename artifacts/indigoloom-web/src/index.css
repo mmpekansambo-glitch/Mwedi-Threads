@@ -80,7 +80,7 @@ a { color: inherit; text-decoration: none; }
 @keyframes settle { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; } }
 
-/* IndigoLoom — paper, plum, and a little apricot thread */
+/* Mwedi — paper, plum, and a little apricot thread */
 .brand-lockup { display: inline-flex; align-items: center; gap: 10px; color: #302c43; font-size: 19px; font-weight: 700; letter-spacing: -.055em; }
 .brand-soft { color: #766d9c; }
 .brand-mark { display: inline-grid; width: 34px; height: 34px; place-items: center; color: #51458a; }

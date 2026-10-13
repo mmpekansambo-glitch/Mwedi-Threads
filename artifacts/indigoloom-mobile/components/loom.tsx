@@ -51,7 +51,7 @@ export function Brand({ light = false }: { light?: boolean }) {
         <Feather name="git-merge" size={23} color={light ? colors.accent : colors.primary} />
       </View>
       <LoomText style={[styles.brandName, { color: foreground }]}>
-        Indigo<LoomText style={{ color: soft, fontFamily: fonts.semibold }}>Loom</LoomText>
+        Mwe<LoomText style={{ color: soft, fontFamily: fonts.semibold }}>di</LoomText>
       </LoomText>
     </View>
   );

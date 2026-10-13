@@ -44,7 +44,7 @@ export default function SignInScreen() {
     } else if (signIn.status === 'needs_client_trust') {
       setMessage('This account needs an additional verification step. Please sign in on the website to finish setup.');
     } else if (signIn.status === 'needs_second_factor') {
-      setMessage('This account has an additional sign-in check enabled. Please continue on the IndigoLoom website.');
+        setMessage('This account has an additional sign-in check enabled. Please continue on the Mwedi website.');
     } else {
       setMessage('We could not complete sign-in. Check your details and try once more.');
     }
@@ -57,7 +57,7 @@ export default function SignInScreen() {
       const redirectUrl =
         Platform.OS === 'web'
           ? AuthSession.makeRedirectUri()
-          : AuthSession.makeRedirectUri({ scheme: 'indigoloom', path: 'oauth' });
+          : AuthSession.makeRedirectUri({ scheme: 'mwedi', path: 'oauth' });
       const result = await startSSOFlow({ strategy: 'oauth_google', redirectUrl });
       if (result.createdSessionId) {
         await result.setActive!({
@@ -71,7 +71,7 @@ export default function SignInScreen() {
           },
         });
       } else if (result.signUp?.status === 'missing_requirements') {
-        setMessage('Your Google account needs a username to finish creating the IndigoLoom account. Start with Create account to choose one.');
+        setMessage('Your Google account needs a username to finish creating the Mwedi account. Start with Create account to choose one.');
       } else {
         setMessage('Google sign-in could not be completed. Please try again.');
       }
@@ -124,7 +124,7 @@ export default function SignInScreen() {
           </View>
           {message ? <LoomText accessibilityRole="alert" style={[styles.message, { color: colors.destructive }]}>{message}</LoomText> : null}
           <LoomButton title="Sign in" icon="arrow-right" onPress={() => void submit()} busy={fetchStatus === 'fetching'} disabled={!identifier.trim() || !password} testID="button-signin" />
-          <AuthFooter><LoomText style={{ color: colors.mutedForeground, fontSize: 13 }}>New to IndigoLoom?</LoomText><AuthLink href="/(auth)/sign-up">Create an account</AuthLink></AuthFooter>
+          <AuthFooter><LoomText style={{ color: colors.mutedForeground, fontSize: 13 }}>New to Mwedi?</LoomText><AuthLink href="/(auth)/sign-up">Create an account</AuthLink></AuthFooter>
         </View>
         <Pressable onPress={() => router.back()} style={styles.back}><Feather name="arrow-left" size={15} color={colors.mutedForeground} /><LoomText style={{ color: colors.mutedForeground, fontSize: 12 }}>Back to welcome</LoomText></Pressable>
       </KeyboardAwareScrollViewCompat>

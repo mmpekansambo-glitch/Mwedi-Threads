@@ -92,7 +92,7 @@ router.get("/dashboard", async (req, res): Promise<void> => {
     ...validated,
     recentProjects: recentProjects.map(serializeProject),
   });
-  req.log.debug({ ownerId }, "Loaded IndigoLoom dashboard");
+  req.log.debug({ ownerId }, "Loaded Mwedi dashboard");
 });
 
 router.get("/projects", async (req, res): Promise<void> => {

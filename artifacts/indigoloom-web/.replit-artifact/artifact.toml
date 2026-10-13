@@ -1,6 +1,6 @@
 kind = "web"
 previewPath = "/"
-title = "IndigoLoom"
+title = "Mwedi"
 description = "A companion web app for knitters and crocheters to catalog their projects, organize pattern and materials details, and record progress from the first stitch through completion. Includes secure sign-in and a mobile companion that shares the same account and project data."
 version = "1.0.0"
 id = "artifacts/indigoloom-web"

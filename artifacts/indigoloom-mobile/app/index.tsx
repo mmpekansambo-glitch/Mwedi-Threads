@@ -10,7 +10,7 @@ export default function WelcomeScreen() {
   const { isLoaded, isSignedIn } = useAuth();
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  if (!isLoaded) return <LoadingState label="Opening IndigoLoom…" />;
+  if (!isLoaded) return <LoadingState label="Opening Mwedi…" />;
   if (isSignedIn) return <Redirect href="/(tabs)" />;
 
   return (

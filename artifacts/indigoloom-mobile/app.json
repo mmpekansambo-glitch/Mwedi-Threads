@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "IndigoLoom",
-    "slug": "indigoloom-mobile",
+    "name": "Mwedi",
+    "slug": "mwedi",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "indigoloom",
+    "scheme": "mwedi",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": false

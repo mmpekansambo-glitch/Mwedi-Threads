@@ -30,7 +30,7 @@ const domain = process.env.EXPO_PUBLIC_DOMAIN;
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
 if (!domain) {
-  throw new Error('EXPO_PUBLIC_DOMAIN is required to connect IndigoLoom to its API.');
+  throw new Error('EXPO_PUBLIC_DOMAIN is required to connect Mwedi to its API.');
 }
 if (!publishableKey) {
   throw new Error('EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY is required for sign in.');
