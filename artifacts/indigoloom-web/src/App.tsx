@@ -91,7 +91,7 @@ function Mark({ light = false }: { light?: boolean }) {
 
 function Brand({ light = false }: { light?: boolean }) {
   return <Link href="/" className={`brand-lockup ${light ? 'brand-light' : ''}`} data-testid="link-brand-home">
-    <Mark light={light} /><span>Mwe<span className="brand-soft">di</span></span>
+    <Mark light={light} /><span>Mwedi<span className="brand-soft"> Threads</span></span>
   </Link>;
 }
 
@@ -111,7 +111,7 @@ function Landing() {
       <div className="hero-copy appear">
         <div className="eyebrow"><span className="eyebrow-stitch"/>A little home for your making</div>
         <h1>Your hands are busy.<br/><em>Let your mind rest.</em></h1>
-        <p className="hero-lede">Keep every cast-on, color choice, and almost-finished sleeve in one lovely place. Mwedi is your personal notebook for making things slowly, and well.</p>
+        <p className="hero-lede">Keep every cast-on, color choice, and almost-finished sleeve in one lovely place. Mwedi Threads is your personal notebook for making things slowly, and well.</p>
         <div className="hero-actions"><Link href="/sign-up" className="button button-primary" data-testid="link-get-started">Make a free account <ArrowRight size={17}/></Link><a href="#how-it-works" className="text-link">Take a look around <ArrowDownRight size={16}/></a></div>
         <div className="hero-footnote"><span className="avatar-stack"><i>J</i><i>M</i><i>A</i></span><span>A quiet corner for every kind of maker</span></div>
       </div>
@@ -192,7 +192,7 @@ function PortalLayout({ children, active }: { children: ReactNode; active: 'dash
     </aside>
     {mobileOpen && <button className="mobile-scrim" onClick={() => setMobileOpen(false)} aria-label="Close navigation" data-testid="button-dismiss-navigation"/>}
     <main className="portal-main">
-      <header className="portal-topbar"><button className="menu-toggle" onClick={() => setMobileOpen(true)} aria-label="Open navigation" data-testid="button-open-navigation"><Menu size={21}/></button><div className="breadcrumbs"><span>Mwedi</span><i>/</i><b>{active === 'dashboard' ? 'Overview' : 'My projects'}</b></div><div className="topbar-end"><span className="today-label">{new Intl.DateTimeFormat('en', { weekday: 'short', month: 'long', day: 'numeric' }).format(new Date())}</span><span className="top-avatar">{initials}</span></div></header>
+      <header className="portal-topbar"><button className="menu-toggle" onClick={() => setMobileOpen(true)} aria-label="Open navigation" data-testid="button-open-navigation"><Menu size={21}/></button><div className="breadcrumbs"><span>Mwedi Threads</span><i>/</i><b>{active === 'dashboard' ? 'Overview' : 'My projects'}</b></div><div className="topbar-end"><span className="today-label">{new Intl.DateTimeFormat('en', { weekday: 'short', month: 'long', day: 'numeric' }).format(new Date())}</span><span className="top-avatar">{initials}</span></div></header>
       <div className="portal-content appear">{children}</div>
     </main>
   </div>;

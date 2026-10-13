@@ -10,7 +10,7 @@ export default function WelcomeScreen() {
   const { isLoaded, isSignedIn } = useAuth();
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  if (!isLoaded) return <LoadingState label="Opening Mwedi…" />;
+  if (!isLoaded) return <LoadingState label="Opening Mwedi Threads…" />;
   if (isSignedIn) return <Redirect href="/(tabs)" />;
 
   return (

@@ -92,7 +92,7 @@ router.get("/dashboard", async (req, res): Promise<void> => {
     ...validated,
     recentProjects: recentProjects.map(serializeProject),
   });
-  req.log.debug({ ownerId }, "Loaded Mwedi dashboard");
+  req.log.debug({ ownerId }, "Loaded Mwedi Threads dashboard");
 });
 
 router.get("/projects", async (req, res): Promise<void> => {
