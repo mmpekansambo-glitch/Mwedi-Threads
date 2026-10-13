@@ -99,7 +99,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
-          <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
+          <ClerkProvider publishableKey={publishableKey!} tokenCache={tokenCache}>
             <ClerkApiBridge>
               <GestureHandlerRootView>
                 <KeyboardProvider>

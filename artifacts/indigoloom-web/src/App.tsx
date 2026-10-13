@@ -91,7 +91,7 @@ function Mark({ light = false }: { light?: boolean }) {
 
 function Brand({ light = false }: { light?: boolean }) {
   return <Link href="/" className={`brand-lockup ${light ? 'brand-light' : ''}`} data-testid="link-brand-home">
-    <Mark light={light} /><span>Indigo<span className="brand-soft">Loom</span></span>
+    <Mark light={light} /><span>Mwe<span className="brand-soft">di</span></span>
   </Link>;
 }
 
