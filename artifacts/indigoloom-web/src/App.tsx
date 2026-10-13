@@ -1,7 +1,7 @@
-import { type ReactNode, useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
-import { ClerkProvider, SignIn, SignUp, useAuth, useClerk, useUser } from '@clerk/react';
+import { ClerkProvider, SignIn, SignUp, useAuth, useClerk, useSignUp, useUser } from '@clerk/react';
 import { publishableKeyFromHost } from '@clerk/react/internal';
 import { shadcn } from '@clerk/themes';
 import {
@@ -21,6 +21,7 @@ import {
   Link, Redirect, Route, Switch, useLocation, Router as WouterRouter,
 } from 'wouter';
 import { ErrorBoundary } from '@/components/error-boundary';
+import { trackEvent } from '@/lib/analytics';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
@@ -144,6 +145,28 @@ function SignInPage() {
   return <div className="auth-screen paper-grain"><div className="auth-ornament"><Brand/><p>A softer place to pick up<br/>where you left off.</p><span className="auth-thread"/></div><div className="auth-panel"><SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} /></div></div>;
 }
 function SignUpPage() {
+  const { signUp } = useSignUp();
+  const trackedSession = useRef<string | null>(null);
+
+  useEffect(() => {
+    const sessionId = signUp?.createdSessionId;
+    if (signUp?.status !== 'complete' || !sessionId || trackedSession.current === sessionId) return;
+
+    const storageKey = `mwedi:account-completed:${sessionId}`;
+    try {
+      if (window.sessionStorage.getItem(storageKey)) {
+        trackedSession.current = sessionId;
+        return;
+      }
+      window.sessionStorage.setItem(storageKey, '1');
+    } catch {
+      // In-memory deduplication below still protects this mounted page.
+    }
+
+    trackedSession.current = sessionId;
+    trackEvent('account_completed');
+  }, [signUp?.createdSessionId, signUp?.status]);
+
   return <div className="auth-screen paper-grain"><div className="auth-ornament"><Brand/><p>Make room for all the<br/>things you're dreaming up.</p><span className="auth-thread"/></div><div className="auth-panel"><SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} /></div></div>;
 }
 
@@ -300,6 +323,7 @@ function ProjectFormPage() {
     };
     create.mutate({ data: payload }, {
       onSuccess: (project) => {
+        trackEvent('project_created');
         void client.invalidateQueries({ queryKey: getGetProjectsQueryKey() });
         void client.invalidateQueries({ queryKey: getGetDashboardQueryKey() });
         setLocation(`/projects/${project.id}`);
@@ -413,6 +437,7 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
       }
       addProgress.mutate({ projectId, data: payload }, {
         onSuccess: () => {
+          trackEvent('progress_updated');
           invalidate();
           setShowProgress(false);
           setProgressPhoto(null);
