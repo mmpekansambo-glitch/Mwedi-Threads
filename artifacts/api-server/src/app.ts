@@ -1,4 +1,4 @@
-import express, { type Express } from "express";
+import express, { type ErrorRequestHandler, type Express } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
 import { clerkMiddleware } from "@clerk/express";
@@ -49,5 +49,21 @@ app.use(
 );
 
 app.use("/api", router);
+
+const handleApiError: ErrorRequestHandler = (error, req, res, next) => {
+  logger.error(
+    { err: error, method: req.method, path: req.path },
+    "Unhandled API error",
+  );
+
+  if (res.headersSent) {
+    next(error);
+    return;
+  }
+
+  res.status(500).json({ error: "An unexpected error occurred." });
+};
+
+app.use(handleApiError);
 
 export default app;

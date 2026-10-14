@@ -3,8 +3,9 @@ import { generateKeyPairSync, createSign } from "node:crypto";
 import type { Server } from "node:http";
 import { PgDialect } from "drizzle-orm/pg-core";
 
-const { mockSelect } = vi.hoisted(() => ({
+const { mockSelect, clerkSetupShouldFail } = vi.hoisted(() => ({
   mockSelect: vi.fn(),
+  clerkSetupShouldFail: { value: false },
 }));
 
 vi.mock("@workspace/db", async () => {
@@ -19,6 +20,22 @@ vi.mock("@workspace/db", async () => {
       update: vi.fn(),
       delete: vi.fn(),
       transaction: vi.fn(),
+    },
+  };
+});
+
+vi.mock("@clerk/shared/keys", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@clerk/shared/keys")>();
+  return {
+    ...actual,
+    publishableKeyFromHost: (
+      ...args: Parameters<typeof actual.publishableKeyFromHost>
+    ) => {
+      if (clerkSetupShouldFail.value) {
+        throw new Error("CLERK_INTERNAL_SETUP_STACK_SENTINEL");
+      }
+      return actual.publishableKeyFromHost(...args);
     },
   };
 });
@@ -154,5 +171,23 @@ describe("Clerk-backed API authentication", () => {
     const query = new PgDialect().sqlToQuery(capturedCondition as never);
     expect(query.params).toContain(userId);
     expect(query.params).not.toContain(forgedUserId);
+  });
+
+  it("returns a generic JSON error when Clerk authentication setup throws", async () => {
+    const internalDetails = "CLERK_INTERNAL_SETUP_STACK_SENTINEL";
+    clerkSetupShouldFail.value = true;
+    try {
+      const response = await request();
+      const body = await response.text();
+
+      expect(response.status).toBe(500);
+      expect(response.headers.get("content-type")).toContain("application/json");
+      expect(body).toContain("An unexpected error occurred.");
+      expect(body).not.toContain(internalDetails);
+      expect(body).not.toContain("Error:");
+      expect(body).not.toContain("at ");
+    } finally {
+      clerkSetupShouldFail.value = false;
+    }
   });
 });
