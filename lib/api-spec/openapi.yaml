@@ -360,6 +360,7 @@ components:
         designerWebsite:
           type: [string, "null"]
           format: uri
+          pattern: "^[Hh][Tt][Tt][Pp][Ss]?://"
         designerPageTitle:
           type: [string, "null"]
         yarn:
@@ -444,6 +445,7 @@ components:
         designerWebsite:
           type: [string, "null"]
           format: uri
+          pattern: "^[Hh][Tt][Tt][Pp][Ss]?://"
         designerPageTitle:
           type: [string, "null"]
         yarn:
@@ -487,6 +489,7 @@ components:
         designerWebsite:
           type: [string, "null"]
           format: uri
+          pattern: "^[Hh][Tt][Tt][Pp][Ss]?://"
         designerPageTitle:
           type: [string, "null"]
         yarn:

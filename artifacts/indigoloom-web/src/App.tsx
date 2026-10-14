@@ -385,6 +385,15 @@ function ProjectDateField({
 
 type DesignerMode = 'name' | 'website';
 
+function isHttpWebsiteUrl(value: string) {
+  try {
+    const url = new URL(value);
+    return (url.protocol === 'http:' || url.protocol === 'https:') && Boolean(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
 function DesignerEntry({
   form,
   mode,
@@ -405,7 +414,9 @@ function DesignerEntry({
   prefix: 'create' | 'edit';
 }) {
   const pageTitle = form.watch('designerPageTitle');
-  const websiteRegistration = form.register('designerWebsite');
+  const websiteRegistration = form.register('designerWebsite', {
+    validate: (value) => mode !== 'website' || !value || isHttpWebsiteUrl(value) || 'Enter a website link starting with http:// or https://.',
+  });
 
   return <div className="designer-entry field-wide">
     <div className="designer-entry-heading"><b>Designer</b><span>Use a name or link to their website.</span></div>
@@ -421,6 +432,7 @@ function DesignerEntry({
           <div className="field-block"><label htmlFor={`${prefix}-designer-website`}>Website link</label><input id={`${prefix}-designer-website`} type="url" autoCapitalize="none" autoCorrect="off" placeholder="https://example.com" {...websiteRegistration} onChange={(event) => { void websiteRegistration.onChange(event); form.setValue('designerPageTitle', '', { shouldDirty: true }); onClearPreview(); }} data-testid={`input-${prefix}-designer-website`}/></div>
           <button type="button" className="button button-outline designer-preview-button" onClick={onPreview} disabled={isPreviewing} data-testid={`button-${prefix}-preview-designer-title`}>{isPreviewing ? 'Previewing…' : 'Preview page title'}</button>
         </div>
+        {form.formState.errors.designerWebsite?.message && <p className="field-error" role="alert">{form.formState.errors.designerWebsite.message}</p>}
         <input type="hidden" {...form.register('designerPageTitle')}/>
         {pageTitle && <div className="designer-page-preview" role="status" data-testid="designer-page-title-preview"><span>Page title preview</span><strong>{pageTitle}</strong></div>}
         {message && <p className="designer-preview-message" role="status">{message}</p>}

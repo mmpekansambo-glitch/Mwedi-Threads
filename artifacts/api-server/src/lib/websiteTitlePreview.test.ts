@@ -24,6 +24,7 @@ describe("designer website title preview", () => {
     expect(isPublicIpAddress("169.254.1.1")).toBe(false);
     expect(isPublicIpAddress("fc00::1")).toBe(false);
     expect(isPublicIpAddress("fe80::1")).toBe(false);
+    expect(isPublicIpAddress("64:ff9b::a00:1")).toBe(false);
   });
 
   it("rejects local addresses and non-web protocols before making a request", async () => {

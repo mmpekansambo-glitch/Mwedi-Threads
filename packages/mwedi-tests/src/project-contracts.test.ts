@@ -47,6 +47,16 @@ describe("Mwedi Threads project contracts", () => {
     expect(result.success).toBe(true);
   });
 
+  it("rejects non-web links for a designer website", () => {
+    const result = CreateProjectBody.safeParse({
+      title: "Private socks",
+      craft: "knitting",
+      designerWebsite: "ftp://maker.example.org/patterns",
+    });
+
+    expect(result.success).toBe(false);
+  });
+
   it("rejects unsupported date precision values", () => {
     const result = CreateProjectBody.safeParse({
       title: "Invalid date format",

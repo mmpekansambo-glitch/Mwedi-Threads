@@ -20,6 +20,7 @@ export const HealthCheckResponse = zod.object({
 /**
  * @summary Get the signed-in user's project overview
  */
+export const getDashboardResponseRecentProjectsItemDesignerWebsiteRegExp = new RegExp('^[Hh][Tt][Tt][Pp][Ss]?:/');
 export const getDashboardResponseRecentProjectsItemCompletionPercentMin = 0;
 export const getDashboardResponseRecentProjectsItemCompletionPercentMax = 100;
 
@@ -37,7 +38,7 @@ export const GetDashboardResponse = zod.object({
   "description": zod.string().nullable(),
   "patternName": zod.string().nullable(),
   "patternDesigner": zod.string().nullable(),
-  "designerWebsite": zod.string().url().nullable(),
+  "designerWebsite": zod.string().url().regex(getDashboardResponseRecentProjectsItemDesignerWebsiteRegExp).nullable(),
   "designerPageTitle": zod.string().nullable(),
   "yarn": zod.string().nullable(),
   "yarnBrand": zod.string().nullable(),
@@ -71,6 +72,7 @@ export const GetProjectsQueryParams = zod.object({
   "craft": zod.enum(['knitting', 'crochet']).optional()
 })
 
+export const getProjectsResponseDesignerWebsiteRegExp = new RegExp('^[Hh][Tt][Tt][Pp][Ss]?:/');
 export const getProjectsResponseCompletionPercentMin = 0;
 export const getProjectsResponseCompletionPercentMax = 100;
 
@@ -84,7 +86,7 @@ export const GetProjectsResponseItem = zod.object({
   "description": zod.string().nullable(),
   "patternName": zod.string().nullable(),
   "patternDesigner": zod.string().nullable(),
-  "designerWebsite": zod.string().url().nullable(),
+  "designerWebsite": zod.string().url().regex(getProjectsResponseDesignerWebsiteRegExp).nullable(),
   "designerPageTitle": zod.string().nullable(),
   "yarn": zod.string().nullable(),
   "yarnBrand": zod.string().nullable(),
@@ -107,6 +109,7 @@ export const GetProjectsResponse = zod.array(GetProjectsResponseItem)
  */
 export const createProjectBodyTitleMax = 160;
 
+export const createProjectBodyDesignerWebsiteRegExp = new RegExp('^[Hh][Tt][Tt][Pp][Ss]?:/');
 
 
 export const CreateProjectBody = zod.object({
@@ -116,7 +119,7 @@ export const CreateProjectBody = zod.object({
   "description": zod.string().nullish(),
   "patternName": zod.string().nullish(),
   "patternDesigner": zod.string().nullish(),
-  "designerWebsite": zod.string().url().nullish(),
+  "designerWebsite": zod.string().url().regex(createProjectBodyDesignerWebsiteRegExp).nullish(),
   "designerPageTitle": zod.string().nullish(),
   "yarn": zod.string().nullish(),
   "yarnBrand": zod.string().nullish(),
@@ -129,6 +132,7 @@ export const CreateProjectBody = zod.object({
   "targetDatePrecision": zod.enum(['month', 'day']).optional()
 })
 
+export const createProjectResponseDesignerWebsiteRegExp = new RegExp('^[Hh][Tt][Tt][Pp][Ss]?:/');
 export const createProjectResponseCompletionPercentMin = 0;
 export const createProjectResponseCompletionPercentMax = 100;
 
@@ -142,7 +146,7 @@ export const CreateProjectResponse = zod.object({
   "description": zod.string().nullable(),
   "patternName": zod.string().nullable(),
   "patternDesigner": zod.string().nullable(),
-  "designerWebsite": zod.string().url().nullable(),
+  "designerWebsite": zod.string().url().regex(createProjectResponseDesignerWebsiteRegExp).nullable(),
   "designerPageTitle": zod.string().nullable(),
   "yarn": zod.string().nullable(),
   "yarnBrand": zod.string().nullable(),
@@ -179,6 +183,7 @@ export const GetProjectParams = zod.object({
   "projectId": zod.coerce.string().uuid()
 })
 
+export const getProjectResponseOneDesignerWebsiteRegExp = new RegExp('^[Hh][Tt][Tt][Pp][Ss]?:/');
 export const getProjectResponseOneCompletionPercentMin = 0;
 export const getProjectResponseOneCompletionPercentMax = 100;
 
@@ -195,7 +200,7 @@ export const GetProjectResponse = zod.object({
   "description": zod.string().nullable(),
   "patternName": zod.string().nullable(),
   "patternDesigner": zod.string().nullable(),
-  "designerWebsite": zod.string().url().nullable(),
+  "designerWebsite": zod.string().url().regex(getProjectResponseOneDesignerWebsiteRegExp).nullable(),
   "designerPageTitle": zod.string().nullable(),
   "yarn": zod.string().nullable(),
   "yarnBrand": zod.string().nullable(),
@@ -230,6 +235,7 @@ export const UpdateProjectParams = zod.object({
 
 export const updateProjectBodyTitleMax = 160;
 
+export const updateProjectBodyDesignerWebsiteRegExp = new RegExp('^[Hh][Tt][Tt][Pp][Ss]?:/');
 export const updateProjectBodyCompletionPercentMin = 0;
 export const updateProjectBodyCompletionPercentMax = 100;
 
@@ -242,7 +248,7 @@ export const UpdateProjectBody = zod.object({
   "description": zod.string().nullish(),
   "patternName": zod.string().nullish(),
   "patternDesigner": zod.string().nullish(),
-  "designerWebsite": zod.string().url().nullish(),
+  "designerWebsite": zod.string().url().regex(updateProjectBodyDesignerWebsiteRegExp).nullish(),
   "designerPageTitle": zod.string().nullish(),
   "yarn": zod.string().nullish(),
   "yarnBrand": zod.string().nullish(),
@@ -256,6 +262,7 @@ export const UpdateProjectBody = zod.object({
   "completionPercent": zod.number().int().min(updateProjectBodyCompletionPercentMin).max(updateProjectBodyCompletionPercentMax).optional()
 })
 
+export const updateProjectResponseDesignerWebsiteRegExp = new RegExp('^[Hh][Tt][Tt][Pp][Ss]?:/');
 export const updateProjectResponseCompletionPercentMin = 0;
 export const updateProjectResponseCompletionPercentMax = 100;
 
@@ -269,7 +276,7 @@ export const UpdateProjectResponse = zod.object({
   "description": zod.string().nullable(),
   "patternName": zod.string().nullable(),
   "patternDesigner": zod.string().nullable(),
-  "designerWebsite": zod.string().url().nullable(),
+  "designerWebsite": zod.string().url().regex(updateProjectResponseDesignerWebsiteRegExp).nullable(),
   "designerPageTitle": zod.string().nullable(),
   "yarn": zod.string().nullable(),
   "yarnBrand": zod.string().nullable(),

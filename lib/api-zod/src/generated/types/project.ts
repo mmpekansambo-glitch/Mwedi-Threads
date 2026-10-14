@@ -20,7 +20,10 @@ export interface Project {
   patternName: string | null;
   /** @nullable */
   patternDesigner: string | null;
-  /** @nullable */
+  /**
+     * @nullable
+     * @pattern ^[Hh][Tt][Tt][Pp][Ss]?://
+     */
   designerWebsite: string | null;
   /** @nullable */
   designerPageTitle: string | null;
