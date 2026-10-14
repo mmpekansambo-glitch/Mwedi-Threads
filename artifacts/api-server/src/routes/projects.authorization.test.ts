@@ -3,8 +3,9 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 import { PgDialect } from "drizzle-orm/pg-core";
 import { progressEntriesTable, projectsTable } from "@workspace/db/schema";
 import projectsRouter from "./projects";
+import { WebsiteTitlePreviewError } from "../lib/websiteTitlePreview";
 
-const { mockDb } = vi.hoisted(() => ({
+const { mockDb, mockPreviewWebsitePageTitle } = vi.hoisted(() => ({
   mockDb: {
     select: vi.fn(),
     insert: vi.fn(),
@@ -12,8 +13,10 @@ const { mockDb } = vi.hoisted(() => ({
     delete: vi.fn(),
     transaction: vi.fn(),
   },
+  mockPreviewWebsitePageTitle: vi.fn(),
 }));
 const logError = vi.fn();
+const logWarn = vi.fn();
 
 vi.mock("@clerk/express", () => ({
   getAuth: (req: Request) => ({
@@ -27,6 +30,11 @@ vi.mock("@workspace/db", async () => {
   );
   return { ...schema, db: mockDb };
 });
+
+vi.mock("../lib/websiteTitlePreview", async (importOriginal) => ({
+  ...await importOriginal<typeof import("../lib/websiteTitlePreview")>(),
+  previewWebsitePageTitle: mockPreviewWebsitePageTitle,
+}));
 
 const ownerA = "user-a";
 const ownerB = "user-b";
@@ -234,6 +242,7 @@ app.use((req, _res, next) => {
   (req as any).log = {
     debug: () => undefined,
     error: logError,
+    warn: logWarn,
   };
   next();
 });
@@ -285,6 +294,8 @@ beforeEach(() => {
   mockDb.delete.mockImplementation((table) => new Query("delete").from(table));
   mockDb.transaction.mockReset();
   logError.mockReset();
+  logWarn.mockReset();
+  mockPreviewWebsitePageTitle.mockReset();
 });
 
 describe("project authorization", () => {
@@ -363,7 +374,11 @@ describe("project authorization", () => {
     expect(mockDb.insert).not.toHaveBeenCalled();
   });
 
-  it("rejects designer title previews for loopback website URLs", async () => {
+  it("returns a bad request when a designer title preview rejects a loopback URL", async () => {
+    mockPreviewWebsitePageTitle.mockRejectedValue(
+      new WebsiteTitlePreviewError("Only public HTTP or HTTPS websites can be previewed.", 400),
+    );
+
     const response = await request("/projects/designer-website-title-preview", {
       method: "POST",
       user: ownerA,
@@ -371,6 +386,25 @@ describe("project authorization", () => {
     });
 
     expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      error: "Only public HTTP or HTTPS websites can be previewed.",
+    });
+  });
+
+  it("returns a clear gateway error when a designer title preview fails", async () => {
+    mockPreviewWebsitePageTitle.mockRejectedValue(new Error("Connection reset"));
+
+    const response = await request("/projects/designer-website-title-preview", {
+      method: "POST",
+      user: ownerA,
+      body: { websiteUrl: "https://designer.example/" },
+    });
+
+    expect(response.status).toBe(502);
+    expect(await response.json()).toEqual({
+      error: "Could not load that page title. Check the link and try again.",
+    });
+    expect(mockPreviewWebsitePageTitle).toHaveBeenCalledWith("https://designer.example/");
   });
 
   it("deletes project photos and leaves them inaccessible through the app", async () => {

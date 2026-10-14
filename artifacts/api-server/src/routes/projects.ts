@@ -106,7 +106,7 @@ function getOwnerId(res: Response): string {
 }
 
 router.post("/projects/designer-website-title-preview", async (req, res): Promise<void> => {
-    const parsed = AddProgressBody.safeParse(req.body);
+  const parsed = PreviewDesignerWebsiteTitleBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Enter a valid designer website link." });
     return;
