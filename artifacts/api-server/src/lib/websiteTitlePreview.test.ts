@@ -170,6 +170,34 @@ describe("designer website title preview", () => {
     expect(mockHttpRequest).not.toHaveBeenCalled();
   });
 
+  it("rejects DNS answers containing both public and private addresses before making a request", async () => {
+    mockLookup.mockResolvedValue([
+      { address: "93.184.216.34", family: 4 },
+      { address: "10.0.0.8", family: 4 },
+    ]);
+
+    await expect(previewWebsitePageTitle("https://designer.example/"))
+      .rejects.toMatchObject({ statusCode: 400 });
+
+    expect(mockLookup).toHaveBeenCalledOnce();
+    expect(mockHttpsRequest).not.toHaveBeenCalled();
+    expect(mockHttpRequest).not.toHaveBeenCalled();
+  });
+
+  it("rejects mixed DNS answers when the private address is IPv6 before making a request", async () => {
+    mockLookup.mockResolvedValue([
+      { address: "93.184.216.34", family: 4 },
+      { address: "fc00::1", family: 6 },
+    ]);
+
+    await expect(previewWebsitePageTitle("https://designer.example/"))
+      .rejects.toMatchObject({ statusCode: 400 });
+
+    expect(mockLookup).toHaveBeenCalledOnce();
+    expect(mockHttpsRequest).not.toHaveBeenCalled();
+    expect(mockHttpRequest).not.toHaveBeenCalled();
+  });
+
   it("refuses redirects without requesting the private redirect destination", async () => {
     const response = createResponse(302, {
       location: "http://internal.example/private",
