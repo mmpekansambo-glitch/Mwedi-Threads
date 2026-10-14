@@ -1,11 +1,12 @@
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { generateKeyPairSync, createSign } from "node:crypto";
 import type { Server } from "node:http";
 import { PgDialect } from "drizzle-orm/pg-core";
 
-const { mockSelect, clerkSetupShouldFail } = vi.hoisted(() => ({
+const { mockSelect, clerkSetupShouldFail, clerkHostArguments } = vi.hoisted(() => ({
   mockSelect: vi.fn(),
   clerkSetupShouldFail: { value: false },
+  clerkHostArguments: [] as string[],
 }));
 
 vi.mock("@workspace/db", async () => {
@@ -32,6 +33,7 @@ vi.mock("@clerk/shared/keys", async (importOriginal) => {
     publishableKeyFromHost: (
       ...args: Parameters<typeof actual.publishableKeyFromHost>
     ) => {
+      clerkHostArguments.push(args[0]);
       if (clerkSetupShouldFail.value) {
         throw new Error("CLERK_INTERNAL_SETUP_STACK_SENTINEL");
       }
@@ -96,6 +98,8 @@ beforeAll(async () => {
   previousEnvironment = {
     CLERK_PUBLISHABLE_KEY: process.env.CLERK_PUBLISHABLE_KEY,
     CLERK_JWT_KEY: process.env.CLERK_JWT_KEY,
+    REPLIT_DOMAINS: process.env.REPLIT_DOMAINS,
+    REPLIT_DEV_DOMAIN: process.env.REPLIT_DEV_DOMAIN,
   };
   const keys = generateKeyPairSync("rsa", {
     modulusLength: 2048,
@@ -144,7 +148,45 @@ afterAll(async () => {
   }
 });
 
+afterEach(() => {
+  for (const name of ["REPLIT_DOMAINS", "REPLIT_DEV_DOMAIN"]) {
+    const value = previousEnvironment[name];
+    if (value === undefined) delete process.env[name];
+    else process.env[name] = value;
+  }
+});
+
 describe("Clerk-backed API authentication", () => {
+  it("uses the configured production host for Clerk key selection", async () => {
+    process.env.REPLIT_DOMAINS = "threads.example.com";
+    process.env.REPLIT_DEV_DOMAIN = "";
+    clerkHostArguments.length = 0;
+
+    const response = await request({
+      headers: {
+        "x-forwarded-host": "threads.example.com",
+      },
+    });
+
+    expect(response.status).toBe(401);
+    expect(clerkHostArguments.at(-1)).toBe("threads.example.com");
+  });
+
+  it("does not use an unconfigured forwarded host for Clerk key selection", async () => {
+    process.env.REPLIT_DOMAINS = "threads.example.com";
+    process.env.REPLIT_DEV_DOMAIN = "";
+    clerkHostArguments.length = 0;
+
+    const response = await request({
+      headers: {
+        "x-forwarded-host": "attacker.example",
+      },
+    });
+
+    expect(response.status).toBe(401);
+    expect(clerkHostArguments.at(-1)).toBe("");
+  });
+
   it("rejects requests without a session or with an invalid session", async () => {
     const withoutSession = await request();
     const invalidSession = await request({

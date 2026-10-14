@@ -10,13 +10,50 @@ import { createProxyMiddleware } from "http-proxy-middleware";
 const CLERK_FAPI = "https://frontend-api.clerk.dev";
 export const CLERK_PROXY_PATH = "/api/__clerk";
 
+function normalizeHostname(value: string): string | undefined {
+  const candidate = value.trim();
+  if (!candidate || /[\\/@?#\s]/.test(candidate)) return undefined;
+
+  try {
+    return new URL(`http://${candidate}`).hostname.toLowerCase() || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function getConfiguredClerkHosts(): Set<string> {
+  const configuredHosts = [
+    process.env.REPLIT_DOMAINS,
+    process.env.REPLIT_DEV_DOMAIN,
+  ];
+
+  return new Set(
+    configuredHosts
+      .flatMap((value) => value?.split(",") ?? [])
+      .map(normalizeHostname)
+      .filter((hostname): hostname is string => Boolean(hostname)),
+  );
+}
+
 export function getClerkProxyHost(req: {
   headers: IncomingHttpHeaders;
 }): string | undefined {
+  const trustedHosts = getConfiguredClerkHosts();
   const forwarded = req.headers["x-forwarded-host"];
-  const raw = Array.isArray(forwarded) ? forwarded[0] : forwarded;
-  const firstHop = raw?.split(",")[0]?.trim();
-  return firstHop || req.headers.host?.trim() || undefined;
+  const forwardedValues = Array.isArray(forwarded) ? forwarded : [forwarded];
+  const host = req.headers.host;
+  const hostValues = Array.isArray(host) ? host : [host];
+  const candidates = [
+    ...forwardedValues.flatMap((value) => value?.split(",") ?? []),
+    ...hostValues,
+  ];
+
+  for (const candidate of candidates) {
+    const hostname = candidate && normalizeHostname(candidate);
+    if (hostname && trustedHosts.has(hostname)) return hostname;
+  }
+
+  return undefined;
 }
 
 export function clerkProxyMiddleware(): RequestHandler {
