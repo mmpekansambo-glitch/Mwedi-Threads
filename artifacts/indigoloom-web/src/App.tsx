@@ -21,7 +21,7 @@ import {
   Link, Redirect, Route, Switch, useLocation, Router as WouterRouter,
 } from 'wouter';
 import { ErrorBoundary } from '@/components/error-boundary';
-import { trackEvent } from '@/lib/analytics';
+import { trackEvent, trackSuccessfulAction } from '@/lib/analytics';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
@@ -329,12 +329,11 @@ function ProjectFormPage() {
       tools: values.tools || null, startedAt: values.startedAt || null, targetDate: values.targetDate || null,
     };
     create.mutate({ data: payload }, {
-      onSuccess: (project) => {
-        trackEvent('project_created');
+      onSuccess: trackSuccessfulAction('project_created', (project: Project) => {
         void client.invalidateQueries({ queryKey: getGetProjectsQueryKey() });
         void client.invalidateQueries({ queryKey: getGetDashboardQueryKey() });
         setLocation(`/projects/${project.id}`);
-      },
+      }),
     });
   });
   return <PortalLayout active="projects">
@@ -446,13 +445,12 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
         payload.photoPath = upload.photoPath;
       }
       addProgress.mutate({ projectId, data: payload }, {
-        onSuccess: () => {
-          trackEvent('progress_updated');
+        onSuccess: trackSuccessfulAction('progress_updated', () => {
           invalidate();
           setShowProgress(false);
           setProgressPhoto(null);
           progressForm.reset({ notes: '', completionPercent: Math.max(Number(values.completionPercent), project?.completionPercent || 0) });
-        },
+        }),
       });
     } catch {
       setProgressPhotoError('We couldn’t upload that photo. Try again or save without it.');
