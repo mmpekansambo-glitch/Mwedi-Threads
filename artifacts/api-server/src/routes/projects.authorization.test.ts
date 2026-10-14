@@ -13,6 +13,7 @@ const { mockDb } = vi.hoisted(() => ({
     transaction: vi.fn(),
   },
 }));
+const logError = vi.fn();
 
 vi.mock("@clerk/express", () => ({
   getAuth: (req: Request) => ({
@@ -191,6 +192,7 @@ class Query {
       const deletedIds = new Set(matched.map((row) => row.id));
       if (this.table === projectsTable) {
         projects = projects.filter((row) => !deletedIds.has(row.id));
+        progressEntries = progressEntries.filter((row) => !deletedIds.has(row.projectId));
       } else {
         progressEntries = progressEntries.filter((row) => !deletedIds.has(row.id));
       }
@@ -222,7 +224,7 @@ app.use(express.json());
 app.use((req, _res, next) => {
   (req as any).log = {
     debug: () => undefined,
-    error: () => undefined,
+    error: logError,
   };
   next();
 });
@@ -273,9 +275,107 @@ beforeEach(() => {
   mockDb.update.mockImplementation((table) => new Query("update").from(table));
   mockDb.delete.mockImplementation((table) => new Query("delete").from(table));
   mockDb.transaction.mockReset();
+  logError.mockReset();
 });
 
 describe("project authorization", () => {
+  it("deletes project photos and leaves them inaccessible through the app", async () => {
+    const actualFetch = globalThis.fetch.bind(globalThis);
+    const storageFetch = vi.spyOn(globalThis, "fetch").mockImplementation(
+      async (input, init) => {
+        if (String(input) === "http://127.0.0.1:1106/object-storage/signed-object-url") {
+          const body = JSON.parse(String(init?.body)) as { method: string };
+          expect(body.method).toBe("DELETE");
+          return new Response(JSON.stringify({ signed_url: "https://storage.test/photo" }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+        if (String(input) === "https://storage.test/photo") {
+          expect(init?.method).toBe("DELETE");
+          return new Response(null, { status: 204 });
+        }
+        return actualFetch(input, init);
+      },
+    );
+    const previousPrivateDir = process.env.PRIVATE_OBJECT_DIR;
+    process.env.PRIVATE_OBJECT_DIR = "/private-bucket";
+    try {
+      const response = await request(`/projects/${projectAId}`, {
+        method: "DELETE",
+        user: ownerA,
+      });
+      expect(response.status).toBe(204);
+      expect(projects.map(({ id }) => id)).not.toContain(projectAId);
+      expect(progressEntries.map(({ projectId }) => projectId)).not.toContain(projectAId);
+      expect(storageFetch).toHaveBeenCalled();
+
+      const photoResponse = await request(
+        `/projects/${projectAId}/progress/${progressAId}/photo`,
+        { user: ownerA },
+      );
+      expect(photoResponse.status).toBe(404);
+      expect(logError).not.toHaveBeenCalled();
+    } finally {
+      storageFetch.mockRestore();
+      if (previousPrivateDir === undefined) delete process.env.PRIVATE_OBJECT_DIR;
+      else process.env.PRIVATE_OBJECT_DIR = previousPrivateDir;
+    }
+  });
+
+  it("logs failed object deletion but keeps the photo inaccessible", async () => {
+    const actualFetch = globalThis.fetch.bind(globalThis);
+    const storageFetch = vi.spyOn(globalThis, "fetch").mockImplementation(
+      async (input, init) => {
+        if (String(input) === "http://127.0.0.1:1106/object-storage/signed-object-url") {
+          return new Response(JSON.stringify({ signed_url: "https://storage.test/photo" }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+        if (String(input) === "https://storage.test/photo") {
+          return new Response(null, { status: 500 });
+        }
+        return actualFetch(input, init);
+      },
+    );
+    const previousPrivateDir = process.env.PRIVATE_OBJECT_DIR;
+    const photoPath = progressEntries[0]?.photoPath;
+    process.env.PRIVATE_OBJECT_DIR = "/private-bucket";
+    try {
+      const response = await request(`/projects/${projectAId}`, {
+        method: "DELETE",
+        user: ownerA,
+      });
+      expect(response.status).toBe(204);
+      expect(logError).toHaveBeenCalledWith(
+        expect.objectContaining({ projectId: projectAId, photoPath }),
+        "Could not delete stored progress photo",
+      );
+
+      const photoResponse = await request(
+        `/projects/${projectAId}/progress/${progressAId}/photo`,
+        { user: ownerA },
+      );
+      expect(photoResponse.status).toBe(404);
+    } finally {
+      storageFetch.mockRestore();
+      if (previousPrivateDir === undefined) delete process.env.PRIVATE_OBJECT_DIR;
+      else process.env.PRIVATE_OBJECT_DIR = previousPrivateDir;
+    }
+  });
+
+  it("deletes projects without photos without calling object storage", async () => {
+    progressEntries[0].photoPath = null;
+    const response = await request(`/projects/${projectAId}`, {
+      method: "DELETE",
+      user: ownerA,
+    });
+    expect(response.status).toBe(204);
+    expect(projects.map(({ id }) => id)).not.toContain(projectAId);
+    expect(logError).not.toHaveBeenCalled();
+  });
+
   it("rejects unauthenticated reads and changes before reaching the database", async () => {
     const responses = await Promise.all([
       request("/dashboard"),

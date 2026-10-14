@@ -49,7 +49,7 @@ function storageLocation(relativePath: string) {
 async function signedObjectUrl(
   bucketName: string,
   objectName: string,
-  method: "GET" | "PUT",
+  method: "DELETE" | "GET" | "PUT",
 ): Promise<string> {
   const response = await fetch("http://127.0.0.1:1106/object-storage/signed-object-url", {
     method: "POST",
@@ -66,6 +66,16 @@ async function signedObjectUrl(
   const result = (await response.json()) as { signed_url?: string };
   if (!result.signed_url) throw new Error("Storage returned no signed URL.");
   return result.signed_url;
+}
+
+async function deleteStoredObject(relativePath: string): Promise<void> {
+  const { bucketName, objectName } = storageLocation(relativePath);
+  const url = await signedObjectUrl(bucketName, objectName, "DELETE");
+  const response = await fetch(url, {
+    method: "DELETE",
+    signal: AbortSignal.timeout(30_000),
+  });
+  if (!response.ok) throw new Error(`Storage object deletion failed (${response.status}).`);
 }
 
 function dateOnly(value: Date | null | undefined): string | null {
@@ -437,6 +447,16 @@ router.delete("/projects/:projectId", async (req, res): Promise<void> => {
   }
 
   const ownerId = getOwnerId(res);
+  const photos = await db
+    .select({ photoPath: progressEntriesTable.photoPath })
+    .from(progressEntriesTable)
+    .innerJoin(projectsTable, eq(progressEntriesTable.projectId, projectsTable.id))
+    .where(
+      and(
+        eq(progressEntriesTable.projectId, params.data.projectId),
+        eq(projectsTable.ownerId, ownerId),
+      ),
+    );
   const [project] = await db
     .delete(projectsTable)
     .where(
@@ -449,6 +469,34 @@ router.delete("/projects/:projectId", async (req, res): Promise<void> => {
   if (!project) {
     res.status(404).json({ error: "Project not found." });
     return;
+  }
+
+  const expectedPrefix = `/objects/progress/${project.id}/`;
+  for (const photoPath of new Set(
+    photos.flatMap(({ photoPath }) => photoPath ? [photoPath] : []),
+  )) {
+    const objectName = photoPath.slice(expectedPrefix.length);
+    if (
+      !photoPath.startsWith(expectedPrefix) ||
+      !objectName ||
+      objectName.includes("/") ||
+      objectName.includes("\\")
+    ) {
+      req.log.error(
+        { projectId: project.id, photoPath },
+        "Could not delete progress photo because its stored path is invalid",
+      );
+      continue;
+    }
+
+    try {
+      await deleteStoredObject(`progress/${project.id}/${objectName}`);
+    } catch (error) {
+      req.log.error(
+        { err: error, projectId: project.id, photoPath },
+        "Could not delete stored progress photo",
+      );
+    }
   }
   res.sendStatus(204);
 });
