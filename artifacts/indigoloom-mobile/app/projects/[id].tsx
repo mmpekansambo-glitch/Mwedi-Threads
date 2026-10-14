@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useAddProgress, useDeleteProject, useGetProject, getGetDashboardQueryKey, getGetProjectQueryKey, getGetProjectsQueryKey, requestProgressPhotoUpload } from '@workspace/api-client-react';
+import { useAddProgress, useDeleteProgressPhoto, useDeleteProject, useGetProject, getGetDashboardQueryKey, getGetProjectQueryKey, getGetProjectsQueryKey, requestProgressPhotoUpload } from '@workspace/api-client-react';
 import { useAuth } from '@clerk/expo';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
@@ -20,6 +20,7 @@ export default function ProjectDetailScreen() {
   const client = useQueryClient();
   const query = useGetProject(id);
   const addProgress = useAddProgress();
+  const removeProgressPhoto = useDeleteProgressPhoto();
   const remove = useDeleteProject();
   const [notes, setNotes] = useState('');
   const [completion, setCompletion] = useState('');
@@ -27,6 +28,7 @@ export default function ProjectDetailScreen() {
   const [photoUploading, setPhotoUploading] = useState(false);
   const [message, setMessage] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [removingPhotoEntryId, setRemovingPhotoEntryId] = useState('');
   const project = query.data;
   const inputStyle = [styles.input, { color: colors.foreground, backgroundColor: colors.card, borderColor: colors.input }];
 
@@ -124,6 +126,16 @@ export default function ProjectDetailScreen() {
     });
   };
 
+  const deleteEntryPhoto = (entryId: string) => {
+    setMessage('');
+    setRemovingPhotoEntryId(entryId);
+    removeProgressPhoto.mutate({ projectId: id, entryId }, {
+      onSuccess: invalidate,
+      onError: () => setMessage('We could not remove this photo. Please try again.'),
+      onSettled: () => setRemovingPhotoEntryId(''),
+    });
+  };
+
   return (
     <SignedInGate>
       <View style={[styles.screen, { backgroundColor: colors.background }]}>
@@ -182,7 +194,22 @@ export default function ProjectDetailScreen() {
                 <View style={{ flex: 1 }}>
                   <LoomText style={[styles.entryMeta, { color: colors.primary }]}>{entry.completionPercent}% complete · {new Date(entry.createdAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}</LoomText>
                   <LoomText style={[styles.entryNotes, { color: colors.foreground }]}>{entry.notes}</LoomText>
-                  {entry.photoPath ? <SavedProgressPhoto projectId={id} entryId={entry.id} /> : null}
+                  {entry.photoPath ? <>
+                    <SavedProgressPhoto projectId={id} entryId={entry.id} />
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Remove photo from this progress entry"
+                      onPress={() => deleteEntryPhoto(entry.id)}
+                      disabled={removingPhotoEntryId === entry.id}
+                      style={styles.removeSavedPhoto}
+                      testID={`button-remove-progress-photo-${entry.id}`}
+                    >
+                      <Feather name="x" size={15} color={colors.destructive} />
+                      <LoomText style={{ color: colors.destructive, fontFamily: fonts.semibold, fontSize: 11 }}>
+                        {removingPhotoEntryId === entry.id ? 'Removing photo…' : 'Remove photo'}
+                      </LoomText>
+                    </Pressable>
+                  </> : null}
                 </View>
               </View>
             )) : <LoomText style={[styles.noNotes, { color: colors.mutedForeground }]}>No notes yet. Add one after your next making session.</LoomText>}
@@ -259,6 +286,7 @@ const styles = StyleSheet.create({
   entryMeta: { fontFamily: fonts.semibold, fontSize: 10 },
   entryNotes: { fontSize: 12, lineHeight: 18, marginTop: 5 },
   savedPhoto: { width: '100%', height: 220, borderRadius: 12, marginTop: 10, backgroundColor: '#eee' },
+  removeSavedPhoto: { minHeight: 38, flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 5, paddingHorizontal: 2 },
   noNotes: { fontSize: 12, paddingVertical: 15 },
   deleteSection: { alignItems: 'flex-end', marginTop: 8 },
   confirm: { borderWidth: 1, borderRadius: 12, padding: 11, flexDirection: 'row', alignItems: 'center', gap: 7 },

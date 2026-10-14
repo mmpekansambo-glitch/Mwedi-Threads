@@ -8,6 +8,7 @@ import {
   CreateProjectBody,
   CreateProjectResponse,
   DeleteProjectParams,
+  DeleteProgressPhotoParams,
   GetDashboardResponse,
   GetProjectParams,
   GetProjectResponse,
@@ -332,6 +333,53 @@ router.get(
       req.log.error({ err: error, projectId: params.data.projectId, entryId }, "Could not serve progress photo");
       res.status(500).json({ error: "Could not load the progress photo." });
     }
+  },
+);
+
+router.delete(
+  "/projects/:projectId/progress/:entryId/photo",
+  async (req, res): Promise<void> => {
+    const params = DeleteProgressPhotoParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: "Invalid progress photo request." });
+      return;
+    }
+
+    const ownerId = getOwnerId(res);
+    const [entry] = await db
+      .select({
+        id: progressEntriesTable.id,
+        projectId: progressEntriesTable.projectId,
+      })
+      .from(progressEntriesTable)
+      .innerJoin(projectsTable, eq(progressEntriesTable.projectId, projectsTable.id))
+      .where(
+        and(
+          eq(progressEntriesTable.id, params.data.entryId),
+          eq(progressEntriesTable.projectId, params.data.projectId),
+          eq(projectsTable.ownerId, ownerId),
+        ),
+      );
+    if (!entry) {
+      res.status(404).json({ error: "Progress photo not found." });
+      return;
+    }
+
+    const [updated] = await db
+      .update(progressEntriesTable)
+      .set({ photoPath: null })
+      .where(
+        and(
+          eq(progressEntriesTable.id, entry.id),
+          eq(progressEntriesTable.projectId, entry.projectId),
+        ),
+      )
+      .returning({ id: progressEntriesTable.id });
+    if (!updated) {
+      res.status(404).json({ error: "Progress photo not found." });
+      return;
+    }
+    res.sendStatus(204);
   },
 );
 

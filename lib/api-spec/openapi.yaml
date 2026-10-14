@@ -236,6 +236,17 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteProgressPhoto
+      tags: [projects]
+      summary: Remove the image attached to a project progress entry
+      responses:
+        "204":
+          description: Progress photo removed
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
 components:
   responses:
     Unauthorized:

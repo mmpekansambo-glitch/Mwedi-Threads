@@ -159,8 +159,16 @@ class Query {
             if (ownerClause && parent.ownerId !== compiled.params[Number(ownerClause[1]) - 1]) {
               return [];
             }
-            const row = this.selection && "photoPath" in this.selection
-              ? { photoPath: entry.photoPath }
+            const row = this.selection && "id" in this.selection
+              ? { id: entry.id, projectId: entry.projectId }
+              : this.selection && "photoPath" in this.selection
+              ? {
+                  id: entry.id,
+                  projectId: entry.projectId,
+                  photoPath: entry.photoPath,
+                  notes: entry.notes,
+                  completionPercent: entry.completionPercent,
+                }
               : {
                   projectTitle: parent.title,
                   projectId: parent.id,
@@ -281,6 +289,7 @@ describe("project authorization", () => {
         body: { name: "photo.jpg", size: 100, contentType: "image/jpeg" },
       }),
       request(`/projects/${projectAId}/progress/${progressAId}/photo`),
+      request(`/projects/${projectAId}/progress/${progressAId}/photo`, { method: "DELETE" }),
       request(`/projects/${projectAId}/progress`, {
         method: "POST",
         body: { notes: "Unauthorized", completionPercent: 50 },
@@ -305,6 +314,17 @@ describe("project authorization", () => {
 
     const detailResponse = await request(`/projects/${projectAId}`, { user: ownerB });
     expect(detailResponse.status).toBe(404);
+
+    const removePhotoResponse = await request(
+      `/projects/${projectAId}/progress/${progressAId}/photo`,
+      { method: "DELETE", user: ownerB },
+    );
+    expect(removePhotoResponse.status).toBe(404);
+    expect(progressEntries[0]).toMatchObject({
+      notes: "A's private progress",
+      photoPath: `/objects/progress/${projectAId}/photo-a`,
+      completionPercent: 25,
+    });
 
     const updateResponse = await request(`/projects/${projectAId}`, {
       method: "PATCH",
@@ -340,6 +360,23 @@ describe("project authorization", () => {
     expect(projects.map((item) => item.id)).toContain(projectAId);
     expect(progressEntries).toHaveLength(2);
     expect(mockDb.transaction).not.toHaveBeenCalled();
+  });
+
+  it("lets a project owner remove only the photo while preserving progress history", async () => {
+    const response = await request(
+      `/projects/${projectAId}/progress/${progressAId}/photo`,
+      { method: "DELETE", user: ownerA },
+    );
+
+    expect(response.status).toBe(204);
+    expect(progressEntries[0]).toMatchObject({
+      id: progressAId,
+      notes: "A's private progress",
+      photoPath: null,
+      completionPercent: 25,
+      createdAt: timestamp,
+    });
+    expect(progressEntries[1].photoPath).toBe(`/objects/progress/${projectBId}/photo-b`);
   });
 
   it("limits dashboard totals, recent projects, and progress to the signed-in owner", async () => {

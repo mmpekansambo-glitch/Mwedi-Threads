@@ -890,3 +890,79 @@ export function useGetProgressPhoto<TData = Awaited<ReturnType<typeof getProgres
 
 
 
+export const getDeleteProgressPhotoUrl = (projectId: string,
+    entryId: string,) => {
+
+
+
+
+  return `/api/projects/${projectId}/progress/${entryId}/photo`
+}
+
+/**
+ * @summary Remove the image attached to a project progress entry
+ */
+export const deleteProgressPhoto = async (projectId: string,
+    entryId: string, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getDeleteProgressPhotoUrl(projectId,entryId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteProgressPhotoMutationKey = () => ['deleteProgressPhoto'] as const;
+
+export const getDeleteProgressPhotoMutationOptions = <TError = ErrorType<UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteProgressPhoto>>, TError,DeleteProgressPhotoMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteProgressPhoto>>, TError,DeleteProgressPhotoMutationVariables, TContext> => {
+
+const mutationKey = getDeleteProgressPhotoMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteProgressPhoto>>, DeleteProgressPhotoMutationVariables> = (props) => {
+          const {projectId,entryId} = props ?? {};
+
+          return  deleteProgressPhoto(projectId,entryId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteProgressPhotoMutationResult = NonNullable<Awaited<ReturnType<typeof deleteProgressPhoto>>>
+
+    export type DeleteProgressPhotoMutationError = ErrorType<UnauthorizedResponse | NotFoundResponse>
+    export type DeleteProgressPhotoMutationVariables = {projectId: string;entryId: string}
+
+    /**
+ * @summary Remove the image attached to a project progress entry
+ */
+export const useDeleteProgressPhoto = <TError = ErrorType<UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteProgressPhoto>>, TError,DeleteProgressPhotoMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteProgressPhoto>>,
+        TError,
+        DeleteProgressPhotoMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeleteProgressPhotoMutationOptions(options));
+    }
+

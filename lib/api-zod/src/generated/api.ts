@@ -306,3 +306,14 @@ export const GetProgressPhotoParams = zod.object({
 export const GetProgressPhotoResponse = zod.void()
 
 
+/**
+ * @summary Remove the image attached to a project progress entry
+ */
+export const DeleteProgressPhotoParams = zod.object({
+  "projectId": zod.coerce.string().uuid(),
+  "entryId": zod.coerce.string().uuid()
+})
+
+export const DeleteProgressPhotoResponse = zod.void()
+
+
