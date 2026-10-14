@@ -146,7 +146,14 @@ function SignInPage() {
 }
 function SignUpPage() {
   const { signUp } = useSignUp();
+  const trackedSignupStart = useRef(false);
   const trackedSession = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (trackedSignupStart.current) return;
+    trackedSignupStart.current = true;
+    trackEvent('signup_started');
+  }, []);
 
   useEffect(() => {
     const sessionId = signUp?.createdSessionId;
