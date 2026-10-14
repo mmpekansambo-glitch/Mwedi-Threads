@@ -8,6 +8,7 @@
     "build": "node ./build.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
     "test": "vitest run",
+    "test:postgres": "node -e \"if (!process.env.PROJECTS_AUTH_TEST_DATABASE_URL) { console.error('Set PROJECTS_AUTH_TEST_DATABASE_URL to a non-production PostgreSQL URL'); process.exit(1); }\" && vitest run src/routes/projects.postgres.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
@@ -20,6 +21,7 @@
     "drizzle-orm": "catalog:",
     "express": "^5.2.1",
     "http-proxy-middleware": "^4.2.0",
+    "pg": "^8.23.0",
     "pino": "^9.14.0",
     "pino-http": "^10.5.0"
   },
@@ -28,6 +30,7 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "catalog:",
+    "@types/pg": "^8.23.1",
     "esbuild": "0.28.2",
     "esbuild-plugin-pino": "^2.3.3",
     "pino-pretty": "^13.1.3",

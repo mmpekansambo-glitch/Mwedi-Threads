@@ -1,0 +1,1 @@
+- [PostgreSQL integration isolation](postgres-test-isolation.md) — Use a fresh schema per test run and drop only that schema; never truncate shared project tables.
