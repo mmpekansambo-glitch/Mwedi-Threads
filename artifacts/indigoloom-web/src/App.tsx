@@ -10,8 +10,8 @@ import {
   useGetProject, useGetProjects, useUpdateProject,
   getGetDashboardQueryKey, getGetProjectQueryKey, getGetProjectsQueryKey,
 } from '@workspace/api-client-react';
+import { CrochetHookSize } from '@workspace/api-client-react';
 import type { CreateProject, CreateProgress, Project, ProjectStatus, UpdateProject } from '@workspace/api-client-react';
-import { CrochetHookSize } from '@workspace/api-zod';
 import { FormProvider as Form, useForm, type UseFormReturn } from 'react-hook-form';
 import {
   ArrowDownRight, ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, Check,
@@ -430,7 +430,7 @@ function DesignerEntry({
     ) : (
       <>
         <div className="designer-website-row">
-          <div className="field-block"><label htmlFor={`${prefix}-designer-website`}>Website link</label><input id={`${prefix}-designer-website`} type="url" autoCapitalize="none" autoCorrect="off" placeholder="https://example.com" {...websiteRegistration} onChange={(event) => { void websiteRegistration.onChange(event); form.setValue('designerPageTitle', '', { shouldDirty: true }); onClearPreview(); }} data-testid={`input-${prefix}-designer-website`}/></div>
+          <div className="field-block"><label htmlFor={`${prefix}-designer-website`}>Website link</label><input id={`${prefix}-designer-website`} type="url" autoCapitalize="none" autoCorrect="off" placeholder="https://example.com" {...websiteRegistration} onChange={(event) => { void websiteRegistration.onChange(event); form.setValue('designerPageTitle', '', { shouldDirty: true }); form.setValue('patternDesigner', '', { shouldDirty: true }); onClearPreview(); }} data-testid={`input-${prefix}-designer-website`}/></div>
           <button type="button" className="button button-outline designer-preview-button" onClick={onPreview} disabled={isPreviewing} data-testid={`button-${prefix}-preview-designer-title`}>{isPreviewing ? 'Previewing…' : 'Preview page title'}</button>
         </div>
         {form.formState.errors.designerWebsite?.message && <p className="field-error" role="alert">{form.formState.errors.designerWebsite.message}</p>}
@@ -473,8 +473,10 @@ function ProjectFormPage() {
     setDesignerPreviewMessage('');
     previewTitle.mutate({ data: { websiteUrl } }, {
       onSuccess: (result) => {
+        if (form.getValues('designerWebsite').trim() !== websiteUrl) return;
         form.setValue('designerWebsite', result.websiteUrl, { shouldDirty: true });
         form.setValue('designerPageTitle', result.pageTitle || '', { shouldDirty: true });
+        form.setValue('patternDesigner', result.designerName, { shouldDirty: true });
         if (!result.pageTitle) setDesignerPreviewMessage('No page title was found. You can still save the link.');
       },
       onError: () => setDesignerPreviewMessage('We could not preview that website. Check the link and try again.'),
@@ -484,7 +486,7 @@ function ProjectFormPage() {
     const payload: CreateProject = {
       title: values.title.trim(), craft: values.craft, status: values.status,
       description: values.description || null, patternName: values.patternName || null,
-      patternDesigner: designerMode === 'name' ? values.patternDesigner.trim() || null : null,
+      patternDesigner: values.patternDesigner.trim() || null,
       designerWebsite: designerMode === 'website' ? values.designerWebsite.trim() || null : null,
       designerPageTitle: designerMode === 'website' ? values.designerPageTitle.trim() || null : null,
       yarn: null,
@@ -541,6 +543,25 @@ function ProjectFormPage() {
       <div className="form-actions"><Link href="/projects" className="button button-quiet" data-testid="link-cancel-project">Maybe later</Link><button type="submit" className="button button-primary" disabled={create.isPending} data-testid="button-save-project">{create.isPending ? 'Tucking it away…' : 'Save this project'}{!create.isPending && <ArrowRight size={16}/>}</button></div>
     </form></Form>
   </PortalLayout>;
+}
+
+function inferredDesignerName(websiteUrl: string): string {
+  try {
+    const hostname = new URL(websiteUrl).hostname.toLowerCase().replace(/^www\d*\./, '');
+    const labels = hostname.split('.');
+    const suffixes = new Set(['com', 'org', 'net', 'edu', 'gov', 'mil', 'int', 'io', 'co', 'uk', 'ca', 'au', 'nz', 'info', 'biz', 'dev', 'app', 'studio', 'shop', 'art']);
+    const subdomains = new Set(['shop', 'store', 'blog', 'patterns']);
+    const name = labels.find((label) => label && !suffixes.has(label) && !subdomains.has(label)) || labels[0];
+    return name.split(/[-_]+/).filter(Boolean).map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`).join(' ') || websiteUrl;
+  } catch {
+    return websiteUrl.replace(/^[a-z]+:\/\/(?:www\.)?/i, '').split(/[/?#]/)[0] || websiteUrl;
+  }
+}
+
+function designerWebsiteLabel(websiteUrl: string, pageTitle: string | null, designerName: string | null): string {
+  const title = pageTitle?.trim();
+  if (title && title.length <= 72) return title;
+  return designerName?.trim() || inferredDesignerName(websiteUrl);
 }
 
 function ProjectDetailPage({ projectId }: { projectId: string }) {
@@ -600,8 +621,10 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
     setDesignerPreviewMessage('');
     previewTitle.mutate({ data: { websiteUrl } }, {
       onSuccess: (result) => {
+        if (editForm.getValues('designerWebsite').trim() !== websiteUrl) return;
         editForm.setValue('designerWebsite', result.websiteUrl, { shouldDirty: true });
         editForm.setValue('designerPageTitle', result.pageTitle || '', { shouldDirty: true });
+        editForm.setValue('patternDesigner', result.designerName, { shouldDirty: true });
         if (!result.pageTitle) setDesignerPreviewMessage('No page title was found. You can still save the link.');
       },
       onError: () => setDesignerPreviewMessage('We could not preview that website. Check the link and try again.'),
@@ -619,7 +642,7 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
     const payload: UpdateProject = {
       title: values.title.trim(), craft: values.craft, status: values.status,
       description: values.description || null, patternName: values.patternName || null,
-      patternDesigner: designerMode === 'name' ? values.patternDesigner.trim() || null : null,
+      patternDesigner: values.patternDesigner.trim() || null,
       designerWebsite: designerMode === 'website' ? values.designerWebsite.trim() || null : null,
       designerPageTitle: designerMode === 'website' ? values.designerPageTitle.trim() || null : null,
       yarnBrand: values.yarnBrand.trim() || null,
@@ -732,7 +755,7 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
       <aside className="detail-aside">
         <div className="aside-card loom-card"><span className="eyebrow">A FEW DETAILS</span><h3 className="serif">On the table</h3><dl className="detail-list">
           <div><dt>Pattern</dt><dd>{project.patternName || 'Not added yet'}</dd></div>
-          <div><dt>Designer</dt><dd>{project.designerWebsite ? <a href={project.designerWebsite} target="_blank" rel="noopener noreferrer" data-testid="link-designer-website">{project.designerPageTitle || project.designerWebsite}</a> : project.patternDesigner || 'Not added yet'}</dd></div>
+          <div><dt>Designer</dt><dd>{project.designerWebsite ? <a href={project.designerWebsite} target="_blank" rel="noopener noreferrer" data-testid="link-designer-website">{designerWebsiteLabel(project.designerWebsite, project.designerPageTitle, project.patternDesigner)}</a> : project.patternDesigner || 'Not added yet'}</dd></div>
           <div><dt>Yarn</dt><dd>{formatYarnDetails(project) || 'Not added yet'}</dd></div>
           {project.yarn && (project.yarnBrand || project.yarnType || project.yarnColor) && <div><dt>Previous yarn note</dt><dd>{project.yarn}</dd></div>}
           <div><dt>{project.craft === 'crochet' ? 'Hook size' : 'Tools'}</dt><dd>{project.craft === 'crochet' ? project.hookSize || 'Not added yet' : project.tools || 'Not added yet'}</dd></div>

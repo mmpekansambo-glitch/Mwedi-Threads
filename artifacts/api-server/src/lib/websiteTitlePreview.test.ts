@@ -19,7 +19,9 @@ vi.mock("node:https", async (importOriginal) => ({
 
 import {
   extractPageTitle,
+  inferDesignerName,
   isPublicIpAddress,
+  normalizeDesignerPageTitle,
   previewWebsitePageTitle,
 } from "./websiteTitlePreview";
 
@@ -46,6 +48,26 @@ function mockResponse(response: MockResponse) {
   const implementation = (_url: URL, _options: unknown, onResponse: (response: MockResponse) => void) => {
     const request = Object.assign(new EventEmitter(), {
       end: () => queueMicrotask(() => onResponse(response)),
+      destroy: (error?: Error) => {
+        if (error) queueMicrotask(() => request.emit("error", error));
+        return request;
+      },
+    });
+    return request;
+  };
+  mockHttpRequest.mockImplementation(implementation);
+  mockHttpsRequest.mockImplementation(implementation);
+}
+
+function mockHtmlResponse(html: string) {
+  const response = createResponse();
+  const implementation = (_url: URL, _options: unknown, onResponse: (response: MockResponse) => void) => {
+    const request = Object.assign(new EventEmitter(), {
+      end: () => queueMicrotask(() => {
+        onResponse(response);
+        response.emit("data", Buffer.from(html));
+        response.emit("end");
+      }),
       destroy: (error?: Error) => {
         if (error) queueMicrotask(() => request.emit("error", error));
         return request;
@@ -86,6 +108,49 @@ describe("designer website title preview", () => {
   it("returns null when the page has no title", () => {
     expect(extractPageTitle("<html><head></head><body>Pattern archive</body></html>")).toBeNull();
     expect(extractPageTitle("<title>   </title>")).toBeNull();
+  });
+
+  it("keeps the main pattern name and removes beginner/free marketing words", () => {
+    expect(normalizeDesignerPageTitle(
+      "Free Beginner Knitting Pattern: Meadow Cardigan | Maker's Blog",
+    )).toBe("Meadow Cardigan");
+    expect(normalizeDesignerPageTitle("Beginner-friendly free crochet pattern")).toBeNull();
+  });
+
+  it("selects a pattern name after a generic SEO phrase and removes the designer byline", () => {
+    expect(normalizeDesignerPageTitle(
+      "Free Beginner Crochet Cardigan Pattern - Triple Tie Cardigan by Cozy Nooks Desgin",
+    )).toBe("Triple Tie Cardigan");
+  });
+
+  it("shortens long page titles at a word boundary", () => {
+    const title = normalizeDesignerPageTitle(
+      "A Beautiful Hand Knit Sweater Pattern With Lots Of Details That Do Not Help Identify The Project And Keep Going For Quite A While",
+    );
+    expect(title).not.toBeNull();
+    expect(title!.length).toBeLessThanOrEqual(72);
+    expect(title).toMatch(/…$/);
+  });
+
+  it("uses site metadata before falling back to a humanized website name", () => {
+    expect(inferDesignerName(
+      '<meta content="Tin &amp; Thread" property="og:site_name">',
+      "www.example.org",
+    )).toBe("Tin & Thread");
+    expect(inferDesignerName("", "www.tin-can-knits.com")).toBe("Tin Can Knits");
+  });
+
+  it("returns the concise project name and inferred designer label from a preview", async () => {
+    mockHtmlResponse(
+      '<html><head><meta content="Maker &amp; Co." property="og:site_name"><title>Free Beginner Knitting Pattern: Meadow Cardigan | Maker &amp; Co.</title></head></html>',
+    );
+
+    await expect(previewWebsitePageTitle("https://designer.example/"))
+      .resolves.toEqual({
+        websiteUrl: "https://designer.example/",
+        pageTitle: "Meadow Cardigan",
+        designerName: "Maker & Co.",
+      });
   });
 
   it("allows public addresses and blocks private or reserved address ranges", () => {
@@ -131,28 +196,13 @@ describe("designer website title preview", () => {
   });
 
   it("returns a successful empty title when the HTML page has no title", async () => {
-    const response = createResponse();
-    const implementation = (_url: URL, _options: unknown, onResponse: (response: MockResponse) => void) => {
-      const request = Object.assign(new EventEmitter(), {
-        end: () => queueMicrotask(() => {
-          onResponse(response);
-          response.emit("data", Buffer.from("<html><body>No title</body></html>"));
-          response.emit("end");
-        }),
-        destroy: (error?: Error) => {
-          if (error) queueMicrotask(() => request.emit("error", error));
-          return request;
-        },
-      });
-      return request;
-    };
-    mockHttpRequest.mockImplementation(implementation);
-    mockHttpsRequest.mockImplementation(implementation);
+    mockHtmlResponse("<html><body>No title</body></html>");
 
     await expect(previewWebsitePageTitle("https://designer.example/"))
       .resolves.toEqual({
         websiteUrl: "https://designer.example/",
         pageTitle: null,
+        designerName: "Designer",
       });
   });
 

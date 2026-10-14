@@ -31,6 +31,12 @@ export default function ProjectDetailScreen() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [removingPhotoEntryId, setRemovingPhotoEntryId] = useState('');
   const project = query.data;
+  const designerPageTitle = project?.designerPageTitle?.trim();
+  const designerLinkLabel = project?.designerWebsite
+    ? (designerPageTitle && designerPageTitle.length <= 72
+      ? designerPageTitle
+      : project.patternDesigner?.trim() || designerHostname(project.designerWebsite))
+    : '';
   const inputStyle = [styles.input, { color: colors.foreground, backgroundColor: colors.card, borderColor: colors.input }];
 
   const invalidate = () => {
@@ -159,7 +165,7 @@ export default function ProjectDetailScreen() {
               <LoomText style={[styles.sectionLabel, { color: colors.primary }]}>THE PROJECT NOTES</LoomText>
               {[
                 ['Pattern', project.patternName],
-                ['Designer', project.designerWebsite ? project.designerPageTitle || project.designerWebsite : project.patternDesigner],
+                ['Designer', project.designerWebsite ? designerLinkLabel : project.patternDesigner],
                 ['Yarn', [project.yarnBrand, project.yarnType, project.yarnColor].filter(Boolean).join(' · ') || null],
                 ['Previous yarn note', project.yarn],
                 [project.craft === 'crochet' ? 'Hook size' : 'Tools', project.craft === 'crochet' ? project.hookSize || 'Not added yet' : project.tools],
@@ -167,7 +173,7 @@ export default function ProjectDetailScreen() {
                 ['Started', project.startedAt ? formatProjectDate(project.startedAt, project.startedAtPrecision) : null],
                 ['Target date', project.targetDate ? formatProjectDate(project.targetDate, project.targetDatePrecision) : null],
               ].filter((entry) => entry[1]).map(([label, value]) => (
-                <View key={label} style={[styles.infoRow, { borderBottomColor: colors.border }]}><LoomText style={[styles.infoLabel, { color: colors.mutedForeground }]}>{label}</LoomText>{label === 'Designer' && project.designerWebsite ? <Pressable accessibilityRole="link" onPress={() => { void Linking.openURL(project.designerWebsite!).catch(() => Alert.alert('Unable to open website', 'Check the saved link and try again.')); }}><LoomText style={[styles.infoValue, { color: colors.primary, textDecorationLine: 'underline' }]}>{value}</LoomText></Pressable> : <LoomText style={[styles.infoValue, { color: colors.foreground }]}>{value}</LoomText>}</View>
+                <View key={label} style={[styles.infoRow, { borderBottomColor: colors.border }]}><LoomText style={[styles.infoLabel, { color: colors.mutedForeground }]}>{label}</LoomText>{label === 'Designer' && project.designerWebsite ? <Pressable accessibilityRole="link" accessibilityLabel={`Open designer website: ${designerLinkLabel}`} accessibilityHint="Opens the saved designer website" onPress={() => { void Linking.openURL(project.designerWebsite!).catch(() => Alert.alert('Unable to open website', 'Check the saved link and try again.')); }} style={styles.designerLink}><LoomText numberOfLines={1} ellipsizeMode="tail" style={[styles.infoValue, styles.designerLinkText, { color: colors.primary, textDecorationLine: 'underline' }]}>{value}</LoomText></Pressable> : <LoomText numberOfLines={label === 'Designer' ? 1 : undefined} ellipsizeMode="tail" style={[styles.infoValue, { color: colors.foreground }]}>{value}</LoomText>}</View>
               ))}
               {project.description ? <LoomText style={[styles.description, { color: colors.foreground }]}>{project.description}</LoomText> : null}
             </View>
@@ -232,6 +238,17 @@ export default function ProjectDetailScreen() {
   );
 }
 
+function designerHostname(website: string) {
+  try {
+    const labels = new URL(website).hostname.toLowerCase().replace(/^www\d*\./, '').split('.');
+    const suffixes = new Set(['com', 'org', 'net', 'edu', 'gov', 'mil', 'int', 'io', 'co', 'uk', 'ca', 'au', 'nz', 'info', 'biz', 'dev', 'app', 'studio', 'shop', 'art']);
+    const subdomains = new Set(['shop', 'store', 'blog', 'patterns']);
+    const name = labels.find((label) => label && !suffixes.has(label) && !subdomains.has(label)) || labels[0];
+    return name.split(/[-_]+/).filter(Boolean).map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`).join(' ') || website;
+  } catch {
+    return website.replace(/^[a-z]+:\/\/(?:www\.)?/i, '').split(/[/?#]/)[0] || website;
+  }
+}
 function SavedProgressPhoto({ projectId, entryId }: { projectId: string; entryId: string }) {
   const { getToken } = useAuth();
   const [token, setToken] = useState<string | null>(null);
@@ -271,9 +288,11 @@ const styles = StyleSheet.create({
   statusLine: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   detailCard: { borderWidth: 1, borderRadius: 16, padding: 17, marginBottom: 13 },
   sectionLabel: { fontFamily: fonts.bold, fontSize: 9, letterSpacing: 1.1, marginBottom: 12 },
-  infoRow: { flexDirection: 'row', gap: 10, justifyContent: 'space-between', paddingVertical: 9, borderBottomWidth: 1 },
+  infoRow: { width: '100%', minWidth: 0, flexDirection: 'row', gap: 10, alignItems: 'center', paddingVertical: 9, borderBottomWidth: 1 },
   infoLabel: { fontSize: 11 },
   infoValue: { flex: 1, textAlign: 'right', fontSize: 11, fontFamily: fonts.medium },
+  designerLink: { flex: 1, flexBasis: 0, minWidth: 0, overflow: 'hidden', alignItems: 'flex-end' },
+  designerLinkText: { width: '100%', maxWidth: '100%', minWidth: 0, flexShrink: 1 },
   description: { marginTop: 12, lineHeight: 19, fontSize: 13 },
   sectionTitle: { fontSize: 22 },
   help: { fontSize: 12, lineHeight: 17, marginTop: 4, marginBottom: 15 },

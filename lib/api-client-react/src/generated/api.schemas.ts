@@ -220,6 +220,8 @@ export interface DesignerWebsiteTitlePreviewResponse {
   websiteUrl: string;
   /** @nullable */
   pageTitle: string | null;
+  /** Inferred from site metadata or the public website hostname */
+  designerName: string;
 }
 
 export interface CreateProgress {
@@ -301,4 +303,3 @@ search?: string;
 status?: ProjectStatus;
 craft?: CraftType;
 };
-

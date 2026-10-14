@@ -25,7 +25,6 @@ export const getDashboardResponseRecentProjectsItemCompletionPercentMin = 0;
 export const getDashboardResponseRecentProjectsItemCompletionPercentMax = 100;
 
 
-
 export const GetDashboardResponse = zod.object({
   "totalProjects": zod.number().int(),
   "activeProjects": zod.number().int(),
@@ -76,7 +75,6 @@ export const GetProjectsQueryParams = zod.object({
 export const getProjectsResponseDesignerWebsiteRegExp = new RegExp('^[Hh][Tt][Tt][Pp][Ss]?:/');
 export const getProjectsResponseCompletionPercentMin = 0;
 export const getProjectsResponseCompletionPercentMax = 100;
-
 
 
 export const GetProjectsResponseItem = zod.object({
@@ -140,7 +138,6 @@ export const createProjectResponseCompletionPercentMin = 0;
 export const createProjectResponseCompletionPercentMax = 100;
 
 
-
 export const CreateProjectResponse = zod.object({
   "id": zod.string().uuid(),
   "title": zod.string(),
@@ -168,7 +165,7 @@ export const CreateProjectResponse = zod.object({
 
 
 /**
- * @summary Preview the page title for a public designer website
+ * @summary Preview a public designer website title and name
  */
 export const PreviewDesignerWebsiteTitleBody = zod.object({
   "websiteUrl": zod.string().url()
@@ -176,7 +173,8 @@ export const PreviewDesignerWebsiteTitleBody = zod.object({
 
 export const PreviewDesignerWebsiteTitleResponse = zod.object({
   "websiteUrl": zod.string().url(),
-  "pageTitle": zod.string().nullable()
+  "pageTitle": zod.string().nullable(),
+  "designerName": zod.string().describe('Inferred from site metadata or the public website hostname')
 })
 
 
@@ -193,7 +191,6 @@ export const getProjectResponseOneCompletionPercentMax = 100;
 
 export const getProjectResponseTwoProgressItemCompletionPercentMin = 0;
 export const getProjectResponseTwoProgressItemCompletionPercentMax = 100;
-
 
 
 export const GetProjectResponse = zod.object({
@@ -245,7 +242,6 @@ export const updateProjectBodyCompletionPercentMin = 0;
 export const updateProjectBodyCompletionPercentMax = 100;
 
 
-
 export const UpdateProjectBody = zod.object({
   "title": zod.string().min(1).max(updateProjectBodyTitleMax).optional(),
   "craft": zod.enum(['knitting', 'crochet']).optional(),
@@ -271,7 +267,6 @@ export const UpdateProjectBody = zod.object({
 export const updateProjectResponseDesignerWebsiteRegExp = new RegExp('^[Hh][Tt][Tt][Pp][Ss]?:/');
 export const updateProjectResponseCompletionPercentMin = 0;
 export const updateProjectResponseCompletionPercentMax = 100;
-
 
 
 export const UpdateProjectResponse = zod.object({
@@ -323,8 +318,6 @@ export const addProgressBodyCompletionPercentMin = 0;
 export const addProgressBodyCompletionPercentMax = 100;
 
 
-
-
 export const AddProgressBody = zod.object({
   "notes": zod.string().min(1).max(addProgressBodyNotesMax),
   "completionPercent": zod.number().int().min(addProgressBodyCompletionPercentMin).max(addProgressBodyCompletionPercentMax),
@@ -333,7 +326,6 @@ export const AddProgressBody = zod.object({
 
 export const addProgressResponseCompletionPercentMin = 0;
 export const addProgressResponseCompletionPercentMax = 100;
-
 
 
 export const AddProgressResponse = zod.object({
@@ -356,7 +348,6 @@ export const RequestProgressPhotoUploadParams = zod.object({
 export const requestProgressPhotoUploadBodyNameMax = 255;
 
 export const requestProgressPhotoUploadBodySizeMax = 10485760;
-
 
 
 export const RequestProgressPhotoUploadBody = zod.object({
@@ -391,5 +382,4 @@ export const DeleteProgressPhotoParams = zod.object({
 })
 
 export const DeleteProgressPhotoResponse = zod.void()
-
 

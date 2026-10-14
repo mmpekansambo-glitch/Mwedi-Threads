@@ -96,7 +96,7 @@ paths:
     post:
       operationId: previewDesignerWebsiteTitle
       tags: [projects]
-      summary: Preview the page title for a public designer website
+      summary: Preview a public designer website title and name
       requestBody:
         required: true
         content:
@@ -105,7 +105,7 @@ paths:
               $ref: "#/components/schemas/DesignerWebsiteTitlePreviewRequest"
       responses:
         "200":
-          description: Website URL and extracted page title
+          description: Website URL, concise page title, and inferred designer name
           content:
             application/json:
               schema:
@@ -568,7 +568,10 @@ components:
           format: uri
         pageTitle:
           type: [string, "null"]
-      required: [websiteUrl, pageTitle]
+        designerName:
+          type: string
+          description: Inferred from site metadata or the public website hostname
+      required: [websiteUrl, pageTitle, designerName]
     CreateProgress:
       type: object
       properties:
@@ -645,4 +648,3 @@ components:
         - completedProjects
         - recentProjects
         - recentProgress
-

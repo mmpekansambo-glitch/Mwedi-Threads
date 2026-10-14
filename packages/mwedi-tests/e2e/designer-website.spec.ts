@@ -70,7 +70,11 @@ async function mockProjectApi(
       const body = request.postDataJSON() as { websiteUrl: string };
       await route.fulfill({
         status: 200,
-        json: { websiteUrl: body.websiteUrl, pageTitle: "A maker's pattern library" },
+        json: {
+          websiteUrl: body.websiteUrl,
+          pageTitle: "A maker's pattern library",
+          designerName: "Maker Example",
+        },
       });
       return;
     }
@@ -142,7 +146,7 @@ test("creates a crochet project with a hook size, date precision, yarn, and a de
   await expect(page).toHaveURL(/\/projects\/project-mwedi-e2e$/);
   await expect(page.getByTestId("link-designer-website")).toHaveText("A maker's pattern library");
   expect(createdBody).toMatchObject({
-    patternDesigner: null,
+    patternDesigner: "Maker Example",
     designerWebsite: "https://maker.example.org/patterns",
     designerPageTitle: "A maker's pattern library",
     startedAt: "2026-03-01",
@@ -177,9 +181,29 @@ test("lets a maker replace a saved designer name with a website link when editin
 
   await expect(page.getByTestId("link-designer-website")).toHaveText("A maker's pattern library");
   expect(updatedBody).toMatchObject({
-    patternDesigner: null,
+    patternDesigner: "Maker Example",
     designerWebsite: "https://maker.example.org",
     designerPageTitle: "A maker's pattern library",
     hookSize: "4.5 mm (US 7, UK/Canada 7)",
   });
+});
+
+test("uses the inferred designer name when a saved page title is too long", async ({ page }) => {
+  const websiteUrl = "https://maker.example.org/patterns";
+  await mockProjectApi(
+    page,
+    () => undefined,
+    () => undefined,
+    projectFixture({
+      designerWebsite: websiteUrl,
+      designerPageTitle: "A very long title that does not clearly identify which pattern this project uses",
+      patternDesigner: "Maker Example",
+    }),
+  );
+
+  await page.goto("/projects/project-mwedi-e2e");
+
+  const designerLink = page.getByTestId("link-designer-website");
+  await expect(designerLink).toHaveText("Maker Example");
+  await expect(designerLink).toHaveAttribute("href", websiteUrl);
 });

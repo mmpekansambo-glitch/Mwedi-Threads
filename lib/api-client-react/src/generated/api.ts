@@ -402,7 +402,7 @@ export const getPreviewDesignerWebsiteTitleUrl = () => {
 }
 
 /**
- * @summary Preview the page title for a public designer website
+ * @summary Preview a public designer website title and name
  */
 export const previewDesignerWebsiteTitle = async (designerWebsiteTitlePreviewRequest: DesignerWebsiteTitlePreviewRequest, options?: Parameters<typeof customFetch>[1]): Promise<DesignerWebsiteTitlePreviewResponse> => {
 
@@ -468,7 +468,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type PreviewDesignerWebsiteTitleMutationVariables = {data: BodyType<DesignerWebsiteTitlePreviewRequest>}
 
     /**
- * @summary Preview the page title for a public designer website
+ * @summary Preview a public designer website title and name
  */
 export const usePreviewDesignerWebsiteTitle = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | Error>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewDesignerWebsiteTitle>>, TError,PreviewDesignerWebsiteTitleMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}

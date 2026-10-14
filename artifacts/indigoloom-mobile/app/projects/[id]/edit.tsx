@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import { useGetProject, useUpdateProject, usePreviewDesignerWebsiteTitle, getGetDashboardQueryKey, getGetProjectQueryKey, getGetProjectsQueryKey } from '@workspace/api-client-react';
 import type { UpdateProject } from '@workspace/api-client-react';
 import { HookSizePicker, type CrochetHookSizeValue } from '@/components/HookSizePicker';
@@ -10,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import { FormFieldLabel, LoadingState, LoomButton, LoomText, SignedInGate, fonts } from '@/components/loom';
 import { useColors } from '@/hooks/useColors';
+import { useEffect, useRef, useState } from 'react';
 
 export default function EditProjectScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -25,6 +25,7 @@ export default function EditProjectScreen() {
   const [patternDesigner, setPatternDesigner] = useState('');
   const [designerMode, setDesignerMode] = useState<'name' | 'website'>('name');
   const [designerWebsite, setDesignerWebsite] = useState('');
+  const designerWebsiteRef = useRef('');
   const [designerPageTitle, setDesignerPageTitle] = useState('');
   const [designerPreviewMessage, setDesignerPreviewMessage] = useState('');
   const [yarnBrand, setYarnBrand] = useState('');
@@ -40,6 +41,7 @@ export default function EditProjectScreen() {
     setPatternName(project.patternName || '');
     setPatternDesigner(project.patternDesigner || '');
     setDesignerWebsite(project.designerWebsite || '');
+    designerWebsiteRef.current = project.designerWebsite || '';
     setDesignerPageTitle(project.designerPageTitle || '');
     setDesignerMode(project.designerWebsite ? 'website' : 'name');
     setDesignerPreviewMessage('');
@@ -59,8 +61,11 @@ export default function EditProjectScreen() {
     setDesignerPreviewMessage('');
     previewTitle.mutate({ data: { websiteUrl } }, {
       onSuccess: (result) => {
+        if (designerWebsiteRef.current.trim() !== websiteUrl) return;
         setDesignerWebsite(result.websiteUrl);
+        designerWebsiteRef.current = result.websiteUrl;
         setDesignerPageTitle(result.pageTitle || '');
+        setPatternDesigner(result.designerName || '');
         setDesignerPreviewMessage(result.pageTitle ? '' : 'No page title was found. You can still save the link.');
       },
       onError: () => setDesignerPreviewMessage('We could not preview that website. Check the link and try again.'),
@@ -75,7 +80,7 @@ export default function EditProjectScreen() {
     const data: UpdateProject = {
       title: title.trim(),
       patternName: patternName.trim() || null,
-      patternDesigner: designerMode === 'name' ? patternDesigner.trim() || null : null,
+      patternDesigner: patternDesigner.trim() || null,
       designerWebsite: designerMode === 'website' ? designerWebsite.trim() || null : null,
       designerPageTitle: designerMode === 'website' ? designerPageTitle.trim() || null : null,
       yarnBrand: yarnBrand.trim() || null,
@@ -129,9 +134,9 @@ export default function EditProjectScreen() {
               ) : (
                 <>
                   <FormFieldLabel>Website link</FormFieldLabel>
-                  <TextInput value={designerWebsite} onChangeText={(value) => { setDesignerWebsite(value); setDesignerPageTitle(''); setDesignerPreviewMessage(''); }} placeholder="https://example.com" placeholderTextColor={colors.mutedForeground} autoCapitalize="none" autoCorrect={false} keyboardType="url" style={inputStyle} testID="input-edit-designer-website" />
+                  <TextInput value={designerWebsite} onChangeText={(value) => { designerWebsiteRef.current = value; setDesignerWebsite(value); setPatternDesigner(''); setDesignerPageTitle(''); setDesignerPreviewMessage(''); }} placeholder="https://example.com" placeholderTextColor={colors.mutedForeground} autoCapitalize="none" autoCorrect={false} keyboardType="url" style={inputStyle} testID="input-edit-designer-website" />
                   <LoomButton title="Preview page title" variant="quiet" onPress={previewDesignerTitle} busy={previewTitle.isPending} testID="button-edit-preview-designer-title" />
-                  {designerPageTitle ? <View style={[styles.designerPagePreview, { backgroundColor: colors.softPlum, borderColor: colors.border }]}><LoomText style={{ color: colors.mutedForeground, fontSize: 9, letterSpacing: 1 }}>PAGE TITLE PREVIEW</LoomText><LoomText style={{ color: colors.foreground, fontFamily: fonts.semibold, fontSize: 12 }}>{designerPageTitle}</LoomText></View> : null}
+                  {designerPageTitle ? <View style={[styles.designerPagePreview, { backgroundColor: colors.softPlum, borderColor: colors.border }]}><LoomText style={{ color: colors.mutedForeground, fontSize: 9, letterSpacing: 1 }}>PAGE TITLE PREVIEW</LoomText><LoomText numberOfLines={2} ellipsizeMode="tail" style={[styles.designerPageTitle, { color: colors.foreground, fontFamily: fonts.semibold, fontSize: 12 }]}>{designerPageTitle}</LoomText></View> : null}
                   {designerPreviewMessage ? <LoomText accessibilityRole="alert" style={{ color: colors.mutedForeground, fontSize: 11, lineHeight: 16, marginBottom: 12 }}>{designerPreviewMessage}</LoomText> : null}
                 </>
               )}
@@ -176,10 +181,11 @@ const styles = StyleSheet.create({
   form: { width: '100%', maxWidth: 650, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 22, paddingBottom: 38 },
   heading: { fontSize: 31 },
   intro: { fontSize: 13, marginTop: 5, marginBottom: 17 },
-  card: { borderWidth: 1, borderRadius: 18, padding: 17 },
+  card: { width: '100%', maxWidth: '100%', minWidth: 0, borderWidth: 1, borderRadius: 18, padding: 17 },
   input: { minHeight: 45, borderWidth: 1, borderRadius: 9, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, fontFamily: fonts.body, marginBottom: 14 },
   designerModeRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
   designerModeButton: { flex: 1, minHeight: 39, borderWidth: 1, borderRadius: 9, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
-  designerPagePreview: { gap: 5, borderWidth: 1, borderRadius: 9, padding: 11, marginBottom: 12 },
+  designerPagePreview: { width: '100%', maxWidth: '100%', minWidth: 0, alignSelf: 'stretch', overflow: 'hidden', gap: 5, borderWidth: 1, borderRadius: 9, padding: 11, marginBottom: 12 },
+  designerPageTitle: { width: '100%', maxWidth: '100%', minWidth: 0, flexShrink: 1 },
   multiline: { minHeight: 92, paddingTop: 12 },
 });

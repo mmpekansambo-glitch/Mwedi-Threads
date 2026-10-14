@@ -56,25 +56,15 @@ export class WebsiteTitlePreviewError extends Error {
   }
 }
 
-export function isPublicIpAddress(address: string): boolean {
-  const family = isIP(address);
-  if (family === 4) return !blockedIpv4Addresses.check(address, "ipv4");
-  if (family === 6) return !blockedIpv6Addresses.check(address, "ipv6");
-  return false;
-}
-
-export function extractPageTitle(html: string): string | null {
-  const match = /<title\b[^>]*>([\s\S]*?)<\/title\s*>/i.exec(html);
-  if (!match) return null;
-
-  const decoded = match[1]
+function decodeHtmlText(value: string): string {
+  return value
     .replace(/<[^>]*>/g, " ")
     .replace(/&#(x[\da-f]+|\d+);?/gi, (_entity, code: string) => {
-      const value = code[0]?.toLowerCase() === "x"
+      const number = code[0]?.toLowerCase() === "x"
         ? Number.parseInt(code.slice(1), 16)
         : Number.parseInt(code, 10);
-      return Number.isInteger(value) && value > 0 && value <= 0x10ffff
-        ? String.fromCodePoint(value)
+      return Number.isInteger(number) && number > 0 && number <= 0x10ffff
+        ? String.fromCodePoint(number)
         : "";
     })
     .replace(/&(amp|lt|gt|quot|apos|nbsp|ndash|mdash|rsquo|lsquo|rdquo|ldquo);/gi, (entity, name: string) => {
@@ -96,6 +86,112 @@ export function extractPageTitle(html: string): string | null {
     })
     .replace(/\s+/g, " ")
     .trim();
+}
+
+const designerTitleMaxLength = 72;
+const marketingWords = /\b(?:beginner(?:[-\s]?friendly)?|beginners?)(?:['’]s)?\b|\bfree\b/gi;
+const hasMarketingWords = /\b(?:beginner(?:[-\s]?friendly)?|beginners?)(?:['’]s)?\b|\bfree\b/i;
+const contentWords = /\b(?:patterns?|tutorials?|downloads?)\b/i;
+
+function cleanTitleSegment(value: string, stripByline: boolean): string {
+  const segment = stripByline
+    ? value.replace(/\s+\bby\b\s+.+$/i, "")
+    : value;
+  return segment
+    .replace(marketingWords, " ")
+    .replace(/\b(?:knitting|crochet|sewing)\s+(?:patterns?|tutorials?)\b/gi, " ")
+    .replace(/\b(?:patterns?|tutorials?|downloads?)\b/gi, " ")
+    .replace(/^[\s:|·\-–—()[\],.]+|[\s:|·\-–—()[\],.]+$/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function isGenericTitleSegment(value: string): boolean {
+  return /^(?:the\s+)?(?:knitting|crochet|sewing|pattern|tutorial|download|patterns?|tutorials?|downloads?)(?:\s+(?:knitting|crochet|sewing|pattern|tutorial|download|patterns?|tutorials?|downloads?))*$/i.test(value);
+}
+
+function isSeoDescriptionSegment(value: string): boolean {
+  const startsWithCraft = /^\s*(?:(?:free|beginner(?:[-\s]?friendly)?|beginners?)\s+)*(?:knit(?:ting)?|crochet|sewing)\b/i.test(value);
+  return hasMarketingWords.test(value) || (startsWithCraft && contentWords.test(value));
+}
+
+export function normalizeDesignerPageTitle(rawTitle: string): string | null {
+  const rawSegments = rawTitle.split(/\s*(?:\||»|·|—|–|:)\s*|\s+-\s+/);
+  const segments = rawSegments.map((raw) => ({
+    raw,
+    title: cleanTitleSegment(raw, rawSegments.length > 1),
+  })).filter(({ title }) => title.length > 0 && !isGenericTitleSegment(title));
+  const mainName = segments.find(({ raw }) => !isSeoDescriptionSegment(raw))?.title
+    ?? (rawSegments.length === 1 && segments[0] && !isSeoDescriptionSegment(rawSegments[0])
+      ? segments[0].title
+      : null);
+  if (!mainName || isGenericTitleSegment(mainName)) return null;
+  if (mainName.length <= designerTitleMaxLength) return mainName;
+  const prefix = mainName.slice(0, designerTitleMaxLength - 1);
+  const wordBoundary = prefix.lastIndexOf(" ");
+  return `${(wordBoundary > 0 ? prefix.slice(0, wordBoundary) : prefix).trimEnd()}…`;
+}
+
+function parseMetaAttributes(tag: string): Record<string, string> {
+  const attributes: Record<string, string> = {};
+  const content = tag.replace(/^<meta\b/i, "").replace(/\/?>$/, "");
+  const pattern = /([^\s=/>]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/g;
+  for (const match of content.matchAll(pattern)) {
+    attributes[match[1].toLowerCase()] = match[2] ?? match[3] ?? match[4] ?? "";
+  }
+  return attributes;
+}
+
+function extractMetaValue(html: string, name: string): string | null {
+  const tags = html.match(/<meta\b[^>]*>/gi) ?? [];
+  for (const tag of tags) {
+    const attributes = parseMetaAttributes(tag);
+    if (
+      attributes.property?.toLowerCase() !== name &&
+      attributes.name?.toLowerCase() !== name
+    ) continue;
+    const content = decodeHtmlText(attributes.content ?? "");
+    if (content) return content.slice(0, 100);
+  }
+  return null;
+}
+
+function inferDesignerNameFromHostname(hostname: string): string {
+  const ignoredSubdomains = new Set(["www", "www2", "shop", "store", "blog", "patterns"]);
+  const topLevelDomains = new Set([
+    "com", "org", "net", "edu", "gov", "mil", "int", "io", "co", "uk", "ca", "au",
+    "nz", "info", "biz", "dev", "app", "studio", "shop", "art",
+  ]);
+  const labels = hostname.toLowerCase().replace(/^www\d*\./, "").split(".");
+  const brand = labels.find((label) => label && !ignoredSubdomains.has(label) && !topLevelDomains.has(label))
+    ?? labels[0]
+    ?? hostname;
+  return brand
+    .split(/[-_]+/)
+    .filter(Boolean)
+    .map((word) => `${word.charAt(0).toUpperCase()}${word.slice(1)}`)
+    .join(" ");
+}
+
+export function inferDesignerName(html: string, hostname: string): string {
+  return extractMetaValue(html, "og:site_name")
+    ?? extractMetaValue(html, "application-name")
+    ?? extractMetaValue(html, "author")
+    ?? inferDesignerNameFromHostname(hostname);
+}
+
+export function isPublicIpAddress(address: string): boolean {
+  const family = isIP(address);
+  if (family === 4) return !blockedIpv4Addresses.check(address, "ipv4");
+  if (family === 6) return !blockedIpv6Addresses.check(address, "ipv6");
+  return false;
+}
+
+export function extractPageTitle(html: string): string | null {
+  const match = /<title\b[^>]*>([\s\S]*?)<\/title\s*>/i.exec(html);
+  if (!match) return null;
+
+  const decoded = decodeHtmlText(match[1]);
 
   return decoded ? decoded.slice(0, 300) : null;
 }
@@ -213,6 +309,7 @@ function getHtml(url: URL, addresses: ResolvedAddress[]): Promise<string> {
 export async function previewWebsitePageTitle(websiteUrl: string): Promise<{
   websiteUrl: string;
   pageTitle: string | null;
+  designerName: string;
 }> {
   const url = parseWebsiteUrl(websiteUrl);
   let addresses: ResolvedAddress[];
@@ -228,7 +325,12 @@ export async function previewWebsitePageTitle(websiteUrl: string): Promise<{
 
   try {
     const html = await getHtml(url, addresses);
-    return { websiteUrl: url.toString(), pageTitle: extractPageTitle(html) };
+    const pageTitle = extractPageTitle(html);
+    return {
+      websiteUrl: url.toString(),
+      pageTitle: pageTitle ? normalizeDesignerPageTitle(pageTitle) : null,
+      designerName: inferDesignerName(html, url.hostname),
+    };
   } catch {
     throw new WebsiteTitlePreviewError("Could not load the page title. Check the link and try again.", 502);
   }

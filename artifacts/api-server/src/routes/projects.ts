@@ -30,7 +30,11 @@ import {
   type Project,
 } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
-import { previewWebsitePageTitle, WebsiteTitlePreviewError } from "../lib/websiteTitlePreview";
+import {
+  normalizeDesignerPageTitle,
+  previewWebsitePageTitle,
+  WebsiteTitlePreviewError,
+} from "../lib/websiteTitlePreview";
 
 const router: IRouter = Router();
 router.use(requireAuth);
@@ -89,6 +93,9 @@ function serializeProject(project: Project) {
   const validated = GetProjectsResponseItem.parse(project);
   return {
     ...validated,
+    designerPageTitle: project.designerPageTitle
+      ? normalizeDesignerPageTitle(project.designerPageTitle)
+      : null,
     startedAt: project.startedAt,
     targetDate: project.targetDate,
   };
@@ -99,7 +106,7 @@ function getOwnerId(res: Response): string {
 }
 
 router.post("/projects/designer-website-title-preview", async (req, res): Promise<void> => {
-  const parsed = PreviewDesignerWebsiteTitleBody.safeParse(req.body);
+    const parsed = AddProgressBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Enter a valid designer website link." });
     return;
@@ -119,7 +126,7 @@ router.post("/projects/designer-website-title-preview", async (req, res): Promis
 });
 
 router.get("/dashboard", async (req, res): Promise<void> => {
-  const ownerId = getOwnerId(res);
+    const ownerId = getOwnerId(res);
   const [allProjects, recentProjects, recentProgress] = await Promise.all([
     db
       .select({ status: projectsTable.status })
@@ -160,7 +167,7 @@ router.get("/dashboard", async (req, res): Promise<void> => {
     recentProjects,
     recentProgress,
   };
-  const validated = GetDashboardResponse.parse(dashboard);
+    const validated = AddProgressResponse.parse(entry);
   res.json({
     ...validated,
     recentProjects: recentProjects.map(serializeProject),
@@ -175,7 +182,7 @@ router.get("/projects", async (req, res): Promise<void> => {
     return;
   }
 
-  const ownerId = getOwnerId(res);
+    const ownerId = getOwnerId(res);
   const filters = [eq(projectsTable.ownerId, ownerId)];
   const search = parsedQuery.data.search?.trim();
   if (search) {
@@ -199,10 +206,13 @@ router.get("/projects", async (req, res): Promise<void> => {
     .from(projectsTable)
     .where(and(...filters))
     .orderBy(desc(projectsTable.updatedAt));
-  const validated = GetProjectsResponse.parse(rows);
+    const validated = AddProgressResponse.parse(entry);
   res.json(
     validated.map((project, index) => ({
       ...project,
+      designerPageTitle: project.designerPageTitle
+        ? normalizeDesignerPageTitle(project.designerPageTitle)
+        : null,
       startedAt: rows[index]?.startedAt ?? null,
       targetDate: rows[index]?.targetDate ?? null,
     })),
@@ -210,66 +220,55 @@ router.get("/projects", async (req, res): Promise<void> => {
 });
 
 router.post("/projects", async (req, res): Promise<void> => {
-  const parsed = CreateProjectBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: "Check the project details and try again." });
-    return;
-  }
+    const parsed = AddProgressBody.safeParse(req.body);
+    if (!params.success || !parsed.success) {
+      res.status(400).json({ error: "Check the progress update and try again." });
+      return;
+    }
 
-  const ownerId = getOwnerId(res);
-  const [project] = await db
-    .insert(projectsTable)
-    .values({
-      ...parsed.data,
-      ownerId,
-      status: parsed.data.status ?? "planning",
-      description: parsed.data.description ?? null,
-      patternName: parsed.data.patternName ?? null,
-      patternDesigner: parsed.data.patternDesigner ?? null,
-      designerWebsite: parsed.data.designerWebsite ?? null,
-      designerPageTitle: parsed.data.designerPageTitle ?? null,
-      yarn: parsed.data.yarn ?? null,
-      yarnBrand: parsed.data.yarnBrand ?? null,
-      yarnType: parsed.data.yarnType ?? null,
-      yarnColor: parsed.data.yarnColor ?? null,
-      tools: parsed.data.tools ?? null,
-      hookSize: parsed.data.hookSize ?? null,
-      startedAt: dateOnly(parsed.data.startedAt),
-      startedAtPrecision: parsed.data.startedAtPrecision ?? "day",
-      targetDate: dateOnly(parsed.data.targetDate),
-      targetDatePrecision: parsed.data.targetDatePrecision ?? "day",
-    })
-    .returning();
-
+    const ownerId = getOwnerId(res);
+    const [project] = await db
+      .select({ id: projectsTable.id, status: projectsTable.status })
+      .from(projectsTable)
+      .where(
+        and(
+          eq(projectsTable.id, params.data.projectId),
+          eq(projectsTable.ownerId, ownerId),
+        ),
+      );
   if (!project) {
-    res.status(500).json({ error: "The project could not be saved." });
+    res.status(404).json({ error: "Project not found." });
     return;
   }
-  const validated = CreateProjectResponse.parse(project);
-  res.status(201).json({
+
+    const validated = AddProgressResponse.parse(entry);
+  res.json({
     ...validated,
+    designerPageTitle: project.designerPageTitle
+      ? normalizeDesignerPageTitle(project.designerPageTitle)
+      : null,
     startedAt: project.startedAt,
     targetDate: project.targetDate,
   });
 });
 
-router.get("/projects/:projectId", async (req, res): Promise<void> => {
-  const params = GetProjectParams.safeParse(req.params);
+router.delete("/projects/:projectId", async (req, res): Promise<void> => {
+    const params = AddProgressParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: "Invalid project ID." });
     return;
   }
 
-  const ownerId = getOwnerId(res);
-  const [project] = await db
-    .select()
-    .from(projectsTable)
-    .where(
-      and(
-        eq(projectsTable.id, params.data.projectId),
-        eq(projectsTable.ownerId, ownerId),
-      ),
-    );
+    const ownerId = getOwnerId(res);
+    const [project] = await db
+      .select({ id: projectsTable.id, status: projectsTable.status })
+      .from(projectsTable)
+      .where(
+        and(
+          eq(projectsTable.id, params.data.projectId),
+          eq(projectsTable.ownerId, ownerId),
+        ),
+      );
   if (!project) {
     res.status(404).json({ error: "Project not found." });
     return;
@@ -280,34 +279,35 @@ router.get("/projects/:projectId", async (req, res): Promise<void> => {
     .from(progressEntriesTable)
     .where(eq(progressEntriesTable.projectId, project.id))
     .orderBy(desc(progressEntriesTable.createdAt));
-  const validated = GetProjectResponse.parse({ ...project, progress });
+    const validated = AddProgressResponse.parse(entry);
   res.json({
     ...validated,
+    designerPageTitle: project.designerPageTitle
+      ? normalizeDesignerPageTitle(project.designerPageTitle)
+      : null,
     startedAt: project.startedAt,
     targetDate: project.targetDate,
   });
 });
 
-router.post(
-  "/projects/:projectId/progress-photo-upload",
-  async (req, res): Promise<void> => {
-    const params = GetProjectParams.safeParse(req.params);
-    const parsed = RequestProgressPhotoUploadBody.safeParse(req.body);
-    if (
-      !params.success ||
-      !parsed.success ||
-      parsed.data.size > maxPhotoSize ||
-      !allowedPhotoTypes.has(parsed.data.contentType)
-    ) {
-      res.status(400).json({ error: "Choose a JPEG, PNG, or WebP photo up to 10 MB." });
+router.delete("/projects/:projectId", async (req, res): Promise<void> => {
+    const params = AddProgressParams.safeParse(req.params);
+    const parsed = AddProgressBody.safeParse(req.body);
+    if (!params.success || !parsed.success) {
+      res.status(400).json({ error: "Check the progress update and try again." });
       return;
     }
 
     const ownerId = getOwnerId(res);
     const [project] = await db
-      .select({ id: projectsTable.id })
+      .select({ id: projectsTable.id, status: projectsTable.status })
       .from(projectsTable)
-      .where(and(eq(projectsTable.id, params.data.projectId), eq(projectsTable.ownerId, ownerId)));
+      .where(
+        and(
+          eq(projectsTable.id, params.data.projectId),
+          eq(projectsTable.ownerId, ownerId),
+        ),
+      );
     if (!project) {
       res.status(404).json({ error: "Project not found." });
       return;
@@ -315,7 +315,7 @@ router.post(
 
     try {
       const relativePath = `progress/${project.id}/${randomUUID()}`;
-      const { bucketName, objectName } = storageLocation(relativePath);
+      const { bucketName, objectName } = storageLocation(entry.photoPath.slice("/objects/".length));
       const uploadURL = await signedObjectUrl(bucketName, objectName, "PUT");
       res.json(
         RequestProgressPhotoUploadResponse.parse({
@@ -333,9 +333,7 @@ router.post(
 router.get(
   "/projects/:projectId/progress/:entryId/photo",
   async (req, res): Promise<void> => {
-    const params = AddProgressParams.safeParse({
-      projectId: req.params.projectId,
-    });
+    const params = AddProgressParams.safeParse(req.params);
     const entryId = req.params.entryId;
     if (
       !params.success ||
@@ -346,23 +344,36 @@ router.get(
       return;
     }
 
-    const [entry] = await db
-      .select({ photoPath: progressEntriesTable.photoPath })
-      .from(progressEntriesTable)
-      .innerJoin(projectsTable, eq(progressEntriesTable.projectId, projectsTable.id))
-      .where(
-        and(
-          eq(progressEntriesTable.id, entryId),
-          eq(progressEntriesTable.projectId, params.data.projectId),
-          eq(projectsTable.ownerId, getOwnerId(res)),
-        ),
-      );
+    const [entry] = await db.transaction(async (tx) => {
+      const [created] = await tx
+        .insert(progressEntriesTable)
+        .values({
+          projectId: project.id,
+          notes: parsed.data.notes.trim(),
+          photoPath: parsed.data.photoPath ?? null,
+          completionPercent: parsed.data.completionPercent,
+        })
+        .returning();
+      await tx
+        .update(projectsTable)
+        .set({
+          completionPercent: parsed.data.completionPercent,
+          status:
+            parsed.data.completionPercent === 100
+              ? "completed"
+              : project.status === "completed"
+                ? "in_progress"
+                : project.status,
+        })
+        .where(eq(projectsTable.id, project.id));
+      return [created];
+    });
     if (!entry?.photoPath) {
       res.status(404).json({ error: "Progress photo not found." });
       return;
     }
 
-    const expectedPrefix = `/objects/progress/${params.data.projectId}/`;
+  const expectedPrefix = `/objects/progress/${project.id}/`;
     if (!entry.photoPath.startsWith(expectedPrefix)) {
       res.status(404).json({ error: "Progress photo not found." });
       return;
@@ -380,27 +391,37 @@ router.get(
 router.delete(
   "/projects/:projectId/progress/:entryId/photo",
   async (req, res): Promise<void> => {
-    const params = DeleteProgressPhotoParams.safeParse(req.params);
-    if (!params.success) {
-      res.status(400).json({ error: "Invalid progress photo request." });
-      return;
-    }
+    const params = AddProgressParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: "Invalid project ID." });
+    return;
+  }
 
     const ownerId = getOwnerId(res);
-    const [entry] = await db
-      .select({
-        id: progressEntriesTable.id,
-        projectId: progressEntriesTable.projectId,
-      })
-      .from(progressEntriesTable)
-      .innerJoin(projectsTable, eq(progressEntriesTable.projectId, projectsTable.id))
-      .where(
-        and(
-          eq(progressEntriesTable.id, params.data.entryId),
-          eq(progressEntriesTable.projectId, params.data.projectId),
-          eq(projectsTable.ownerId, ownerId),
-        ),
-      );
+    const [entry] = await db.transaction(async (tx) => {
+      const [created] = await tx
+        .insert(progressEntriesTable)
+        .values({
+          projectId: project.id,
+          notes: parsed.data.notes.trim(),
+          photoPath: parsed.data.photoPath ?? null,
+          completionPercent: parsed.data.completionPercent,
+        })
+        .returning();
+      await tx
+        .update(projectsTable)
+        .set({
+          completionPercent: parsed.data.completionPercent,
+          status:
+            parsed.data.completionPercent === 100
+              ? "completed"
+              : project.status === "completed"
+                ? "in_progress"
+                : project.status,
+        })
+        .where(eq(projectsTable.id, project.id));
+      return [created];
+    });
     if (!entry) {
       res.status(404).json({ error: "Progress photo not found." });
       return;
@@ -425,18 +446,14 @@ router.delete(
 );
 
 router.patch("/projects/:projectId", async (req, res): Promise<void> => {
-  const params = UpdateProjectParams.safeParse(req.params);
-  const parsed = UpdateProjectBody.safeParse(req.body);
-  if (
-    !params.success ||
-    !parsed.success ||
-    Object.keys(parsed.data ?? {}).length === 0
-  ) {
-    res.status(400).json({ error: "Check the project details and try again." });
-    return;
-  }
+    const params = AddProgressParams.safeParse(req.params);
+    const parsed = AddProgressBody.safeParse(req.body);
+    if (!params.success || !parsed.success) {
+      res.status(400).json({ error: "Check the progress update and try again." });
+      return;
+    }
 
-  const ownerId = getOwnerId(res);
+    const ownerId = getOwnerId(res);
   const { startedAt, targetDate, ...otherChanges } = parsed.data;
   const changes = {
     ...otherChanges,
@@ -447,37 +464,39 @@ router.patch("/projects/:projectId", async (req, res): Promise<void> => {
       ? { targetDate: dateOnly(targetDate) }
       : {}),
   };
-  const [project] = await db
-    .update(projectsTable)
-    .set(changes)
-    .where(
-      and(
-        eq(projectsTable.id, params.data.projectId),
-        eq(projectsTable.ownerId, ownerId),
-      ),
-    )
-    .returning();
+    const [project] = await db
+      .select({ id: projectsTable.id, status: projectsTable.status })
+      .from(projectsTable)
+      .where(
+        and(
+          eq(projectsTable.id, params.data.projectId),
+          eq(projectsTable.ownerId, ownerId),
+        ),
+      );
   if (!project) {
     res.status(404).json({ error: "Project not found." });
     return;
   }
 
-  const validated = UpdateProjectResponse.parse(project);
+    const validated = AddProgressResponse.parse(entry);
   res.json({
     ...validated,
+    designerPageTitle: project.designerPageTitle
+      ? normalizeDesignerPageTitle(project.designerPageTitle)
+      : null,
     startedAt: project.startedAt,
     targetDate: project.targetDate,
   });
 });
 
 router.delete("/projects/:projectId", async (req, res): Promise<void> => {
-  const params = DeleteProjectParams.safeParse(req.params);
+    const params = AddProgressParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: "Invalid project ID." });
     return;
   }
 
-  const ownerId = getOwnerId(res);
+    const ownerId = getOwnerId(res);
   const photos = await db
     .select({ photoPath: progressEntriesTable.photoPath })
     .from(progressEntriesTable)
@@ -488,15 +507,15 @@ router.delete("/projects/:projectId", async (req, res): Promise<void> => {
         eq(projectsTable.ownerId, ownerId),
       ),
     );
-  const [project] = await db
-    .delete(projectsTable)
-    .where(
-      and(
-        eq(projectsTable.id, params.data.projectId),
-        eq(projectsTable.ownerId, ownerId),
-      ),
-    )
-    .returning({ id: projectsTable.id });
+    const [project] = await db
+      .select({ id: projectsTable.id, status: projectsTable.status })
+      .from(projectsTable)
+      .where(
+        and(
+          eq(projectsTable.id, params.data.projectId),
+          eq(projectsTable.ownerId, ownerId),
+        ),
+      );
   if (!project) {
     res.status(404).json({ error: "Project not found." });
     return;
