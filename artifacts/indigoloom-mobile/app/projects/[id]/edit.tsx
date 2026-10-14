@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useGetProject, useUpdateProject, usePreviewDesignerWebsiteTitle, getGetDashboardQueryKey, getGetProjectQueryKey, getGetProjectsQueryKey } from '@workspace/api-client-react';
 import type { UpdateProject } from '@workspace/api-client-react';
+import { HookSizePicker, type CrochetHookSizeValue } from '@/components/HookSizePicker';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { Feather } from '@expo/vector-icons';
@@ -30,6 +31,7 @@ export default function EditProjectScreen() {
   const [yarnType, setYarnType] = useState('');
   const [yarnColor, setYarnColor] = useState('');
   const [tools, setTools] = useState('');
+  const [hookSize, setHookSize] = useState<CrochetHookSizeValue | null>(null);
   const [description, setDescription] = useState('');
   const [error, setError] = useState('');
   useEffect(() => {
@@ -45,6 +47,7 @@ export default function EditProjectScreen() {
     setYarnType(project.yarnType || '');
     setYarnColor(project.yarnColor || '');
     setTools(project.tools || '');
+    setHookSize(project.hookSize || null);
     setDescription(project.description || '');
   }, [project?.id]);
   const previewDesignerTitle = () => {
@@ -79,6 +82,7 @@ export default function EditProjectScreen() {
       yarnType: yarnType.trim() || null,
       yarnColor: yarnColor.trim() || null,
       tools: tools.trim() || null,
+      hookSize: project.craft === 'crochet' ? hookSize : null,
       description: description.trim() || null,
     };
     update.mutate({ projectId: id, data }, {
@@ -139,8 +143,18 @@ export default function EditProjectScreen() {
               <FormFieldLabel>Color</FormFieldLabel>
               <TextInput value={yarnColor} onChangeText={setYarnColor} placeholder="e.g. Oatmeal" placeholderTextColor={colors.mutedForeground} style={inputStyle} testID="input-edit-yarn-color" />
               {project.yarn ? <LoomText style={{ color: colors.mutedForeground, fontSize: 11, lineHeight: 17, marginBottom: 14 }}>Saved yarn note: {project.yarn} (kept unchanged from the earlier form)</LoomText> : null}
-              <FormFieldLabel>Tools</FormFieldLabel>
-              <TextInput value={tools} onChangeText={setTools} placeholder="Needle or hook size…" placeholderTextColor={colors.mutedForeground} style={inputStyle} />
+              {project.craft === 'crochet' ? (
+                <>
+                  <FormFieldLabel>Hook size</FormFieldLabel>
+                  <HookSizePicker value={hookSize} onChange={setHookSize} testID="select-edit-crochet-hook-size" />
+                  {tools ? <LoomText style={{ color: colors.mutedForeground, fontSize: 11, lineHeight: 17, marginBottom: 14 }}>Saved tools note: {tools} (kept unchanged from the earlier form)</LoomText> : null}
+                </>
+              ) : (
+                <>
+                  <FormFieldLabel>Tools</FormFieldLabel>
+                  <TextInput value={tools} onChangeText={setTools} placeholder="Needle size or other tools…" placeholderTextColor={colors.mutedForeground} style={inputStyle} />
+                </>
+              )}
               <FormFieldLabel>Notes to future you</FormFieldLabel>
               <TextInput value={description} onChangeText={setDescription} placeholder="What made you fall for this one?" placeholderTextColor={colors.mutedForeground} multiline numberOfLines={4} textAlignVertical="top" style={[...inputStyle, styles.multiline]} />
               {error ? <LoomText accessibilityRole="alert" style={{ color: colors.destructive, fontSize: 12, marginBottom: 12 }}>{error}</LoomText> : null}

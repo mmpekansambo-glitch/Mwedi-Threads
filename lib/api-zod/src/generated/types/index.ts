@@ -10,6 +10,7 @@ export * from './badRequestResponse';
 export * from './craftType';
 export * from './createProgress';
 export * from './createProject';
+export * from './crochetHookSize';
 export * from './dashboard';
 export * from './dashboardRecentProgressItem';
 export * from './designerWebsiteTitlePreviewRequest';

@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { CraftType } from './craftType';
+import type { CrochetHookSize } from './crochetHookSize';
 import type { ProjectDatePrecision } from './projectDatePrecision';
 import type { ProjectStatus } from './projectStatus';
 
@@ -37,6 +38,7 @@ export interface Project {
   yarnColor: string | null;
   /** @nullable */
   tools: string | null;
+  hookSize: CrochetHookSize | null;
   /** @nullable */
   startedAt: Date | null;
   startedAtPrecision: ProjectDatePrecision;

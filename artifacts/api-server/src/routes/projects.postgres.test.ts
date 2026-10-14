@@ -96,6 +96,7 @@ describe.skipIf(!databaseUrl)("project authorization against PostgreSQL", () => 
         yarn_type text,
         yarn_color text,
         tools text,
+        hook_size text,
         started_at date,
         started_at_precision ${isolatedSchema}.project_date_precision NOT NULL DEFAULT 'day',
         target_date date,

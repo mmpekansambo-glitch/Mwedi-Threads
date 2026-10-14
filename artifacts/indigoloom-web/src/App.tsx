@@ -11,6 +11,7 @@ import {
   getGetDashboardQueryKey, getGetProjectQueryKey, getGetProjectsQueryKey,
 } from '@workspace/api-client-react';
 import type { CreateProject, CreateProgress, Project, ProjectStatus, UpdateProject } from '@workspace/api-client-react';
+import { CrochetHookSize } from '@workspace/api-zod';
 import { FormProvider as Form, useForm, type UseFormReturn } from 'react-hook-form';
 import {
   ArrowDownRight, ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, Check,
@@ -446,9 +447,12 @@ type ProjectFormValues = {
   description: string; patternName: string; patternDesigner: string;
   designerWebsite: string; designerPageTitle: string;
   yarnBrand: string; yarnType: string; yarnColor: string;
-  tools: string; startedAt: string; startedAtPrecision: ProjectDatePrecision;
+  tools: string; hookSize: NonNullable<CreateProject['hookSize']> | '';
+  startedAt: string; startedAtPrecision: ProjectDatePrecision;
   targetDate: string; targetDatePrecision: ProjectDatePrecision;
 };
+
+const crochetHookSizes = Object.values(CrochetHookSize) as NonNullable<CreateProject['hookSize']>[];
 
 function ProjectFormPage() {
   const [, setLocation] = useLocation();
@@ -458,7 +462,7 @@ function ProjectFormPage() {
   const [designerMode, setDesignerMode] = useState<DesignerMode>('name');
   const [designerPreviewMessage, setDesignerPreviewMessage] = useState('');
   const form = useForm<ProjectFormValues>({
-    defaultValues: { title: '', craft: 'knitting', status: 'planning', description: '', patternName: '', patternDesigner: '', designerWebsite: '', designerPageTitle: '', yarnBrand: '', yarnType: '', yarnColor: '', tools: '', startedAt: '', startedAtPrecision: 'day', targetDate: '', targetDatePrecision: 'day' },
+    defaultValues: { title: '', craft: 'knitting', status: 'planning', description: '', patternName: '', patternDesigner: '', designerWebsite: '', designerPageTitle: '', yarnBrand: '', yarnType: '', yarnColor: '', tools: '', hookSize: '', startedAt: '', startedAtPrecision: 'day', targetDate: '', targetDatePrecision: 'day' },
   });
   const previewDesignerTitle = () => {
     const websiteUrl = form.getValues('designerWebsite').trim();
@@ -488,6 +492,7 @@ function ProjectFormPage() {
       yarnType: values.yarnType.trim() || null,
       yarnColor: values.yarnColor.trim() || null,
       tools: values.tools || null,
+      hookSize: values.craft === 'crochet' ? values.hookSize || null : null,
       startedAt: dateForProjectApi(values.startedAt, values.startedAtPrecision),
       startedAtPrecision: values.startedAtPrecision,
       targetDate: dateForProjectApi(values.targetDate, values.targetDatePrecision),
@@ -523,7 +528,11 @@ function ProjectFormPage() {
             <div className="field-block"><label htmlFor="project-yarn-color">Color</label><input id="project-yarn-color" placeholder="e.g. Oatmeal" {...form.register('yarnColor')} data-testid="input-yarn-color"/></div>
           </div>
         </div>
-        <div className="field-block"><label htmlFor="project-tools">Tools</label><input id="project-tools" placeholder="Needle or hook size…" {...form.register('tools')} data-testid="input-project-tools"/></div>
+        {form.watch('craft') === 'crochet' ? (
+          <div className="field-block"><label htmlFor="project-hook-size">Hook size</label><select id="project-hook-size" {...form.register('hookSize')} data-testid="select-crochet-hook-size"><option value="">Choose a hook size</option>{crochetHookSizes.map((hookSize) => <option key={hookSize} value={hookSize}>{hookSize}</option>)}</select></div>
+        ) : (
+          <div className="field-block"><label htmlFor="project-tools">Tools</label><input id="project-tools" placeholder="Needle size or other tools…" {...form.register('tools')} data-testid="input-project-tools"/></div>
+        )}
         <ProjectDateField id="project-start" label="Started on" value={form.watch('startedAt')} precision={form.watch('startedAtPrecision')} onValueChange={(value) => form.setValue('startedAt', value)} onPrecisionChange={(precision) => form.setValue('startedAtPrecision', precision)} testId="input-start-date"/>
         <ProjectDateField id="project-target" label="Aiming for (optional)" value={form.watch('targetDate')} precision={form.watch('targetDatePrecision')} onValueChange={(value) => form.setValue('targetDate', value)} onPrecisionChange={(precision) => form.setValue('targetDatePrecision', precision)} testId="input-target-date"/>
         <div className="field-block field-wide"><label htmlFor="project-description">Notes to future you</label><textarea id="project-description" rows={3} placeholder="What made you fall for this one?" {...form.register('description')} data-testid="input-project-description"/></div>
@@ -563,7 +572,7 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
     return () => URL.revokeObjectURL(preview);
   }, [progressPhoto]);
   const editForm = useForm<ProjectFormValues>({
-    defaultValues: { title: '', craft: 'knitting', status: 'planning', description: '', patternName: '', patternDesigner: '', designerWebsite: '', designerPageTitle: '', yarnBrand: '', yarnType: '', yarnColor: '', tools: '', startedAt: '', startedAtPrecision: 'day', targetDate: '', targetDatePrecision: 'day' },
+    defaultValues: { title: '', craft: 'knitting', status: 'planning', description: '', patternName: '', patternDesigner: '', designerWebsite: '', designerPageTitle: '', yarnBrand: '', yarnType: '', yarnColor: '', tools: '', hookSize: '', startedAt: '', startedAtPrecision: 'day', targetDate: '', targetDatePrecision: 'day' },
   });
   useEffect(() => {
     if (!project) return;
@@ -573,7 +582,7 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
       patternDesigner: project.patternDesigner || '',
       designerWebsite: project.designerWebsite || '', designerPageTitle: project.designerPageTitle || '',
       yarnBrand: project.yarnBrand || '', yarnType: project.yarnType || '', yarnColor: project.yarnColor || '',
-      tools: project.tools || '',
+      tools: project.tools || '', hookSize: project.hookSize || '',
       startedAt: dateForProjectForm(project.startedAt, project.startedAtPrecision),
       startedAtPrecision: project.startedAtPrecision,
       targetDate: dateForProjectForm(project.targetDate, project.targetDatePrecision),
@@ -617,6 +626,7 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
       yarnType: values.yarnType.trim() || null,
       yarnColor: values.yarnColor.trim() || null,
       tools: values.tools || null,
+      hookSize: values.craft === 'crochet' ? values.hookSize || null : null,
       startedAt: dateForProjectApi(values.startedAt, values.startedAtPrecision),
       startedAtPrecision: values.startedAtPrecision,
       targetDate: dateForProjectApi(values.targetDate, values.targetDatePrecision),
@@ -702,7 +712,11 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
         </div>
         {project.yarn && <p className="legacy-yarn-note"><b>Saved yarn note:</b> {project.yarn} <span>This earlier entry is being kept unchanged.</span></p>}
       </div>
-      <div className="field-block"><label htmlFor="edit-tools">Tools</label><input id="edit-tools" {...editForm.register('tools')} data-testid="input-edit-tools"/></div>
+      {editForm.watch('craft') === 'crochet' ? (
+        <div className="field-block"><label htmlFor="edit-hook-size">Hook size</label><select id="edit-hook-size" {...editForm.register('hookSize')} data-testid="select-edit-crochet-hook-size"><option value="">Choose a hook size</option>{crochetHookSizes.map((hookSize) => <option key={hookSize} value={hookSize}>{hookSize}</option>)}</select>{project.tools && <p className="legacy-yarn-note"><b>Saved tools note:</b> {project.tools}<span>This earlier note is being kept unchanged.</span></p>}</div>
+      ) : (
+        <div className="field-block"><label htmlFor="edit-tools">Tools</label><input id="edit-tools" {...editForm.register('tools')} data-testid="input-edit-tools"/></div>
+      )}
        <ProjectDateField id="edit-started" label="Started on" value={editForm.watch('startedAt')} precision={editForm.watch('startedAtPrecision')} onValueChange={(value) => editForm.setValue('startedAt', value)} onPrecisionChange={(precision) => editForm.setValue('startedAtPrecision', precision)} testId="input-edit-start-date"/>
        <ProjectDateField id="edit-target" label="Target date" value={editForm.watch('targetDate')} precision={editForm.watch('targetDatePrecision')} onValueChange={(value) => editForm.setValue('targetDate', value)} onPrecisionChange={(precision) => editForm.setValue('targetDatePrecision', precision)} testId="input-edit-target-date"/>
       <div className="field-block field-wide"><label htmlFor="edit-description">Notes</label><textarea id="edit-description" rows={3} {...editForm.register('description')} data-testid="input-edit-description"/></div>
@@ -717,7 +731,13 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
       </div>
       <aside className="detail-aside">
         <div className="aside-card loom-card"><span className="eyebrow">A FEW DETAILS</span><h3 className="serif">On the table</h3><dl className="detail-list">
-          <div><dt>Pattern</dt><dd>{project.patternName || 'Not added yet'}</dd></div><div><dt>Designer</dt><dd>{project.designerWebsite ? <a href={project.designerWebsite} target="_blank" rel="noopener noreferrer" data-testid="link-designer-website">{project.designerPageTitle || project.designerWebsite}</a> : project.patternDesigner || 'Not added yet'}</dd></div><div><dt>Yarn</dt><dd>{formatYarnDetails(project) || 'Not added yet'}</dd></div>{project.yarn && (project.yarnBrand || project.yarnType || project.yarnColor) && <div><dt>Previous yarn note</dt><dd>{project.yarn}</dd></div>}<div><dt>Tools</dt><dd>{project.tools || 'Not added yet'}</dd></div><div><dt>Target date</dt><dd>{formatProjectDate(project.targetDate, project.targetDatePrecision) || 'No date in mind'}</dd></div>
+          <div><dt>Pattern</dt><dd>{project.patternName || 'Not added yet'}</dd></div>
+          <div><dt>Designer</dt><dd>{project.designerWebsite ? <a href={project.designerWebsite} target="_blank" rel="noopener noreferrer" data-testid="link-designer-website">{project.designerPageTitle || project.designerWebsite}</a> : project.patternDesigner || 'Not added yet'}</dd></div>
+          <div><dt>Yarn</dt><dd>{formatYarnDetails(project) || 'Not added yet'}</dd></div>
+          {project.yarn && (project.yarnBrand || project.yarnType || project.yarnColor) && <div><dt>Previous yarn note</dt><dd>{project.yarn}</dd></div>}
+          <div><dt>{project.craft === 'crochet' ? 'Hook size' : 'Tools'}</dt><dd>{project.craft === 'crochet' ? project.hookSize || 'Not added yet' : project.tools || 'Not added yet'}</dd></div>
+          {project.craft === 'crochet' && project.tools && <div><dt>Saved tools note</dt><dd>{project.tools}</dd></div>}
+          <div><dt>Target date</dt><dd>{formatProjectDate(project.targetDate, project.targetDatePrecision) || 'No date in mind'}</dd></div>
         </dl>{project.description && <div className="personal-note"><span>NOTE TO SELF</span><p>{project.description}</p></div>}<button className="aside-edit" onClick={() => setEditing(!editing)} data-testid="button-edit-details"><Feather size={14}/> Edit details</button></div>
         <div className="aside-encouragement"><Flower2 className="encouragement-mark" size={48} strokeWidth={1}/><p>“Slow work is still<br/>beautiful work.”</p><span>YOUR WORKROOM, YOUR PACE</span></div>
       </aside>

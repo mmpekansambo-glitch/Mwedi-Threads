@@ -38,6 +38,7 @@ export const projectsTable = pgTable("projects", {
   yarnType: text("yarn_type"),
   yarnColor: text("yarn_color"),
   tools: text("tools"),
+  hookSize: text("hook_size"),
   startedAt: date("started_at", { mode: "string" }),
   startedAtPrecision: projectDatePrecisionEnum("started_at_precision")
     .notNull()

@@ -5,7 +5,10 @@
   "main": "expo-router/entry",
   "expo": {
     "install": {
-      "exclude": ["@types/react", "@types/react-dom"]
+      "exclude": [
+        "@types/react",
+        "@types/react-dom"
+      ]
     }
   },
   "scripts": {
@@ -64,6 +67,7 @@
     "@clerk/expo": "^4.10.1",
     "@expo-google-fonts/dm-sans": "^0.4.2",
     "@expo-google-fonts/fraunces": "^0.4.1",
+    "@workspace/api-zod": "workspace:*",
     "expo-auth-session": "~57.0.15",
     "expo-crypto": "~57.0.4",
     "expo-file-system": "~57.0.7",

@@ -16,6 +16,7 @@ type ProjectResponse = {
   yarnType: string | null;
   yarnColor: string | null;
   tools: string | null;
+  hookSize: string | null;
   startedAt: string | null;
   startedAtPrecision: "month" | "day";
   targetDate: string | null;
@@ -41,6 +42,7 @@ const projectFixture = (overrides: Partial<ProjectResponse> = {}): ProjectRespon
   yarnType: null,
   yarnColor: null,
   tools: null,
+  hookSize: null,
   startedAt: null,
   startedAtPrecision: "day",
   targetDate: null,
@@ -114,12 +116,16 @@ async function mockProjectApi(
   });
 }
 
-test("creates a project with date precision, structured yarn, and a designer website preview", async ({ page }) => {
+test("creates a crochet project with a hook size, date precision, yarn, and a designer website preview", async ({ page }) => {
   let createdBody: Record<string, unknown> | undefined;
   await mockProjectApi(page, (body) => { createdBody = body; }, () => undefined);
 
   await page.goto("/projects/new");
   await page.getByTestId("input-project-title").fill("Spring shawl");
+  await page.getByTestId("select-project-craft").selectOption("crochet");
+  await expect(page.getByTestId("select-crochet-hook-size")).toBeVisible();
+  await expect(page.getByTestId("input-project-tools")).toBeHidden();
+  await page.getByTestId("select-crochet-hook-size").selectOption("4.0 mm (US G-6, UK/Canada 8)");
   await page.getByTestId("input-start-date").fill("2026-03-01");
   await page.getByTestId("input-start-date-precision").selectOption("month");
   await page.getByTestId("input-target-date").fill("2026-05-17");
@@ -143,6 +149,7 @@ test("creates a project with date precision, structured yarn, and a designer web
     startedAtPrecision: "month",
     targetDate: "2026-05-17",
     targetDatePrecision: "day",
+    hookSize: "4.0 mm (US G-6, UK/Canada 8)",
     yarnBrand: "Brooklyn Tweed",
     yarnType: "Shelter",
     yarnColor: "Cardinal",
@@ -151,12 +158,17 @@ test("creates a project with date precision, structured yarn, and a designer web
 
 test("lets a maker replace a saved designer name with a website link when editing", async ({ page }) => {
   let updatedBody: Record<string, unknown> | undefined;
-  const existingProject = projectFixture({ patternDesigner: "Mara Maker" });
+  const existingProject = projectFixture({
+    craft: "crochet",
+    patternDesigner: "Mara Maker",
+    hookSize: "4.0 mm (US G-6, UK/Canada 8)",
+  });
   await mockProjectApi(page, () => undefined, (body) => { updatedBody = body; }, existingProject);
 
   await page.goto("/projects/project-mwedi-e2e");
   await expect(page.getByTestId("button-edit-project")).toBeVisible();
   await page.getByTestId("button-edit-project").click();
+  await page.getByTestId("select-edit-crochet-hook-size").selectOption("4.5 mm (US 7, UK/Canada 7)");
   await page.getByTestId("button-edit-designer-website").click();
   await page.getByTestId("input-edit-designer-website").fill("https://maker.example.org");
   await page.getByTestId("button-edit-preview-designer-title").click();
@@ -168,5 +180,6 @@ test("lets a maker replace a saved designer name with a website link when editin
     patternDesigner: null,
     designerWebsite: "https://maker.example.org",
     designerPageTitle: "A maker's pattern library",
+    hookSize: "4.5 mm (US 7, UK/Canada 7)",
   });
 });

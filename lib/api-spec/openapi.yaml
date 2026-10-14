@@ -339,6 +339,29 @@ components:
           type: string
           format: date-time
       required: [id, projectId, notes, photoPath, completionPercent, createdAt]
+    CrochetHookSize:
+      type: string
+      enum:
+        - "2.25 mm (US B-1, UK/Canada 13)"
+        - "2.75 mm (US C-2, UK/Canada 12)"
+        - "3.25 mm (US D-3, UK/Canada 10)"
+        - "3.5 mm (US E-4, UK/Canada 9)"
+        - "3.75 mm (US F-5, UK/Canada —)"
+        - "4.0 mm (US G-6, UK/Canada 8)"
+        - "4.5 mm (US 7, UK/Canada 7)"
+        - "5.0 mm (US H-8, UK/Canada 6)"
+        - "5.5 mm (US I-9, UK/Canada 5)"
+        - "6.0 mm (US J-10, UK/Canada 4)"
+        - "6.5 mm (US K-10½, UK/Canada 3)"
+        - "7.0 mm (US —, UK/Canada 2)"
+        - "8.0 mm (US L-11, UK/Canada 0)"
+        - "9.0 mm (US M/N-13, UK/Canada 00)"
+        - "10.0 mm (US N/P-15, UK/Canada 000)"
+        - "11.5 mm (US P-16, UK/Canada —)"
+        - "15 mm (US P/Q, UK/Canada —)"
+        - "16 mm (US Q, UK/Canada —)"
+        - "19 mm (US S, UK/Canada —)"
+        - "25 mm (US T/U/X, UK/Canada —)"
     Project:
       type: object
       properties:
@@ -373,6 +396,10 @@ components:
           type: [string, "null"]
         tools:
           type: [string, "null"]
+        hookSize:
+          anyOf:
+            - $ref: "#/components/schemas/CrochetHookSize"
+            - type: "null"
         startedAt:
           type: [string, "null"]
           format: date
@@ -408,6 +435,7 @@ components:
         - yarnType
         - yarnColor
         - tools
+        - hookSize
         - startedAt
         - startedAtPrecision
         - targetDate
@@ -458,6 +486,10 @@ components:
           type: [string, "null"]
         tools:
           type: [string, "null"]
+        hookSize:
+          anyOf:
+            - $ref: "#/components/schemas/CrochetHookSize"
+            - type: "null"
         startedAt:
           type: [string, "null"]
           format: date
@@ -502,6 +534,10 @@ components:
           type: [string, "null"]
         tools:
           type: [string, "null"]
+        hookSize:
+          anyOf:
+            - $ref: "#/components/schemas/CrochetHookSize"
+            - type: "null"
         startedAt:
           type: [string, "null"]
           format: date

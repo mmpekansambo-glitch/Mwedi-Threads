@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useCreateProject, usePreviewDesignerWebsiteTitle, getGetDashboardQueryKey, getGetProjectsQueryKey } from '@workspace/api-client-react';
 import type { CreateProject } from '@workspace/api-client-react';
+import { HookSizePicker, type CrochetHookSizeValue } from '@/components/HookSizePicker';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
@@ -29,6 +30,7 @@ export default function NewProjectScreen() {
   const [yarnType, setYarnType] = useState('');
   const [yarnColor, setYarnColor] = useState('');
   const [tools, setTools] = useState('');
+  const [hookSize, setHookSize] = useState<CrochetHookSizeValue | null>(null);
   const [startedAt, setStartedAt] = useState('');
   const [startedAtPrecision, setStartedAtPrecision] = useState<ProjectDatePrecision>('day');
   const [targetDate, setTargetDate] = useState('');
@@ -73,6 +75,7 @@ export default function NewProjectScreen() {
       yarnType: yarnType.trim() || null,
       yarnColor: yarnColor.trim() || null,
       tools: tools.trim() || null,
+      hookSize: craft === 'crochet' ? hookSize : null,
       startedAt: projectDateForApi(startedAt, startedAtPrecision),
       startedAtPrecision,
       targetDate: projectDateForApi(targetDate, targetDatePrecision),
@@ -144,8 +147,17 @@ export default function NewProjectScreen() {
             <TextInput {...inputProps} value={yarnType} onChangeText={setYarnType} placeholder="e.g. Merino DK" style={fieldStyle} testID="input-yarn-type" />
             <FormFieldLabel>Color</FormFieldLabel>
             <TextInput {...inputProps} value={yarnColor} onChangeText={setYarnColor} placeholder="e.g. Oatmeal" style={fieldStyle} testID="input-yarn-color" />
-            <FormFieldLabel>Tools</FormFieldLabel>
-            <TextInput {...inputProps} value={tools} onChangeText={setTools} placeholder="Needle or hook size…" style={fieldStyle} />
+            {craft === 'crochet' ? (
+              <>
+                <FormFieldLabel>Hook size</FormFieldLabel>
+                <HookSizePicker value={hookSize} onChange={setHookSize} testID="select-crochet-hook-size" />
+              </>
+            ) : (
+              <>
+                <FormFieldLabel>Tools</FormFieldLabel>
+                <TextInput {...inputProps} value={tools} onChangeText={setTools} placeholder="Needle size or other tools…" style={fieldStyle} testID="input-project-tools" />
+              </>
+            )}
             <ProjectDateField label="Started on" value={startedAt} precision={startedAtPrecision} onChange={setStartedAt} onPrecisionChange={setStartedAtPrecision} testID="input-start-date" />
             <ProjectDateField label="Aiming for (optional)" value={targetDate} precision={targetDatePrecision} onChange={setTargetDate} onPrecisionChange={setTargetDatePrecision} testID="input-target-date" />
             <FormFieldLabel>Notes to future you</FormFieldLabel>

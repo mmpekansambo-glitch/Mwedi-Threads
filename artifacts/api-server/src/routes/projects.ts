@@ -233,6 +233,7 @@ router.post("/projects", async (req, res): Promise<void> => {
       yarnType: parsed.data.yarnType ?? null,
       yarnColor: parsed.data.yarnColor ?? null,
       tools: parsed.data.tools ?? null,
+      hookSize: parsed.data.hookSize ?? null,
       startedAt: dateOnly(parsed.data.startedAt),
       startedAtPrecision: parsed.data.startedAtPrecision ?? "day",
       targetDate: dateOnly(parsed.data.targetDate),

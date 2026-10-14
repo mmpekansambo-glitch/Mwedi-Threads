@@ -162,7 +162,8 @@ export default function ProjectDetailScreen() {
                 ['Designer', project.designerWebsite ? project.designerPageTitle || project.designerWebsite : project.patternDesigner],
                 ['Yarn', [project.yarnBrand, project.yarnType, project.yarnColor].filter(Boolean).join(' · ') || null],
                 ['Previous yarn note', project.yarn],
-                ['Tools', project.tools],
+                [project.craft === 'crochet' ? 'Hook size' : 'Tools', project.craft === 'crochet' ? project.hookSize || 'Not added yet' : project.tools],
+                ...(project.craft === 'crochet' && project.tools ? [['Saved tools note', project.tools]] : []),
                 ['Started', project.startedAt ? formatProjectDate(project.startedAt, project.startedAtPrecision) : null],
                 ['Target date', project.targetDate ? formatProjectDate(project.targetDate, project.targetDatePrecision) : null],
               ].filter((entry) => entry[1]).map(([label, value]) => (

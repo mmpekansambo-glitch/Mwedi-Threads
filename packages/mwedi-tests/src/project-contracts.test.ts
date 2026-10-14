@@ -5,7 +5,7 @@ describe("Mwedi Threads project contracts", () => {
   it("accepts a project with month-precision dates and structured yarn details", () => {
     const result = CreateProjectBody.safeParse({
       title: "Autumn shawl",
-      craft: "knitting",
+      craft: "crochet",
       startedAt: "2026-09-01",
       startedAtPrecision: "month",
       targetDate: "2026-12-15",
@@ -15,9 +15,20 @@ describe("Mwedi Threads project contracts", () => {
       yarnColor: "Wild Horse",
       designerWebsite: "https://maker.example.org/patterns",
       designerPageTitle: "Maker Pattern Library",
+      hookSize: "4.0 mm (US G-6, UK/Canada 8)",
     });
 
     expect(result.success).toBe(true);
+  });
+
+  it("rejects hook sizes that are not in the standard crochet list", () => {
+    const result = CreateProjectBody.safeParse({
+      title: "Invalid hook size",
+      craft: "crochet",
+      hookSize: "7.5 mm",
+    });
+
+    expect(result.success).toBe(false);
   });
 
   it("accepts older project clients that omit optional date precision and yarn fields", () => {

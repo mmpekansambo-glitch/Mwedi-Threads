@@ -53,6 +53,7 @@ function project(id: string, ownerId: string, title: string) {
     yarnType: null,
     yarnColor: null,
     tools: null,
+    hookSize: null,
     startedAt: null,
     startedAtPrecision: "day" as const,
     targetDate: null,
@@ -293,7 +294,8 @@ describe("project authorization", () => {
       user: ownerA,
       body: {
         title: "A seasonal shawl",
-        craft: "knitting",
+        craft: "crochet",
+        hookSize: "4.0 mm (US G-6, UK/Canada 8)",
         startedAt: "2026-06-01",
         startedAtPrecision: "month",
         targetDate: "2026-06-24",
@@ -319,6 +321,7 @@ describe("project authorization", () => {
       yarnBrand: "Brooklyn Tweed",
       yarnType: "Tough Love Sock",
       yarnColor: "Wild Horse",
+      hookSize: "4.0 mm (US G-6, UK/Canada 8)",
     });
 
     const updatedResponse = await request(`/projects/${created.id}`, {
@@ -327,6 +330,7 @@ describe("project authorization", () => {
       body: {
         targetDate: "2026-07-01",
         targetDatePrecision: "month",
+        hookSize: "4.5 mm (US 7, UK/Canada 7)",
         designerWebsite: null,
         designerPageTitle: null,
         patternDesigner: "Mara Designer",
@@ -337,6 +341,7 @@ describe("project authorization", () => {
     expect(await updatedResponse.json()).toMatchObject({
       targetDate: "2026-07-01",
       targetDatePrecision: "month",
+      hookSize: "4.5 mm (US 7, UK/Canada 7)",
       designerWebsite: null,
       designerPageTitle: null,
       patternDesigner: "Mara Designer",
