@@ -249,7 +249,7 @@ function ProjectCard({ project }: { project: Project }) {
   const craftLabel = project.craft === 'knitting' ? 'Knitting' : 'Crochet';
   return <Link href={`/projects/${project.id}`} className="project-card loom-card lift" data-testid={`card-project-${project.id}`}>
     <div className={`project-card-art art-${project.craft}`}><span className="art-kicker">{craftLabel}</span><span className="art-mark">{project.craft === 'knitting' ? '〰' : '⌘'}</span><span className="art-corner">{project.completionPercent}%</span></div>
-    <div className="project-card-body"><div className="project-card-meta"><StatusPill status={project.status}/><span className="updated-label">{project.updatedAt ? `Updated ${new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' }).format(new Date(project.updatedAt))}` : ''}</span></div><h3>{project.title}</h3><p>{project.patternName || project.description || `${craftLabel} project`}</p><ProgressBar value={project.completionPercent}/><div className="card-foot"><span>{project.yarn || 'Details tucked away'}</span><ArrowUpRight size={16}/></div></div>
+    <div className="project-card-body"><div className="project-card-meta"><StatusPill status={project.status}/><span className="updated-label">{project.updatedAt ? `Updated ${new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' }).format(new Date(project.updatedAt))}` : ''}</span></div><h3>{project.title}</h3><p>{project.patternName || project.description || `${craftLabel} project`}</p><ProgressBar value={project.completionPercent}/><div className="card-foot"><span>{formatYarnDetails(project) || 'Details tucked away'}</span><ArrowUpRight size={16}/></div></div>
   </Link>;
 }
 
@@ -308,10 +308,86 @@ function ProjectsPage() {
   </PortalLayout>;
 }
 
+type ProjectDatePrecision = Project['startedAtPrecision'];
+
+function dateForProjectForm(value: string | null | undefined, precision: ProjectDatePrecision): string {
+  if (!value) return '';
+  return precision === 'month' ? value.slice(0, 7) : value.slice(0, 10);
+}
+
+function dateForProjectApi(value: string, precision: ProjectDatePrecision): string | null {
+  if (!value) return null;
+  return precision === 'month' ? `${value.slice(0, 7)}-01` : value;
+}
+
+function formatProjectDate(value: string | null | undefined, precision: ProjectDatePrecision): string {
+  if (!value) return '';
+  const [year, month, day] = value.slice(0, 10).split('-');
+  if (!year || !month) return value;
+  return precision === 'month'
+    ? `${month}/${year.slice(-2)}`
+    : `${month}/${day}/${year.slice(-2)}`;
+}
+
+function formatYarnDetails(project: Pick<Project, 'yarn' | 'yarnBrand' | 'yarnType' | 'yarnColor'>): string {
+  return [project.yarnBrand, project.yarnType, project.yarnColor].filter(Boolean).join(' · ')
+    || project.yarn
+    || '';
+}
+
+function ProjectDateField({
+  id,
+  label,
+  value,
+  precision,
+  onValueChange,
+  onPrecisionChange,
+  testId,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  precision: ProjectDatePrecision;
+  onValueChange: (value: string) => void;
+  onPrecisionChange: (precision: ProjectDatePrecision) => void;
+  testId: string;
+}) {
+  const changePrecision = (next: ProjectDatePrecision) => {
+    if (next === precision) return;
+    onValueChange(next === 'month' ? value.slice(0, 7) : '');
+    onPrecisionChange(next);
+  };
+  return <div className="field-block project-date-field">
+    <label htmlFor={id}>{label}</label>
+    <div className="project-date-controls">
+      <select
+        aria-label={`${label} format`}
+        value={precision}
+        onChange={(event) => changePrecision(event.target.value as ProjectDatePrecision)}
+        data-testid={`${testId}-precision`}
+      >
+        <option value="month">MM/YY</option>
+        <option value="day">MM/DD/YY</option>
+      </select>
+      <input
+        id={id}
+        type={precision === 'month' ? 'month' : 'date'}
+        value={value}
+        onChange={(event) => onValueChange(event.target.value)}
+        aria-label={`${label} (${precision === 'month' ? 'month and year' : 'month, day, and year'})`}
+        data-testid={testId}
+      />
+    </div>
+    <span className="date-format-hint">{precision === 'month' ? 'Month and year only' : 'Include the day'}</span>
+  </div>;
+}
+
 type ProjectFormValues = {
   title: string; craft: 'knitting' | 'crochet'; status: ProjectStatus;
   description: string; patternName: string; patternDesigner: string;
-  yarn: string; tools: string; startedAt: string; targetDate: string;
+  yarnBrand: string; yarnType: string; yarnColor: string;
+  tools: string; startedAt: string; startedAtPrecision: ProjectDatePrecision;
+  targetDate: string; targetDatePrecision: ProjectDatePrecision;
 };
 
 function ProjectFormPage() {
@@ -319,14 +395,21 @@ function ProjectFormPage() {
   const client = useQueryClient();
   const create = useCreateProject();
   const form = useForm<ProjectFormValues>({
-    defaultValues: { title: '', craft: 'knitting', status: 'planning', description: '', patternName: '', patternDesigner: '', yarn: '', tools: '', startedAt: '', targetDate: '' },
+    defaultValues: { title: '', craft: 'knitting', status: 'planning', description: '', patternName: '', patternDesigner: '', yarnBrand: '', yarnType: '', yarnColor: '', tools: '', startedAt: '', startedAtPrecision: 'day', targetDate: '', targetDatePrecision: 'day' },
   });
   const submit = form.handleSubmit((values) => {
     const payload: CreateProject = {
       title: values.title.trim(), craft: values.craft, status: values.status,
       description: values.description || null, patternName: values.patternName || null,
-      patternDesigner: values.patternDesigner || null, yarn: values.yarn || null,
-      tools: values.tools || null, startedAt: values.startedAt || null, targetDate: values.targetDate || null,
+      patternDesigner: values.patternDesigner || null, yarn: null,
+      yarnBrand: values.yarnBrand.trim() || null,
+      yarnType: values.yarnType.trim() || null,
+      yarnColor: values.yarnColor.trim() || null,
+      tools: values.tools || null,
+      startedAt: dateForProjectApi(values.startedAt, values.startedAtPrecision),
+      startedAtPrecision: values.startedAtPrecision,
+      targetDate: dateForProjectApi(values.targetDate, values.targetDatePrecision),
+      targetDatePrecision: values.targetDatePrecision,
     };
     create.mutate({ data: payload }, {
       onSuccess: trackSuccessfulAction('project_created', (project: Project) => {
@@ -350,10 +433,17 @@ function ProjectFormPage() {
       <div className="form-grid">
         <div className="field-block"><label htmlFor="pattern-name">Pattern name</label><input id="pattern-name" placeholder="Pattern or source" {...form.register('patternName')} data-testid="input-pattern-name"/></div>
         <div className="field-block"><label htmlFor="pattern-designer">Designer</label><input id="pattern-designer" placeholder="Who made the pattern?" {...form.register('patternDesigner')} data-testid="input-pattern-designer"/></div>
-        <div className="field-block"><label htmlFor="project-yarn">Yarn</label><input id="project-yarn" placeholder="Fiber, color, weight…" {...form.register('yarn')} data-testid="input-project-yarn"/></div>
+        <div className="yarn-group field-wide">
+          <div className="yarn-group-heading"><b>Yarn</b><span>Keep brand, type, and color easy to find.</span></div>
+          <div className="yarn-trifold">
+            <div className="field-block"><label htmlFor="project-yarn-brand">Brand</label><input id="project-yarn-brand" placeholder="e.g. Cascade" {...form.register('yarnBrand')} data-testid="input-yarn-brand"/></div>
+            <div className="field-block"><label htmlFor="project-yarn-type">Type</label><input id="project-yarn-type" placeholder="e.g. Merino DK" {...form.register('yarnType')} data-testid="input-yarn-type"/></div>
+            <div className="field-block"><label htmlFor="project-yarn-color">Color</label><input id="project-yarn-color" placeholder="e.g. Oatmeal" {...form.register('yarnColor')} data-testid="input-yarn-color"/></div>
+          </div>
+        </div>
         <div className="field-block"><label htmlFor="project-tools">Tools</label><input id="project-tools" placeholder="Needle or hook size…" {...form.register('tools')} data-testid="input-project-tools"/></div>
-        <div className="field-block"><label htmlFor="project-start">Started on</label><input id="project-start" type="date" {...form.register('startedAt')} data-testid="input-start-date"/></div>
-        <div className="field-block"><label htmlFor="project-target">Aiming for (optional)</label><input id="project-target" type="date" {...form.register('targetDate')} data-testid="input-target-date"/></div>
+        <ProjectDateField id="project-start" label="Started on" value={form.watch('startedAt')} precision={form.watch('startedAtPrecision')} onValueChange={(value) => form.setValue('startedAt', value)} onPrecisionChange={(precision) => form.setValue('startedAtPrecision', precision)} testId="input-start-date"/>
+        <ProjectDateField id="project-target" label="Aiming for (optional)" value={form.watch('targetDate')} precision={form.watch('targetDatePrecision')} onValueChange={(value) => form.setValue('targetDate', value)} onPrecisionChange={(precision) => form.setValue('targetDatePrecision', precision)} testId="input-target-date"/>
         <div className="field-block field-wide"><label htmlFor="project-description">Notes to future you</label><textarea id="project-description" rows={3} placeholder="What made you fall for this one?" {...form.register('description')} data-testid="input-project-description"/></div>
       </div>
       {create.isError && <p className="mutation-error" role="alert">We couldn't save that project just now. Your details are still here — please try again.</p>}
@@ -388,16 +478,20 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
     return () => URL.revokeObjectURL(preview);
   }, [progressPhoto]);
   const editForm = useForm<ProjectFormValues>({
-    defaultValues: { title: '', craft: 'knitting', status: 'planning', description: '', patternName: '', patternDesigner: '', yarn: '', tools: '', startedAt: '', targetDate: '' },
+    defaultValues: { title: '', craft: 'knitting', status: 'planning', description: '', patternName: '', patternDesigner: '', yarnBrand: '', yarnType: '', yarnColor: '', tools: '', startedAt: '', startedAtPrecision: 'day', targetDate: '', targetDatePrecision: 'day' },
   });
   useEffect(() => {
     if (!project) return;
     editForm.reset({
       title: project.title, craft: project.craft, status: project.status,
       description: project.description || '', patternName: project.patternName || '',
-      patternDesigner: project.patternDesigner || '', yarn: project.yarn || '',
-      tools: project.tools || '', startedAt: project.startedAt?.slice(0, 10) || '',
-      targetDate: project.targetDate?.slice(0, 10) || '',
+      patternDesigner: project.patternDesigner || '',
+      yarnBrand: project.yarnBrand || '', yarnType: project.yarnType || '', yarnColor: project.yarnColor || '',
+      tools: project.tools || '',
+      startedAt: dateForProjectForm(project.startedAt, project.startedAtPrecision),
+      startedAtPrecision: project.startedAtPrecision,
+      targetDate: dateForProjectForm(project.targetDate, project.targetDatePrecision),
+      targetDatePrecision: project.targetDatePrecision,
     });
   }, [project?.id, editForm.reset]);
   const progressForm = useForm<{ notes: string; completionPercent: number }>({
@@ -412,8 +506,15 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
     const payload: UpdateProject = {
       title: values.title.trim(), craft: values.craft, status: values.status,
       description: values.description || null, patternName: values.patternName || null,
-      patternDesigner: values.patternDesigner || null, yarn: values.yarn || null,
-      tools: values.tools || null, startedAt: values.startedAt || null, targetDate: values.targetDate || null,
+      patternDesigner: values.patternDesigner || null,
+      yarnBrand: values.yarnBrand.trim() || null,
+      yarnType: values.yarnType.trim() || null,
+      yarnColor: values.yarnColor.trim() || null,
+      tools: values.tools || null,
+      startedAt: dateForProjectApi(values.startedAt, values.startedAtPrecision),
+      startedAtPrecision: values.startedAtPrecision,
+      targetDate: dateForProjectApi(values.targetDate, values.targetDatePrecision),
+      targetDatePrecision: values.targetDatePrecision,
     };
     update.mutate({ projectId, data: payload }, { onSuccess: () => { invalidate(); setEditing(false); } });
   });
@@ -478,7 +579,7 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
   const craftLabel = project.craft === 'knitting' ? 'Knitting' : 'Crochet';
   return <PortalLayout active="projects">
     <Link href="/projects" className="back-link" data-testid="link-back-projects"><ArrowLeft size={16}/> Back to projects</Link>
-    <div className="detail-heading"><div><div className="eyebrow"><span className="eyebrow-stitch"/>{craftLabel} · PROJECT JOURNAL</div><h1 className="serif">{project.title}</h1><div className="detail-status"><StatusPill status={project.status}/><span>Started {project.startedAt ? new Intl.DateTimeFormat('en', { month: 'long', day: 'numeric', year: 'numeric' }).format(new Date(project.startedAt)) : 'when you were ready'}</span></div></div><div className="detail-actions"><button className="button button-outline" onClick={() => setEditing(!editing)} data-testid="button-edit-project">{editing ? <X size={16}/> : <Feather size={16}/>} {editing ? 'Close edit' : 'Edit details'}</button><button className="icon-button danger-icon" aria-label="Delete project" title="Delete project" onClick={() => setConfirmDelete(true)} data-testid="button-delete-project"><Trash2 size={17}/></button></div></div>
+     <div className="detail-heading"><div><div className="eyebrow"><span className="eyebrow-stitch"/>{craftLabel} · PROJECT JOURNAL</div><h1 className="serif">{project.title}</h1><div className="detail-status"><StatusPill status={project.status}/><span>Started {formatProjectDate(project.startedAt, project.startedAtPrecision) || 'when you were ready'}</span></div></div><div className="detail-actions"><button className="button button-outline" onClick={() => setEditing(!editing)} data-testid="button-edit-project">{editing ? <X size={16}/> : <Feather size={16}/>} {editing ? 'Close edit' : 'Edit details'}</button><button className="icon-button danger-icon" aria-label="Delete project" title="Delete project" onClick={() => setConfirmDelete(true)} data-testid="button-delete-project"><Trash2 size={17}/></button></div></div>
     {confirmDelete && <div className="confirm-banner"><div><b>Let this one go?</b><span>This will permanently remove the project and its progress notes.</span></div><button className="button button-quiet" onClick={() => setConfirmDelete(false)} data-testid="button-cancel-delete">Keep it</button><button className="button button-danger" onClick={deleteProject} disabled={remove.isPending} data-testid="button-confirm-delete">{remove.isPending ? 'Removing…' : 'Delete project'}</button></div>}
     {editing && <Form {...editForm}><form className="edit-form loom-card" onSubmit={saveEdit} noValidate><div className="form-intro"><span className="form-number">EDIT</span><div><h2 className="serif">Project details</h2><p>Change any detail whenever the project shifts.</p></div></div><div className="form-grid">
       <div className="field-block field-wide"><label htmlFor="edit-title">Project name</label><input id="edit-title" {...editForm.register('title', { required: 'Project name is required.' })} data-testid="input-edit-title"/></div>
@@ -486,10 +587,18 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
       <div className="field-block"><label htmlFor="edit-status">Status</label><select id="edit-status" {...editForm.register('status')} data-testid="select-edit-status"><option value="planning">Planning</option><option value="in_progress">In progress</option><option value="paused">On pause</option><option value="completed">Finished</option></select></div>
       <div className="field-block"><label htmlFor="edit-pattern">Pattern name</label><input id="edit-pattern" {...editForm.register('patternName')} data-testid="input-edit-pattern"/></div>
       <div className="field-block"><label htmlFor="edit-designer">Designer</label><input id="edit-designer" {...editForm.register('patternDesigner')} data-testid="input-edit-designer"/></div>
-      <div className="field-block"><label htmlFor="edit-yarn">Yarn</label><input id="edit-yarn" {...editForm.register('yarn')} data-testid="input-edit-yarn"/></div>
+      <div className="yarn-group field-wide">
+        <div className="yarn-group-heading"><b>Yarn</b><span>Keep brand, type, and color easy to find.</span></div>
+        <div className="yarn-trifold">
+          <div className="field-block"><label htmlFor="edit-yarn-brand">Brand</label><input id="edit-yarn-brand" placeholder="e.g. Cascade" {...editForm.register('yarnBrand')} data-testid="input-edit-yarn-brand"/></div>
+          <div className="field-block"><label htmlFor="edit-yarn-type">Type</label><input id="edit-yarn-type" placeholder="e.g. Merino DK" {...editForm.register('yarnType')} data-testid="input-edit-yarn-type"/></div>
+          <div className="field-block"><label htmlFor="edit-yarn-color">Color</label><input id="edit-yarn-color" placeholder="e.g. Oatmeal" {...editForm.register('yarnColor')} data-testid="input-edit-yarn-color"/></div>
+        </div>
+        {project.yarn && <p className="legacy-yarn-note"><b>Saved yarn note:</b> {project.yarn} <span>This earlier entry is being kept unchanged.</span></p>}
+      </div>
       <div className="field-block"><label htmlFor="edit-tools">Tools</label><input id="edit-tools" {...editForm.register('tools')} data-testid="input-edit-tools"/></div>
-      <div className="field-block"><label htmlFor="edit-started">Started on</label><input id="edit-started" type="date" {...editForm.register('startedAt')} data-testid="input-edit-start-date"/></div>
-      <div className="field-block"><label htmlFor="edit-target">Target date</label><input id="edit-target" type="date" {...editForm.register('targetDate')} data-testid="input-edit-target-date"/></div>
+       <ProjectDateField id="edit-started" label="Started on" value={editForm.watch('startedAt')} precision={editForm.watch('startedAtPrecision')} onValueChange={(value) => editForm.setValue('startedAt', value)} onPrecisionChange={(precision) => editForm.setValue('startedAtPrecision', precision)} testId="input-edit-start-date"/>
+       <ProjectDateField id="edit-target" label="Target date" value={editForm.watch('targetDate')} precision={editForm.watch('targetDatePrecision')} onValueChange={(value) => editForm.setValue('targetDate', value)} onPrecisionChange={(precision) => editForm.setValue('targetDatePrecision', precision)} testId="input-edit-target-date"/>
       <div className="field-block field-wide"><label htmlFor="edit-description">Notes</label><textarea id="edit-description" rows={3} {...editForm.register('description')} data-testid="input-edit-description"/></div>
     </div>{update.isError && <p className="mutation-error">We couldn't save those changes. Try again.</p>}<div className="form-actions"><button type="button" className="button button-quiet" onClick={() => setEditing(false)} data-testid="button-cancel-edit">Cancel</button><button className="button button-primary" type="submit" disabled={update.isPending} data-testid="button-update-project">{update.isPending ? 'Saving…' : 'Save changes'} <Check size={15}/></button></div></form></Form>}
     <section className="detail-main-grid">
@@ -502,7 +611,7 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
       </div>
       <aside className="detail-aside">
         <div className="aside-card loom-card"><span className="eyebrow">A FEW DETAILS</span><h3 className="serif">On the table</h3><dl className="detail-list">
-          <div><dt>Pattern</dt><dd>{project.patternName || 'Not added yet'}</dd></div><div><dt>Designer</dt><dd>{project.patternDesigner || 'Not added yet'}</dd></div><div><dt>Yarn</dt><dd>{project.yarn || 'Not added yet'}</dd></div><div><dt>Tools</dt><dd>{project.tools || 'Not added yet'}</dd></div><div><dt>Target date</dt><dd>{project.targetDate ? new Intl.DateTimeFormat('en', { month: 'long', day: 'numeric', year: 'numeric' }).format(new Date(project.targetDate)) : 'No date in mind'}</dd></div>
+          <div><dt>Pattern</dt><dd>{project.patternName || 'Not added yet'}</dd></div><div><dt>Designer</dt><dd>{project.patternDesigner || 'Not added yet'}</dd></div><div><dt>Yarn</dt><dd>{formatYarnDetails(project) || 'Not added yet'}</dd></div>{project.yarn && (project.yarnBrand || project.yarnType || project.yarnColor) && <div><dt>Previous yarn note</dt><dd>{project.yarn}</dd></div>}<div><dt>Tools</dt><dd>{project.tools || 'Not added yet'}</dd></div><div><dt>Target date</dt><dd>{formatProjectDate(project.targetDate, project.targetDatePrecision) || 'No date in mind'}</dd></div>
         </dl>{project.description && <div className="personal-note"><span>NOTE TO SELF</span><p>{project.description}</p></div>}<button className="aside-edit" onClick={() => setEditing(!editing)} data-testid="button-edit-details"><Feather size={14}/> Edit details</button></div>
         <div className="aside-encouragement"><Flower2 className="encouragement-mark" size={48} strokeWidth={1}/><p>“Slow work is still<br/>beautiful work.”</p><span>YOUR WORKROOM, YOUR PACE</span></div>
       </aside>

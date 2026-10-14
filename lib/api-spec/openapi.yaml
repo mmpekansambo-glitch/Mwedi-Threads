@@ -287,6 +287,9 @@ components:
     ProjectStatus:
       type: string
       enum: [planning, in_progress, paused, completed]
+    ProjectDatePrecision:
+      type: string
+      enum: [month, day]
     ProgressEntry:
       type: object
       properties:
@@ -328,14 +331,24 @@ components:
           type: [string, "null"]
         yarn:
           type: [string, "null"]
+        yarnBrand:
+          type: [string, "null"]
+        yarnType:
+          type: [string, "null"]
+        yarnColor:
+          type: [string, "null"]
         tools:
           type: [string, "null"]
         startedAt:
           type: [string, "null"]
           format: date
+        startedAtPrecision:
+          $ref: "#/components/schemas/ProjectDatePrecision"
         targetDate:
           type: [string, "null"]
           format: date
+        targetDatePrecision:
+          $ref: "#/components/schemas/ProjectDatePrecision"
         completionPercent:
           type: integer
           minimum: 0
@@ -355,9 +368,14 @@ components:
         - patternName
         - patternDesigner
         - yarn
+        - yarnBrand
+        - yarnType
+        - yarnColor
         - tools
         - startedAt
+        - startedAtPrecision
         - targetDate
+        - targetDatePrecision
         - completionPercent
         - createdAt
         - updatedAt
@@ -390,14 +408,24 @@ components:
           type: [string, "null"]
         yarn:
           type: [string, "null"]
+        yarnBrand:
+          type: [string, "null"]
+        yarnType:
+          type: [string, "null"]
+        yarnColor:
+          type: [string, "null"]
         tools:
           type: [string, "null"]
         startedAt:
           type: [string, "null"]
           format: date
+        startedAtPrecision:
+          $ref: "#/components/schemas/ProjectDatePrecision"
         targetDate:
           type: [string, "null"]
           format: date
+        targetDatePrecision:
+          $ref: "#/components/schemas/ProjectDatePrecision"
       required: [title, craft]
     UpdateProject:
       type: object
@@ -418,14 +446,24 @@ components:
           type: [string, "null"]
         yarn:
           type: [string, "null"]
+        yarnBrand:
+          type: [string, "null"]
+        yarnType:
+          type: [string, "null"]
+        yarnColor:
+          type: [string, "null"]
         tools:
           type: [string, "null"]
         startedAt:
           type: [string, "null"]
           format: date
+        startedAtPrecision:
+          $ref: "#/components/schemas/ProjectDatePrecision"
         targetDate:
           type: [string, "null"]
           format: date
+        targetDatePrecision:
+          $ref: "#/components/schemas/ProjectDatePrecision"
         completionPercent:
           type: integer
           minimum: 0

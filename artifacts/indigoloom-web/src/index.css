@@ -329,6 +329,16 @@ a { color: inherit; text-decoration: none; }
 .field-block input::placeholder,.field-block textarea::placeholder { color: #aca6ae; }
 .field-block textarea { resize: vertical; line-height: 1.55; }
 .field-block select { appearance: auto; }
+.project-date-controls { display: grid; grid-template-columns: minmax(78px, .42fr) minmax(0, 1fr); gap: 7px; }
+.project-date-controls select { padding-left: 8px; padding-right: 8px; }
+.date-format-hint { color: #867f8d; font-size: 10px; line-height: 1.3; }
+.yarn-group { display: grid; gap: 10px; }
+.yarn-group-heading { display: flex; align-items: baseline; gap: 10px; }
+.yarn-group-heading b { color: #615b6d; font-size: 10px; }
+.yarn-group-heading span { color: #928b98; font-size: 10px; }
+.yarn-trifold { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 14px; }
+.legacy-yarn-note { margin: 0; padding: 10px 12px; border: 1px solid #e5ded2; border-radius: 8px; color: #615b6d; background: #f7f3e9; font-size: 11px; line-height: 1.55; }
+.legacy-yarn-note span { display: block; margin-top: 3px; color: #928b98; font-size: 10px; }
 .field-error,.mutation-error { color: #a3413f; font-size: 10px; }
 .form-divider { display: flex; align-items: center; gap: 12px; margin: 26px 0 18px; color: #9a93a0; font-size: 9px; letter-spacing: .13em; font-weight: 700; }
 .form-divider i { height: 1px; background: #e9e3d9; flex: 1; }
@@ -537,4 +547,5 @@ a { color: inherit; text-decoration: none; }
   .stat-label { letter-spacing: .09em; }
   .form-grid { grid-template-columns: 1fr; }
   .field-wide { grid-column: auto; }
+  .yarn-trifold { grid-template-columns: 1fr; }
 }

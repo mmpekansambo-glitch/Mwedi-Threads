@@ -31,6 +31,14 @@ export const ProjectStatus = {
   completed: 'completed',
 } as const;
 
+export type ProjectDatePrecision = typeof ProjectDatePrecision[keyof typeof ProjectDatePrecision];
+
+
+export const ProjectDatePrecision = {
+  month: 'month',
+  day: 'day',
+} as const;
+
 export interface ProgressEntry {
   id: string;
   projectId: string;
@@ -59,11 +67,19 @@ export interface Project {
   /** @nullable */
   yarn: string | null;
   /** @nullable */
+  yarnBrand: string | null;
+  /** @nullable */
+  yarnType: string | null;
+  /** @nullable */
+  yarnColor: string | null;
+  /** @nullable */
   tools: string | null;
   /** @nullable */
   startedAt: string | null;
+  startedAtPrecision: ProjectDatePrecision;
   /** @nullable */
   targetDate: string | null;
+  targetDatePrecision: ProjectDatePrecision;
   /**
      * @minimum 0
      * @maximum 100
@@ -94,11 +110,19 @@ export interface CreateProject {
   /** @nullable */
   yarn?: string | null;
   /** @nullable */
+  yarnBrand?: string | null;
+  /** @nullable */
+  yarnType?: string | null;
+  /** @nullable */
+  yarnColor?: string | null;
+  /** @nullable */
   tools?: string | null;
   /** @nullable */
   startedAt?: string | null;
+  startedAtPrecision?: ProjectDatePrecision;
   /** @nullable */
   targetDate?: string | null;
+  targetDatePrecision?: ProjectDatePrecision;
 }
 
 export interface UpdateProject {
@@ -118,11 +142,19 @@ export interface UpdateProject {
   /** @nullable */
   yarn?: string | null;
   /** @nullable */
+  yarnBrand?: string | null;
+  /** @nullable */
+  yarnType?: string | null;
+  /** @nullable */
+  yarnColor?: string | null;
+  /** @nullable */
   tools?: string | null;
   /** @nullable */
   startedAt?: string | null;
+  startedAtPrecision?: ProjectDatePrecision;
   /** @nullable */
   targetDate?: string | null;
+  targetDatePrecision?: ProjectDatePrecision;
   /**
      * @minimum 0
      * @maximum 100

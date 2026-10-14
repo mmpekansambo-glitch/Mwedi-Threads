@@ -7,6 +7,7 @@ import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native
 import { useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
+import { ProjectDateField, projectDateForApi, type ProjectDatePrecision } from '@/components/ProjectDateField';
 import { FormFieldLabel, LoomButton, LoomText, SignedInGate, fonts } from '@/components/loom';
 import { useColors } from '@/hooks/useColors';
 
@@ -19,10 +20,14 @@ export default function NewProjectScreen() {
   const [craft, setCraft] = useState<'knitting' | 'crochet'>('knitting');
   const [patternName, setPatternName] = useState('');
   const [patternDesigner, setPatternDesigner] = useState('');
-  const [yarn, setYarn] = useState('');
+  const [yarnBrand, setYarnBrand] = useState('');
+  const [yarnType, setYarnType] = useState('');
+  const [yarnColor, setYarnColor] = useState('');
   const [tools, setTools] = useState('');
   const [startedAt, setStartedAt] = useState('');
+  const [startedAtPrecision, setStartedAtPrecision] = useState<ProjectDatePrecision>('day');
   const [targetDate, setTargetDate] = useState('');
+  const [targetDatePrecision, setTargetDatePrecision] = useState<ProjectDatePrecision>('day');
   const [description, setDescription] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -41,10 +46,14 @@ export default function NewProjectScreen() {
       description: description.trim() || null,
       patternName: patternName.trim() || null,
       patternDesigner: patternDesigner.trim() || null,
-      yarn: yarn.trim() || null,
+      yarnBrand: yarnBrand.trim() || null,
+      yarnType: yarnType.trim() || null,
+      yarnColor: yarnColor.trim() || null,
       tools: tools.trim() || null,
-      startedAt: startedAt.trim() || null,
-      targetDate: targetDate.trim() || null,
+      startedAt: projectDateForApi(startedAt, startedAtPrecision),
+      startedAtPrecision,
+      targetDate: projectDateForApi(targetDate, targetDatePrecision),
+      targetDatePrecision,
     };
     create.mutate({ data: payload }, {
       onSuccess: (project) => {
@@ -84,14 +93,17 @@ export default function NewProjectScreen() {
             <TextInput {...inputProps} value={patternName} onChangeText={setPatternName} placeholder="Pattern or source" style={fieldStyle} />
             <FormFieldLabel>Designer</FormFieldLabel>
             <TextInput {...inputProps} value={patternDesigner} onChangeText={setPatternDesigner} placeholder="Who made the pattern?" style={fieldStyle} />
-            <FormFieldLabel>Yarn</FormFieldLabel>
-            <TextInput {...inputProps} value={yarn} onChangeText={setYarn} placeholder="Fiber, color, weight…" style={fieldStyle} />
+            <LoomText style={[styles.sectionLabel, { color: colors.primary }]}>YARN</LoomText>
+            <FormFieldLabel>Brand</FormFieldLabel>
+            <TextInput {...inputProps} value={yarnBrand} onChangeText={setYarnBrand} placeholder="e.g. Cascade" style={fieldStyle} testID="input-yarn-brand" />
+            <FormFieldLabel>Type</FormFieldLabel>
+            <TextInput {...inputProps} value={yarnType} onChangeText={setYarnType} placeholder="e.g. Merino DK" style={fieldStyle} testID="input-yarn-type" />
+            <FormFieldLabel>Color</FormFieldLabel>
+            <TextInput {...inputProps} value={yarnColor} onChangeText={setYarnColor} placeholder="e.g. Oatmeal" style={fieldStyle} testID="input-yarn-color" />
             <FormFieldLabel>Tools</FormFieldLabel>
             <TextInput {...inputProps} value={tools} onChangeText={setTools} placeholder="Needle or hook size…" style={fieldStyle} />
-            <FormFieldLabel>Started on (YYYY-MM-DD)</FormFieldLabel>
-            <TextInput {...inputProps} value={startedAt} onChangeText={setStartedAt} placeholder="Optional" style={fieldStyle} />
-            <FormFieldLabel>Target date (YYYY-MM-DD)</FormFieldLabel>
-            <TextInput {...inputProps} value={targetDate} onChangeText={setTargetDate} placeholder="Optional" style={fieldStyle} />
+            <ProjectDateField label="Started on" value={startedAt} precision={startedAtPrecision} onChange={setStartedAt} onPrecisionChange={setStartedAtPrecision} testID="input-start-date" />
+            <ProjectDateField label="Aiming for (optional)" value={targetDate} precision={targetDatePrecision} onChange={setTargetDate} onPrecisionChange={setTargetDatePrecision} testID="input-target-date" />
             <FormFieldLabel>Notes to future you</FormFieldLabel>
             <TextInput {...inputProps} value={description} onChangeText={setDescription} placeholder="What made you fall for this one?" multiline numberOfLines={4} textAlignVertical="top" style={[...fieldStyle, styles.multiline]} />
             {errorMessage ? <LoomText accessibilityRole="alert" style={[styles.error, { color: colors.destructive }]}>{errorMessage}</LoomText> : null}

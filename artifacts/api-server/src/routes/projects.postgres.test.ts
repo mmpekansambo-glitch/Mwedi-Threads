@@ -79,6 +79,7 @@ describe.skipIf(!databaseUrl)("project authorization against PostgreSQL", () => 
     await adminPool.query(`
       CREATE TYPE ${isolatedSchema}.craft_type AS ENUM ('knitting', 'crochet');
       CREATE TYPE ${isolatedSchema}.project_status AS ENUM ('planning', 'in_progress', 'paused', 'completed');
+      CREATE TYPE ${isolatedSchema}.project_date_precision AS ENUM ('month', 'day');
       CREATE TABLE ${isolatedSchema}.projects (
         id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         owner_id text NOT NULL,
@@ -89,9 +90,14 @@ describe.skipIf(!databaseUrl)("project authorization against PostgreSQL", () => 
         pattern_name text,
         pattern_designer text,
         yarn text,
+        yarn_brand text,
+        yarn_type text,
+        yarn_color text,
         tools text,
         started_at date,
+        started_at_precision ${isolatedSchema}.project_date_precision NOT NULL DEFAULT 'day',
         target_date date,
+        target_date_precision ${isolatedSchema}.project_date_precision NOT NULL DEFAULT 'day',
         completion_percent integer NOT NULL DEFAULT 0,
         created_at timestamptz NOT NULL DEFAULT now(),
         updated_at timestamptz NOT NULL DEFAULT now()

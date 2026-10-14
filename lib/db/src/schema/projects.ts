@@ -17,6 +17,10 @@ export const projectStatusEnum = pgEnum("project_status", [
   "paused",
   "completed",
 ]);
+export const projectDatePrecisionEnum = pgEnum("project_date_precision", [
+  "month",
+  "day",
+]);
 
 export const projectsTable = pgTable("projects", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -28,9 +32,18 @@ export const projectsTable = pgTable("projects", {
   patternName: text("pattern_name"),
   patternDesigner: text("pattern_designer"),
   yarn: text("yarn"),
+  yarnBrand: text("yarn_brand"),
+  yarnType: text("yarn_type"),
+  yarnColor: text("yarn_color"),
   tools: text("tools"),
   startedAt: date("started_at", { mode: "string" }),
+  startedAtPrecision: projectDatePrecisionEnum("started_at_precision")
+    .notNull()
+    .default("day"),
   targetDate: date("target_date", { mode: "string" }),
+  targetDatePrecision: projectDatePrecisionEnum("target_date_precision")
+    .notNull()
+    .default("day"),
   completionPercent: integer("completion_percent").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()

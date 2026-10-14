@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { CraftType } from './craftType';
+import type { ProjectDatePrecision } from './projectDatePrecision';
 import type { ProjectStatus } from './projectStatus';
 
 export interface CreateProject {
@@ -25,9 +26,17 @@ export interface CreateProject {
   /** @nullable */
   yarn?: string | null;
   /** @nullable */
+  yarnBrand?: string | null;
+  /** @nullable */
+  yarnType?: string | null;
+  /** @nullable */
+  yarnColor?: string | null;
+  /** @nullable */
   tools?: string | null;
   /** @nullable */
   startedAt?: Date | null;
+  startedAtPrecision?: ProjectDatePrecision;
   /** @nullable */
   targetDate?: Date | null;
+  targetDatePrecision?: ProjectDatePrecision;
 }

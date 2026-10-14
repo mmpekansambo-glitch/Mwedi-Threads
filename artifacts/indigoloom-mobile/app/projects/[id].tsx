@@ -11,6 +11,7 @@ import { Image } from 'expo-image';
 import { Alert, Linking, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FormFieldLabel, LoomButton, LoomText, ProgressBar, SignedInGate, StatusChip, fonts } from '@/components/loom';
+import { formatProjectDate } from '@/components/ProjectDateField';
 import { useColors } from '@/hooks/useColors';
 
 export default function ProjectDetailScreen() {
@@ -159,10 +160,11 @@ export default function ProjectDetailScreen() {
               {[
                 ['Pattern', project.patternName],
                 ['Designer', project.patternDesigner],
-                ['Yarn', project.yarn],
+                ['Yarn', [project.yarnBrand, project.yarnType, project.yarnColor].filter(Boolean).join(' · ') || null],
+                ['Previous yarn note', project.yarn],
                 ['Tools', project.tools],
-                ['Started', project.startedAt],
-                ['Target date', project.targetDate],
+                ['Started', project.startedAt ? formatProjectDate(project.startedAt, project.startedAtPrecision) : null],
+                ['Target date', project.targetDate ? formatProjectDate(project.targetDate, project.targetDatePrecision) : null],
               ].filter((entry) => entry[1]).map(([label, value]) => (
                 <View key={label} style={[styles.infoRow, { borderBottomColor: colors.border }]}><LoomText style={[styles.infoLabel, { color: colors.mutedForeground }]}>{label}</LoomText><LoomText style={[styles.infoValue, { color: colors.foreground }]}>{value}</LoomText></View>
               ))}

@@ -21,7 +21,9 @@ export default function EditProjectScreen() {
   const [title, setTitle] = useState('');
   const [patternName, setPatternName] = useState('');
   const [patternDesigner, setPatternDesigner] = useState('');
-  const [yarn, setYarn] = useState('');
+  const [yarnBrand, setYarnBrand] = useState('');
+  const [yarnType, setYarnType] = useState('');
+  const [yarnColor, setYarnColor] = useState('');
   const [tools, setTools] = useState('');
   const [description, setDescription] = useState('');
   const [error, setError] = useState('');
@@ -30,7 +32,9 @@ export default function EditProjectScreen() {
     setTitle(project.title);
     setPatternName(project.patternName || '');
     setPatternDesigner(project.patternDesigner || '');
-    setYarn(project.yarn || '');
+    setYarnBrand(project.yarnBrand || '');
+    setYarnType(project.yarnType || '');
+    setYarnColor(project.yarnColor || '');
     setTools(project.tools || '');
     setDescription(project.description || '');
   }, [project?.id]);
@@ -44,7 +48,9 @@ export default function EditProjectScreen() {
       title: title.trim(),
       patternName: patternName.trim() || null,
       patternDesigner: patternDesigner.trim() || null,
-      yarn: yarn.trim() || null,
+      yarnBrand: yarnBrand.trim() || null,
+      yarnType: yarnType.trim() || null,
+      yarnColor: yarnColor.trim() || null,
       tools: tools.trim() || null,
       description: description.trim() || null,
     };
@@ -77,8 +83,14 @@ export default function EditProjectScreen() {
               <TextInput value={patternName} onChangeText={setPatternName} placeholder="Pattern or source" placeholderTextColor={colors.mutedForeground} style={inputStyle} />
               <FormFieldLabel>Designer</FormFieldLabel>
               <TextInput value={patternDesigner} onChangeText={setPatternDesigner} placeholder="Who made the pattern?" placeholderTextColor={colors.mutedForeground} style={inputStyle} />
-              <FormFieldLabel>Yarn</FormFieldLabel>
-              <TextInput value={yarn} onChangeText={setYarn} placeholder="Fiber, color, weight…" placeholderTextColor={colors.mutedForeground} style={inputStyle} />
+              <LoomText style={{ color: colors.primary, fontSize: 9, letterSpacing: 1.1, fontFamily: fonts.bold, marginBottom: 11 }}>YARN</LoomText>
+              <FormFieldLabel>Brand</FormFieldLabel>
+              <TextInput value={yarnBrand} onChangeText={setYarnBrand} placeholder="e.g. Cascade" placeholderTextColor={colors.mutedForeground} style={inputStyle} testID="input-edit-yarn-brand" />
+              <FormFieldLabel>Type</FormFieldLabel>
+              <TextInput value={yarnType} onChangeText={setYarnType} placeholder="e.g. Merino DK" placeholderTextColor={colors.mutedForeground} style={inputStyle} testID="input-edit-yarn-type" />
+              <FormFieldLabel>Color</FormFieldLabel>
+              <TextInput value={yarnColor} onChangeText={setYarnColor} placeholder="e.g. Oatmeal" placeholderTextColor={colors.mutedForeground} style={inputStyle} testID="input-edit-yarn-color" />
+              {project.yarn ? <LoomText style={{ color: colors.mutedForeground, fontSize: 11, lineHeight: 17, marginBottom: 14 }}>Saved yarn note: {project.yarn} (kept unchanged from the earlier form)</LoomText> : null}
               <FormFieldLabel>Tools</FormFieldLabel>
               <TextInput value={tools} onChangeText={setTools} placeholder="Needle or hook size…" placeholderTextColor={colors.mutedForeground} style={inputStyle} />
               <FormFieldLabel>Notes to future you</FormFieldLabel>

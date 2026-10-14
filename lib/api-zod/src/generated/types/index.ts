@@ -21,6 +21,7 @@ export * from './progressPhotoUploadRequest';
 export * from './progressPhotoUploadRequestContentType';
 export * from './progressPhotoUploadResponse';
 export * from './project';
+export * from './projectDatePrecision';
 export * from './projectDetail';
 export * from './projectStatus';
 export * from './unauthorizedResponse';

@@ -204,9 +204,14 @@ router.post("/projects", async (req, res): Promise<void> => {
       patternName: parsed.data.patternName ?? null,
       patternDesigner: parsed.data.patternDesigner ?? null,
       yarn: parsed.data.yarn ?? null,
+      yarnBrand: parsed.data.yarnBrand ?? null,
+      yarnType: parsed.data.yarnType ?? null,
+      yarnColor: parsed.data.yarnColor ?? null,
       tools: parsed.data.tools ?? null,
       startedAt: dateOnly(parsed.data.startedAt),
+      startedAtPrecision: parsed.data.startedAtPrecision ?? "day",
       targetDate: dateOnly(parsed.data.targetDate),
+      targetDatePrecision: parsed.data.targetDatePrecision ?? "day",
     })
     .returning();
 

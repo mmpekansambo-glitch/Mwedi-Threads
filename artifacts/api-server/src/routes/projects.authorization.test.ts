@@ -47,9 +47,14 @@ function project(id: string, ownerId: string, title: string) {
     patternName: null,
     patternDesigner: null,
     yarn: null,
+    yarnBrand: null,
+    yarnType: null,
+    yarnColor: null,
     tools: null,
     startedAt: null,
+    startedAtPrecision: "day" as const,
     targetDate: null,
+    targetDatePrecision: "day" as const,
     completionPercent: 25,
     createdAt: timestamp,
     updatedAt: timestamp,
@@ -203,6 +208,7 @@ class Query {
       const created = {
         id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
         ...this.rowValues,
+        completionPercent: this.rowValues.completionPercent ?? 0,
         createdAt: timestamp,
         updatedAt: timestamp,
       };
@@ -279,6 +285,66 @@ beforeEach(() => {
 });
 
 describe("project authorization", () => {
+  it("saves month-only and full-date precision independently", async () => {
+    const createdResponse = await request("/projects", {
+      method: "POST",
+      user: ownerA,
+      body: {
+        title: "A seasonal shawl",
+        craft: "knitting",
+        startedAt: "2026-06-01",
+        startedAtPrecision: "month",
+        targetDate: "2026-06-24",
+        targetDatePrecision: "day",
+        yarnBrand: "Brooklyn Tweed",
+        yarnType: "Tough Love Sock",
+        yarnColor: "Wild Horse",
+      },
+    });
+    const createdText = await createdResponse.text();
+    expect(createdResponse.status, createdText).toBe(201);
+    const created = JSON.parse(createdText) as { id: string };
+    expect(created).toMatchObject({
+      startedAt: "2026-06-01",
+      startedAtPrecision: "month",
+      targetDate: "2026-06-24",
+      targetDatePrecision: "day",
+      yarnBrand: "Brooklyn Tweed",
+      yarnType: "Tough Love Sock",
+      yarnColor: "Wild Horse",
+    });
+
+    const updatedResponse = await request(`/projects/${created.id}`, {
+      method: "PATCH",
+      user: ownerA,
+      body: {
+        targetDate: "2026-07-01",
+        targetDatePrecision: "month",
+        yarnColor: "Cardinal",
+      },
+    });
+    expect(updatedResponse.status).toBe(200);
+    expect(await updatedResponse.json()).toMatchObject({
+      targetDate: "2026-07-01",
+      targetDatePrecision: "month",
+      yarnColor: "Cardinal",
+    });
+  });
+
+  it("rejects unknown project date precision values", async () => {
+    const response = await request("/projects", {
+      method: "POST",
+      user: ownerA,
+      body: {
+        title: "A test project",
+        craft: "knitting",
+        startedAtPrecision: "year",
+      },
+    });
+    expect(response.status).toBe(400);
+    expect(mockDb.insert).not.toHaveBeenCalled();
+  });
+
   it("deletes project photos and leaves them inaccessible through the app", async () => {
     const actualFetch = globalThis.fetch.bind(globalThis);
     const storageFetch = vi.spyOn(globalThis, "fetch").mockImplementation(
