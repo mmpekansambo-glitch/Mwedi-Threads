@@ -12,6 +12,8 @@ export * from './createProgress';
 export * from './createProject';
 export * from './dashboard';
 export * from './dashboardRecentProgressItem';
+export * from './designerWebsiteTitlePreviewRequest';
+export * from './designerWebsiteTitlePreviewResponse';
 export * from './error';
 export * from './getProjectsParams';
 export * from './healthStatus';

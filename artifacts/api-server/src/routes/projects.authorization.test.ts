@@ -46,6 +46,8 @@ function project(id: string, ownerId: string, title: string) {
     description: null,
     patternName: null,
     patternDesigner: null,
+    designerWebsite: null,
+    designerPageTitle: null,
     yarn: null,
     yarnBrand: null,
     yarnType: null,
@@ -296,6 +298,9 @@ describe("project authorization", () => {
         startedAtPrecision: "month",
         targetDate: "2026-06-24",
         targetDatePrecision: "day",
+        patternDesigner: null,
+        designerWebsite: "https://designer.example.test",
+        designerPageTitle: "Designer collection",
         yarnBrand: "Brooklyn Tweed",
         yarnType: "Tough Love Sock",
         yarnColor: "Wild Horse",
@@ -309,6 +314,8 @@ describe("project authorization", () => {
       startedAtPrecision: "month",
       targetDate: "2026-06-24",
       targetDatePrecision: "day",
+      designerWebsite: "https://designer.example.test",
+      designerPageTitle: "Designer collection",
       yarnBrand: "Brooklyn Tweed",
       yarnType: "Tough Love Sock",
       yarnColor: "Wild Horse",
@@ -320,6 +327,9 @@ describe("project authorization", () => {
       body: {
         targetDate: "2026-07-01",
         targetDatePrecision: "month",
+        designerWebsite: null,
+        designerPageTitle: null,
+        patternDesigner: "Mara Designer",
         yarnColor: "Cardinal",
       },
     });
@@ -327,6 +337,9 @@ describe("project authorization", () => {
     expect(await updatedResponse.json()).toMatchObject({
       targetDate: "2026-07-01",
       targetDatePrecision: "month",
+      designerWebsite: null,
+      designerPageTitle: null,
+      patternDesigner: "Mara Designer",
       yarnColor: "Cardinal",
     });
   });
@@ -343,6 +356,16 @@ describe("project authorization", () => {
     });
     expect(response.status).toBe(400);
     expect(mockDb.insert).not.toHaveBeenCalled();
+  });
+
+  it("rejects designer title previews for loopback website URLs", async () => {
+    const response = await request("/projects/designer-website-title-preview", {
+      method: "POST",
+      user: ownerA,
+      body: { websiteUrl: "http://127.0.0.1" },
+    });
+
+    expect(response.status).toBe(400);
   });
 
   it("deletes project photos and leaves them inaccessible through the app", async () => {

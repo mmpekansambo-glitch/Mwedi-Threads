@@ -6,11 +6,12 @@ import { publishableKeyFromHost } from '@clerk/react/internal';
 import { shadcn } from '@clerk/themes';
 import {
   requestProgressPhotoUpload, useAddProgress, useCreateProject, useDeleteProgressPhoto, useDeleteProject, useGetDashboard,
+  usePreviewDesignerWebsiteTitle,
   useGetProject, useGetProjects, useUpdateProject,
   getGetDashboardQueryKey, getGetProjectQueryKey, getGetProjectsQueryKey,
 } from '@workspace/api-client-react';
 import type { CreateProject, CreateProgress, Project, ProjectStatus, UpdateProject } from '@workspace/api-client-react';
-import { Form, useForm } from 'react-hook-form';
+import { FormProvider as Form, useForm, type UseFormReturn } from 'react-hook-form';
 import {
   ArrowDownRight, ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, Check,
   ChevronDown, CircleHelp, Clock3, Feather, Filter, Flower2, Gauge,
@@ -382,9 +383,56 @@ function ProjectDateField({
   </div>;
 }
 
+type DesignerMode = 'name' | 'website';
+
+function DesignerEntry({
+  form,
+  mode,
+  onModeChange,
+  onPreview,
+  onClearPreview,
+  isPreviewing,
+  message,
+  prefix,
+}: {
+  form: UseFormReturn<ProjectFormValues>;
+  mode: DesignerMode;
+  onModeChange: (mode: DesignerMode) => void;
+  onPreview: () => void;
+  onClearPreview: () => void;
+  isPreviewing: boolean;
+  message: string;
+  prefix: 'create' | 'edit';
+}) {
+  const pageTitle = form.watch('designerPageTitle');
+  const websiteRegistration = form.register('designerWebsite');
+
+  return <div className="designer-entry field-wide">
+    <div className="designer-entry-heading"><b>Designer</b><span>Use a name or link to their website.</span></div>
+    <div className="designer-mode-switch" role="group" aria-label="Designer entry option">
+      <button type="button" aria-pressed={mode === 'name'} className={mode === 'name' ? 'selected' : ''} onClick={() => onModeChange('name')} data-testid={`button-${prefix}-designer-name`}>Name</button>
+      <button type="button" aria-pressed={mode === 'website'} className={mode === 'website' ? 'selected' : ''} onClick={() => onModeChange('website')} data-testid={`button-${prefix}-designer-website`}>Website link</button>
+    </div>
+    {mode === 'name' ? (
+      <div className="field-block"><label htmlFor={`${prefix}-pattern-designer`}>Designer name</label><input id={`${prefix}-pattern-designer`} placeholder="Who made the pattern?" {...form.register('patternDesigner')} data-testid={prefix === 'create' ? 'input-pattern-designer' : 'input-edit-designer'}/></div>
+    ) : (
+      <>
+        <div className="designer-website-row">
+          <div className="field-block"><label htmlFor={`${prefix}-designer-website`}>Website link</label><input id={`${prefix}-designer-website`} type="url" autoCapitalize="none" autoCorrect="off" placeholder="https://example.com" {...websiteRegistration} onChange={(event) => { void websiteRegistration.onChange(event); form.setValue('designerPageTitle', '', { shouldDirty: true }); onClearPreview(); }} data-testid={`input-${prefix}-designer-website`}/></div>
+          <button type="button" className="button button-outline designer-preview-button" onClick={onPreview} disabled={isPreviewing} data-testid={`button-${prefix}-preview-designer-title`}>{isPreviewing ? 'Previewing…' : 'Preview page title'}</button>
+        </div>
+        <input type="hidden" {...form.register('designerPageTitle')}/>
+        {pageTitle && <div className="designer-page-preview" role="status" data-testid="designer-page-title-preview"><span>Page title preview</span><strong>{pageTitle}</strong></div>}
+        {message && <p className="designer-preview-message" role="status">{message}</p>}
+      </>
+    )}
+  </div>;
+}
+
 type ProjectFormValues = {
   title: string; craft: 'knitting' | 'crochet'; status: ProjectStatus;
   description: string; patternName: string; patternDesigner: string;
+  designerWebsite: string; designerPageTitle: string;
   yarnBrand: string; yarnType: string; yarnColor: string;
   tools: string; startedAt: string; startedAtPrecision: ProjectDatePrecision;
   targetDate: string; targetDatePrecision: ProjectDatePrecision;
@@ -394,14 +442,36 @@ function ProjectFormPage() {
   const [, setLocation] = useLocation();
   const client = useQueryClient();
   const create = useCreateProject();
+  const previewTitle = usePreviewDesignerWebsiteTitle();
+  const [designerMode, setDesignerMode] = useState<DesignerMode>('name');
+  const [designerPreviewMessage, setDesignerPreviewMessage] = useState('');
   const form = useForm<ProjectFormValues>({
-    defaultValues: { title: '', craft: 'knitting', status: 'planning', description: '', patternName: '', patternDesigner: '', yarnBrand: '', yarnType: '', yarnColor: '', tools: '', startedAt: '', startedAtPrecision: 'day', targetDate: '', targetDatePrecision: 'day' },
+    defaultValues: { title: '', craft: 'knitting', status: 'planning', description: '', patternName: '', patternDesigner: '', designerWebsite: '', designerPageTitle: '', yarnBrand: '', yarnType: '', yarnColor: '', tools: '', startedAt: '', startedAtPrecision: 'day', targetDate: '', targetDatePrecision: 'day' },
   });
+  const previewDesignerTitle = () => {
+    const websiteUrl = form.getValues('designerWebsite').trim();
+    if (!websiteUrl) {
+      setDesignerPreviewMessage('Enter a website link first.');
+      return;
+    }
+    setDesignerPreviewMessage('');
+    previewTitle.mutate({ data: { websiteUrl } }, {
+      onSuccess: (result) => {
+        form.setValue('designerWebsite', result.websiteUrl, { shouldDirty: true });
+        form.setValue('designerPageTitle', result.pageTitle || '', { shouldDirty: true });
+        if (!result.pageTitle) setDesignerPreviewMessage('No page title was found. You can still save the link.');
+      },
+      onError: () => setDesignerPreviewMessage('We could not preview that website. Check the link and try again.'),
+    });
+  };
   const submit = form.handleSubmit((values) => {
     const payload: CreateProject = {
       title: values.title.trim(), craft: values.craft, status: values.status,
       description: values.description || null, patternName: values.patternName || null,
-      patternDesigner: values.patternDesigner || null, yarn: null,
+      patternDesigner: designerMode === 'name' ? values.patternDesigner.trim() || null : null,
+      designerWebsite: designerMode === 'website' ? values.designerWebsite.trim() || null : null,
+      designerPageTitle: designerMode === 'website' ? values.designerPageTitle.trim() || null : null,
+      yarn: null,
       yarnBrand: values.yarnBrand.trim() || null,
       yarnType: values.yarnType.trim() || null,
       yarnColor: values.yarnColor.trim() || null,
@@ -432,7 +502,7 @@ function ProjectFormPage() {
       <div className="form-divider"><span>THE LOVELY DETAILS</span><i/></div>
       <div className="form-grid">
         <div className="field-block"><label htmlFor="pattern-name">Pattern name</label><input id="pattern-name" placeholder="Pattern or source" {...form.register('patternName')} data-testid="input-pattern-name"/></div>
-        <div className="field-block"><label htmlFor="pattern-designer">Designer</label><input id="pattern-designer" placeholder="Who made the pattern?" {...form.register('patternDesigner')} data-testid="input-pattern-designer"/></div>
+        <DesignerEntry form={form} mode={designerMode} onModeChange={(mode) => { setDesignerMode(mode); setDesignerPreviewMessage(''); }} onPreview={previewDesignerTitle} onClearPreview={() => setDesignerPreviewMessage('')} isPreviewing={previewTitle.isPending} message={designerPreviewMessage} prefix="create"/>
         <div className="yarn-group field-wide">
           <div className="yarn-group-heading"><b>Yarn</b><span>Keep brand, type, and color easy to find.</span></div>
           <div className="yarn-trifold">
@@ -455,6 +525,9 @@ function ProjectFormPage() {
 function ProjectDetailPage({ projectId }: { projectId: string }) {
   const query = useGetProject(projectId, { query: { queryKey: getGetProjectQueryKey(projectId) } });
   const [editing, setEditing] = useState(false);
+  const previewTitle = usePreviewDesignerWebsiteTitle();
+  const [designerMode, setDesignerMode] = useState<DesignerMode>('name');
+  const [designerPreviewMessage, setDesignerPreviewMessage] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showProgress, setShowProgress] = useState(false);
   const [progressPhoto, setProgressPhoto] = useState<File | null>(null);
@@ -478,7 +551,7 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
     return () => URL.revokeObjectURL(preview);
   }, [progressPhoto]);
   const editForm = useForm<ProjectFormValues>({
-    defaultValues: { title: '', craft: 'knitting', status: 'planning', description: '', patternName: '', patternDesigner: '', yarnBrand: '', yarnType: '', yarnColor: '', tools: '', startedAt: '', startedAtPrecision: 'day', targetDate: '', targetDatePrecision: 'day' },
+    defaultValues: { title: '', craft: 'knitting', status: 'planning', description: '', patternName: '', patternDesigner: '', designerWebsite: '', designerPageTitle: '', yarnBrand: '', yarnType: '', yarnColor: '', tools: '', startedAt: '', startedAtPrecision: 'day', targetDate: '', targetDatePrecision: 'day' },
   });
   useEffect(() => {
     if (!project) return;
@@ -486,6 +559,7 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
       title: project.title, craft: project.craft, status: project.status,
       description: project.description || '', patternName: project.patternName || '',
       patternDesigner: project.patternDesigner || '',
+      designerWebsite: project.designerWebsite || '', designerPageTitle: project.designerPageTitle || '',
       yarnBrand: project.yarnBrand || '', yarnType: project.yarnType || '', yarnColor: project.yarnColor || '',
       tools: project.tools || '',
       startedAt: dateForProjectForm(project.startedAt, project.startedAtPrecision),
@@ -493,7 +567,25 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
       targetDate: dateForProjectForm(project.targetDate, project.targetDatePrecision),
       targetDatePrecision: project.targetDatePrecision,
     });
+    setDesignerMode(project.designerWebsite ? 'website' : 'name');
+    setDesignerPreviewMessage('');
   }, [project?.id, editForm.reset]);
+  const previewEditDesignerTitle = () => {
+    const websiteUrl = editForm.getValues('designerWebsite').trim();
+    if (!websiteUrl) {
+      setDesignerPreviewMessage('Enter a website link first.');
+      return;
+    }
+    setDesignerPreviewMessage('');
+    previewTitle.mutate({ data: { websiteUrl } }, {
+      onSuccess: (result) => {
+        editForm.setValue('designerWebsite', result.websiteUrl, { shouldDirty: true });
+        editForm.setValue('designerPageTitle', result.pageTitle || '', { shouldDirty: true });
+        if (!result.pageTitle) setDesignerPreviewMessage('No page title was found. You can still save the link.');
+      },
+      onError: () => setDesignerPreviewMessage('We could not preview that website. Check the link and try again.'),
+    });
+  };
   const progressForm = useForm<{ notes: string; completionPercent: number }>({
     defaultValues: { notes: '', completionPercent: project?.completionPercent ?? 0 },
   });
@@ -506,7 +598,9 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
     const payload: UpdateProject = {
       title: values.title.trim(), craft: values.craft, status: values.status,
       description: values.description || null, patternName: values.patternName || null,
-      patternDesigner: values.patternDesigner || null,
+      patternDesigner: designerMode === 'name' ? values.patternDesigner.trim() || null : null,
+      designerWebsite: designerMode === 'website' ? values.designerWebsite.trim() || null : null,
+      designerPageTitle: designerMode === 'website' ? values.designerPageTitle.trim() || null : null,
       yarnBrand: values.yarnBrand.trim() || null,
       yarnType: values.yarnType.trim() || null,
       yarnColor: values.yarnColor.trim() || null,
@@ -586,7 +680,7 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
       <div className="field-block"><label htmlFor="edit-craft">Craft</label><select id="edit-craft" {...editForm.register('craft')} data-testid="select-edit-craft"><option value="knitting">Knitting</option><option value="crochet">Crochet</option></select></div>
       <div className="field-block"><label htmlFor="edit-status">Status</label><select id="edit-status" {...editForm.register('status')} data-testid="select-edit-status"><option value="planning">Planning</option><option value="in_progress">In progress</option><option value="paused">On pause</option><option value="completed">Finished</option></select></div>
       <div className="field-block"><label htmlFor="edit-pattern">Pattern name</label><input id="edit-pattern" {...editForm.register('patternName')} data-testid="input-edit-pattern"/></div>
-      <div className="field-block"><label htmlFor="edit-designer">Designer</label><input id="edit-designer" {...editForm.register('patternDesigner')} data-testid="input-edit-designer"/></div>
+       <DesignerEntry form={editForm} mode={designerMode} onModeChange={(mode) => { setDesignerMode(mode); setDesignerPreviewMessage(''); }} onPreview={previewEditDesignerTitle} onClearPreview={() => setDesignerPreviewMessage('')} isPreviewing={previewTitle.isPending} message={designerPreviewMessage} prefix="edit"/>
       <div className="yarn-group field-wide">
         <div className="yarn-group-heading"><b>Yarn</b><span>Keep brand, type, and color easy to find.</span></div>
         <div className="yarn-trifold">
@@ -611,7 +705,7 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
       </div>
       <aside className="detail-aside">
         <div className="aside-card loom-card"><span className="eyebrow">A FEW DETAILS</span><h3 className="serif">On the table</h3><dl className="detail-list">
-          <div><dt>Pattern</dt><dd>{project.patternName || 'Not added yet'}</dd></div><div><dt>Designer</dt><dd>{project.patternDesigner || 'Not added yet'}</dd></div><div><dt>Yarn</dt><dd>{formatYarnDetails(project) || 'Not added yet'}</dd></div>{project.yarn && (project.yarnBrand || project.yarnType || project.yarnColor) && <div><dt>Previous yarn note</dt><dd>{project.yarn}</dd></div>}<div><dt>Tools</dt><dd>{project.tools || 'Not added yet'}</dd></div><div><dt>Target date</dt><dd>{formatProjectDate(project.targetDate, project.targetDatePrecision) || 'No date in mind'}</dd></div>
+          <div><dt>Pattern</dt><dd>{project.patternName || 'Not added yet'}</dd></div><div><dt>Designer</dt><dd>{project.designerWebsite ? <a href={project.designerWebsite} target="_blank" rel="noopener noreferrer" data-testid="link-designer-website">{project.designerPageTitle || project.designerWebsite}</a> : project.patternDesigner || 'Not added yet'}</dd></div><div><dt>Yarn</dt><dd>{formatYarnDetails(project) || 'Not added yet'}</dd></div>{project.yarn && (project.yarnBrand || project.yarnType || project.yarnColor) && <div><dt>Previous yarn note</dt><dd>{project.yarn}</dd></div>}<div><dt>Tools</dt><dd>{project.tools || 'Not added yet'}</dd></div><div><dt>Target date</dt><dd>{formatProjectDate(project.targetDate, project.targetDatePrecision) || 'No date in mind'}</dd></div>
         </dl>{project.description && <div className="personal-note"><span>NOTE TO SELF</span><p>{project.description}</p></div>}<button className="aside-edit" onClick={() => setEditing(!editing)} data-testid="button-edit-details"><Feather size={14}/> Edit details</button></div>
         <div className="aside-encouragement"><Flower2 className="encouragement-mark" size={48} strokeWidth={1}/><p>“Slow work is still<br/>beautiful work.”</p><span>YOUR WORKROOM, YOUR PACE</span></div>
       </aside>

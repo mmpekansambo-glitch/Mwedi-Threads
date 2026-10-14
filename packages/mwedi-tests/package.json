@@ -4,14 +4,19 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "pnpm -w run typecheck:libs && vitest run --config vitest.config.ts && pnpm --filter @workspace/api-server test && pnpm --filter @workspace/indigoloom-web test",
+    "test": "pnpm -w run typecheck:libs && vitest run --config vitest.config.ts && pnpm --filter @workspace/api-server test && pnpm --filter @workspace/indigoloom-web test && pnpm run test:e2e",
+    "test:e2e": "playwright test --config playwright.config.ts",
     "test:types": "pnpm --filter @workspace/mwedi-tests run typecheck && pnpm --filter @workspace/api-server run typecheck && pnpm --filter @workspace/indigoloom-web run typecheck && pnpm --filter @workspace/indigoloom-mobile run typecheck",
     "test:postgres": "pnpm --filter @workspace/api-server run test:postgres",
     "test:all": "pnpm run test && pnpm run test:types",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.0",
+    "@tailwindcss/vite": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
     "@workspace/api-zod": "workspace:*",
+    "vite": "catalog:",
     "vitest": "^5.0.4"
   }
 }

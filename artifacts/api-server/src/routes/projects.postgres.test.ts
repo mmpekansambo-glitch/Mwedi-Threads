@@ -89,6 +89,8 @@ describe.skipIf(!databaseUrl)("project authorization against PostgreSQL", () => 
         description text,
         pattern_name text,
         pattern_designer text,
+        designer_website text,
+        designer_page_title text,
         yarn text,
         yarn_brand text,
         yarn_type text,

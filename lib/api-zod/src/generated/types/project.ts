@@ -21,6 +21,10 @@ export interface Project {
   /** @nullable */
   patternDesigner: string | null;
   /** @nullable */
+  designerWebsite: string | null;
+  /** @nullable */
+  designerPageTitle: string | null;
+  /** @nullable */
   yarn: string | null;
   /** @nullable */
   yarnBrand: string | null;

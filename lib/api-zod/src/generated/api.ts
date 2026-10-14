@@ -37,6 +37,8 @@ export const GetDashboardResponse = zod.object({
   "description": zod.string().nullable(),
   "patternName": zod.string().nullable(),
   "patternDesigner": zod.string().nullable(),
+  "designerWebsite": zod.string().url().nullable(),
+  "designerPageTitle": zod.string().nullable(),
   "yarn": zod.string().nullable(),
   "yarnBrand": zod.string().nullable(),
   "yarnType": zod.string().nullable(),
@@ -82,6 +84,8 @@ export const GetProjectsResponseItem = zod.object({
   "description": zod.string().nullable(),
   "patternName": zod.string().nullable(),
   "patternDesigner": zod.string().nullable(),
+  "designerWebsite": zod.string().url().nullable(),
+  "designerPageTitle": zod.string().nullable(),
   "yarn": zod.string().nullable(),
   "yarnBrand": zod.string().nullable(),
   "yarnType": zod.string().nullable(),
@@ -112,6 +116,8 @@ export const CreateProjectBody = zod.object({
   "description": zod.string().nullish(),
   "patternName": zod.string().nullish(),
   "patternDesigner": zod.string().nullish(),
+  "designerWebsite": zod.string().url().nullish(),
+  "designerPageTitle": zod.string().nullish(),
   "yarn": zod.string().nullish(),
   "yarnBrand": zod.string().nullish(),
   "yarnType": zod.string().nullish(),
@@ -136,6 +142,8 @@ export const CreateProjectResponse = zod.object({
   "description": zod.string().nullable(),
   "patternName": zod.string().nullable(),
   "patternDesigner": zod.string().nullable(),
+  "designerWebsite": zod.string().url().nullable(),
+  "designerPageTitle": zod.string().nullable(),
   "yarn": zod.string().nullable(),
   "yarnBrand": zod.string().nullable(),
   "yarnType": zod.string().nullable(),
@@ -148,6 +156,19 @@ export const CreateProjectResponse = zod.object({
   "completionPercent": zod.number().int().min(createProjectResponseCompletionPercentMin).max(createProjectResponseCompletionPercentMax),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Preview the page title for a public designer website
+ */
+export const PreviewDesignerWebsiteTitleBody = zod.object({
+  "websiteUrl": zod.string().url()
+})
+
+export const PreviewDesignerWebsiteTitleResponse = zod.object({
+  "websiteUrl": zod.string().url(),
+  "pageTitle": zod.string().nullable()
 })
 
 
@@ -174,6 +195,8 @@ export const GetProjectResponse = zod.object({
   "description": zod.string().nullable(),
   "patternName": zod.string().nullable(),
   "patternDesigner": zod.string().nullable(),
+  "designerWebsite": zod.string().url().nullable(),
+  "designerPageTitle": zod.string().nullable(),
   "yarn": zod.string().nullable(),
   "yarnBrand": zod.string().nullable(),
   "yarnType": zod.string().nullable(),
@@ -219,6 +242,8 @@ export const UpdateProjectBody = zod.object({
   "description": zod.string().nullish(),
   "patternName": zod.string().nullish(),
   "patternDesigner": zod.string().nullish(),
+  "designerWebsite": zod.string().url().nullish(),
+  "designerPageTitle": zod.string().nullish(),
   "yarn": zod.string().nullish(),
   "yarnBrand": zod.string().nullish(),
   "yarnType": zod.string().nullish(),
@@ -244,6 +269,8 @@ export const UpdateProjectResponse = zod.object({
   "description": zod.string().nullable(),
   "patternName": zod.string().nullable(),
   "patternDesigner": zod.string().nullable(),
+  "designerWebsite": zod.string().url().nullable(),
+  "designerPageTitle": zod.string().nullable(),
   "yarn": zod.string().nullable(),
   "yarnBrand": zod.string().nullable(),
   "yarnType": zod.string().nullable(),

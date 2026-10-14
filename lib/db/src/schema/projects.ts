@@ -31,6 +31,8 @@ export const projectsTable = pgTable("projects", {
   description: text("description"),
   patternName: text("pattern_name"),
   patternDesigner: text("pattern_designer"),
+  designerWebsite: text("designer_website"),
+  designerPageTitle: text("designer_page_title"),
   yarn: text("yarn"),
   yarnBrand: text("yarn_brand"),
   yarnType: text("yarn_type"),

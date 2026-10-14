@@ -17,6 +17,8 @@ import {
   GetProjectsResponseItem,
   RequestProgressPhotoUploadBody,
   RequestProgressPhotoUploadResponse,
+  PreviewDesignerWebsiteTitleBody,
+  PreviewDesignerWebsiteTitleResponse,
   UpdateProjectBody,
   UpdateProjectParams,
   UpdateProjectResponse,
@@ -28,6 +30,7 @@ import {
   type Project,
 } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
+import { previewWebsitePageTitle, WebsiteTitlePreviewError } from "../lib/websiteTitlePreview";
 
 const router: IRouter = Router();
 router.use(requireAuth);
@@ -94,6 +97,26 @@ function serializeProject(project: Project) {
 function getOwnerId(res: Response): string {
   return res.locals.userId as string;
 }
+
+router.post("/projects/designer-website-title-preview", async (req, res): Promise<void> => {
+  const parsed = PreviewDesignerWebsiteTitleBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Enter a valid designer website link." });
+    return;
+  }
+
+  try {
+    const preview = await previewWebsitePageTitle(parsed.data.websiteUrl);
+    res.json(PreviewDesignerWebsiteTitleResponse.parse(preview));
+  } catch (error) {
+    if (error instanceof WebsiteTitlePreviewError && error.statusCode === 400) {
+      res.status(400).json({ error: error.message });
+      return;
+    }
+    req.log.warn({ err: error }, "Could not preview a designer website title");
+    res.status(502).json({ error: "Could not load that page title. Check the link and try again." });
+  }
+});
 
 router.get("/dashboard", async (req, res): Promise<void> => {
   const ownerId = getOwnerId(res);
@@ -203,6 +226,8 @@ router.post("/projects", async (req, res): Promise<void> => {
       description: parsed.data.description ?? null,
       patternName: parsed.data.patternName ?? null,
       patternDesigner: parsed.data.patternDesigner ?? null,
+      designerWebsite: parsed.data.designerWebsite ?? null,
+      designerPageTitle: parsed.data.designerPageTitle ?? null,
       yarn: parsed.data.yarn ?? null,
       yarnBrand: parsed.data.yarnBrand ?? null,
       yarnType: parsed.data.yarnType ?? null,

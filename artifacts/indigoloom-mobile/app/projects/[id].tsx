@@ -159,14 +159,14 @@ export default function ProjectDetailScreen() {
               <LoomText style={[styles.sectionLabel, { color: colors.primary }]}>THE PROJECT NOTES</LoomText>
               {[
                 ['Pattern', project.patternName],
-                ['Designer', project.patternDesigner],
+                ['Designer', project.designerWebsite ? project.designerPageTitle || project.designerWebsite : project.patternDesigner],
                 ['Yarn', [project.yarnBrand, project.yarnType, project.yarnColor].filter(Boolean).join(' · ') || null],
                 ['Previous yarn note', project.yarn],
                 ['Tools', project.tools],
                 ['Started', project.startedAt ? formatProjectDate(project.startedAt, project.startedAtPrecision) : null],
                 ['Target date', project.targetDate ? formatProjectDate(project.targetDate, project.targetDatePrecision) : null],
               ].filter((entry) => entry[1]).map(([label, value]) => (
-                <View key={label} style={[styles.infoRow, { borderBottomColor: colors.border }]}><LoomText style={[styles.infoLabel, { color: colors.mutedForeground }]}>{label}</LoomText><LoomText style={[styles.infoValue, { color: colors.foreground }]}>{value}</LoomText></View>
+                <View key={label} style={[styles.infoRow, { borderBottomColor: colors.border }]}><LoomText style={[styles.infoLabel, { color: colors.mutedForeground }]}>{label}</LoomText>{label === 'Designer' && project.designerWebsite ? <Pressable accessibilityRole="link" onPress={() => { void Linking.openURL(project.designerWebsite!).catch(() => Alert.alert('Unable to open website', 'Check the saved link and try again.')); }}><LoomText style={[styles.infoValue, { color: colors.primary, textDecorationLine: 'underline' }]}>{value}</LoomText></Pressable> : <LoomText style={[styles.infoValue, { color: colors.foreground }]}>{value}</LoomText>}</View>
               ))}
               {project.description ? <LoomText style={[styles.description, { color: colors.foreground }]}>{project.description}</LoomText> : null}
             </View>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useCreateProject, getGetDashboardQueryKey, getGetProjectsQueryKey } from '@workspace/api-client-react';
+import { useCreateProject, usePreviewDesignerWebsiteTitle, getGetDashboardQueryKey, getGetProjectsQueryKey } from '@workspace/api-client-react';
 import type { CreateProject } from '@workspace/api-client-react';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -16,10 +16,15 @@ export default function NewProjectScreen() {
   const insets = useSafeAreaInsets();
   const client = useQueryClient();
   const create = useCreateProject();
+  const previewTitle = usePreviewDesignerWebsiteTitle();
   const [title, setTitle] = useState('');
   const [craft, setCraft] = useState<'knitting' | 'crochet'>('knitting');
   const [patternName, setPatternName] = useState('');
   const [patternDesigner, setPatternDesigner] = useState('');
+  const [designerMode, setDesignerMode] = useState<'name' | 'website'>('name');
+  const [designerWebsite, setDesignerWebsite] = useState('');
+  const [designerPageTitle, setDesignerPageTitle] = useState('');
+  const [designerPreviewMessage, setDesignerPreviewMessage] = useState('');
   const [yarnBrand, setYarnBrand] = useState('');
   const [yarnType, setYarnType] = useState('');
   const [yarnColor, setYarnColor] = useState('');
@@ -33,6 +38,22 @@ export default function NewProjectScreen() {
 
   const fieldStyle = [styles.input, { color: colors.foreground, backgroundColor: colors.card, borderColor: colors.input }];
   const inputProps = { placeholderTextColor: colors.mutedForeground };
+  const previewDesignerTitle = () => {
+    const websiteUrl = designerWebsite.trim();
+    if (!websiteUrl) {
+      setDesignerPreviewMessage('Enter a website link first.');
+      return;
+    }
+    setDesignerPreviewMessage('');
+    previewTitle.mutate({ data: { websiteUrl } }, {
+      onSuccess: (result) => {
+        setDesignerWebsite(result.websiteUrl);
+        setDesignerPageTitle(result.pageTitle || '');
+        setDesignerPreviewMessage(result.pageTitle ? '' : 'No page title was found. You can still save the link.');
+      },
+      onError: () => setDesignerPreviewMessage('We could not preview that website. Check the link and try again.'),
+    });
+  };
   const save = () => {
     setErrorMessage('');
     if (!title.trim()) {
@@ -45,7 +66,9 @@ export default function NewProjectScreen() {
       status: 'planning',
       description: description.trim() || null,
       patternName: patternName.trim() || null,
-      patternDesigner: patternDesigner.trim() || null,
+      patternDesigner: designerMode === 'name' ? patternDesigner.trim() || null : null,
+      designerWebsite: designerMode === 'website' ? designerWebsite.trim() || null : null,
+      designerPageTitle: designerMode === 'website' ? designerPageTitle.trim() || null : null,
       yarnBrand: yarnBrand.trim() || null,
       yarnType: yarnType.trim() || null,
       yarnColor: yarnColor.trim() || null,
@@ -91,8 +114,29 @@ export default function NewProjectScreen() {
             <LoomText style={[styles.sectionLabel, { color: colors.primary }]}>THE LOVELY DETAILS</LoomText>
             <FormFieldLabel>Pattern name</FormFieldLabel>
             <TextInput {...inputProps} value={patternName} onChangeText={setPatternName} placeholder="Pattern or source" style={fieldStyle} />
-            <FormFieldLabel>Designer</FormFieldLabel>
-            <TextInput {...inputProps} value={patternDesigner} onChangeText={setPatternDesigner} placeholder="Who made the pattern?" style={fieldStyle} />
+            <LoomText style={[styles.sectionLabel, { color: colors.primary }]}>DESIGNER</LoomText>
+            <View style={styles.designerModeRow} accessibilityLabel="Designer entry option">
+              {(['name', 'website'] as const).map((option) => {
+                const active = designerMode === option;
+                return <Pressable key={option} accessibilityRole="button" accessibilityState={{ selected: active }} onPress={() => { setDesignerMode(option); setDesignerPreviewMessage(''); }} style={[styles.designerModeButton, { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.softPlum : colors.background }]} testID={`button-create-designer-${option}`}>
+                  <LoomText style={{ color: active ? colors.primary : colors.mutedForeground, fontSize: 11, fontFamily: fonts.semibold }}>{option === 'name' ? 'Name' : 'Website link'}</LoomText>
+                </Pressable>;
+              })}
+            </View>
+            {designerMode === 'name' ? (
+              <>
+                <FormFieldLabel>Designer name</FormFieldLabel>
+                <TextInput {...inputProps} value={patternDesigner} onChangeText={setPatternDesigner} placeholder="Who made the pattern?" style={fieldStyle} testID="input-pattern-designer" />
+              </>
+            ) : (
+              <>
+                <FormFieldLabel>Website link</FormFieldLabel>
+                <TextInput {...inputProps} value={designerWebsite} onChangeText={(value) => { setDesignerWebsite(value); setDesignerPageTitle(''); setDesignerPreviewMessage(''); }} placeholder="https://example.com" autoCapitalize="none" autoCorrect={false} keyboardType="url" style={fieldStyle} testID="input-create-designer-website" />
+                <LoomButton title="Preview page title" variant="quiet" onPress={previewDesignerTitle} busy={previewTitle.isPending} testID="button-create-preview-designer-title" />
+                {designerPageTitle ? <View style={[styles.designerPagePreview, { backgroundColor: colors.softPlum, borderColor: colors.border }]}><LoomText style={{ color: colors.mutedForeground, fontSize: 9, letterSpacing: 1 }}>PAGE TITLE PREVIEW</LoomText><LoomText style={{ color: colors.foreground, fontFamily: fonts.semibold, fontSize: 12 }}>{designerPageTitle}</LoomText></View> : null}
+                {designerPreviewMessage ? <LoomText accessibilityRole="alert" style={{ color: colors.mutedForeground, fontSize: 11, lineHeight: 16, marginBottom: 12 }}>{designerPreviewMessage}</LoomText> : null}
+              </>
+            )}
             <LoomText style={[styles.sectionLabel, { color: colors.primary }]}>YARN</LoomText>
             <FormFieldLabel>Brand</FormFieldLabel>
             <TextInput {...inputProps} value={yarnBrand} onChangeText={setYarnBrand} placeholder="e.g. Cascade" style={fieldStyle} testID="input-yarn-brand" />
@@ -127,6 +171,9 @@ const styles = StyleSheet.create({
   sectionLabel: { fontFamily: fonts.bold, fontSize: 9, letterSpacing: 1.1, marginBottom: 13 },
   input: { minHeight: 45, borderWidth: 1, borderRadius: 9, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, fontFamily: fonts.body, marginBottom: 14 },
   choiceRow: { flexDirection: 'row', gap: 9, marginBottom: 14 },
+  designerModeRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
+  designerModeButton: { flex: 1, minHeight: 39, borderWidth: 1, borderRadius: 9, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
+  designerPagePreview: { gap: 5, borderWidth: 1, borderRadius: 9, padding: 11, marginBottom: 12 },
   choice: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 42, borderWidth: 1, borderRadius: 10 },
   divider: { borderTopWidth: 1, marginVertical: 8 },
   multiline: { minHeight: 94, paddingTop: 12 },

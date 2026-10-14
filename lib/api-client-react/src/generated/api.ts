@@ -24,6 +24,9 @@ import type {
   CreateProgress,
   CreateProject,
   Dashboard,
+  DesignerWebsiteTitlePreviewRequest,
+  DesignerWebsiteTitlePreviewResponse,
+  Error,
   GetProjectsParams,
   HealthStatus,
   NotFoundResponse,
@@ -388,6 +391,94 @@ export const useCreateProject = <TError = ErrorType<BadRequestResponse | Unautho
         TContext
       > => {
       return useMutation(getCreateProjectMutationOptions(options));
+    }
+
+export const getPreviewDesignerWebsiteTitleUrl = () => {
+
+
+
+
+  return `/api/projects/designer-website-title-preview`
+}
+
+/**
+ * @summary Preview the page title for a public designer website
+ */
+export const previewDesignerWebsiteTitle = async (designerWebsiteTitlePreviewRequest: DesignerWebsiteTitlePreviewRequest, options?: Parameters<typeof customFetch>[1]): Promise<DesignerWebsiteTitlePreviewResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<DesignerWebsiteTitlePreviewResponse>(getPreviewDesignerWebsiteTitleUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(designerWebsiteTitlePreviewRequest)
+  }
+);}
+
+
+
+
+
+export const getPreviewDesignerWebsiteTitleMutationKey = () => ['previewDesignerWebsiteTitle'] as const;
+
+export const getPreviewDesignerWebsiteTitleMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewDesignerWebsiteTitle>>, TError,PreviewDesignerWebsiteTitleMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof previewDesignerWebsiteTitle>>, TError,PreviewDesignerWebsiteTitleMutationVariables, TContext> => {
+
+const mutationKey = getPreviewDesignerWebsiteTitleMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof previewDesignerWebsiteTitle>>, PreviewDesignerWebsiteTitleMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  previewDesignerWebsiteTitle(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PreviewDesignerWebsiteTitleMutationResult = NonNullable<Awaited<ReturnType<typeof previewDesignerWebsiteTitle>>>
+    export type PreviewDesignerWebsiteTitleMutationBody = BodyType<DesignerWebsiteTitlePreviewRequest>
+    export type PreviewDesignerWebsiteTitleMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | Error>
+    export type PreviewDesignerWebsiteTitleMutationVariables = {data: BodyType<DesignerWebsiteTitlePreviewRequest>}
+
+    /**
+ * @summary Preview the page title for a public designer website
+ */
+export const usePreviewDesignerWebsiteTitle = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewDesignerWebsiteTitle>>, TError,PreviewDesignerWebsiteTitleMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof previewDesignerWebsiteTitle>>,
+        TError,
+        PreviewDesignerWebsiteTitleMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPreviewDesignerWebsiteTitleMutationOptions(options));
     }
 
 export const getGetProjectUrl = (projectId: string,) => {

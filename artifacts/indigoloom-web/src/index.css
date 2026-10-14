@@ -339,6 +339,19 @@ a { color: inherit; text-decoration: none; }
 .yarn-trifold { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 14px; }
 .legacy-yarn-note { margin: 0; padding: 10px 12px; border: 1px solid #e5ded2; border-radius: 8px; color: #615b6d; background: #f7f3e9; font-size: 11px; line-height: 1.55; }
 .legacy-yarn-note span { display: block; margin-top: 3px; color: #928b98; font-size: 10px; }
+.designer-entry { display: grid; gap: 10px; }
+.designer-entry-heading { display: flex; align-items: baseline; gap: 10px; }
+.designer-entry-heading b { color: #615b6d; font-size: 10px; }
+.designer-entry-heading span { color: #928b98; font-size: 10px; }
+.designer-mode-switch { display: flex; width: fit-content; gap: 3px; padding: 3px; border: 1px solid #e5ded2; border-radius: 8px; background: #f7f3e9; }
+.designer-mode-switch button { min-height: 31px; padding: 0 12px; border: 0; border-radius: 6px; color: #777184; background: transparent; font: 600 10px var(--app-font-sans); cursor: pointer; }
+.designer-mode-switch button.selected { color: #51458a; background: #fffdf8; box-shadow: 0 1px 3px rgba(48,44,67,.1); }
+.designer-website-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 10px; }
+.designer-preview-button { min-height: 37px; white-space: nowrap; }
+.designer-page-preview { display: grid; gap: 3px; padding: 9px 11px; border-radius: 7px; background: #f7f3e9; color: #615b6d; }
+.designer-page-preview span { color: #928b98; font-size: 9px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.designer-page-preview strong { overflow-wrap: anywhere; font-size: 12px; font-weight: 600; }
+.designer-preview-message { margin: 0; color: #867f8d; font-size: 10px; line-height: 1.4; }
 .field-error,.mutation-error { color: #a3413f; font-size: 10px; }
 .form-divider { display: flex; align-items: center; gap: 12px; margin: 26px 0 18px; color: #9a93a0; font-size: 9px; letter-spacing: .13em; font-weight: 700; }
 .form-divider i { height: 1px; background: #e9e3d9; flex: 1; }
@@ -548,4 +561,5 @@ a { color: inherit; text-decoration: none; }
   .form-grid { grid-template-columns: 1fr; }
   .field-wide { grid-column: auto; }
   .yarn-trifold { grid-template-columns: 1fr; }
+  .designer-website-row { grid-template-columns: 1fr; }
 }

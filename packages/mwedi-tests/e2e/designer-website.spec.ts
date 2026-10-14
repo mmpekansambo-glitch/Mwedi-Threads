@@ -1,0 +1,172 @@
+import { expect, test, type Page, type Route } from "@playwright/test";
+
+type ProjectResponse = {
+  id: string;
+  ownerId: string;
+  title: string;
+  craft: "knitting" | "crochet";
+  status: "planning" | "in_progress" | "completed";
+  description: string | null;
+  patternName: string | null;
+  patternDesigner: string | null;
+  designerWebsite: string | null;
+  designerPageTitle: string | null;
+  yarn: string | null;
+  yarnBrand: string | null;
+  yarnType: string | null;
+  yarnColor: string | null;
+  tools: string | null;
+  startedAt: string | null;
+  startedAtPrecision: "month" | "day";
+  targetDate: string | null;
+  targetDatePrecision: "month" | "day";
+  completionPercent: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+const projectFixture = (overrides: Partial<ProjectResponse> = {}): ProjectResponse => ({
+  id: "project-mwedi-e2e",
+  ownerId: "user_mwedi_e2e",
+  title: "Wool scarf",
+  craft: "knitting",
+  status: "in_progress",
+  description: null,
+  patternName: null,
+  patternDesigner: null,
+  designerWebsite: null,
+  designerPageTitle: null,
+  yarn: null,
+  yarnBrand: null,
+  yarnType: null,
+  yarnColor: null,
+  tools: null,
+  startedAt: null,
+  startedAtPrecision: "day",
+  targetDate: null,
+  targetDatePrecision: "day",
+  completionPercent: 25,
+  createdAt: "2026-01-10T12:00:00.000Z",
+  updatedAt: "2026-01-10T12:00:00.000Z",
+  ...overrides,
+});
+
+async function mockProjectApi(
+  page: Page,
+  onCreate: (body: Record<string, unknown>) => void,
+  onUpdate: (body: Record<string, unknown>) => void,
+  initialProject: ProjectResponse = projectFixture(),
+) {
+  let currentProject = initialProject;
+
+  await page.route("**/api/**", async (route: Route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    const method = request.method();
+
+    if (url.pathname === "/api/projects/designer-website-title-preview" && method === "POST") {
+      const body = request.postDataJSON() as { websiteUrl: string };
+      await route.fulfill({
+        status: 200,
+        json: { websiteUrl: body.websiteUrl, pageTitle: "A maker's pattern library" },
+      });
+      return;
+    }
+
+    if (url.pathname === "/api/projects" && method === "POST") {
+      const body = request.postDataJSON() as Record<string, unknown>;
+      onCreate(body);
+      currentProject = projectFixture({
+        ...(body as Partial<ProjectResponse>),
+        id: "project-mwedi-e2e",
+      });
+      await route.fulfill({ status: 201, json: currentProject });
+      return;
+    }
+
+    if (url.pathname === "/api/projects/project-mwedi-e2e" && method === "GET") {
+      await route.fulfill({ status: 200, json: { ...currentProject, progress: [] } });
+      return;
+    }
+
+    if (url.pathname === "/api/projects/project-mwedi-e2e" && (method === "PATCH" || method === "PUT")) {
+      const body = request.postDataJSON() as Record<string, unknown>;
+      onUpdate(body);
+      currentProject = projectFixture({ ...currentProject, ...(body as Partial<ProjectResponse>) });
+      await route.fulfill({ status: 200, json: currentProject });
+      return;
+    }
+
+    if (url.pathname === "/api/projects" && method === "GET") {
+      await route.fulfill({ status: 200, json: [] });
+      return;
+    }
+
+    if (url.pathname === "/api/dashboard" && method === "GET") {
+      await route.fulfill({
+        status: 200,
+        json: { activeProjects: 0, completedProjects: 0, progressUpdates: 0, recentProjects: [] },
+      });
+      return;
+    }
+
+    await route.fulfill({ status: 404, json: { error: `Unhandled test request: ${method} ${url.pathname}` } });
+  });
+}
+
+test("creates a project with date precision, structured yarn, and a designer website preview", async ({ page }) => {
+  let createdBody: Record<string, unknown> | undefined;
+  await mockProjectApi(page, (body) => { createdBody = body; }, () => undefined);
+
+  await page.goto("/projects/new");
+  await page.getByTestId("input-project-title").fill("Spring shawl");
+  await page.getByTestId("input-start-date").fill("2026-03-01");
+  await page.getByTestId("input-start-date-precision").selectOption("month");
+  await page.getByTestId("input-target-date").fill("2026-05-17");
+  await page.getByTestId("input-yarn-brand").fill("Brooklyn Tweed");
+  await page.getByTestId("input-yarn-type").fill("Shelter");
+  await page.getByTestId("input-yarn-color").fill("Cardinal");
+
+  await page.getByTestId("button-create-designer-website").click();
+  await page.getByTestId("input-create-designer-website").fill("https://maker.example.org/patterns");
+  await page.getByTestId("button-create-preview-designer-title").click();
+  await expect(page.getByTestId("designer-page-title-preview")).toContainText("A maker's pattern library");
+  await page.getByTestId("button-save-project").click();
+
+  await expect(page).toHaveURL(/\/projects\/project-mwedi-e2e$/);
+  await expect(page.getByTestId("link-designer-website")).toHaveText("A maker's pattern library");
+  expect(createdBody).toMatchObject({
+    patternDesigner: null,
+    designerWebsite: "https://maker.example.org/patterns",
+    designerPageTitle: "A maker's pattern library",
+    startedAt: "2026-03-01",
+    startedAtPrecision: "month",
+    targetDate: "2026-05-17",
+    targetDatePrecision: "day",
+    yarnBrand: "Brooklyn Tweed",
+    yarnType: "Shelter",
+    yarnColor: "Cardinal",
+  });
+});
+
+test("lets a maker replace a saved designer name with a website link when editing", async ({ page }) => {
+  let updatedBody: Record<string, unknown> | undefined;
+  const existingProject = projectFixture({ patternDesigner: "Mara Maker" });
+  await mockProjectApi(page, () => undefined, (body) => { updatedBody = body; }, existingProject);
+
+  await page.goto("/projects/project-mwedi-e2e");
+  await expect(page.getByTestId("button-edit-project")).toBeVisible();
+  await page.getByTestId("button-edit-project").click();
+  await page.getByTestId("button-edit-designer-website").click();
+  await page.getByTestId("input-edit-designer-website").fill("https://maker.example.org");
+  await page.getByTestId("button-edit-preview-designer-title").click();
+  await expect(page.getByTestId("designer-page-title-preview")).toContainText("A maker's pattern library");
+  await page.getByTestId("button-update-project").click();
+
+  await expect(page.getByTestId("link-designer-website")).toHaveText("A maker's pattern library");
+  expect(updatedBody).toMatchObject({
+    patternDesigner: null,
+    designerWebsite: "https://maker.example.org",
+    designerPageTitle: "A maker's pattern library",
+  });
+});

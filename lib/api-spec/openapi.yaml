@@ -92,6 +92,34 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+  /projects/designer-website-title-preview:
+    post:
+      operationId: previewDesignerWebsiteTitle
+      tags: [projects]
+      summary: Preview the page title for a public designer website
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DesignerWebsiteTitlePreviewRequest"
+      responses:
+        "200":
+          description: Website URL and extracted page title
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DesignerWebsiteTitlePreviewResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "502":
+          description: The public website could not be reached or did not return HTML
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /projects/{projectId}:
     parameters:
       - in: path
@@ -329,6 +357,11 @@ components:
           type: [string, "null"]
         patternDesigner:
           type: [string, "null"]
+        designerWebsite:
+          type: [string, "null"]
+          format: uri
+        designerPageTitle:
+          type: [string, "null"]
         yarn:
           type: [string, "null"]
         yarnBrand:
@@ -367,6 +400,8 @@ components:
         - description
         - patternName
         - patternDesigner
+        - designerWebsite
+        - designerPageTitle
         - yarn
         - yarnBrand
         - yarnType
@@ -406,6 +441,11 @@ components:
           type: [string, "null"]
         patternDesigner:
           type: [string, "null"]
+        designerWebsite:
+          type: [string, "null"]
+          format: uri
+        designerPageTitle:
+          type: [string, "null"]
         yarn:
           type: [string, "null"]
         yarnBrand:
@@ -444,6 +484,11 @@ components:
           type: [string, "null"]
         patternDesigner:
           type: [string, "null"]
+        designerWebsite:
+          type: [string, "null"]
+          format: uri
+        designerPageTitle:
+          type: [string, "null"]
         yarn:
           type: [string, "null"]
         yarnBrand:
@@ -469,6 +514,22 @@ components:
           minimum: 0
           maximum: 100
       minProperties: 1
+    DesignerWebsiteTitlePreviewRequest:
+      type: object
+      properties:
+        websiteUrl:
+          type: string
+          format: uri
+      required: [websiteUrl]
+    DesignerWebsiteTitlePreviewResponse:
+      type: object
+      properties:
+        websiteUrl:
+          type: string
+          format: uri
+        pageTitle:
+          type: [string, "null"]
+      required: [websiteUrl, pageTitle]
     CreateProgress:
       type: object
       properties:

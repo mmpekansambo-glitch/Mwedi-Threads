@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CreateProjectBody, UpdateProjectBody } from "@workspace/api-zod";
+import { CreateProjectBody, PreviewDesignerWebsiteTitleBody, UpdateProjectBody } from "@workspace/api-zod";
 
 describe("Mwedi Threads project contracts", () => {
   it("accepts a project with month-precision dates and structured yarn details", () => {
@@ -13,6 +13,8 @@ describe("Mwedi Threads project contracts", () => {
       yarnBrand: "Brooklyn Tweed",
       yarnType: "Tough Love Sock",
       yarnColor: "Wild Horse",
+      designerWebsite: "https://maker.example.org/patterns",
+      designerPageTitle: "Maker Pattern Library",
     });
 
     expect(result.success).toBe(true);
@@ -32,6 +34,14 @@ describe("Mwedi Threads project contracts", () => {
       targetDate: "2026-12-01",
       targetDatePrecision: "month",
       yarnColor: "Cardinal",
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts a valid designer website title preview request", () => {
+    const result = PreviewDesignerWebsiteTitleBody.safeParse({
+      websiteUrl: "https://maker.example.org/patterns",
     });
 
     expect(result.success).toBe(true);

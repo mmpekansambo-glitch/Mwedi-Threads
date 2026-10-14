@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { useGetProject, useUpdateProject, getGetDashboardQueryKey, getGetProjectQueryKey, getGetProjectsQueryKey } from '@workspace/api-client-react';
+import { useGetProject, useUpdateProject, usePreviewDesignerWebsiteTitle, getGetDashboardQueryKey, getGetProjectQueryKey, getGetProjectsQueryKey } from '@workspace/api-client-react';
 import type { UpdateProject } from '@workspace/api-client-react';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { Feather } from '@expo/vector-icons';
-import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import { FormFieldLabel, LoadingState, LoomButton, LoomText, SignedInGate, fonts } from '@/components/loom';
@@ -17,10 +17,15 @@ export default function EditProjectScreen() {
   const client = useQueryClient();
   const query = useGetProject(id);
   const update = useUpdateProject();
+  const previewTitle = usePreviewDesignerWebsiteTitle();
   const project = query.data;
   const [title, setTitle] = useState('');
   const [patternName, setPatternName] = useState('');
   const [patternDesigner, setPatternDesigner] = useState('');
+  const [designerMode, setDesignerMode] = useState<'name' | 'website'>('name');
+  const [designerWebsite, setDesignerWebsite] = useState('');
+  const [designerPageTitle, setDesignerPageTitle] = useState('');
+  const [designerPreviewMessage, setDesignerPreviewMessage] = useState('');
   const [yarnBrand, setYarnBrand] = useState('');
   const [yarnType, setYarnType] = useState('');
   const [yarnColor, setYarnColor] = useState('');
@@ -32,12 +37,32 @@ export default function EditProjectScreen() {
     setTitle(project.title);
     setPatternName(project.patternName || '');
     setPatternDesigner(project.patternDesigner || '');
+    setDesignerWebsite(project.designerWebsite || '');
+    setDesignerPageTitle(project.designerPageTitle || '');
+    setDesignerMode(project.designerWebsite ? 'website' : 'name');
+    setDesignerPreviewMessage('');
     setYarnBrand(project.yarnBrand || '');
     setYarnType(project.yarnType || '');
     setYarnColor(project.yarnColor || '');
     setTools(project.tools || '');
     setDescription(project.description || '');
   }, [project?.id]);
+  const previewDesignerTitle = () => {
+    const websiteUrl = designerWebsite.trim();
+    if (!websiteUrl) {
+      setDesignerPreviewMessage('Enter a website link first.');
+      return;
+    }
+    setDesignerPreviewMessage('');
+    previewTitle.mutate({ data: { websiteUrl } }, {
+      onSuccess: (result) => {
+        setDesignerWebsite(result.websiteUrl);
+        setDesignerPageTitle(result.pageTitle || '');
+        setDesignerPreviewMessage(result.pageTitle ? '' : 'No page title was found. You can still save the link.');
+      },
+      onError: () => setDesignerPreviewMessage('We could not preview that website. Check the link and try again.'),
+    });
+  };
   const inputStyle = [styles.input, { color: colors.foreground, backgroundColor: colors.card, borderColor: colors.input }];
   const save = () => {
     if (!project || !title.trim()) {
@@ -47,7 +72,9 @@ export default function EditProjectScreen() {
     const data: UpdateProject = {
       title: title.trim(),
       patternName: patternName.trim() || null,
-      patternDesigner: patternDesigner.trim() || null,
+      patternDesigner: designerMode === 'name' ? patternDesigner.trim() || null : null,
+      designerWebsite: designerMode === 'website' ? designerWebsite.trim() || null : null,
+      designerPageTitle: designerMode === 'website' ? designerPageTitle.trim() || null : null,
       yarnBrand: yarnBrand.trim() || null,
       yarnType: yarnType.trim() || null,
       yarnColor: yarnColor.trim() || null,
@@ -81,8 +108,29 @@ export default function EditProjectScreen() {
               <TextInput value={title} onChangeText={setTitle} style={inputStyle} />
               <FormFieldLabel>Pattern name</FormFieldLabel>
               <TextInput value={patternName} onChangeText={setPatternName} placeholder="Pattern or source" placeholderTextColor={colors.mutedForeground} style={inputStyle} />
-              <FormFieldLabel>Designer</FormFieldLabel>
-              <TextInput value={patternDesigner} onChangeText={setPatternDesigner} placeholder="Who made the pattern?" placeholderTextColor={colors.mutedForeground} style={inputStyle} />
+              <LoomText style={{ color: colors.primary, fontSize: 9, letterSpacing: 1.1, fontFamily: fonts.bold, marginBottom: 11 }}>DESIGNER</LoomText>
+              <View style={styles.designerModeRow} accessibilityLabel="Designer entry option">
+                {(['name', 'website'] as const).map((option) => {
+                  const active = designerMode === option;
+                  return <Pressable key={option} accessibilityRole="button" accessibilityState={{ selected: active }} onPress={() => { setDesignerMode(option); setDesignerPreviewMessage(''); }} style={[styles.designerModeButton, { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.softPlum : colors.background }]} testID={`button-edit-designer-${option}`}>
+                    <LoomText style={{ color: active ? colors.primary : colors.mutedForeground, fontSize: 11, fontFamily: fonts.semibold }}>{option === 'name' ? 'Name' : 'Website link'}</LoomText>
+                  </Pressable>;
+                })}
+              </View>
+              {designerMode === 'name' ? (
+                <>
+                  <FormFieldLabel>Designer name</FormFieldLabel>
+                  <TextInput value={patternDesigner} onChangeText={setPatternDesigner} placeholder="Who made the pattern?" placeholderTextColor={colors.mutedForeground} style={inputStyle} testID="input-edit-designer" />
+                </>
+              ) : (
+                <>
+                  <FormFieldLabel>Website link</FormFieldLabel>
+                  <TextInput value={designerWebsite} onChangeText={(value) => { setDesignerWebsite(value); setDesignerPageTitle(''); setDesignerPreviewMessage(''); }} placeholder="https://example.com" placeholderTextColor={colors.mutedForeground} autoCapitalize="none" autoCorrect={false} keyboardType="url" style={inputStyle} testID="input-edit-designer-website" />
+                  <LoomButton title="Preview page title" variant="quiet" onPress={previewDesignerTitle} busy={previewTitle.isPending} testID="button-edit-preview-designer-title" />
+                  {designerPageTitle ? <View style={[styles.designerPagePreview, { backgroundColor: colors.softPlum, borderColor: colors.border }]}><LoomText style={{ color: colors.mutedForeground, fontSize: 9, letterSpacing: 1 }}>PAGE TITLE PREVIEW</LoomText><LoomText style={{ color: colors.foreground, fontFamily: fonts.semibold, fontSize: 12 }}>{designerPageTitle}</LoomText></View> : null}
+                  {designerPreviewMessage ? <LoomText accessibilityRole="alert" style={{ color: colors.mutedForeground, fontSize: 11, lineHeight: 16, marginBottom: 12 }}>{designerPreviewMessage}</LoomText> : null}
+                </>
+              )}
               <LoomText style={{ color: colors.primary, fontSize: 9, letterSpacing: 1.1, fontFamily: fonts.bold, marginBottom: 11 }}>YARN</LoomText>
               <FormFieldLabel>Brand</FormFieldLabel>
               <TextInput value={yarnBrand} onChangeText={setYarnBrand} placeholder="e.g. Cascade" placeholderTextColor={colors.mutedForeground} style={inputStyle} testID="input-edit-yarn-brand" />
@@ -116,5 +164,8 @@ const styles = StyleSheet.create({
   intro: { fontSize: 13, marginTop: 5, marginBottom: 17 },
   card: { borderWidth: 1, borderRadius: 18, padding: 17 },
   input: { minHeight: 45, borderWidth: 1, borderRadius: 9, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, fontFamily: fonts.body, marginBottom: 14 },
+  designerModeRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
+  designerModeButton: { flex: 1, minHeight: 39, borderWidth: 1, borderRadius: 9, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
+  designerPagePreview: { gap: 5, borderWidth: 1, borderRadius: 9, padding: 11, marginBottom: 12 },
   multiline: { minHeight: 92, paddingTop: 12 },
 });

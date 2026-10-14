@@ -65,6 +65,10 @@ export interface Project {
   /** @nullable */
   patternDesigner: string | null;
   /** @nullable */
+  designerWebsite: string | null;
+  /** @nullable */
+  designerPageTitle: string | null;
+  /** @nullable */
   yarn: string | null;
   /** @nullable */
   yarnBrand: string | null;
@@ -108,6 +112,10 @@ export interface CreateProject {
   /** @nullable */
   patternDesigner?: string | null;
   /** @nullable */
+  designerWebsite?: string | null;
+  /** @nullable */
+  designerPageTitle?: string | null;
+  /** @nullable */
   yarn?: string | null;
   /** @nullable */
   yarnBrand?: string | null;
@@ -140,6 +148,10 @@ export interface UpdateProject {
   /** @nullable */
   patternDesigner?: string | null;
   /** @nullable */
+  designerWebsite?: string | null;
+  /** @nullable */
+  designerPageTitle?: string | null;
+  /** @nullable */
   yarn?: string | null;
   /** @nullable */
   yarnBrand?: string | null;
@@ -160,6 +172,16 @@ export interface UpdateProject {
      * @maximum 100
      */
   completionPercent?: number;
+}
+
+export interface DesignerWebsiteTitlePreviewRequest {
+  websiteUrl: string;
+}
+
+export interface DesignerWebsiteTitlePreviewResponse {
+  websiteUrl: string;
+  /** @nullable */
+  pageTitle: string | null;
 }
 
 export interface CreateProgress {
