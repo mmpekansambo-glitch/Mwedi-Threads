@@ -44,6 +44,7 @@ app.use(
       getClerkProxyHost(req) ?? "",
       process.env.CLERK_PUBLISHABLE_KEY,
     ),
+    jwtKey: process.env.CLERK_JWT_KEY,
   })),
 );
 

@@ -1,0 +1,158 @@
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { generateKeyPairSync, createSign } from "node:crypto";
+import type { Server } from "node:http";
+import { PgDialect } from "drizzle-orm/pg-core";
+
+const { mockSelect } = vi.hoisted(() => ({
+  mockSelect: vi.fn(),
+}));
+
+vi.mock("@workspace/db", async () => {
+  const schema = await vi.importActual<typeof import("@workspace/db/schema")>(
+    "@workspace/db/schema",
+  );
+  return {
+    ...schema,
+    db: {
+      select: mockSelect,
+      insert: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+      transaction: vi.fn(),
+    },
+  };
+});
+
+const userId = "user_valid-session";
+const forgedUserId = "user_forged-header";
+const publishableKey = `pk_test_${Buffer.from("test.clerk.accounts.dev$").toString("base64").replace(/=+$/, "")}`;
+
+let server: Server;
+let baseUrl: string;
+let privateKey: string;
+let invalidPrivateKey: string;
+let capturedCondition: unknown;
+let previousEnvironment: Record<string, string | undefined>;
+
+function createSessionToken(signingKey: string, forUserId: string): string {
+  const now = Math.floor(Date.now() / 1000);
+  const encodedHeader = Buffer.from(
+    JSON.stringify({ alg: "RS256", typ: "JWT", kid: "test-key" }),
+  ).toString("base64url");
+  const encodedClaims = Buffer.from(
+    JSON.stringify({
+      iss: "https://test.clerk.accounts.dev",
+      sub: forUserId,
+      sid: "sess_test-session",
+      iat: now,
+      nbf: now - 1,
+      exp: now + 60,
+      azp: baseUrl,
+    }),
+  ).toString("base64url");
+  const signingInput = `${encodedHeader}.${encodedClaims}`;
+  const signer = createSign("RSA-SHA256");
+  signer.update(signingInput);
+  signer.end();
+  return `${signingInput}.${signer.sign(signingKey, "base64url")}`;
+}
+
+function validSessionToken(forUserId: string): string {
+  return createSessionToken(privateKey, forUserId);
+}
+
+async function request(options: {
+  sessionToken?: string;
+  headers?: Record<string, string>;
+} = {}) {
+  return fetch(`${baseUrl}/api/projects`, {
+    headers: {
+      ...options.headers,
+      ...(options.sessionToken
+        ? { authorization: `Bearer ${options.sessionToken}` }
+        : {}),
+    },
+  });
+}
+
+beforeAll(async () => {
+  previousEnvironment = {
+    CLERK_PUBLISHABLE_KEY: process.env.CLERK_PUBLISHABLE_KEY,
+    CLERK_JWT_KEY: process.env.CLERK_JWT_KEY,
+  };
+  const keys = generateKeyPairSync("rsa", {
+    modulusLength: 2048,
+    publicKeyEncoding: { type: "spki", format: "pem" },
+    privateKeyEncoding: { type: "pkcs8", format: "pem" },
+  });
+  const invalidKeys = generateKeyPairSync("rsa", {
+    modulusLength: 2048,
+    publicKeyEncoding: { type: "spki", format: "pem" },
+    privateKeyEncoding: { type: "pkcs8", format: "pem" },
+  });
+  privateKey = keys.privateKey;
+  invalidPrivateKey = invalidKeys.privateKey;
+  process.env.CLERK_PUBLISHABLE_KEY = publishableKey;
+  process.env.CLERK_JWT_KEY = keys.publicKey;
+
+  mockSelect.mockImplementation(() => {
+    const query = {
+      from: () => query,
+      where: (condition: unknown) => {
+        capturedCondition = condition;
+        return query;
+      },
+      orderBy: async () => [],
+    };
+    return query;
+  });
+
+  const { default: app } = await import("../app");
+  server = app.listen(0);
+  await new Promise<void>((resolve) => server.once("listening", resolve));
+  const address = server.address();
+  if (!address || typeof address === "string") {
+    throw new Error("Test server did not start.");
+  }
+  baseUrl = `http://127.0.0.1:${address.port}`;
+});
+
+afterAll(async () => {
+  await new Promise<void>((resolve, reject) =>
+    server.close((error) => (error ? reject(error) : resolve())),
+  );
+  for (const [name, value] of Object.entries(previousEnvironment)) {
+    if (value === undefined) delete process.env[name];
+    else process.env[name] = value;
+  }
+});
+
+describe("Clerk-backed API authentication", () => {
+  it("rejects requests without a session or with an invalid session", async () => {
+    const withoutSession = await request();
+    const invalidSession = await request({
+      sessionToken: createSessionToken(invalidPrivateKey, userId),
+    });
+
+    expect(withoutSession.status).toBe(401);
+    expect(invalidSession.status).toBe(401);
+    expect(mockSelect).not.toHaveBeenCalled();
+  });
+
+  it("uses the Clerk session identity and ignores client-supplied user headers", async () => {
+    capturedCondition = undefined;
+    const response = await request({
+      sessionToken: validSessionToken(userId),
+      headers: {
+        "x-test-user": forgedUserId,
+        "x-user-id": forgedUserId,
+        "x-clerk-user-id": forgedUserId,
+      },
+    });
+
+    expect(response.status).toBe(200);
+    const query = new PgDialect().sqlToQuery(capturedCondition as never);
+    expect(query.params).toContain(userId);
+    expect(query.params).not.toContain(forgedUserId);
+  });
+});
