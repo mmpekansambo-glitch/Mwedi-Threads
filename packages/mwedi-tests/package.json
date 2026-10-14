@@ -1,0 +1,17 @@
+{
+  "name": "@workspace/mwedi-tests",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "pnpm -w run typecheck:libs && vitest run --config vitest.config.ts && pnpm --filter @workspace/api-server test && pnpm --filter @workspace/indigoloom-web test",
+    "test:types": "pnpm --filter @workspace/mwedi-tests run typecheck && pnpm --filter @workspace/api-server run typecheck && pnpm --filter @workspace/indigoloom-web run typecheck && pnpm --filter @workspace/indigoloom-mobile run typecheck",
+    "test:postgres": "pnpm --filter @workspace/api-server run test:postgres",
+    "test:all": "pnpm run test && pnpm run test:types",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@workspace/api-zod": "workspace:*",
+    "vitest": "^5.0.4"
+  }
+}

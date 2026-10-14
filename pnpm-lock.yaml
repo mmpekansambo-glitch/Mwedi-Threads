@@ -820,6 +820,15 @@ importers:
         specifier: ^0.31.10
         version: 0.31.10
 
+  packages/mwedi-tests:
+    devDependencies:
+      '@workspace/api-zod':
+        specifier: workspace:*
+        version: link:../../lib/api-zod
+      vitest:
+        specifier: ^5.0.4
+        version: 5.0.4(@types/node@25.9.6)(vite@7.3.6(@types/node@25.9.6)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.51.2)(tsx@4.23.13)(yaml@2.9.0))
+
   scripts:
     devDependencies:
       '@types/node':
