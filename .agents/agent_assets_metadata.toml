@@ -1,0 +1,16 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "3-MkjrYe4oOmR5OLfqIKf"
+uri = "file://Mwedi_Threads_Build_Snapshot.txt"
+type = "text"
+title = "Mwedi Threads — Build Snapshot"
+description = "Plain-text snapshot of the product features, technical setup, verification, and current deployment status."
+logical_id = "98e228f6-918b-4c32-837e-1c3011bc6e97"
+content_hash = "sha256:6504155052bdab4954e1c5e9ce7931022b54520b840a56f15c29dc22c4a742e6"
+size = 3353
+mtime_ms = 1792168893996
+storage_uri = "gcs://replit-rams-assets-worf/rams/assets/repl:096b5a86-cb14-413d-9a3c-557d7b527e3d/98e228f6-918b-4c32-837e-1c3011bc6e97/99e161df-870c-4f6c-8442-d25cb8da9621"
+storage_version_token = "1792168901687637"
+content_type = "text/plain"

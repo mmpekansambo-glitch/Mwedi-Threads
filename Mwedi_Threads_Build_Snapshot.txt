@@ -1,0 +1,77 @@
+MWEDI THREADS — BUILD SO FAR
+Snapshot date: October 14, 2026
+
+PRODUCT OVERVIEW
+Mwedi Threads is a project journal for knitters and crocheters. It helps makers
+keep project details and progress notes together from planning through
+completion. The product has a web application, a mobile application, and a
+shared API.
+
+WHAT IS BUILT
+
+1. Accounts and access
+- Sign-in and sign-up screens are available on web and mobile through Clerk.
+- Google sign-in can be used when enabled for the Clerk application.
+- Projects and their progress entries are scoped to their owner; API tests
+  check that another account cannot read or change them.
+
+2. Project journal
+- Create, view, edit, filter/list, and delete projects.
+- Track craft, status, description, pattern, designer, yarn, tools or hook size,
+  and project dates.
+- Project status includes planning, in progress, paused, and completed.
+- Designer information can be a name or a website link. Website links can show
+  a fetched page-title preview.
+- Started and target dates use a calendar control and can be stored as either
+  month/year or month/day/year.
+
+3. Yarn and tools
+- Yarn is recorded in separate Brand, Type, and Color fields.
+- Existing free-text yarn details remain visible as a legacy note; they are not
+  automatically split into structured fields.
+- Knitting projects retain a free-text Tools field.
+- Crochet projects use a Hook size dropdown containing the 20 standard sizes
+  supplied for the project, with millimeter, US, and UK/Canada equivalents.
+- Older crochet Tools notes are preserved and shown separately rather than
+  being discarded or reinterpreted.
+
+4. Progress journal
+- Progress entries are associated with their project and can include notes and
+  an optional photo.
+- Project detail views show the project information and its progress history.
+
+5. Dashboard and project browsing
+- The web and mobile applications include project browsing and dashboard
+  views, with status filtering and summaries.
+
+TECHNICAL OVERVIEW
+- Web: React and Vite.
+- Mobile: React Native and Expo Router.
+- API: Express service with generated TypeScript clients and Zod validation
+  from a shared OpenAPI specification.
+- Data: PostgreSQL with Drizzle ORM.
+- Authentication: Clerk.
+
+VERIFICATION COMPLETED
+- Standard test command: pnpm test
+- Result at this snapshot: 37 tests passed; 3 optional PostgreSQL integration
+  tests were skipped because they require a configured non-production test
+  database.
+- Workspace typecheck: pnpm run typecheck — passed.
+- Web production build — completed.
+- Expo iOS and Android bundle builds — completed.
+- The development database schema includes the crochet hook-size field.
+- API, web, mobile, and component-preview development workflows were running
+  at the time of this snapshot.
+
+CURRENT LIMITS AND OPEN ITEMS
+- iOS app deployment is paused at the user's request. No App Store release or
+  iOS deployment has been made.
+- The mobile builds are development bundles, not store submissions.
+- Android device-specific verification of designer links is still outstanding.
+- The PostgreSQL integration tests can be run when a dedicated non-production
+  test database is configured.
+- Production database changes have not been applied by publishing this build.
+- Google sign-in availability depends on its configuration in Clerk.
+
+END OF SNAPSHOT
