@@ -17,6 +17,14 @@ const weekFormat = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric
 
 type Row = { label: string; detail: string; count: number };
 
+// Few bars (the status chart): show every label and put two-word labels on two lines so they fit at 13px.
+function WrappedTick({ x, y, payload }: { x?: number; y?: number; payload?: { value: string } }) {
+  const words = String(payload?.value ?? '').split(' ');
+  return <text x={x} y={y} dy={13} textAnchor="middle" fill={axisColor} fontSize={13}>
+    {words.map((word, i) => <tspan key={i} x={x} dy={i === 0 ? 0 : 15}>{word}</tspan>)}
+  </text>;
+}
+
 function ChartCard({ eyebrow, title, rows, emptyText, unit, note, testId }: {
   eyebrow: string; title: string; rows: Row[]; emptyText: string; unit: [string, string]; note?: string; testId: string;
 }) {
@@ -27,8 +35,10 @@ function ChartCard({ eyebrow, title, rows, emptyText, unit, note, testId }: {
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={rows} margin={{ top: 8, right: 4, bottom: 0, left: -24 }} barCategoryGap="22%">
           <CartesianGrid vertical={false} stroke={gridColor} strokeDasharray="3 4"/>
-          <XAxis dataKey="label" tickLine={false} axisLine={false} interval="preserveStartEnd" tick={{ fill: axisColor, fontSize: 10 }}/>
-          <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={44} tick={{ fill: axisColor, fontSize: 10 }}/>
+          {rows.length <= 4
+            ? <XAxis dataKey="label" tickLine={false} axisLine={false} interval={0} height={40} tick={<WrappedTick/>}/>
+            : <XAxis dataKey="label" tickLine={false} axisLine={false} interval="preserveStartEnd" tick={{ fill: axisColor, fontSize: 13 }}/>}
+          <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={44} tick={{ fill: axisColor, fontSize: 13 }}/>
           <Tooltip
             cursor={{ fill: gridColor, opacity: 0.35 }}
             content={({ active, payload }) => {

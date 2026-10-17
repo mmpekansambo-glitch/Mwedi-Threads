@@ -65,8 +65,8 @@
   },
   "dependencies": {
     "@clerk/expo": "^4.10.1",
-    "@expo-google-fonts/dm-sans": "^0.4.2",
-    "@expo-google-fonts/fraunces": "^0.4.1",
+    "@expo-google-fonts/figtree": "^0.4.1",
+    "@expo-google-fonts/lora": "^0.4.2",
     "@workspace/api-zod": "workspace:*",
     "expo-auth-session": "~57.0.15",
     "expo-crypto": "~57.0.4",

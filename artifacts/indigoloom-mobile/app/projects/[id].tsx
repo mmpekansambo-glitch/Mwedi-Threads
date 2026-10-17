@@ -154,13 +154,13 @@ export default function ProjectDetailScreen() {
           {project ? <Pressable accessibilityRole="button" accessibilityLabel="Edit project" onPress={() => router.push({ pathname: '/projects/[id]/edit', params: { id } })} style={styles.navButton}><Feather name="edit-2" size={17} color={colors.primary} /></Pressable> : <View style={styles.navButton} />}
         </View>
         {query.isLoading ? <LoomText style={[styles.loading, { color: colors.mutedForeground }]}>Gathering this project’s notes…</LoomText> : query.isError || !project ? (
-          <View style={styles.center}><LoomText serif style={{ color: colors.foreground, fontSize: 23 }}>Project not found</LoomText><LoomText style={{ color: colors.mutedForeground, marginTop: 7 }}>It may have been removed or moved.</LoomText><LoomButton title="Back to projects" onPress={() => router.replace('/(tabs)/projects')} variant="secondary" style={{ marginTop: 16 }} /></View>
+          <View style={styles.center}><LoomText serif style={{ color: colors.foreground, fontSize: 26 }}>Project not found</LoomText><LoomText style={{ color: colors.mutedForeground, marginTop: 7 }}>It may have been removed or moved.</LoomText><LoomButton title="Back to projects" onPress={() => router.replace('/(tabs)/projects')} variant="secondary" style={{ marginTop: 16 }} /></View>
         ) : (
           <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 30 }]}>
           <View style={[styles.hero, { backgroundColor: project.craft === 'knitting' ? colors.knitWash : colors.crochetWash }]}>
               <LoomText style={[styles.kicker, { color: colors.mutedForeground }]}>{project.craft === 'knitting' ? 'KNITTING JOURNAL' : 'CROCHET JOURNAL'}</LoomText>
               <LoomText serif style={[styles.title, { color: colors.foreground }]}>{project.title}</LoomText>
-              <View style={styles.statusLine}><StatusChip status={project.status} /><LoomText style={{ color: colors.mutedForeground, fontSize: 11 }}>{project.completionPercent}% complete</LoomText></View>
+              <View style={styles.statusLine}><StatusChip status={project.status} /><LoomText style={{ color: colors.mutedForeground, fontSize: 14 }}>{project.completionPercent}% complete</LoomText></View>
               <ProgressBar value={project.completionPercent} />
             </View>
             <View style={[styles.detailCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -189,17 +189,17 @@ export default function ProjectDetailScreen() {
               <View style={styles.photoControls}>
                 <Pressable accessibilityRole="button" onPress={pickPhoto} style={[styles.photoButton, { borderColor: colors.border }]} testID="button-pick-progress-photo">
                   <Feather name="image" size={16} color={colors.primary} />
-                  <LoomText style={{ color: colors.primary, fontFamily: fonts.semibold, fontSize: 12 }}>{photo ? 'Choose another photo' : 'Choose a photo'}</LoomText>
+                  <LoomText style={{ color: colors.primary, fontFamily: fonts.semibold, fontSize: 15 }}>{photo ? 'Choose another photo' : 'Choose a photo'}</LoomText>
                 </Pressable>
                 {photo ? <Pressable accessibilityRole="button" accessibilityLabel="Remove selected photo" onPress={() => setPhoto(null)} style={styles.removePhotoButton}><Feather name="x" size={18} color={colors.mutedForeground} /></Pressable> : null}
               </View>
               {photo ? <Image source={{ uri: photo.uri }} style={styles.photoPreview} contentFit="cover" accessibilityLabel="Selected progress photo preview" /> : null}
               <FormFieldLabel>Completion (0–100%)</FormFieldLabel>
               <TextInput value={completion || String(project.completionPercent)} onChangeText={setCompletion} placeholder="0–100" placeholderTextColor={colors.mutedForeground} keyboardType="number-pad" style={inputStyle} testID="input-progress-percent" />
-              {message ? <LoomText accessibilityRole="alert" style={{ color: colors.destructive, fontSize: 12, marginBottom: 11 }}>{message}</LoomText> : null}
+              {message ? <LoomText accessibilityRole="alert" style={{ color: colors.destructive, fontSize: 15, marginBottom: 11 }}>{message}</LoomText> : null}
               <LoomButton title="Save progress note" icon="feather" onPress={saveProgress} busy={addProgress.isPending || photoUploading} disabled={!notes.trim()} testID="button-save-progress" />
             </View>
-            <View style={styles.sectionHeading}><LoomText serif style={[styles.sectionTitle, { color: colors.foreground }]}>The journey so far</LoomText><LoomText style={{ color: colors.mutedForeground, fontSize: 11 }}>{project.progress.length} notes</LoomText></View>
+            <View style={styles.sectionHeading}><LoomText serif style={[styles.sectionTitle, { color: colors.foreground }]}>The journey so far</LoomText><LoomText style={{ color: colors.mutedForeground, fontSize: 14 }}>{project.progress.length} notes</LoomText></View>
             {project.progress.length ? project.progress.map((entry) => (
               <View key={entry.id} style={[styles.progressEntry, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <View style={[styles.entryMarker, { backgroundColor: colors.accent }]} />
@@ -217,7 +217,7 @@ export default function ProjectDetailScreen() {
                       testID={`button-remove-progress-photo-${entry.id}`}
                     >
                       <Feather name="x" size={15} color={colors.destructive} />
-                      <LoomText style={{ color: colors.destructive, fontFamily: fonts.semibold, fontSize: 11 }}>
+                      <LoomText style={{ color: colors.destructive, fontFamily: fonts.semibold, fontSize: 14 }}>
                         {removingPhotoEntryId === entry.id ? 'Removing photo…' : 'Remove photo'}
                       </LoomText>
                     </Pressable>
@@ -228,7 +228,7 @@ export default function ProjectDetailScreen() {
             <View style={styles.deleteSection}>
               {confirmDelete ? (
                 <View style={[styles.confirm, { backgroundColor: colors.warningWash, borderColor: colors.warningBorder }]}>
-                  <LoomText style={{ color: colors.warningText, fontFamily: fonts.semibold, fontSize: 12, flex: 1 }}>Delete this project and its progress notes?</LoomText>
+                  <LoomText style={{ color: colors.warningText, fontFamily: fonts.semibold, fontSize: 15, flex: 1 }}>Delete this project and its progress notes?</LoomText>
                   <LoomButton title="Keep it" variant="secondary" onPress={() => setConfirmDelete(false)} />
                   <LoomButton title="Delete" variant="danger" onPress={deleteProject} busy={remove.isPending} />
                 </View>
@@ -281,25 +281,25 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   nav: { minHeight: 47, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1 },
   navButton: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
-  navTitle: { fontSize: 13, fontFamily: fonts.semibold, flex: 1, textAlign: 'center', marginHorizontal: 8 },
+  navTitle: { fontSize: 16, fontFamily: fonts.semibold, flex: 1, textAlign: 'center', marginHorizontal: 8 },
   content: { paddingHorizontal: 18, paddingTop: 18, maxWidth: 740, width: '100%', alignSelf: 'center' },
   loading: { textAlign: 'center', marginTop: 55 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 26 },
   hero: { borderRadius: 18, padding: 19, gap: 11, overflow: 'hidden', marginBottom: 13 },
-  kicker: { fontFamily: fonts.bold, fontSize: 9, letterSpacing: 1.1 },
+  kicker: { fontFamily: fonts.bold, fontSize: 13, letterSpacing: 1.1 },
   title: { fontSize: 30, lineHeight: 36 },
   statusLine: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   detailCard: { borderWidth: 1, borderRadius: 16, padding: 17, marginBottom: 13 },
-  sectionLabel: { fontFamily: fonts.bold, fontSize: 9, letterSpacing: 1.1, marginBottom: 12 },
+  sectionLabel: { fontFamily: fonts.bold, fontSize: 13, letterSpacing: 1.1, marginBottom: 12 },
   infoRow: { width: '100%', minWidth: 0, flexDirection: 'row', gap: 10, alignItems: 'center', paddingVertical: 9, borderBottomWidth: 1 },
-  infoLabel: { fontSize: 11 },
-  infoValue: { flex: 1, textAlign: 'right', fontSize: 11, fontFamily: fonts.medium },
+  infoLabel: { fontSize: 14 },
+  infoValue: { flex: 1, textAlign: 'right', fontSize: 14, fontFamily: fonts.medium },
   designerLink: { flex: 1, flexBasis: 0, minWidth: 0, overflow: 'hidden', alignItems: 'flex-end' },
   designerLinkText: { width: '100%', maxWidth: '100%', minWidth: 0, flexShrink: 1 },
-  description: { marginTop: 12, lineHeight: 19, fontSize: 13 },
-  sectionTitle: { fontSize: 22 },
-  help: { fontSize: 12, lineHeight: 17, marginTop: 4, marginBottom: 15 },
-  input: { minHeight: 45, borderWidth: 1, borderRadius: 9, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, fontFamily: fonts.body, marginBottom: 12 },
+  description: { marginTop: 12, lineHeight: 23, fontSize: 16 },
+  sectionTitle: { fontSize: 25 },
+  help: { fontSize: 15, lineHeight: 21, marginTop: 4, marginBottom: 15 },
+  input: { minHeight: 45, borderWidth: 1, borderRadius: 9, paddingHorizontal: 12, paddingVertical: 10, fontSize: 16, fontFamily: fonts.body, marginBottom: 12 },
   notesInput: { minHeight: 84, paddingTop: 12 },
   photoControls: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
   photoButton: { minHeight: 42, borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -308,11 +308,11 @@ const styles = StyleSheet.create({
   sectionHeading: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 10, marginBottom: 11 },
   progressEntry: { borderWidth: 1, borderRadius: 13, padding: 13, flexDirection: 'row', gap: 10, marginBottom: 8 },
   entryMarker: { width: 7, height: 7, borderRadius: 4, marginTop: 5 },
-  entryMeta: { fontFamily: fonts.semibold, fontSize: 10 },
-  entryNotes: { fontSize: 12, lineHeight: 18, marginTop: 5 },
+  entryMeta: { fontFamily: fonts.semibold, fontSize: 13 },
+  entryNotes: { fontSize: 15, lineHeight: 22, marginTop: 5 },
   savedPhoto: { width: '100%', height: 220, borderRadius: 12, marginTop: 10, backgroundColor: '#EEF2F9' },
   removeSavedPhoto: { minHeight: 38, flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 5, paddingHorizontal: 2 },
-  noNotes: { fontSize: 12, paddingVertical: 15 },
+  noNotes: { fontSize: 15, paddingVertical: 15 },
   deleteSection: { alignItems: 'flex-end', marginTop: 8 },
   confirm: { borderWidth: 1, borderRadius: 12, padding: 11, flexDirection: 'row', alignItems: 'center', gap: 7 },
 });

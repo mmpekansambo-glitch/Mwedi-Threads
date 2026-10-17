@@ -124,9 +124,9 @@ export default function SignInScreen() {
           </View>
           {message ? <LoomText accessibilityRole="alert" style={[styles.message, { color: colors.destructive }]}>{message}</LoomText> : null}
           <LoomButton title="Sign in" icon="arrow-right" onPress={() => void submit()} busy={fetchStatus === 'fetching'} disabled={!identifier.trim() || !password} testID="button-signin" />
-          <AuthFooter><LoomText style={{ color: colors.mutedForeground, fontSize: 13 }}>New to Mwedi Threads?</LoomText><AuthLink href="/(auth)/sign-up">Create an account</AuthLink></AuthFooter>
+          <AuthFooter><LoomText style={{ color: colors.mutedForeground, fontSize: 16 }}>New to Mwedi Threads?</LoomText><AuthLink href="/(auth)/sign-up">Create an account</AuthLink></AuthFooter>
         </View>
-        <Pressable onPress={() => router.back()} style={styles.back}><Feather name="arrow-left" size={15} color={colors.mutedForeground} /><LoomText style={{ color: colors.mutedForeground, fontSize: 12 }}>Back to welcome</LoomText></Pressable>
+        <Pressable onPress={() => router.back()} style={styles.back}><Feather name="arrow-left" size={15} color={colors.mutedForeground} /><LoomText style={{ color: colors.mutedForeground, fontSize: 15 }}>Back to welcome</LoomText></Pressable>
       </KeyboardAwareScrollViewCompat>
     </View>
   );
@@ -137,15 +137,15 @@ const styles = StyleSheet.create({
   content: { width: '100%', maxWidth: 520, alignSelf: 'center', paddingHorizontal: 24, paddingTop: 28, paddingBottom: 36 },
   brandLink: { alignSelf: 'center', marginBottom: 31 },
   heading: { alignItems: 'center', marginBottom: 22 },
-  overline: { fontFamily: fonts.bold, fontSize: 9, letterSpacing: 1.3, marginBottom: 8 },
+  overline: { fontFamily: fonts.bold, fontSize: 13, letterSpacing: 1.3, marginBottom: 8 },
   title: { fontSize: 32, textAlign: 'center' },
-  subtitle: { fontSize: 13, marginTop: 6, textAlign: 'center' },
+  subtitle: { fontSize: 16, marginTop: 6, textAlign: 'center' },
   formCard: { borderWidth: 1, borderRadius: 20, padding: 21 },
   divider: { flexDirection: 'row', alignItems: 'center', gap: 9, marginVertical: 18 },
   line: { height: 1, flex: 1 },
-  dividerText: { fontSize: 8, letterSpacing: 1, fontFamily: fonts.bold },
+  dividerText: { fontSize: 13, letterSpacing: 1, fontFamily: fonts.bold },
   field: { marginBottom: 15 },
-  input: { minHeight: 48, paddingHorizontal: 13, borderWidth: 1, borderRadius: 10, fontFamily: fonts.body, fontSize: 14 },
-  message: { fontSize: 12, lineHeight: 18, marginBottom: 13 },
+  input: { minHeight: 48, paddingHorizontal: 13, borderWidth: 1, borderRadius: 10, fontFamily: fonts.body, fontSize: 16 },
+  message: { fontSize: 15, lineHeight: 22, marginBottom: 13 },
   back: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, marginTop: 20 },
 });

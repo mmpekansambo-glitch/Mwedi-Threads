@@ -123,7 +123,7 @@ export function ProjectDateField({
               <LoomText style={{
                 color: active ? colors.primary : colors.mutedForeground,
                 fontFamily: active ? fonts.semibold : fonts.body,
-                fontSize: 11,
+                fontSize: 14,
               }}>{title}</LoomText>
             </Pressable>
           );
@@ -137,7 +137,7 @@ export function ProjectDateField({
         testID={`${testID}-calendar`}
       >
         <Feather name="calendar" size={16} color={colors.primary} />
-        <LoomText style={{ color: displayValue ? colors.foreground : colors.mutedForeground, fontSize: 13 }}>
+        <LoomText style={{ color: displayValue ? colors.foreground : colors.mutedForeground, fontSize: 16 }}>
           {displayValue || (precision === 'month' ? 'Choose month and year' : 'Choose date')}
         </LoomText>
         <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
@@ -158,10 +158,10 @@ export function ProjectDateField({
           <View style={[styles.sheet, { backgroundColor: colors.card, paddingBottom: 20 }]}>
             <View style={[styles.sheetHeading, { borderBottomColor: colors.border }]}>
               <View>
-                <LoomText serif style={{ color: colors.foreground, fontSize: 21 }}>
+                <LoomText serif style={{ color: colors.foreground, fontSize: 24 }}>
                   {precision === 'month' ? 'Choose month and year' : 'Choose a date'}
                 </LoomText>
-                <LoomText style={{ color: colors.mutedForeground, fontSize: 12, marginTop: 3 }}>
+                <LoomText style={{ color: colors.mutedForeground, fontSize: 15, marginTop: 3 }}>
                   {precision === 'month' ? 'Month and year only · MM/YY' : 'Select a day · MM/DD/YY'}
                 </LoomText>
               </View>
@@ -184,7 +184,7 @@ export function ProjectDateField({
               >
                 <Feather name="chevron-left" size={17} color={colors.primary} />
               </Pressable>
-              <LoomText style={{ color: colors.foreground, fontFamily: fonts.semibold, fontSize: 15 }}>
+              <LoomText style={{ color: colors.foreground, fontFamily: fonts.semibold, fontSize: 17 }}>
                 {precision === 'month'
                   ? String(visibleYear)
                   : new Intl.DateTimeFormat('en', { month: 'long', year: 'numeric' }).format(visibleMonth)}
@@ -220,7 +220,7 @@ export function ProjectDateField({
                       <LoomText style={{
                         color: selected ? colors.primary : colors.foreground,
                         fontFamily: selected ? fonts.semibold : fonts.body,
-                        fontSize: 12,
+                        fontSize: 15,
                       }}>{monthName.slice(0, 3)}</LoomText>
                     </Pressable>
                   );
@@ -256,7 +256,7 @@ export function ProjectDateField({
                         <LoomText style={{
                           color: selected ? colors.card : colors.foreground,
                           fontFamily: selected ? fonts.semibold : fonts.body,
-                          fontSize: 13,
+                          fontSize: 16,
                         }}>{day}</LoomText>
                       </Pressable>
                     );
@@ -272,11 +272,11 @@ export function ProjectDateField({
                   onPress={() => { onChange(''); setIsOpen(false); }}
                   style={styles.clearButton}
                 >
-                  <LoomText style={{ color: colors.destructive, fontFamily: fonts.semibold, fontSize: 12 }}>Clear date</LoomText>
+                  <LoomText style={{ color: colors.destructive, fontFamily: fonts.semibold, fontSize: 15 }}>Clear date</LoomText>
                 </Pressable>
               ) : <View />}
               <Pressable accessibilityRole="button" onPress={() => setIsOpen(false)} style={styles.doneButton}>
-                <LoomText style={{ color: colors.primary, fontFamily: fonts.semibold, fontSize: 12 }}>Done</LoomText>
+                <LoomText style={{ color: colors.primary, fontFamily: fonts.semibold, fontSize: 15 }}>Done</LoomText>
               </Pressable>
             </View>
           </View>
@@ -298,7 +298,7 @@ const styles = StyleSheet.create({
   calendarHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 14, marginBottom: 12 },
   calendarNavButton: { width: 38, height: 36, borderRadius: 9, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   weekdayRow: { flexDirection: 'row', marginBottom: 4 },
-  weekday: { width: '14.2857%', textAlign: 'center', fontSize: 11, fontFamily: fonts.semibold, paddingVertical: 6 },
+  weekday: { width: '14.2857%', textAlign: 'center', fontSize: 14, fontFamily: fonts.semibold, paddingVertical: 6 },
   dayGrid: { flexDirection: 'row', flexWrap: 'wrap' },
   dayCell: { width: '14.2857%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 22 },
   monthGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
