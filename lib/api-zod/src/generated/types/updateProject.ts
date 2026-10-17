@@ -48,6 +48,9 @@ export interface UpdateProject {
   /** @nullable */
   targetDate?: Date | null;
   targetDatePrecision?: ProjectDatePrecision;
+  /** @nullable */
+  completedAt?: Date | null;
+  completedAtPrecision?: ProjectDatePrecision;
   /**
      * @minimum 0
      * @maximum 100

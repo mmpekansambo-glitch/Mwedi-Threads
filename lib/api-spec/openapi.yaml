@@ -410,6 +410,11 @@ components:
           format: date
         targetDatePrecision:
           $ref: "#/components/schemas/ProjectDatePrecision"
+        completedAt:
+          type: [string, "null"]
+          format: date
+        completedAtPrecision:
+          $ref: "#/components/schemas/ProjectDatePrecision"
         completionPercent:
           type: integer
           minimum: 0
@@ -440,6 +445,8 @@ components:
         - startedAtPrecision
         - targetDate
         - targetDatePrecision
+        - completedAt
+        - completedAtPrecision
         - completionPercent
         - createdAt
         - updatedAt
@@ -547,6 +554,11 @@ components:
           type: [string, "null"]
           format: date
         targetDatePrecision:
+          $ref: "#/components/schemas/ProjectDatePrecision"
+        completedAt:
+          type: [string, "null"]
+          format: date
+        completedAtPrecision:
           $ref: "#/components/schemas/ProjectDatePrecision"
         completionPercent:
           type: integer

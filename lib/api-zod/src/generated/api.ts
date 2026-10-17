@@ -25,6 +25,7 @@ export const getDashboardResponseRecentProjectsItemCompletionPercentMin = 0;
 export const getDashboardResponseRecentProjectsItemCompletionPercentMax = 100;
 
 
+
 export const GetDashboardResponse = zod.object({
   "totalProjects": zod.number().int(),
   "activeProjects": zod.number().int(),
@@ -49,6 +50,8 @@ export const GetDashboardResponse = zod.object({
   "startedAtPrecision": zod.enum(['month', 'day']),
   "targetDate": zod.coerce.date().nullable(),
   "targetDatePrecision": zod.enum(['month', 'day']),
+  "completedAt": zod.coerce.date().nullable(),
+  "completedAtPrecision": zod.enum(['month', 'day']),
   "completionPercent": zod.number().int().min(getDashboardResponseRecentProjectsItemCompletionPercentMin).max(getDashboardResponseRecentProjectsItemCompletionPercentMax),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -77,6 +80,7 @@ export const getProjectsResponseCompletionPercentMin = 0;
 export const getProjectsResponseCompletionPercentMax = 100;
 
 
+
 export const GetProjectsResponseItem = zod.object({
   "id": zod.string().uuid(),
   "title": zod.string(),
@@ -97,6 +101,8 @@ export const GetProjectsResponseItem = zod.object({
   "startedAtPrecision": zod.enum(['month', 'day']),
   "targetDate": zod.coerce.date().nullable(),
   "targetDatePrecision": zod.enum(['month', 'day']),
+  "completedAt": zod.coerce.date().nullable(),
+  "completedAtPrecision": zod.enum(['month', 'day']),
   "completionPercent": zod.number().int().min(getProjectsResponseCompletionPercentMin).max(getProjectsResponseCompletionPercentMax),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -138,6 +144,7 @@ export const createProjectResponseCompletionPercentMin = 0;
 export const createProjectResponseCompletionPercentMax = 100;
 
 
+
 export const CreateProjectResponse = zod.object({
   "id": zod.string().uuid(),
   "title": zod.string(),
@@ -158,6 +165,8 @@ export const CreateProjectResponse = zod.object({
   "startedAtPrecision": zod.enum(['month', 'day']),
   "targetDate": zod.coerce.date().nullable(),
   "targetDatePrecision": zod.enum(['month', 'day']),
+  "completedAt": zod.coerce.date().nullable(),
+  "completedAtPrecision": zod.enum(['month', 'day']),
   "completionPercent": zod.number().int().min(createProjectResponseCompletionPercentMin).max(createProjectResponseCompletionPercentMax),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -193,6 +202,7 @@ export const getProjectResponseTwoProgressItemCompletionPercentMin = 0;
 export const getProjectResponseTwoProgressItemCompletionPercentMax = 100;
 
 
+
 export const GetProjectResponse = zod.object({
   "id": zod.string().uuid(),
   "title": zod.string(),
@@ -213,6 +223,8 @@ export const GetProjectResponse = zod.object({
   "startedAtPrecision": zod.enum(['month', 'day']),
   "targetDate": zod.coerce.date().nullable(),
   "targetDatePrecision": zod.enum(['month', 'day']),
+  "completedAt": zod.coerce.date().nullable(),
+  "completedAtPrecision": zod.enum(['month', 'day']),
   "completionPercent": zod.number().int().min(getProjectResponseOneCompletionPercentMin).max(getProjectResponseOneCompletionPercentMax),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -242,6 +254,7 @@ export const updateProjectBodyCompletionPercentMin = 0;
 export const updateProjectBodyCompletionPercentMax = 100;
 
 
+
 export const UpdateProjectBody = zod.object({
   "title": zod.string().min(1).max(updateProjectBodyTitleMax).optional(),
   "craft": zod.enum(['knitting', 'crochet']).optional(),
@@ -261,12 +274,15 @@ export const UpdateProjectBody = zod.object({
   "startedAtPrecision": zod.enum(['month', 'day']).optional(),
   "targetDate": zod.coerce.date().nullish(),
   "targetDatePrecision": zod.enum(['month', 'day']).optional(),
+  "completedAt": zod.coerce.date().nullish(),
+  "completedAtPrecision": zod.enum(['month', 'day']).optional(),
   "completionPercent": zod.number().int().min(updateProjectBodyCompletionPercentMin).max(updateProjectBodyCompletionPercentMax).optional()
 })
 
 export const updateProjectResponseDesignerWebsiteRegExp = new RegExp('^[Hh][Tt][Tt][Pp][Ss]?:/');
 export const updateProjectResponseCompletionPercentMin = 0;
 export const updateProjectResponseCompletionPercentMax = 100;
+
 
 
 export const UpdateProjectResponse = zod.object({
@@ -289,6 +305,8 @@ export const UpdateProjectResponse = zod.object({
   "startedAtPrecision": zod.enum(['month', 'day']),
   "targetDate": zod.coerce.date().nullable(),
   "targetDatePrecision": zod.enum(['month', 'day']),
+  "completedAt": zod.coerce.date().nullable(),
+  "completedAtPrecision": zod.enum(['month', 'day']),
   "completionPercent": zod.number().int().min(updateProjectResponseCompletionPercentMin).max(updateProjectResponseCompletionPercentMax),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -318,6 +336,8 @@ export const addProgressBodyCompletionPercentMin = 0;
 export const addProgressBodyCompletionPercentMax = 100;
 
 
+
+
 export const AddProgressBody = zod.object({
   "notes": zod.string().min(1).max(addProgressBodyNotesMax),
   "completionPercent": zod.number().int().min(addProgressBodyCompletionPercentMin).max(addProgressBodyCompletionPercentMax),
@@ -326,6 +346,7 @@ export const AddProgressBody = zod.object({
 
 export const addProgressResponseCompletionPercentMin = 0;
 export const addProgressResponseCompletionPercentMax = 100;
+
 
 
 export const AddProgressResponse = zod.object({
@@ -348,6 +369,7 @@ export const RequestProgressPhotoUploadParams = zod.object({
 export const requestProgressPhotoUploadBodyNameMax = 255;
 
 export const requestProgressPhotoUploadBodySizeMax = 10485760;
+
 
 
 export const RequestProgressPhotoUploadBody = zod.object({
@@ -382,4 +404,5 @@ export const DeleteProgressPhotoParams = zod.object({
 })
 
 export const DeleteProgressPhotoResponse = zod.void()
+
 
