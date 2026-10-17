@@ -48,6 +48,7 @@ export interface Project {
   /** @nullable */
   completedAt: Date | null;
   completedAtPrecision: ProjectDatePrecision;
+  starred: boolean;
   /**
      * @minimum 0
      * @maximum 100

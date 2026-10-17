@@ -52,6 +52,7 @@ export const GetDashboardResponse = zod.object({
   "targetDatePrecision": zod.enum(['month', 'day']),
   "completedAt": zod.coerce.date().nullable(),
   "completedAtPrecision": zod.enum(['month', 'day']),
+  "starred": zod.boolean(),
   "completionPercent": zod.number().int().min(getDashboardResponseRecentProjectsItemCompletionPercentMin).max(getDashboardResponseRecentProjectsItemCompletionPercentMax),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -72,7 +73,8 @@ export const GetDashboardResponse = zod.object({
 export const GetProjectsQueryParams = zod.object({
   "search": zod.coerce.string().optional(),
   "status": zod.enum(['planning', 'in_progress', 'paused', 'completed']).optional(),
-  "craft": zod.enum(['knitting', 'crochet']).optional()
+  "craft": zod.enum(['knitting', 'crochet']).optional(),
+  "starred": zod.coerce.boolean().optional().describe('Only return projects the signed-in user has starred')
 })
 
 export const getProjectsResponseDesignerWebsiteRegExp = new RegExp('^[Hh][Tt][Tt][Pp][Ss]?:/');
@@ -103,6 +105,7 @@ export const GetProjectsResponseItem = zod.object({
   "targetDatePrecision": zod.enum(['month', 'day']),
   "completedAt": zod.coerce.date().nullable(),
   "completedAtPrecision": zod.enum(['month', 'day']),
+  "starred": zod.boolean(),
   "completionPercent": zod.number().int().min(getProjectsResponseCompletionPercentMin).max(getProjectsResponseCompletionPercentMax),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -167,6 +170,7 @@ export const CreateProjectResponse = zod.object({
   "targetDatePrecision": zod.enum(['month', 'day']),
   "completedAt": zod.coerce.date().nullable(),
   "completedAtPrecision": zod.enum(['month', 'day']),
+  "starred": zod.boolean(),
   "completionPercent": zod.number().int().min(createProjectResponseCompletionPercentMin).max(createProjectResponseCompletionPercentMax),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -225,6 +229,7 @@ export const GetProjectResponse = zod.object({
   "targetDatePrecision": zod.enum(['month', 'day']),
   "completedAt": zod.coerce.date().nullable(),
   "completedAtPrecision": zod.enum(['month', 'day']),
+  "starred": zod.boolean(),
   "completionPercent": zod.number().int().min(getProjectResponseOneCompletionPercentMin).max(getProjectResponseOneCompletionPercentMax),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -307,6 +312,7 @@ export const UpdateProjectResponse = zod.object({
   "targetDatePrecision": zod.enum(['month', 'day']),
   "completedAt": zod.coerce.date().nullable(),
   "completedAtPrecision": zod.enum(['month', 'day']),
+  "starred": zod.boolean(),
   "completionPercent": zod.number().int().min(updateProjectResponseCompletionPercentMin).max(updateProjectResponseCompletionPercentMax),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -321,6 +327,26 @@ export const DeleteProjectParams = zod.object({
 })
 
 export const DeleteProjectResponse = zod.void()
+
+
+/**
+ * @summary Star a project
+ */
+export const StarProjectParams = zod.object({
+  "projectId": zod.coerce.string().uuid()
+})
+
+export const StarProjectResponse = zod.void()
+
+
+/**
+ * @summary Remove the star from a project
+ */
+export const UnstarProjectParams = zod.object({
+  "projectId": zod.coerce.string().uuid()
+})
+
+export const UnstarProjectResponse = zod.void()
 
 
 /**

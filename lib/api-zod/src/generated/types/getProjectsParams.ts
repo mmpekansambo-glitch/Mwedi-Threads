@@ -12,4 +12,8 @@ export type GetProjectsParams = {
 search?: string;
 status?: ProjectStatus;
 craft?: CraftType;
+/**
+ * Only return projects the signed-in user has starred
+ */
+starred?: boolean;
 };

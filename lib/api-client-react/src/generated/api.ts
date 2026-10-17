@@ -721,6 +721,154 @@ export const useDeleteProject = <TError = ErrorType<UnauthorizedResponse | NotFo
       return useMutation(getDeleteProjectMutationOptions(options));
     }
 
+export const getStarProjectUrl = (projectId: string,) => {
+
+
+
+
+  return `/api/projects/${projectId}/star`
+}
+
+/**
+ * @summary Star a project
+ */
+export const starProject = async (projectId: string, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getStarProjectUrl(projectId),
+  {
+    ...options,
+    method: 'PUT'
+
+
+  }
+);}
+
+
+
+
+
+export const getStarProjectMutationKey = () => ['starProject'] as const;
+
+export const getStarProjectMutationOptions = <TError = ErrorType<UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof starProject>>, TError,StarProjectMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof starProject>>, TError,StarProjectMutationVariables, TContext> => {
+
+const mutationKey = getStarProjectMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof starProject>>, StarProjectMutationVariables> = (props) => {
+          const {projectId} = props ?? {};
+
+          return  starProject(projectId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StarProjectMutationResult = NonNullable<Awaited<ReturnType<typeof starProject>>>
+
+    export type StarProjectMutationError = ErrorType<UnauthorizedResponse | NotFoundResponse>
+    export type StarProjectMutationVariables = {projectId: string}
+
+    /**
+ * @summary Star a project
+ */
+export const useStarProject = <TError = ErrorType<UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof starProject>>, TError,StarProjectMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof starProject>>,
+        TError,
+        StarProjectMutationVariables,
+        TContext
+      > => {
+      return useMutation(getStarProjectMutationOptions(options));
+    }
+
+export const getUnstarProjectUrl = (projectId: string,) => {
+
+
+
+
+  return `/api/projects/${projectId}/star`
+}
+
+/**
+ * @summary Remove the star from a project
+ */
+export const unstarProject = async (projectId: string, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getUnstarProjectUrl(projectId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getUnstarProjectMutationKey = () => ['unstarProject'] as const;
+
+export const getUnstarProjectMutationOptions = <TError = ErrorType<UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unstarProject>>, TError,UnstarProjectMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof unstarProject>>, TError,UnstarProjectMutationVariables, TContext> => {
+
+const mutationKey = getUnstarProjectMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof unstarProject>>, UnstarProjectMutationVariables> = (props) => {
+          const {projectId} = props ?? {};
+
+          return  unstarProject(projectId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UnstarProjectMutationResult = NonNullable<Awaited<ReturnType<typeof unstarProject>>>
+
+    export type UnstarProjectMutationError = ErrorType<UnauthorizedResponse | NotFoundResponse>
+    export type UnstarProjectMutationVariables = {projectId: string}
+
+    /**
+ * @summary Remove the star from a project
+ */
+export const useUnstarProject = <TError = ErrorType<UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unstarProject>>, TError,UnstarProjectMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof unstarProject>>,
+        TError,
+        UnstarProjectMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUnstarProjectMutationOptions(options));
+    }
+
 export const getAddProgressUrl = (projectId: string,) => {
 
 

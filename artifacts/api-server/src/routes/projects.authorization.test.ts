@@ -1,7 +1,7 @@
 import express, { type Request } from "express";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { PgDialect } from "drizzle-orm/pg-core";
-import { progressEntriesTable, projectsTable } from "@workspace/db/schema";
+import { progressEntriesTable, projectsTable, starsTable } from "@workspace/db/schema";
 import projectsRouter from "./projects";
 import { WebsiteTitlePreviewError } from "../lib/websiteTitlePreview";
 
@@ -94,9 +94,12 @@ function progress(
 
 let projects: ReturnType<typeof project>[];
 let progressEntries: ReturnType<typeof progress>[];
+let stars: { userId: string; projectId: string; createdAt: Date }[];
+
+type MockTable = typeof projectsTable | typeof progressEntriesTable | typeof starsTable;
 
 class Query {
-  private table: typeof projectsTable | typeof progressEntriesTable | undefined;
+  private table: MockTable | undefined;
   private joinTable: typeof projectsTable | undefined;
   private condition: unknown;
   private valuesToWrite: Record<string, unknown> | undefined;
@@ -108,7 +111,7 @@ class Query {
     private readonly selection?: Record<string, unknown>,
   ) {}
 
-  from(table: typeof projectsTable | typeof progressEntriesTable) {
+  from(table: MockTable) {
     this.table = table;
     return this;
   }
@@ -146,15 +149,22 @@ class Query {
     return this;
   }
 
+  onConflictDoNothing() {
+    return this;
+  }
+
   private matches(row: Record<string, unknown>, sql: string, params: unknown[]) {
-    const tableName = this.table === projectsTable ? "projects" : "project_progress_entries";
+    const tableName =
+      this.table === projectsTable ? "projects" :
+      this.table === starsTable ? "stars" : "project_progress_entries";
     const comparisons = [...sql.matchAll(
-      new RegExp(`"${tableName}"\\."(owner_id|id|project_id)" = \\$(\\d+)`, "g"),
+      new RegExp(`"${tableName}"\\."(owner_id|user_id|id|project_id)" = \\$(\\d+)`, "g"),
     )];
     return comparisons.every(([, column, parameter]) => {
       const value = params[Number(parameter) - 1];
       const property =
         column === "owner_id" ? "ownerId" :
+        column === "user_id" ? "userId" :
         column === "project_id" ? "projectId" : "id";
       return row[property] === value;
     });
@@ -165,11 +175,12 @@ class Query {
     const compiled = this.condition
       ? new PgDialect().sqlToQuery(this.condition as never)
       : { sql: "", params: [] };
-    const rows =
-      this.table === projectsTable ? projects : progressEntries;
+    const rows: Record<string, unknown>[] =
+      this.table === projectsTable ? projects :
+      this.table === starsTable ? stars : progressEntries;
     const matched = rows.filter((row) =>
-      this.matches(row as unknown as Record<string, unknown>, compiled.sql, compiled.params),
-    );
+      this.matches(row, compiled.sql, compiled.params),
+    ) as any[];
 
     if (this.action === "select") {
       const selected = this.joinTable === projectsTable
@@ -206,6 +217,19 @@ class Query {
     if (this.action === "update") {
       for (const row of matched) Object.assign(row, this.valuesToWrite);
       return matched;
+    }
+
+    if (this.action === "delete" && this.table === starsTable) {
+      stars = stars.filter((row) => !matched.includes(row));
+      return matched;
+    }
+
+    if (this.action === "insert" && this.table === starsTable && this.rowValues) {
+      const row = this.rowValues as { userId: string; projectId: string };
+      if (!stars.some((star) => star.userId === row.userId && star.projectId === row.projectId)) {
+        stars.push({ ...row, createdAt: timestamp });
+      }
+      return [];
     }
 
     if (this.action === "delete") {
@@ -292,6 +316,7 @@ beforeEach(() => {
     progress(progressAId, projectAId, "A's private progress", `/objects/progress/${projectAId}/photo-a`),
     progress(progressBId, projectBId, "B's private progress", `/objects/progress/${projectBId}/photo-b`),
   ];
+  stars = [];
   mockDb.select.mockImplementation((selection) => new Query("select", selection));
   mockDb.insert.mockImplementation((table) => new Query("insert").from(table));
   mockDb.update.mockImplementation((table) => new Query("update").from(table));
@@ -700,5 +725,47 @@ describe("project authorization", () => {
     });
     expect(reopened.status).toBe(201);
     expect(projects[0]).toMatchObject({ status: "in_progress", completedAt: null });
+  });
+
+  it("stars and un-stars a project and filters the list to starred projects", async () => {
+    projects.push(project("ffffffff-ffff-4fff-8fff-ffffffffffff", ownerA, "A's mittens"));
+
+    const starResponse = await request(`/projects/${projectAId}/star`, { method: "PUT", user: ownerA });
+    expect(starResponse.status).toBe(204);
+    const starAgain = await request(`/projects/${projectAId}/star`, { method: "PUT", user: ownerA });
+    expect(starAgain.status).toBe(204);
+    expect(stars).toHaveLength(1);
+
+    const all = (await (await request("/projects", { user: ownerA })).json()) as { id: string; starred: boolean }[];
+    expect(all.find((item) => item.id === projectAId)?.starred).toBe(true);
+    expect(all.find((item) => item.id !== projectAId)?.starred).toBe(false);
+
+    const starredOnly = (await (await request("/projects?starred=true", { user: ownerA })).json()) as { id: string }[];
+    expect(starredOnly.map((item) => item.id)).toEqual([projectAId]);
+
+    const detail = (await (await request(`/projects/${projectAId}`, { user: ownerA })).json()) as { starred: boolean };
+    expect(detail.starred).toBe(true);
+
+    const unstarResponse = await request(`/projects/${projectAId}/star`, { method: "DELETE", user: ownerA });
+    expect(unstarResponse.status).toBe(204);
+    expect(stars).toHaveLength(0);
+    const afterUnstar = (await (await request("/projects?starred=true", { user: ownerA })).json()) as unknown[];
+    expect(afterUnstar).toEqual([]);
+  });
+
+  it("does not let anyone star, un-star or see stars on another owner's project", async () => {
+    stars.push({ userId: ownerA, projectId: projectAId, createdAt: timestamp });
+
+    const starResponse = await request(`/projects/${projectAId}/star`, { method: "PUT", user: ownerB });
+    expect(starResponse.status).toBe(404);
+    const unstarResponse = await request(`/projects/${projectAId}/star`, { method: "DELETE", user: ownerB });
+    expect(unstarResponse.status).toBe(404);
+    expect(stars).toEqual([{ userId: ownerA, projectId: projectAId, createdAt: timestamp }]);
+
+    const starredForB = (await (await request("/projects?starred=true", { user: ownerB })).json()) as unknown[];
+    expect(starredForB).toEqual([]);
+
+    const unauthenticated = await request(`/projects/${projectAId}/star`, { method: "PUT" });
+    expect(unauthenticated.status).toBe(401);
   });
 });

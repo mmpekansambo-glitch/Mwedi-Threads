@@ -8,6 +8,8 @@ import {
   CreateProjectBody,
   CreateProjectResponse,
   DeleteProjectParams,
+  StarProjectParams,
+  UnstarProjectParams,
   DeleteProgressPhotoParams,
   GetDashboardResponse,
   GetProjectParams,
@@ -29,6 +31,7 @@ import {
   db,
   progressEntriesTable,
   projectsTable,
+  starsTable,
   type Project,
 } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
@@ -113,8 +116,8 @@ function completedDateChanges(
   return {};
 }
 
-function serializeProject(project: Project) {
-  const validated = GetProjectsResponseItem.parse(project);
+function serializeProject(project: Project, starred: boolean) {
+  const validated = GetProjectsResponseItem.parse({ ...project, starred });
   return {
     ...validated,
     designerPageTitle: project.designerPageTitle
@@ -128,6 +131,30 @@ function serializeProject(project: Project) {
 
 function getOwnerId(res: Response): string {
   return res.locals.userId as string;
+}
+
+async function starredProjectIds(ownerId: string): Promise<Set<string>> {
+  const rows = await db
+    .select({ projectId: starsTable.projectId })
+    .from(starsTable)
+    .where(eq(starsTable.userId, ownerId));
+  return new Set(rows.map((row) => row.projectId));
+}
+
+async function isStarred(ownerId: string, projectId: string): Promise<boolean> {
+  const [star] = await db
+    .select({ projectId: starsTable.projectId })
+    .from(starsTable)
+    .where(and(eq(starsTable.userId, ownerId), eq(starsTable.projectId, projectId)));
+  return Boolean(star);
+}
+
+async function findOwnedProjectId(ownerId: string, projectId: string): Promise<string | null> {
+  const [project] = await db
+    .select({ id: projectsTable.id })
+    .from(projectsTable)
+    .where(and(eq(projectsTable.id, projectId), eq(projectsTable.ownerId, ownerId)));
+  return project?.id ?? null;
 }
 
 router.post("/projects/designer-website-title-preview", async (req, res): Promise<void> => {
@@ -180,6 +207,10 @@ router.get("/dashboard", async (req, res): Promise<void> => {
       .orderBy(desc(progressEntriesTable.createdAt))
       .limit(6),
   ]);
+  const starredIds = await starredProjectIds(ownerId);
+  const serializedRecent = recentProjects.map((project) =>
+    serializeProject(project, starredIds.has(project.id)),
+  );
 
   const dashboard = GetDashboardResponse.parse({
     totalProjects: allProjects.length,
@@ -189,13 +220,10 @@ router.get("/dashboard", async (req, res): Promise<void> => {
     completedProjects: allProjects.filter(
       (project) => project.status === "completed",
     ).length,
-    recentProjects,
+    recentProjects: serializedRecent,
     recentProgress,
   });
-  res.json({
-    ...dashboard,
-    recentProjects: recentProjects.map(serializeProject),
-  });
+  res.json({ ...dashboard, recentProjects: serializedRecent });
   req.log.debug({ ownerId }, "Loaded Mwedi Threads dashboard");
 });
 
@@ -225,12 +253,22 @@ router.get("/projects", async (req, res): Promise<void> => {
     filters.push(eq(projectsTable.craft, parsedQuery.data.craft));
   }
 
-  const rows = await db
-    .select()
-    .from(projectsTable)
-    .where(and(...filters))
-    .orderBy(desc(projectsTable.updatedAt));
-  res.json(rows.map(serializeProject));
+  const [rows, starredIds] = await Promise.all([
+    db
+      .select()
+      .from(projectsTable)
+      .where(and(...filters))
+      .orderBy(desc(projectsTable.updatedAt)),
+    starredProjectIds(ownerId),
+  ]);
+  // The generated query schema turns any value into true, so only the exact
+  // text "true" turns the Starred filter on.
+  const onlyStarred = req.query.starred === "true";
+  res.json(
+    rows
+      .filter((project) => !onlyStarred || starredIds.has(project.id))
+      .map((project) => serializeProject(project, starredIds.has(project.id))),
+  );
 });
 
 router.post("/projects", async (req, res): Promise<void> => {
@@ -272,7 +310,7 @@ router.post("/projects", async (req, res): Promise<void> => {
       ),
     })
     .returning();
-  res.status(201).json(serializeProject(created));
+  res.status(201).json(serializeProject(created, false));
 });
 
 router.get("/projects/:projectId", async (req, res): Promise<void> => {
@@ -302,7 +340,10 @@ router.get("/projects/:projectId", async (req, res): Promise<void> => {
     .from(progressEntriesTable)
     .where(eq(progressEntriesTable.projectId, project.id))
     .orderBy(desc(progressEntriesTable.createdAt));
-  res.json({ ...serializeProject(project), progress });
+  res.json({
+    ...serializeProject(project, await isStarred(ownerId, project.id)),
+    progress,
+  });
 });
 
 router.patch("/projects/:projectId", async (req, res): Promise<void> => {
@@ -359,7 +400,7 @@ router.patch("/projects/:projectId", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Project not found." });
     return;
   }
-  res.json(serializeProject(updated));
+  res.json(serializeProject(updated, await isStarred(ownerId, updated.id)));
 });
 
 router.delete("/projects/:projectId", async (req, res): Promise<void> => {
@@ -424,6 +465,47 @@ router.delete("/projects/:projectId", async (req, res): Promise<void> => {
       );
     }
   }
+  res.sendStatus(204);
+});
+
+router.put("/projects/:projectId/star", async (req, res): Promise<void> => {
+  const params = StarProjectParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: "Invalid project ID." });
+    return;
+  }
+
+  const ownerId = getOwnerId(res);
+  const projectId = await findOwnedProjectId(ownerId, params.data.projectId);
+  if (!projectId) {
+    res.status(404).json({ error: "Project not found." });
+    return;
+  }
+
+  await db
+    .insert(starsTable)
+    .values({ userId: ownerId, projectId })
+    .onConflictDoNothing();
+  res.sendStatus(204);
+});
+
+router.delete("/projects/:projectId/star", async (req, res): Promise<void> => {
+  const params = UnstarProjectParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: "Invalid project ID." });
+    return;
+  }
+
+  const ownerId = getOwnerId(res);
+  const projectId = await findOwnedProjectId(ownerId, params.data.projectId);
+  if (!projectId) {
+    res.status(404).json({ error: "Project not found." });
+    return;
+  }
+
+  await db
+    .delete(starsTable)
+    .where(and(eq(starsTable.userId, ownerId), eq(starsTable.projectId, projectId)));
   res.sendStatus(204);
 });
 
