@@ -9,6 +9,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+import { usersTable } from "./users";
 
 export const craftTypeEnum = pgEnum("craft_type", ["knitting", "crochet"]);
 export const projectStatusEnum = pgEnum("project_status", [
@@ -24,7 +25,9 @@ export const projectDatePrecisionEnum = pgEnum("project_date_precision", [
 
 export const projectsTable = pgTable("projects", {
   id: uuid("id").primaryKey().defaultRandom(),
-  ownerId: text("owner_id").notNull(),
+  ownerId: text("owner_id")
+    .notNull()
+    .references(() => usersTable.id),
   title: text("title").notNull(),
   craft: craftTypeEnum("craft").notNull(),
   status: projectStatusEnum("status").notNull().default("planning"),
