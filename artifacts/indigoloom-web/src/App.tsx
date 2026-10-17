@@ -231,8 +231,8 @@ function PortalLayout({ children, active }: { children: ReactNode; active: 'dash
   </div>;
 }
 
-function PageHeading({ overline, title, subtitle, action }: { overline: string; title: ReactNode; subtitle: string; action?: ReactNode }) {
-  return <div className="page-heading"><div><div className="eyebrow"><span className="eyebrow-stitch"/>{overline}</div><h1 className="page-title serif">{title}</h1><p>{subtitle}</p></div>{action}</div>;
+function PageHeading({ overline, title, subtitle, action }: { overline?: string; title: ReactNode; subtitle?: string; action?: ReactNode }) {
+  return <div className="page-heading"><div>{overline ? <div className="eyebrow"><span className="eyebrow-stitch"/>{overline}</div> : null}<h1 className="page-title serif">{title}</h1>{subtitle ? <p>{subtitle}</p> : null}</div>{action}</div>;
 }
 
 function QueryProblem({ retry, message = 'We couldn’t gather this just now.' }: { retry: () => void; message?: string }) {
@@ -322,7 +322,7 @@ function ProjectsPage() {
   const clearFilters = () => { setSearch(''); setStatus(''); setCraft(''); setStarredOnly(false); };
   const query = useGetProjects(params, { query: { queryKey: getGetProjectsQueryKey(params) } });
   return <PortalLayout active="projects">
-    <PageHeading overline="YOUR COLLECTION" title="My projects" subtitle="Every idea, skein, and finished piece — gathered together." action={<Link href="/projects/new" className="button button-primary" data-testid="link-add-project"><Plus size={17}/> Add a project</Link>}/>
+    <PageHeading title="My projects" action={<Link href="/projects/new" className="button button-primary" data-testid="link-add-project"><Plus size={17}/> Add a project</Link>}/>
     <div className="catalog-tools">
       <label className="search-box"><Search size={17}/><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Find a project…" aria-label="Search projects" data-testid="input-search-projects"/>{search && <button type="button" onClick={() => setSearch('')} aria-label="Clear search" data-testid="button-clear-search"><X size={15}/></button>}</label>
       <label className="select-wrap"><Filter size={15}/><select aria-label="Filter by status" value={status} onChange={(event) => setStatus(event.target.value)} data-testid="select-status-filter"><option value="">Every status</option><option value="planning">Planning</option><option value="in_progress">In progress</option><option value="paused">On pause</option><option value="completed">Finished</option></select><ChevronDown size={14}/></label>

@@ -38,7 +38,7 @@ export default function ProjectsScreen() {
       contentContainerStyle={[styles.content, { paddingTop: insets.top + 18, paddingBottom: 104 }]}
       keyboardShouldPersistTaps="handled"
     >
-      <PageHeader title="My projects" subtitle="Every idea, skein, and finished piece — gathered together." action={<Pressable accessibilityRole="button" accessibilityLabel="Add a project" onPress={() => router.push('/projects/new')} style={[styles.addButton, { backgroundColor: colors.primary }]}><Feather name="plus" color={colors.primaryForeground} size={20} /></Pressable>} />
+      <PageHeader title="My projects" action={<Pressable accessibilityRole="button" accessibilityLabel="Add a project" onPress={() => router.push('/projects/new')} style={[styles.addButton, { backgroundColor: colors.primary }]}><Feather name="plus" color={colors.primaryForeground} size={20} /></Pressable>} />
       <View style={[styles.searchWrap, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <Feather name="search" size={16} color={colors.mutedForeground} />
         <TextInput
