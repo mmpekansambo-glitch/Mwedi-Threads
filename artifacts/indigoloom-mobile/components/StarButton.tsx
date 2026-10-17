@@ -11,9 +11,6 @@ import {
 import { Pressable, StyleSheet } from 'react-native';
 import { useColors } from '@/hooks/useColors';
 
-// Same gold as the web star, so a starred project reads the same everywhere.
-const starredColor = '#b7791f';
-
 export function StarButton({ project }: { project: Project }) {
   const colors = useColors();
   const client = useQueryClient();
@@ -38,10 +35,10 @@ export function StarButton({ project }: { project: Project }) {
       onPress={toggle}
       disabled={star.isPending || unstar.isPending}
       hitSlop={8}
-      style={[styles.button, { backgroundColor: colors.card, borderColor: project.starred ? '#ead7ad' : colors.border }]}
+      style={[styles.button, { backgroundColor: colors.card, borderColor: project.starred ? colors.primary : colors.border }]}
       testID={`button-star-${project.id}`}
     >
-      <Feather name="star" size={16} color={project.starred ? starredColor : colors.mutedForeground} />
+      <Feather name="star" size={16} color={project.starred ? colors.primary : colors.mutedForeground} />
     </Pressable>
   );
 }

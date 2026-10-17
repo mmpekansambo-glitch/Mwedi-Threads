@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
   entryMarker: { width: 7, height: 7, borderRadius: 4, marginTop: 5 },
   entryMeta: { fontFamily: fonts.semibold, fontSize: 10 },
   entryNotes: { fontSize: 12, lineHeight: 18, marginTop: 5 },
-  savedPhoto: { width: '100%', height: 220, borderRadius: 12, marginTop: 10, backgroundColor: '#eee' },
+  savedPhoto: { width: '100%', height: 220, borderRadius: 12, marginTop: 10, backgroundColor: '#EEF2F9' },
   removeSavedPhoto: { minHeight: 38, flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 5, paddingHorizontal: 2 },
   noNotes: { fontSize: 12, paddingVertical: 15 },
   deleteSection: { alignItems: 'flex-end', marginTop: 8 },

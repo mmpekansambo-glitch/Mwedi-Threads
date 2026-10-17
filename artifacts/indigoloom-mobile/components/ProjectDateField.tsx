@@ -114,7 +114,7 @@ export function ProjectDateField({
               style={[
                 styles.precisionButton,
                 {
-                  backgroundColor: active ? colors.softPlum : colors.background,
+                  backgroundColor: active ? colors.selectedWash : colors.background,
                   borderColor: active ? colors.primary : colors.border,
                 },
               ]}
@@ -212,7 +212,7 @@ export function ProjectDateField({
                       style={[
                         styles.monthCell,
                         {
-                          backgroundColor: selected ? colors.softPlum : colors.background,
+                          backgroundColor: selected ? colors.selectedWash : colors.background,
                           borderColor: selected ? colors.primary : colors.border,
                         },
                       ]}
@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
   precisionRow: { flexDirection: 'row', gap: 8, marginTop: 8, marginBottom: 8 },
   precisionButton: { minHeight: 34, paddingHorizontal: 13, borderRadius: 9, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   dateButton: { minHeight: 46, borderRadius: 9, borderWidth: 1, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 10 },
-  modalBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(31, 28, 43, 0.42)' },
+  modalBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(31, 47, 22, 0.42)' },
   sheet: { borderTopLeftRadius: 22, borderTopRightRadius: 22, paddingHorizontal: 20, paddingTop: 18, minHeight: 410 },
   sheetHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 15, borderBottomWidth: 1 },
   closeButton: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
