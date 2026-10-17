@@ -144,7 +144,7 @@ export function ProgressBar({ value }: { value: number }) {
       accessibilityValue={{ min: 0, max: 100, now: safeValue }}
       style={[styles.progressTrack, { backgroundColor: colors.muted }]}
     >
-      <View style={[styles.progressFill, { width: `${safeValue}%`, backgroundColor: colors.accent }]} />
+      <View style={[styles.progressFill, { width: `${safeValue}%`, backgroundColor: colors.primary }]} />
     </View>
   );
 }
@@ -160,12 +160,12 @@ export function StatusChip({ status }: { status: ProjectStatus }) {
   const colors = useColors();
   const tone =
     status === 'completed'
-      ? { bg: colors.finishWash, fg: colors.finishText }
+      ? { bg: colors.completedChip, fg: colors.completedText }
       : status === 'in_progress'
-        ? { bg: colors.successWash, fg: colors.successText }
+        ? { bg: colors.inProgressChip, fg: colors.inProgressText }
         : status === 'paused'
-          ? { bg: colors.pauseWash, fg: colors.pauseText }
-          : { bg: colors.softPlum, fg: colors.primary };
+          ? { bg: colors.pausedChip, fg: colors.pausedText }
+          : { bg: colors.planningChip, fg: colors.planningText };
   return (
     <View style={[styles.statusChip, { backgroundColor: tone.bg }]}>
       <LoomText style={{ color: tone.fg, fontFamily: fonts.semibold, fontSize: 11 }}>{statusLabels[status]}</LoomText>
@@ -226,7 +226,7 @@ export function EmptyState({
   const colors = useColors();
   return (
     <View style={[styles.empty, { borderColor: colors.border, backgroundColor: colors.card }]}>
-      <View style={[styles.emptyMark, { backgroundColor: colors.softPlum }]}>
+      <View style={[styles.emptyMark, { backgroundColor: colors.selectedWash }]}>
         <Feather name="feather" size={23} color={colors.primary} />
       </View>
       <LoomText serif style={[styles.emptyTitle, { color: colors.foreground }]}>{title}</LoomText>

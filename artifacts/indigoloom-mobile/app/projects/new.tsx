@@ -114,7 +114,7 @@ export default function NewProjectScreen() {
             <View style={styles.choiceRow}>
               {(['knitting', 'crochet'] as const).map((item) => {
                 const active = craft === item;
-                return <Pressable key={item} onPress={() => setCraft(item)} style={[styles.choice, { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.softPlum : colors.background }]}><Feather name={item === 'knitting' ? 'git-merge' : 'corner-down-right'} size={15} color={active ? colors.primary : colors.mutedForeground} /><LoomText style={{ color: active ? colors.primary : colors.mutedForeground, fontFamily: fonts.semibold, fontSize: 12 }}>{item === 'knitting' ? 'Knitting' : 'Crochet'}</LoomText></Pressable>;
+                return <Pressable key={item} onPress={() => setCraft(item)} style={[styles.choice, { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.selectedWash : colors.background }]}><Feather name={item === 'knitting' ? 'git-merge' : 'corner-down-right'} size={15} color={active ? colors.primary : colors.mutedForeground} /><LoomText style={{ color: active ? colors.primary : colors.mutedForeground, fontFamily: fonts.semibold, fontSize: 12 }}>{item === 'knitting' ? 'Knitting' : 'Crochet'}</LoomText></Pressable>;
               })}
             </View>
             <View style={[styles.divider, { borderColor: colors.border }]} />
@@ -125,7 +125,7 @@ export default function NewProjectScreen() {
             <View style={styles.designerModeRow} accessibilityLabel="Designer entry option">
               {(['name', 'website'] as const).map((option) => {
                 const active = designerMode === option;
-                return <Pressable key={option} accessibilityRole="button" accessibilityState={{ selected: active }} onPress={() => { setDesignerMode(option); setDesignerPreviewMessage(''); }} style={[styles.designerModeButton, { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.softPlum : colors.background }]} testID={`button-create-designer-${option}`}>
+                return <Pressable key={option} accessibilityRole="button" accessibilityState={{ selected: active }} onPress={() => { setDesignerMode(option); setDesignerPreviewMessage(''); }} style={[styles.designerModeButton, { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.selectedWash : colors.background }]} testID={`button-create-designer-${option}`}>
                   <LoomText style={{ color: active ? colors.primary : colors.mutedForeground, fontSize: 11, fontFamily: fonts.semibold }}>{option === 'name' ? 'Name' : 'Website link'}</LoomText>
                 </Pressable>;
               })}
@@ -140,7 +140,7 @@ export default function NewProjectScreen() {
                 <FormFieldLabel>Website link</FormFieldLabel>
                 <TextInput {...inputProps} value={designerWebsite} onChangeText={(value) => { designerWebsiteRef.current = value; setDesignerWebsite(value); setPatternDesigner(''); setDesignerPageTitle(''); setDesignerPreviewMessage(''); }} placeholder="https://example.com" autoCapitalize="none" autoCorrect={false} keyboardType="url" style={fieldStyle} testID="input-create-designer-website" />
                 <LoomButton title="Preview page title" variant="quiet" onPress={previewDesignerTitle} busy={previewTitle.isPending} testID="button-create-preview-designer-title" />
-                {designerPageTitle ? <View style={[styles.designerPagePreview, { backgroundColor: colors.softPlum, borderColor: colors.border }]}><LoomText style={{ color: colors.mutedForeground, fontSize: 9, letterSpacing: 1 }}>PAGE TITLE PREVIEW</LoomText><LoomText numberOfLines={2} ellipsizeMode="tail" style={[styles.designerPageTitle, { color: colors.foreground, fontFamily: fonts.semibold, fontSize: 12 }]}>{designerPageTitle}</LoomText></View> : null}
+                {designerPageTitle ? <View style={[styles.designerPagePreview, { backgroundColor: colors.selectedWash, borderColor: colors.border }]}><LoomText style={{ color: colors.mutedForeground, fontSize: 9, letterSpacing: 1 }}>PAGE TITLE PREVIEW</LoomText><LoomText numberOfLines={2} ellipsizeMode="tail" style={[styles.designerPageTitle, { color: colors.foreground, fontFamily: fonts.semibold, fontSize: 12 }]}>{designerPageTitle}</LoomText></View> : null}
                 {designerPreviewMessage ? <LoomText accessibilityRole="alert" style={{ color: colors.mutedForeground, fontSize: 11, lineHeight: 16, marginBottom: 12 }}>{designerPreviewMessage}</LoomText> : null}
               </>
             )}

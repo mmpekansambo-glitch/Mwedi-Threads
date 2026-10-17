@@ -17,8 +17,8 @@ export default function WelcomeScreen() {
     <View style={[styles.screen, { backgroundColor: colors.background, paddingTop: Platform.OS === 'web' ? 67 : insets.top + 18, paddingBottom: Platform.OS === 'web' ? 34 : insets.bottom + 20 }]}>
       <View style={styles.top}><Brand /></View>
       <View style={styles.hero}>
-        <View style={[styles.ornament, { backgroundColor: '#ebe5d9' }]}>
-          <View style={[styles.ornamentRing, { borderColor: '#bcb3d4' }]} />
+        <View style={[styles.ornament, { backgroundColor: colors.card }]}>
+          <View style={[styles.ornamentRing, { borderColor: colors.accent }]} />
           <Feather name="feather" size={54} color={colors.primary} />
           <View style={[styles.threadDot, { backgroundColor: colors.accent }]} />
         </View>

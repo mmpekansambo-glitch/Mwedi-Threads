@@ -49,7 +49,7 @@ export function HookSizePicker({
                     onChange(hookSize);
                     setIsOpen(false);
                   }}
-                  style={[styles.option, { borderBottomColor: colors.border, backgroundColor: selected ? colors.softPlum : colors.card }]}
+                  style={[styles.option, { borderBottomColor: colors.border, backgroundColor: selected ? colors.selectedWash : colors.card }]}
                   testID={`${testID}-option-${index}`}
                 >
                   <LoomText style={{ color: selected ? colors.primary : colors.foreground, fontFamily: selected ? fonts.semibold : fonts.body, fontSize: 12 }}>
