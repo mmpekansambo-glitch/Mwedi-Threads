@@ -12,6 +12,7 @@ import { Alert, Linking, Pressable, ScrollView, StyleSheet, TextInput, View } fr
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FormFieldLabel, LoomButton, LoomText, ProgressBar, SignedInGate, StatusChip, fonts } from '@/components/loom';
 import { formatProjectDate } from '@/components/ProjectDateField';
+import { StarButton } from '@/components/StarButton';
 import { useColors } from '@/hooks/useColors';
 
 export default function ProjectDetailScreen() {
@@ -149,6 +150,7 @@ export default function ProjectDetailScreen() {
         <View style={[styles.nav, { paddingTop: insets.top + 7, borderBottomColor: colors.border }]}>
           <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={() => router.back()} style={styles.navButton}><Feather name="arrow-left" size={19} color={colors.primary} /></Pressable>
           <LoomText style={[styles.navTitle, { color: colors.foreground }]} numberOfLines={1}>{project?.title || 'Project journal'}</LoomText>
+          {project ? <StarButton project={project} /> : null}
           {project ? <Pressable accessibilityRole="button" accessibilityLabel="Edit project" onPress={() => router.push({ pathname: '/projects/[id]/edit', params: { id } })} style={styles.navButton}><Feather name="edit-2" size={17} color={colors.primary} /></Pressable> : <View style={styles.navButton} />}
         </View>
         {query.isLoading ? <LoomText style={[styles.loading, { color: colors.mutedForeground }]}>Gathering this project’s notes…</LoomText> : query.isError || !project ? (

@@ -126,6 +126,7 @@ beforeAll(async () => {
         return query;
       },
       orderBy: async () => [],
+      then: (resolve: (rows: unknown[]) => unknown) => resolve([]),
     };
     return query;
   });

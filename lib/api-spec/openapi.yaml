@@ -60,6 +60,11 @@ paths:
           name: craft
           schema:
             $ref: "#/components/schemas/CraftType"
+        - in: query
+          name: starred
+          description: Only return projects the signed-in user has starred
+          schema:
+            type: boolean
       responses:
         "200":
           description: Matching projects
@@ -173,6 +178,36 @@ paths:
       responses:
         "204":
           description: Project deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /projects/{projectId}/star:
+    parameters:
+      - in: path
+        name: projectId
+        required: true
+        schema:
+          type: string
+          format: uuid
+    put:
+      operationId: starProject
+      tags: [projects]
+      summary: Star a project
+      responses:
+        "204":
+          description: Project starred
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: unstarProject
+      tags: [projects]
+      summary: Remove the star from a project
+      responses:
+        "204":
+          description: Star removed
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
@@ -415,6 +450,8 @@ components:
           format: date
         completedAtPrecision:
           $ref: "#/components/schemas/ProjectDatePrecision"
+        starred:
+          type: boolean
         completionPercent:
           type: integer
           minimum: 0
@@ -447,6 +484,7 @@ components:
         - targetDatePrecision
         - completedAt
         - completedAtPrecision
+        - starred
         - completionPercent
         - createdAt
         - updatedAt

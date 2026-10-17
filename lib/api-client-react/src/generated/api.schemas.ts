@@ -117,6 +117,7 @@ export interface Project {
   /** @nullable */
   completedAt: string | null;
   completedAtPrecision: ProjectDatePrecision;
+  starred: boolean;
   /**
      * @minimum 0
      * @maximum 100
@@ -308,5 +309,9 @@ export type GetProjectsParams = {
 search?: string;
 status?: ProjectStatus;
 craft?: CraftType;
+/**
+ * Only return projects the signed-in user has starred
+ */
+starred?: boolean;
 };
 

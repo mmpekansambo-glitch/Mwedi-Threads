@@ -14,6 +14,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { useColors } from '@/hooks/useColors';
+import { StarButton } from '@/components/StarButton';
 
 export const fonts = {
   body: 'DMSans_400Regular',
@@ -192,7 +193,10 @@ export function ProjectCard({ project }: { project: Project }) {
           <LoomText style={[styles.cardKicker, { color: colors.mutedForeground }]}>{craft.toUpperCase()}</LoomText>
           <LoomText serif style={[styles.cardTitle, { color: colors.foreground }]} numberOfLines={1}>{project.title}</LoomText>
         </View>
-        <StatusChip status={project.status} />
+        <View style={styles.cardActions}>
+          <StatusChip status={project.status} />
+          <StarButton project={project} />
+        </View>
       </View>
       <View style={styles.cardBody}>
         <LoomText numberOfLines={1} style={[styles.cardSub, { color: colors.mutedForeground }]}>
@@ -292,6 +296,7 @@ const styles = StyleSheet.create({
   progressFill: { height: '100%', borderRadius: 9 },
   statusChip: { borderRadius: 999, paddingHorizontal: 9, paddingVertical: 5 },
   projectCard: { overflow: 'hidden', borderWidth: 1, borderRadius: 17, marginBottom: 13 },
+  cardActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   cardArt: { minHeight: 95, padding: 15, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 10, overflow: 'hidden' },
   cardOrb: { position: 'absolute', width: 165, height: 72, borderWidth: 1, borderRadius: 100, opacity: 0.25, right: -12, top: 8, transform: [{ rotate: '-23deg' }] },
   cardKicker: { fontSize: 9, letterSpacing: 1.1, marginBottom: 4, fontFamily: fonts.bold },

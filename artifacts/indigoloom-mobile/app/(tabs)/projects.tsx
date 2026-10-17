@@ -22,11 +22,14 @@ export default function ProjectsScreen() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<ProjectStatus | ''>('');
   const [craft, setCraft] = useState<'knitting' | 'crochet' | ''>('');
+  const [starredOnly, setStarredOnly] = useState(false);
   const params = useMemo(() => ({
     ...(search.trim() ? { search: search.trim() } : {}),
     ...(status ? { status } : {}),
     ...(craft ? { craft } : {}),
-  }), [search, status, craft]);
+    ...(starredOnly ? { starred: true } : {}),
+  }), [search, status, craft, starredOnly]);
+  const clearFilters = () => { setSearch(''); setStatus(''); setCraft(''); setStarredOnly(false); };
   const query = useGetProjects(params);
   return (
     <ScrollView
@@ -50,6 +53,7 @@ export default function ProjectsScreen() {
         {search ? <Pressable accessibilityLabel="Clear search" onPress={() => setSearch('')}><Feather name="x" size={16} color={colors.mutedForeground} /></Pressable> : null}
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
+        <Pressable accessibilityRole="button" accessibilityState={{ selected: starredOnly }} onPress={() => setStarredOnly(!starredOnly)} style={[styles.filterChip, styles.starredChip, { backgroundColor: starredOnly ? '#fbf1dc' : colors.card, borderColor: starredOnly ? '#ead7ad' : colors.border }]} testID="button-starred-filter"><Feather name="star" size={12} color={starredOnly ? '#b7791f' : colors.mutedForeground} /><LoomText style={{ color: starredOnly ? '#8a5a12' : colors.mutedForeground, fontSize: 11, fontFamily: fonts.semibold }}>Starred</LoomText></Pressable>
         {statusFilters.map((item) => {
           const active = status === item.value;
           return <Pressable key={item.value || 'all'} onPress={() => setStatus(item.value)} style={[styles.filterChip, { backgroundColor: active ? colors.primary : colors.card, borderColor: active ? colors.primary : colors.border }]}><LoomText style={{ color: active ? colors.primaryForeground : colors.mutedForeground, fontSize: 11, fontFamily: fonts.semibold }}>{item.label}</LoomText></Pressable>;
@@ -67,8 +71,10 @@ export default function ProjectsScreen() {
           <LoomText style={[styles.count, { color: colors.mutedForeground }]}>{query.data.length} {query.data.length === 1 ? 'project' : 'projects'} in your collection</LoomText>
           {query.data.map((project) => <ProjectCard key={project.id} project={project} />)}
         </>
-      ) : search || status || craft ? (
-        <EmptyState title="Nothing in this little corner yet." body="Try a different search or clear a filter to see more projects." actionTitle="Clear filters" onAction={() => { setSearch(''); setStatus(''); setCraft(''); }} />
+      ) : starredOnly && !search && !status && !craft ? (
+        <EmptyState title="No starred projects yet." body="Tap the star on any project to keep your favorites here." actionTitle="Show all projects" onAction={clearFilters} />
+      ) : search || status || craft || starredOnly ? (
+        <EmptyState title="Nothing in this little corner yet." body="Try a different search or clear a filter to see more projects." actionTitle="Clear filters" onAction={clearFilters} />
       ) : (
         <EmptyState title="Your next project starts here." body="Gather a pattern, choose a yarn, and give your next idea its own little page." actionTitle="Add a project" onAction={() => router.push('/projects/new')} />
       )}
@@ -84,6 +90,7 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, paddingVertical: 10, fontSize: 13, fontFamily: fonts.body },
   filterRow: { gap: 7, paddingBottom: 6 },
   filterChip: { borderWidth: 1, paddingHorizontal: 12, minHeight: 31, borderRadius: 99, justifyContent: 'center' },
+  starredChip: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   craftRow: { flexDirection: 'row', alignItems: 'center', gap: 13, paddingVertical: 11, marginBottom: 2 },
   count: { fontSize: 10, marginBottom: 10, fontFamily: fonts.medium },
   bottomAction: { marginTop: 10, marginBottom: 10 },

@@ -7,7 +7,7 @@ import { shadcn } from '@clerk/themes';
 import {
   requestProgressPhotoUpload, useAddProgress, useCreateProject, useDeleteProgressPhoto, useDeleteProject, useGetDashboard,
   usePreviewDesignerWebsiteTitle,
-  useGetProject, useGetProjects, useUpdateProject,
+  useGetProject, useGetProjects, useStarProject, useUnstarProject, useUpdateProject,
   getGetDashboardQueryKey, getGetProjectQueryKey, getGetProjectsQueryKey,
 } from '@workspace/api-client-react';
 import { CrochetHookSize } from '@workspace/api-client-react';
@@ -16,7 +16,7 @@ import { FormProvider as Form, useForm, type UseFormReturn } from 'react-hook-fo
 import {
   ArrowDownRight, ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, Check,
   ChevronDown, CircleHelp, Clock3, Feather, Filter, Flower2, Gauge,
-  Heart, Layers3, LogOut, Menu, Plus, Search, Sparkles, Trash2,
+  Heart, Layers3, LogOut, Menu, Plus, Search, Sparkles, Star, Trash2,
   TrendingUp, X,
 } from 'lucide-react';
 import {
@@ -247,12 +247,31 @@ function StatusPill({ status }: { status: ProjectStatus }) {
   return <span className={`status-pill status-${status}`} data-testid={`status-project-${status}`}>{status === 'completed' && <Check size={12}/>} {labels[status]}</span>;
 }
 
+function StarButton({ project, className = '' }: { project: Project; className?: string }) {
+  const client = useQueryClient();
+  const star = useStarProject();
+  const unstar = useUnstarProject();
+  const refresh = {
+    onSettled: () => {
+      void client.invalidateQueries({ queryKey: getGetProjectsQueryKey() });
+      void client.invalidateQueries({ queryKey: getGetProjectQueryKey(project.id) });
+      void client.invalidateQueries({ queryKey: getGetDashboardQueryKey() });
+    },
+  };
+  const toggle = () => {
+    if (project.starred) unstar.mutate({ projectId: project.id }, refresh);
+    else star.mutate({ projectId: project.id }, refresh);
+  };
+  const label = project.starred ? `Remove star from ${project.title}` : `Star ${project.title}`;
+  return <button type="button" className={`star-button${project.starred ? ' is-starred' : ''}${className ? ` ${className}` : ''}`} aria-pressed={project.starred} aria-label={label} title={project.starred ? 'Starred' : 'Star this project'} onClick={toggle} disabled={star.isPending || unstar.isPending} data-testid={`button-star-${project.id}`}><Star size={16} fill={project.starred ? 'currentColor' : 'none'}/></button>;
+}
+
 function ProjectCard({ project }: { project: Project }) {
   const craftLabel = project.craft === 'knitting' ? 'Knitting' : 'Crochet';
-  return <Link href={`/projects/${project.id}`} className="project-card loom-card lift" data-testid={`card-project-${project.id}`}>
+  return <div className="project-card-wrap"><StarButton project={project} className="card-star"/><Link href={`/projects/${project.id}`} className="project-card loom-card lift" data-testid={`card-project-${project.id}`}>
     <div className={`project-card-art art-${project.craft}`}><span className="art-kicker">{craftLabel}</span><span className="art-mark">{project.craft === 'knitting' ? '〰' : '⌘'}</span><span className="art-corner">{project.completionPercent}%</span></div>
     <div className="project-card-body"><div className="project-card-meta"><StatusPill status={project.status}/><span className="updated-label">{project.updatedAt ? `Updated ${new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' }).format(new Date(project.updatedAt))}` : ''}</span></div><h3>{project.title}</h3><p>{project.patternName || project.description || `${craftLabel} project`}</p><ProgressBar value={project.completionPercent}/><div className="card-foot"><span>{formatYarnDetails(project) || 'Details tucked away'}</span><ArrowUpRight size={16}/></div></div>
-  </Link>;
+  </Link></div>;
 }
 
 function DashboardPage() {
@@ -291,11 +310,14 @@ function ProjectsPage() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [craft, setCraft] = useState('');
+  const [starredOnly, setStarredOnly] = useState(false);
   const params = {
     ...(search.trim() ? { search: search.trim() } : {}),
     ...(status ? { status: status as ProjectStatus } : {}),
     ...(craft ? { craft: craft as 'knitting' | 'crochet' } : {}),
+    ...(starredOnly ? { starred: true } : {}),
   };
+  const clearFilters = () => { setSearch(''); setStatus(''); setCraft(''); setStarredOnly(false); };
   const query = useGetProjects(params, { query: { queryKey: getGetProjectsQueryKey(params) } });
   return <PortalLayout active="projects">
     <PageHeading overline="YOUR COLLECTION" title="My projects" subtitle="Every idea, skein, and finished piece — gathered together." action={<Link href="/projects/new" className="button button-primary" data-testid="link-add-project"><Plus size={17}/> Add a project</Link>}/>
@@ -303,10 +325,11 @@ function ProjectsPage() {
       <label className="search-box"><Search size={17}/><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Find a project…" aria-label="Search projects" data-testid="input-search-projects"/>{search && <button type="button" onClick={() => setSearch('')} aria-label="Clear search" data-testid="button-clear-search"><X size={15}/></button>}</label>
       <label className="select-wrap"><Filter size={15}/><select aria-label="Filter by status" value={status} onChange={(event) => setStatus(event.target.value)} data-testid="select-status-filter"><option value="">Every status</option><option value="planning">Planning</option><option value="in_progress">In progress</option><option value="paused">On pause</option><option value="completed">Finished</option></select><ChevronDown size={14}/></label>
       <label className="select-wrap"><select aria-label="Filter by craft" value={craft} onChange={(event) => setCraft(event.target.value)} data-testid="select-craft-filter"><option value="">Every craft</option><option value="knitting">Knitting</option><option value="crochet">Crochet</option></select><ChevronDown size={14}/></label>
-      {(search || status || craft) && <button className="clear-filters" onClick={() => { setSearch(''); setStatus(''); setCraft(''); }} data-testid="button-clear-filters">Clear filters</button>}
+      <button type="button" className={`starred-filter${starredOnly ? ' is-active' : ''}`} aria-pressed={starredOnly} onClick={() => setStarredOnly(!starredOnly)} data-testid="button-starred-filter"><Star size={14} fill={starredOnly ? 'currentColor' : 'none'}/> Starred</button>
+      {(search || status || craft || starredOnly) && <button className="clear-filters" onClick={clearFilters} data-testid="button-clear-filters">Clear filters</button>}
     </div>
     <div className="catalog-result-caption">{query.data ? <><b>{query.data.length}</b> {query.data.length === 1 ? 'project' : 'projects'} in your collection</> : 'Your collection'}</div>
-    {query.isLoading ? <div className="project-card-grid">{[0, 1, 2].map((item) => <div className="card-skeleton" key={item}/>)}</div> : query.isError ? <QueryProblem retry={() => query.refetch()}/> : query.data?.length ? <div className="project-card-grid catalog-grid">{query.data.map((project) => <ProjectCard key={project.id} project={project}/>)}</div> : search || status || craft ? <div className="no-results"><Search size={23}/><h3>Nothing in this little corner yet</h3><p>Try a different search or loosen one of the filters.</p><button className="button button-outline" onClick={() => { setSearch(''); setStatus(''); setCraft(''); }} data-testid="button-reset-filters">Reset filters</button></div> : <EmptyProjects/>}
+    {query.isLoading ? <div className="project-card-grid">{[0, 1, 2].map((item) => <div className="card-skeleton" key={item}/>)}</div> : query.isError ? <QueryProblem retry={() => query.refetch()}/> : query.data?.length ? <div className="project-card-grid catalog-grid">{query.data.map((project) => <ProjectCard key={project.id} project={project}/>)}</div> : starredOnly && !search && !status && !craft ? <div className="no-results"><Star size={23}/><h3>No starred projects yet</h3><p>Tap the star on any project to keep your favorites here.</p><button className="button button-outline" onClick={clearFilters} data-testid="button-reset-filters">Show all projects</button></div> : search || status || craft || starredOnly ? <div className="no-results"><Search size={23}/><h3>Nothing in this little corner yet</h3><p>Try a different search or loosen one of the filters.</p><button className="button button-outline" onClick={clearFilters} data-testid="button-reset-filters">Reset filters</button></div> : <EmptyProjects/>}
   </PortalLayout>;
 }
 
@@ -729,7 +752,7 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
   const craftLabel = project.craft === 'knitting' ? 'Knitting' : 'Crochet';
   return <PortalLayout active="projects">
     <Link href="/projects" className="back-link" data-testid="link-back-projects"><ArrowLeft size={16}/> Back to projects</Link>
-     <div className="detail-heading"><div><div className="eyebrow"><span className="eyebrow-stitch"/>{craftLabel} · PROJECT JOURNAL</div><h1 className="serif">{project.title}</h1><div className="detail-status"><StatusPill status={project.status}/><span>Started {formatProjectDate(project.startedAt, project.startedAtPrecision) || 'when you were ready'}</span></div></div><div className="detail-actions"><button className="button button-outline" onClick={() => setEditing(!editing)} data-testid="button-edit-project">{editing ? <X size={16}/> : <Feather size={16}/>} {editing ? 'Close edit' : 'Edit details'}</button><button className="icon-button danger-icon" aria-label="Delete project" title="Delete project" onClick={() => setConfirmDelete(true)} data-testid="button-delete-project"><Trash2 size={17}/></button></div></div>
+     <div className="detail-heading"><div><div className="eyebrow"><span className="eyebrow-stitch"/>{craftLabel} · PROJECT JOURNAL</div><h1 className="serif">{project.title}</h1><div className="detail-status"><StatusPill status={project.status}/><span>Started {formatProjectDate(project.startedAt, project.startedAtPrecision) || 'when you were ready'}</span></div></div><div className="detail-actions"><StarButton project={project} className="detail-star"/><button className="button button-outline" onClick={() => setEditing(!editing)} data-testid="button-edit-project">{editing ? <X size={16}/> : <Feather size={16}/>} {editing ? 'Close edit' : 'Edit details'}</button><button className="icon-button danger-icon" aria-label="Delete project" title="Delete project" onClick={() => setConfirmDelete(true)} data-testid="button-delete-project"><Trash2 size={17}/></button></div></div>
     {confirmDelete && <div className="confirm-banner"><div><b>Let this one go?</b><span>This will permanently remove the project and its progress notes.</span></div><button className="button button-quiet" onClick={() => setConfirmDelete(false)} data-testid="button-cancel-delete">Keep it</button><button className="button button-danger" onClick={deleteProject} disabled={remove.isPending} data-testid="button-confirm-delete">{remove.isPending ? 'Removing…' : 'Delete project'}</button></div>}
     {editing && <Form {...editForm}><form className="edit-form loom-card" onSubmit={saveEdit} noValidate><div className="form-intro"><span className="form-number">EDIT</span><div><h2 className="serif">Project details</h2><p>Change any detail whenever the project shifts.</p></div></div><div className="form-grid">
       <div className="field-block field-wide"><label htmlFor="edit-title">Project name</label><input id="edit-title" {...editForm.register('title', { required: 'Project name is required.' })} data-testid="input-edit-title"/></div>

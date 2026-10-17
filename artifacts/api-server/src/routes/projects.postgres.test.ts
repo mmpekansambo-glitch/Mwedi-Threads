@@ -121,6 +121,12 @@ describe.skipIf(!databaseUrl)("project authorization against PostgreSQL", () => 
         completion_percent integer NOT NULL,
         created_at timestamptz NOT NULL DEFAULT now()
       );
+      CREATE TABLE ${isolatedSchema}.stars (
+        user_id text NOT NULL REFERENCES ${isolatedSchema}.users(id) ON DELETE CASCADE,
+        project_id uuid NOT NULL REFERENCES ${isolatedSchema}.projects(id) ON DELETE CASCADE,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        PRIMARY KEY (user_id, project_id)
+      );
     `);
 
     testPool = new pg.Pool({
