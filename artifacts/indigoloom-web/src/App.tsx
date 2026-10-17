@@ -220,7 +220,6 @@ function PortalLayout({ children, active }: { children: ReactNode; active: 'dash
         <Link href="/dashboard" className={`rail-link ${active === 'dashboard' ? 'selected' : ''}`} data-testid="link-dashboard"><Layers3 size={18}/><span>Overview</span></Link>
         <Link href="/projects" className={`rail-link ${active === 'projects' ? 'selected' : ''}`} data-testid="link-projects"><BookOpen size={18}/><span>My projects</span></Link>
       </nav>
-      <div className="rail-note"><span className="rail-note-icon"><Feather size={16}/></span><p>Keep the little notes.<br/><b>They become the story.</b></p><span className="rail-stitch"/></div>
       <div className="rail-bottom"><div className="profile-chip"><span className="profile-initial">{initials}</span><span className="profile-name">{displayName}<small>Your workroom</small></span><button type="button" title="Sign out" aria-label="Sign out" onClick={() => signOut({ redirectUrl: basePath || '/' })} data-testid="button-sign-out"><LogOut size={16}/></button></div></div>
     </aside>
     {mobileOpen && <button className="mobile-scrim" onClick={() => setMobileOpen(false)} aria-label="Close navigation" data-testid="button-dismiss-navigation"/>}

@@ -202,12 +202,7 @@ a { color: inherit; text-decoration: none; }
 .rail-link:hover { background: rgba(255,255,255,.07); color: var(--lavender-wash); }
 .rail-link.selected { background: rgba(146,175,215,.16); color: var(--lavender-wash); box-shadow: inset 3px 0 var(--powder); }
 .rail-link.selected svg { color: var(--powder); }
-.rail-note { position: relative; margin: auto 9px 22px; padding: 17px 14px 18px; border-radius: 12px; background: var(--evergreen-soft); color: var(--lavender-soft); overflow: hidden; }
-.rail-note-icon { color: var(--powder); }
-.rail-note p { font: 16px/1.5 var(--app-font-serif); margin: 9px 0 12px; }
-.rail-note p b { color: var(--lavender-wash); font-weight: 500; }
-.rail-stitch { display: block; height: 1px; opacity: .46; background-image: linear-gradient(to right,var(--lavender-deep) 45%,transparent 45%); background-size: 8px 1px; }
-.rail-bottom { border-top: 1px solid var(--evergreen-line); padding: 16px 4px 0; }
+.rail-bottom { margin-top: auto; border-top: 1px solid var(--evergreen-line); padding: 16px 4px 0; }
 .profile-chip { display: flex; align-items: center; gap: 10px; }
 .profile-initial,.top-avatar { display: grid; place-items: center; flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--powder); color: var(--granite); font-size: 15px; font-weight: 700; }
 .profile-name { display: grid; gap: 3px; font-size: 15px; font-weight: 600; flex: 1; }
