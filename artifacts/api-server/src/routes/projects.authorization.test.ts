@@ -24,6 +24,8 @@ vi.mock("@clerk/express", () => ({
   }),
 }));
 
+vi.mock("../lib/users", () => ({ ensureUserRow: async () => undefined }));
+
 vi.mock("@workspace/db", async () => {
   const schema = await vi.importActual<typeof import("@workspace/db/schema")>(
     "@workspace/db/schema",

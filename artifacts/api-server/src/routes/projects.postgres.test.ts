@@ -5,7 +5,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import * as schema from "@workspace/db/schema";
-import { progressEntriesTable, projectsTable } from "@workspace/db/schema";
+import { progressEntriesTable, projectsTable, usersTable } from "@workspace/db/schema";
 
 vi.mock("@clerk/express", () => ({
   getAuth: (req: Request) => ({
@@ -80,9 +80,15 @@ describe.skipIf(!databaseUrl)("project authorization against PostgreSQL", () => 
       CREATE TYPE ${isolatedSchema}.craft_type AS ENUM ('knitting', 'crochet');
       CREATE TYPE ${isolatedSchema}.project_status AS ENUM ('planning', 'in_progress', 'paused', 'completed');
       CREATE TYPE ${isolatedSchema}.project_date_precision AS ENUM ('month', 'day');
+      CREATE TABLE ${isolatedSchema}.users (
+        id text PRIMARY KEY,
+        email text,
+        display_name text,
+        joined_at timestamptz NOT NULL DEFAULT now()
+      );
       CREATE TABLE ${isolatedSchema}.projects (
         id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-        owner_id text NOT NULL,
+        owner_id text NOT NULL REFERENCES ${isolatedSchema}.users(id),
         title text NOT NULL,
         craft ${isolatedSchema}.craft_type NOT NULL,
         status ${isolatedSchema}.project_status NOT NULL DEFAULT 'planning',
@@ -144,6 +150,10 @@ describe.skipIf(!databaseUrl)("project authorization against PostgreSQL", () => 
     baseUrl = `http://127.0.0.1:${address.port}`;
 
     const timestamp = new Date("2026-10-13T12:00:00.000Z");
+    await getTestDb().insert(usersTable).values([
+      { id: ownerA, email: "a@example.test" },
+      { id: ownerB, email: "b@example.test" },
+    ]);
     await getTestDb().insert(projectsTable).values([
       {
         id: projectAId,
