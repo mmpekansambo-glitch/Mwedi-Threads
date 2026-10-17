@@ -1,6 +1,6 @@
 # Stars: prompts and decisions
 
-Branch `feature/stars`. Built with Claude Code in a cloud session from my Mwedi Threads project.
+Issue #9, branch `feature/stars`. Built with Claude Code in a cloud session from my Mwedi Threads project.
 
 ## Prompts I gave
 
