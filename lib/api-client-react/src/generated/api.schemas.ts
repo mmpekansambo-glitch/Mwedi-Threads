@@ -282,12 +282,41 @@ export type DashboardRecentProgressItem = {
   createdAt: string;
 };
 
+export type DashboardChartsProjectsByStatusItem = {
+  status: ProjectStatus;
+  count: number;
+};
+
+export type DashboardChartsCompletedPerMonthItem = {
+  /** Year and month, like 2026-10 */
+  month: string;
+  count: number;
+};
+
+export type DashboardChartsProgressPerWeekItem = {
+  /** The Monday the week starts on, like 2026-10-12 */
+  weekStart: string;
+  count: number;
+};
+
+export interface DashboardCharts {
+  /** One count per status, in the order planning, in progress, paused, completed */
+  projectsByStatus: DashboardChartsProjectsByStatusItem[];
+  /** Completed projects in each of the last 12 months (UTC), oldest first, current month last */
+  completedPerMonth: DashboardChartsCompletedPerMonthItem[];
+  /** Completed projects with no completed date, left out of completedPerMonth */
+  completedWithoutDate: number;
+  /** Progress entries in each of the last 12 weeks (UTC, weeks start Monday), oldest first, current week last */
+  progressPerWeek: DashboardChartsProgressPerWeekItem[];
+}
+
 export interface Dashboard {
   totalProjects: number;
   activeProjects: number;
   completedProjects: number;
   recentProjects: Project[];
   recentProgress: DashboardRecentProgressItem[];
+  charts: DashboardCharts;
 }
 
 /**

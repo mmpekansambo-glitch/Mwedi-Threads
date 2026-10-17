@@ -637,7 +637,10 @@ describe("project authorization", () => {
   });
 
   it("limits dashboard totals, recent projects, and progress to the signed-in owner", async () => {
+    // Pin the clock so the fixture's progress entry stays inside the 12-week chart.
+    vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-10-17T15:00:00.000Z") });
     const response = await request("/dashboard", { user: ownerA });
+    vi.useRealTimers();
     expect(response.status).toBe(200);
     const dashboard = (await response.json()) as {
       totalProjects: number;
@@ -645,8 +648,27 @@ describe("project authorization", () => {
       completedProjects: number;
       recentProjects: { id: string }[];
       recentProgress: { projectId: string }[];
+      charts: {
+        projectsByStatus: { status: string; count: number }[];
+        completedPerMonth: { count: number }[];
+        completedWithoutDate: number;
+        progressPerWeek: { weekStart: string; count: number }[];
+      };
     };
 
+    expect(dashboard.charts.projectsByStatus).toEqual([
+      { status: "planning", count: 0 },
+      { status: "in_progress", count: 1 },
+      { status: "paused", count: 0 },
+      { status: "completed", count: 0 },
+    ]);
+    expect(dashboard.charts.progressPerWeek.at(-1)).toEqual({
+      weekStart: "2026-10-12",
+      count: 1,
+    });
+    expect(
+      dashboard.charts.progressPerWeek.reduce((sum, week) => sum + week.count, 0),
+    ).toBe(1);
     expect(dashboard.totalProjects).toBe(1);
     expect(dashboard.activeProjects).toBe(1);
     expect(dashboard.completedProjects).toBe(0);

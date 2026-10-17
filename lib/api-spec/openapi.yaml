@@ -692,9 +692,54 @@ components:
                 type: string
                 format: date-time
             required: [projectTitle, projectId, notes, completionPercent, createdAt]
+        charts:
+          $ref: "#/components/schemas/DashboardCharts"
       required:
         - totalProjects
         - activeProjects
         - completedProjects
         - recentProjects
         - recentProgress
+        - charts
+    DashboardCharts:
+      type: object
+      properties:
+        projectsByStatus:
+          description: One count per status, in the order planning, in progress, paused, completed
+          type: array
+          items:
+            type: object
+            properties:
+              status:
+                $ref: "#/components/schemas/ProjectStatus"
+              count:
+                type: integer
+            required: [status, count]
+        completedPerMonth:
+          description: Completed projects in each of the last 12 months (UTC), oldest first, current month last
+          type: array
+          items:
+            type: object
+            properties:
+              month:
+                description: Year and month, like 2026-10
+                type: string
+              count:
+                type: integer
+            required: [month, count]
+        completedWithoutDate:
+          description: Completed projects with no completed date, left out of completedPerMonth
+          type: integer
+        progressPerWeek:
+          description: Progress entries in each of the last 12 weeks (UTC, weeks start Monday), oldest first, current week last
+          type: array
+          items:
+            type: object
+            properties:
+              weekStart:
+                description: The Monday the week starts on, like 2026-10-12
+                type: string
+              count:
+                type: integer
+            required: [weekStart, count]
+      required: [projectsByStatus, completedPerMonth, completedWithoutDate, progressPerWeek]

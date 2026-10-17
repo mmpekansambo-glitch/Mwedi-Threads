@@ -22,6 +22,7 @@ import {
 import {
   Link, Redirect, Route, Switch, useLocation, Router as WouterRouter,
 } from 'wouter';
+import { DashboardCharts } from '@/components/dashboard-charts';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { trackEvent, trackSuccessfulAction } from '@/lib/analytics';
 import { Toaster } from '@/components/ui/toaster';
@@ -287,6 +288,7 @@ function DashboardPage() {
         <div className="stat-card"><span className="stat-label"><Clock3 size={16}/> TAKING SHAPE</span><strong>{data.activeProjects}</strong><span className="stat-caption">active works in progress</span><div className="stat-mini-line"><i/></div></div>
         <div className="stat-card"><span className="stat-label"><Check size={16}/> ON THE SHELF</span><strong>{data.completedProjects}</strong><span className="stat-caption">finished and ready to love</span><div className="stat-confetti"><span/><span/><span/></div></div>
       </section>
+      <DashboardCharts charts={data.charts}/>
       <section className="dashboard-grid">
         <div className="dashboard-work">
           <div className="section-heading"><div><span className="eyebrow">A FEW THINGS IN MOTION</span><h2 className="serif">Back on your needles</h2></div><Link href="/projects" className="quiet-link" data-testid="link-view-all-projects">All projects <ArrowRight size={15}/></Link></div>

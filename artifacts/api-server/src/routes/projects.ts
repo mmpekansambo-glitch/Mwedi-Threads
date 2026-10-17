@@ -1,4 +1,4 @@
-import { and, desc, eq, ilike, or } from "drizzle-orm";
+import { and, desc, eq, gte, ilike, or } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { Router, type IRouter, type Response } from "express";
 import {
@@ -35,6 +35,7 @@ import {
   type Project,
 } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
+import { buildDashboardCharts, progressChartStart } from "../lib/dashboardCharts";
 import {
   normalizeDesignerPageTitle,
   previewWebsitePageTitle,
@@ -179,9 +180,13 @@ router.post("/projects/designer-website-title-preview", async (req, res): Promis
 
 router.get("/dashboard", async (req, res): Promise<void> => {
   const ownerId = getOwnerId(res);
-  const [allProjects, recentProjects, recentProgress] = await Promise.all([
+  const now = new Date();
+  const [allProjects, recentProjects, recentProgress, chartProgress] = await Promise.all([
     db
-      .select({ status: projectsTable.status })
+      .select({
+        status: projectsTable.status,
+        completedAt: projectsTable.completedAt,
+      })
       .from(projectsTable)
       .where(eq(projectsTable.ownerId, ownerId)),
     db
@@ -206,6 +211,19 @@ router.get("/dashboard", async (req, res): Promise<void> => {
       .where(eq(projectsTable.ownerId, ownerId))
       .orderBy(desc(progressEntriesTable.createdAt))
       .limit(6),
+    db
+      .select({ createdAt: progressEntriesTable.createdAt })
+      .from(progressEntriesTable)
+      .innerJoin(
+        projectsTable,
+        eq(progressEntriesTable.projectId, projectsTable.id),
+      )
+      .where(
+        and(
+          eq(projectsTable.ownerId, ownerId),
+          gte(progressEntriesTable.createdAt, progressChartStart(now)),
+        ),
+      ),
   ]);
   const starredIds = await starredProjectIds(ownerId);
   const serializedRecent = recentProjects.map((project) =>
@@ -222,6 +240,11 @@ router.get("/dashboard", async (req, res): Promise<void> => {
     ).length,
     recentProjects: serializedRecent,
     recentProgress,
+    charts: buildDashboardCharts(
+      allProjects,
+      chartProgress.map((entry) => entry.createdAt),
+      now,
+    ),
   });
   res.json({ ...dashboard, recentProjects: serializedRecent });
   req.log.debug({ ownerId }, "Loaded Mwedi Threads dashboard");

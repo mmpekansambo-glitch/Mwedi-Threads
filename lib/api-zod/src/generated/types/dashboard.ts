@@ -5,6 +5,7 @@
  * Mwedi Threads project catalog and progress tracking API
  * OpenAPI spec version: 0.1.0
  */
+import type { DashboardCharts } from './dashboardCharts';
 import type { DashboardRecentProgressItem } from './dashboardRecentProgressItem';
 import type { Project } from './project';
 
@@ -14,4 +15,5 @@ export interface Dashboard {
   completedProjects: number;
   recentProjects: Project[];
   recentProgress: DashboardRecentProgressItem[];
+  charts: DashboardCharts;
 }
