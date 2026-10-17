@@ -68,6 +68,8 @@ function project(id: string, ownerId: string, title: string) {
     startedAtPrecision: "day" as const,
     targetDate: null,
     targetDatePrecision: "day" as const,
+    completedAt: null as string | null,
+    completedAtPrecision: "day" as const,
     completionPercent: 25,
     createdAt: timestamp,
     updatedAt: timestamp,
@@ -630,5 +632,73 @@ describe("project authorization", () => {
       projectAId,
     ]);
     expect(JSON.stringify(dashboard)).not.toContain("B's");
+  });
+
+  it("fills in today's completed date when a project is finished and clears it when reopened", async () => {
+    const today = new Date().toISOString().slice(0, 10);
+
+    const finished = await request(`/projects/${projectAId}`, {
+      method: "PATCH",
+      user: ownerA,
+      body: { status: "completed" },
+    });
+    expect(finished.status).toBe(200);
+    expect(await finished.json()).toMatchObject({
+      status: "completed",
+      completedAt: today,
+      completedAtPrecision: "day",
+    });
+
+    const reopened = await request(`/projects/${projectAId}`, {
+      method: "PATCH",
+      user: ownerA,
+      body: { status: "in_progress" },
+    });
+    expect(reopened.status).toBe(200);
+    expect(await reopened.json()).toMatchObject({
+      status: "in_progress",
+      completedAt: null,
+    });
+  });
+
+  it("keeps a completed date the maker chose", async () => {
+    const response = await request(`/projects/${projectAId}`, {
+      method: "PATCH",
+      user: ownerA,
+      body: { status: "completed", completedAt: "2026-09-01", completedAtPrecision: "month" },
+    });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      completedAt: "2026-09-01",
+      completedAtPrecision: "month",
+    });
+
+    const finishedAgain = await request(`/projects/${projectAId}`, {
+      method: "PATCH",
+      user: ownerA,
+      body: { status: "completed" },
+    });
+    expect(await finishedAgain.json()).toMatchObject({ completedAt: "2026-09-01" });
+  });
+
+  it("fills and clears the completed date from progress updates", async () => {
+    mockDb.transaction.mockImplementation(async (callback) => callback(mockDb));
+    const today = new Date().toISOString().slice(0, 10);
+
+    const done = await request(`/projects/${projectAId}/progress`, {
+      method: "POST",
+      user: ownerA,
+      body: { notes: "Wove in the ends", completionPercent: 100 },
+    });
+    expect(done.status).toBe(201);
+    expect(projects[0]).toMatchObject({ status: "completed", completedAt: today });
+
+    const reopened = await request(`/projects/${projectAId}/progress`, {
+      method: "POST",
+      user: ownerA,
+      body: { notes: "Frogged the sleeve", completionPercent: 80 },
+    });
+    expect(reopened.status).toBe(201);
+    expect(projects[0]).toMatchObject({ status: "in_progress", completedAt: null });
   });
 });

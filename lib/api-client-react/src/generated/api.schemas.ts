@@ -114,6 +114,9 @@ export interface Project {
   /** @nullable */
   targetDate: string | null;
   targetDatePrecision: ProjectDatePrecision;
+  /** @nullable */
+  completedAt: string | null;
+  completedAtPrecision: ProjectDatePrecision;
   /**
      * @minimum 0
      * @maximum 100
@@ -205,6 +208,9 @@ export interface UpdateProject {
   /** @nullable */
   targetDate?: string | null;
   targetDatePrecision?: ProjectDatePrecision;
+  /** @nullable */
+  completedAt?: string | null;
+  completedAtPrecision?: ProjectDatePrecision;
   /**
      * @minimum 0
      * @maximum 100
@@ -303,3 +309,4 @@ search?: string;
 status?: ProjectStatus;
 craft?: CraftType;
 };
+

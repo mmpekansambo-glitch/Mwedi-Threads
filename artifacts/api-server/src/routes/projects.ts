@@ -91,6 +91,28 @@ function dateOnly(value: Date | null | undefined): string | null {
   return value ? value.toISOString().slice(0, 10) : null;
 }
 
+function today(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+type ProjectStatus = Project["status"];
+
+// Keeps the completed date in step with the status: finishing a project
+// fills in today's date unless one is already set, and reopening a
+// finished project clears it.
+function completedDateChanges(
+  current: { status: ProjectStatus; completedAt: string | null },
+  nextStatus: ProjectStatus,
+): { completedAt?: string | null; completedAtPrecision?: "day" } {
+  if (nextStatus === "completed" && !current.completedAt) {
+    return { completedAt: today(), completedAtPrecision: "day" };
+  }
+  if (nextStatus !== "completed" && current.status === "completed") {
+    return { completedAt: null };
+  }
+  return {};
+}
+
 function serializeProject(project: Project) {
   const validated = GetProjectsResponseItem.parse(project);
   return {
@@ -100,6 +122,7 @@ function serializeProject(project: Project) {
       : null,
     startedAt: project.startedAt,
     targetDate: project.targetDate,
+    completedAt: project.completedAt,
   };
 }
 
@@ -236,11 +259,17 @@ router.post("/projects", async (req, res): Promise<void> => {
       status: "planning",
       startedAtPrecision: "day",
       targetDatePrecision: "day",
+      completedAt: null,
+      completedAtPrecision: "day",
       ...fields,
       title: fields.title.trim(),
       ownerId,
       startedAt: dateOnly(startedAt),
       targetDate: dateOnly(targetDate),
+      ...completedDateChanges(
+        { status: "planning", completedAt: null },
+        fields.status ?? "planning",
+      ),
     })
     .returning();
   res.status(201).json(serializeProject(created));
@@ -285,16 +314,35 @@ router.patch("/projects/:projectId", async (req, res): Promise<void> => {
   }
 
   const ownerId = getOwnerId(res);
-  const { startedAt, targetDate, title, ...otherChanges } = parsed.data;
+  const { startedAt, targetDate, completedAt, title, ...otherChanges } = parsed.data;
   const changes = {
     ...otherChanges,
     ...(title !== undefined ? { title: title.trim() } : {}),
     ...(startedAt !== undefined ? { startedAt: dateOnly(startedAt) } : {}),
     ...(targetDate !== undefined ? { targetDate: dateOnly(targetDate) } : {}),
+    ...(completedAt !== undefined ? { completedAt: dateOnly(completedAt) } : {}),
   };
   if (Object.keys(changes).length === 0) {
     res.status(400).json({ error: "Check the project details and try again." });
     return;
+  }
+
+  // A completed date sent with the change wins over the automatic one.
+  if (changes.status !== undefined && completedAt === undefined) {
+    const [current] = await db
+      .select({ status: projectsTable.status, completedAt: projectsTable.completedAt })
+      .from(projectsTable)
+      .where(
+        and(
+          eq(projectsTable.id, params.data.projectId),
+          eq(projectsTable.ownerId, ownerId),
+        ),
+      );
+    if (!current) {
+      res.status(404).json({ error: "Project not found." });
+      return;
+    }
+    Object.assign(changes, completedDateChanges(current, changes.status));
   }
 
   const [updated] = await db
@@ -522,7 +570,11 @@ router.post(
 
     const ownerId = getOwnerId(res);
     const [project] = await db
-      .select({ id: projectsTable.id, status: projectsTable.status })
+      .select({
+        id: projectsTable.id,
+        status: projectsTable.status,
+        completedAt: projectsTable.completedAt,
+      })
       .from(projectsTable)
       .where(
         and(
@@ -543,6 +595,12 @@ router.post(
       return;
     }
 
+    const nextStatus: ProjectStatus =
+      parsed.data.completionPercent === 100
+        ? "completed"
+        : project.status === "completed"
+          ? "in_progress"
+          : project.status;
     const [entry] = await db.transaction(async (tx) => {
       const [created] = await tx
         .insert(progressEntriesTable)
@@ -557,12 +615,8 @@ router.post(
         .update(projectsTable)
         .set({
           completionPercent: parsed.data.completionPercent,
-          status:
-            parsed.data.completionPercent === 100
-              ? "completed"
-              : project.status === "completed"
-                ? "in_progress"
-                : project.status,
+          status: nextStatus,
+          ...completedDateChanges(project, nextStatus),
         })
         .where(eq(projectsTable.id, project.id));
       return [created];

@@ -45,6 +45,9 @@ export interface Project {
   /** @nullable */
   targetDate: Date | null;
   targetDatePrecision: ProjectDatePrecision;
+  /** @nullable */
+  completedAt: Date | null;
+  completedAtPrecision: ProjectDatePrecision;
   /**
      * @minimum 0
      * @maximum 100

@@ -107,6 +107,8 @@ describe.skipIf(!databaseUrl)("project authorization against PostgreSQL", () => 
         started_at_precision ${isolatedSchema}.project_date_precision NOT NULL DEFAULT 'day',
         target_date date,
         target_date_precision ${isolatedSchema}.project_date_precision NOT NULL DEFAULT 'day',
+        completed_at date,
+        completed_at_precision ${isolatedSchema}.project_date_precision NOT NULL DEFAULT 'day',
         completion_percent integer NOT NULL DEFAULT 0,
         created_at timestamptz NOT NULL DEFAULT now(),
         updated_at timestamptz NOT NULL DEFAULT now()

@@ -50,6 +50,10 @@ export const projectsTable = pgTable("projects", {
   targetDatePrecision: projectDatePrecisionEnum("target_date_precision")
     .notNull()
     .default("day"),
+  completedAt: date("completed_at", { mode: "string" }),
+  completedAtPrecision: projectDatePrecisionEnum("completed_at_precision")
+    .notNull()
+    .default("day"),
   completionPercent: integer("completion_percent").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()

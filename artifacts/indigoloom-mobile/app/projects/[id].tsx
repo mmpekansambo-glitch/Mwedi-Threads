@@ -172,6 +172,7 @@ export default function ProjectDetailScreen() {
                 ...(project.craft === 'crochet' && project.tools ? [['Saved tools note', project.tools]] : []),
                 ['Started', project.startedAt ? formatProjectDate(project.startedAt, project.startedAtPrecision) : null],
                 ['Target date', project.targetDate ? formatProjectDate(project.targetDate, project.targetDatePrecision) : null],
+                ['Finished on', project.completedAt ? formatProjectDate(project.completedAt, project.completedAtPrecision) : null],
               ].filter((entry) => entry[1]).map(([label, value]) => (
                 <View key={label} style={[styles.infoRow, { borderBottomColor: colors.border }]}><LoomText style={[styles.infoLabel, { color: colors.mutedForeground }]}>{label}</LoomText>{label === 'Designer' && project.designerWebsite ? <Pressable accessibilityRole="link" accessibilityLabel={`Open designer website: ${designerLinkLabel}`} accessibilityHint="Opens the saved designer website" onPress={() => { void Linking.openURL(project.designerWebsite!).catch(() => Alert.alert('Unable to open website', 'Check the saved link and try again.')); }} style={styles.designerLink}><LoomText numberOfLines={1} ellipsizeMode="tail" style={[styles.infoValue, styles.designerLinkText, { color: colors.primary, textDecorationLine: 'underline' }]}>{value}</LoomText></Pressable> : <LoomText numberOfLines={label === 'Designer' ? 1 : undefined} ellipsizeMode="tail" style={[styles.infoValue, { color: colors.foreground }]}>{value}</LoomText>}</View>
               ))}

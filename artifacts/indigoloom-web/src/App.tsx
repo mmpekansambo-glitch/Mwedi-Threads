@@ -450,6 +450,7 @@ type ProjectFormValues = {
   tools: string; hookSize: NonNullable<CreateProject['hookSize']> | '';
   startedAt: string; startedAtPrecision: ProjectDatePrecision;
   targetDate: string; targetDatePrecision: ProjectDatePrecision;
+  completedAt: string; completedAtPrecision: ProjectDatePrecision;
 };
 
 const crochetHookSizes = Object.values(CrochetHookSize) as NonNullable<CreateProject['hookSize']>[];
@@ -462,7 +463,7 @@ function ProjectFormPage() {
   const [designerMode, setDesignerMode] = useState<DesignerMode>('name');
   const [designerPreviewMessage, setDesignerPreviewMessage] = useState('');
   const form = useForm<ProjectFormValues>({
-    defaultValues: { title: '', craft: 'knitting', status: 'planning', description: '', patternName: '', patternDesigner: '', designerWebsite: '', designerPageTitle: '', yarnBrand: '', yarnType: '', yarnColor: '', tools: '', hookSize: '', startedAt: '', startedAtPrecision: 'day', targetDate: '', targetDatePrecision: 'day' },
+    defaultValues: { title: '', craft: 'knitting', status: 'planning', description: '', patternName: '', patternDesigner: '', designerWebsite: '', designerPageTitle: '', yarnBrand: '', yarnType: '', yarnColor: '', tools: '', hookSize: '', startedAt: '', startedAtPrecision: 'day', targetDate: '', targetDatePrecision: 'day', completedAt: '', completedAtPrecision: 'day' },
   });
   const previewDesignerTitle = () => {
     const websiteUrl = form.getValues('designerWebsite').trim();
@@ -593,7 +594,7 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
     return () => URL.revokeObjectURL(preview);
   }, [progressPhoto]);
   const editForm = useForm<ProjectFormValues>({
-    defaultValues: { title: '', craft: 'knitting', status: 'planning', description: '', patternName: '', patternDesigner: '', designerWebsite: '', designerPageTitle: '', yarnBrand: '', yarnType: '', yarnColor: '', tools: '', hookSize: '', startedAt: '', startedAtPrecision: 'day', targetDate: '', targetDatePrecision: 'day' },
+    defaultValues: { title: '', craft: 'knitting', status: 'planning', description: '', patternName: '', patternDesigner: '', designerWebsite: '', designerPageTitle: '', yarnBrand: '', yarnType: '', yarnColor: '', tools: '', hookSize: '', startedAt: '', startedAtPrecision: 'day', targetDate: '', targetDatePrecision: 'day', completedAt: '', completedAtPrecision: 'day' },
   });
   useEffect(() => {
     if (!project) return;
@@ -608,10 +609,12 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
       startedAtPrecision: project.startedAtPrecision,
       targetDate: dateForProjectForm(project.targetDate, project.targetDatePrecision),
       targetDatePrecision: project.targetDatePrecision,
+      completedAt: dateForProjectForm(project.completedAt, project.completedAtPrecision),
+      completedAtPrecision: project.completedAtPrecision,
     });
     setDesignerMode(project.designerWebsite ? 'website' : 'name');
     setDesignerPreviewMessage('');
-  }, [project?.id, editForm.reset]);
+  }, [project?.id, project?.completedAt, editForm.reset]);
   const previewEditDesignerTitle = () => {
     const websiteUrl = editForm.getValues('designerWebsite').trim();
     if (!websiteUrl) {
@@ -654,6 +657,14 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
       startedAtPrecision: values.startedAtPrecision,
       targetDate: dateForProjectApi(values.targetDate, values.targetDatePrecision),
       targetDatePrecision: values.targetDatePrecision,
+      // With no date chosen, the server fills in today when the project is
+      // marked finished and clears the date when it's reopened.
+      ...(values.status === 'completed' && values.completedAt
+        ? {
+            completedAt: dateForProjectApi(values.completedAt, values.completedAtPrecision),
+            completedAtPrecision: values.completedAtPrecision,
+          }
+        : {}),
     };
     update.mutate({ projectId, data: payload }, { onSuccess: () => { invalidate(); setEditing(false); } });
   });
@@ -742,6 +753,7 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
       )}
        <ProjectDateField id="edit-started" label="Started on" value={editForm.watch('startedAt')} precision={editForm.watch('startedAtPrecision')} onValueChange={(value) => editForm.setValue('startedAt', value)} onPrecisionChange={(precision) => editForm.setValue('startedAtPrecision', precision)} testId="input-edit-start-date"/>
        <ProjectDateField id="edit-target" label="Target date" value={editForm.watch('targetDate')} precision={editForm.watch('targetDatePrecision')} onValueChange={(value) => editForm.setValue('targetDate', value)} onPrecisionChange={(precision) => editForm.setValue('targetDatePrecision', precision)} testId="input-edit-target-date"/>
+       {editForm.watch('status') === 'completed' && <ProjectDateField id="edit-completed" label="Finished on" value={editForm.watch('completedAt')} precision={editForm.watch('completedAtPrecision')} onValueChange={(value) => editForm.setValue('completedAt', value)} onPrecisionChange={(precision) => editForm.setValue('completedAtPrecision', precision)} testId="input-edit-completed-date"/>}
       <div className="field-block field-wide"><label htmlFor="edit-description">Notes</label><textarea id="edit-description" rows={3} {...editForm.register('description')} data-testid="input-edit-description"/></div>
     </div>{update.isError && <p className="mutation-error">We couldn't save those changes. Try again.</p>}<div className="form-actions"><button type="button" className="button button-quiet" onClick={() => setEditing(false)} data-testid="button-cancel-edit">Cancel</button><button className="button button-primary" type="submit" disabled={update.isPending} data-testid="button-update-project">{update.isPending ? 'Saving…' : 'Save changes'} <Check size={15}/></button></div></form></Form>}
     <section className="detail-main-grid">
@@ -761,6 +773,7 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
           <div><dt>{project.craft === 'crochet' ? 'Hook size' : 'Tools'}</dt><dd>{project.craft === 'crochet' ? project.hookSize || 'Not added yet' : project.tools || 'Not added yet'}</dd></div>
           {project.craft === 'crochet' && project.tools && <div><dt>Saved tools note</dt><dd>{project.tools}</dd></div>}
           <div><dt>Target date</dt><dd>{formatProjectDate(project.targetDate, project.targetDatePrecision) || 'No date in mind'}</dd></div>
+          {project.completedAt && <div><dt>Finished on</dt><dd data-testid="text-completed-date">{formatProjectDate(project.completedAt, project.completedAtPrecision)}</dd></div>}
         </dl>{project.description && <div className="personal-note"><span>NOTE TO SELF</span><p>{project.description}</p></div>}<button className="aside-edit" onClick={() => setEditing(!editing)} data-testid="button-edit-details"><Feather size={14}/> Edit details</button></div>
         <div className="aside-encouragement"><Flower2 className="encouragement-mark" size={48} strokeWidth={1}/><p>“Slow work is still<br/>beautiful work.”</p><span>YOUR WORKROOM, YOUR PACE</span></div>
       </aside>

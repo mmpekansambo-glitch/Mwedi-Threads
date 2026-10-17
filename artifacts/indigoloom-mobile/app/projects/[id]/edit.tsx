@@ -1,6 +1,7 @@
 import { useGetProject, useUpdateProject, usePreviewDesignerWebsiteTitle, getGetDashboardQueryKey, getGetProjectQueryKey, getGetProjectsQueryKey } from '@workspace/api-client-react';
 import type { UpdateProject } from '@workspace/api-client-react';
 import { HookSizePicker, type CrochetHookSizeValue } from '@/components/HookSizePicker';
+import { ProjectDateField, projectDateForApi, type ProjectDatePrecision } from '@/components/ProjectDateField';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { Feather } from '@expo/vector-icons';
@@ -34,6 +35,8 @@ export default function EditProjectScreen() {
   const [tools, setTools] = useState('');
   const [hookSize, setHookSize] = useState<CrochetHookSizeValue | null>(null);
   const [description, setDescription] = useState('');
+  const [completedAt, setCompletedAt] = useState('');
+  const [completedAtPrecision, setCompletedAtPrecision] = useState<ProjectDatePrecision>('day');
   const [error, setError] = useState('');
   useEffect(() => {
     if (!project) return;
@@ -51,6 +54,8 @@ export default function EditProjectScreen() {
     setTools(project.tools || '');
     setHookSize(project.hookSize || null);
     setDescription(project.description || '');
+    setCompletedAt(project.completedAt || '');
+    setCompletedAtPrecision(project.completedAtPrecision);
   }, [project?.id]);
   const previewDesignerTitle = () => {
     const websiteUrl = designerWebsite.trim();
@@ -89,6 +94,9 @@ export default function EditProjectScreen() {
       tools: tools.trim() || null,
       hookSize: project.craft === 'crochet' ? hookSize : null,
       description: description.trim() || null,
+      ...(project.status === 'completed' && completedAt
+        ? { completedAt: projectDateForApi(completedAt, completedAtPrecision), completedAtPrecision }
+        : {}),
     };
     update.mutate({ projectId: id, data }, {
       onSuccess: () => {
@@ -160,6 +168,7 @@ export default function EditProjectScreen() {
                   <TextInput value={tools} onChangeText={setTools} placeholder="Needle size or other tools…" placeholderTextColor={colors.mutedForeground} style={inputStyle} />
                 </>
               )}
+              {project?.status === 'completed' ? <ProjectDateField label="Finished on" value={completedAt} precision={completedAtPrecision} onChange={setCompletedAt} onPrecisionChange={setCompletedAtPrecision} testID="input-edit-completed-date" /> : null}
               <FormFieldLabel>Notes to future you</FormFieldLabel>
               <TextInput value={description} onChangeText={setDescription} placeholder="What made you fall for this one?" placeholderTextColor={colors.mutedForeground} multiline numberOfLines={4} textAlignVertical="top" style={[...inputStyle, styles.multiline]} />
               {error ? <LoomText accessibilityRole="alert" style={{ color: colors.destructive, fontSize: 12, marginBottom: 12 }}>{error}</LoomText> : null}
