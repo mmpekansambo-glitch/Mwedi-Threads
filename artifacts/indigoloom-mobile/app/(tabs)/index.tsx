@@ -4,6 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { Link, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { DashboardCharts } from '@/components/DashboardCharts';
 import { EmptyState, ErrorState, LoadingState, LoomButton, LoomText, PageHeader, ProjectCard, fonts } from '@/components/loom';
 import { useColors } from '@/hooks/useColors';
 
@@ -51,7 +52,8 @@ export default function DashboardScreen() {
               <LoomText style={[styles.statCaption, { color: colors.mutedForeground }]}>finished pieces</LoomText>
             </View>
           </View>
-          <View style={styles.sectionHeading}>
+          <DashboardCharts charts={data.charts} />
+          <View style={[styles.sectionHeading, { marginTop: 22 }]}>
             <View>
               <LoomText style={[styles.kicker, { color: colors.mutedForeground }]}>A FEW THINGS IN MOTION</LoomText>
               <LoomText serif style={[styles.sectionTitle, { color: colors.foreground }]}>Back on your needles</LoomText>

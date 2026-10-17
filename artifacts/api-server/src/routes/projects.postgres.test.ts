@@ -299,7 +299,18 @@ describe.skipIf(!databaseUrl)("project authorization against PostgreSQL", () => 
       completedProjects: number;
       recentProjects: { id: string }[];
       recentProgress: { projectId: string; notes: string }[];
+      charts: {
+        projectsByStatus: { status: string; count: number }[];
+        progressPerWeek: { count: number }[];
+      };
     };
+    expect(dashboard.charts.projectsByStatus).toContainEqual({ status: "in_progress", count: 1 });
+    expect(
+      dashboard.charts.projectsByStatus.reduce((sum, item) => sum + item.count, 0),
+    ).toBe(1);
+    expect(
+      dashboard.charts.progressPerWeek.reduce((sum, week) => sum + week.count, 0),
+    ).toBe(1);
     expect(dashboard.totalProjects).toBe(1);
     expect(dashboard.activeProjects).toBe(1);
     expect(dashboard.completedProjects).toBe(0);

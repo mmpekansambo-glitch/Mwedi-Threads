@@ -63,7 +63,22 @@ export const GetDashboardResponse = zod.object({
   "notes": zod.string(),
   "completionPercent": zod.number().int(),
   "createdAt": zod.coerce.date()
-}))
+})),
+  "charts": zod.object({
+  "projectsByStatus": zod.array(zod.object({
+  "status": zod.enum(['planning', 'in_progress', 'paused', 'completed']),
+  "count": zod.number().int()
+})).describe('One count per status, in the order planning, in progress, paused, completed'),
+  "completedPerMonth": zod.array(zod.object({
+  "month": zod.string().describe('Year and month, like 2026-10'),
+  "count": zod.number().int()
+})).describe('Completed projects in each of the last 12 months (UTC), oldest first, current month last'),
+  "completedWithoutDate": zod.number().int().describe('Completed projects with no completed date, left out of completedPerMonth'),
+  "progressPerWeek": zod.array(zod.object({
+  "weekStart": zod.string().describe('The Monday the week starts on, like 2026-10-12'),
+  "count": zod.number().int()
+})).describe('Progress entries in each of the last 12 weeks (UTC, weeks start Monday), oldest first, current week last')
+})
 })
 
 
