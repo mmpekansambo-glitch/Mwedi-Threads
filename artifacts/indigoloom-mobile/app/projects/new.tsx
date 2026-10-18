@@ -114,7 +114,7 @@ export default function NewProjectScreen() {
             <View style={styles.choiceRow}>
               {(['knitting', 'crochet'] as const).map((item) => {
                 const active = craft === item;
-                return <Pressable key={item} onPress={() => setCraft(item)} style={[styles.choice, { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.selectedWash : colors.background }]}><Feather name={item === 'knitting' ? 'git-merge' : 'corner-down-right'} size={15} color={active ? colors.primary : colors.mutedForeground} /><LoomText style={{ color: active ? colors.primary : colors.mutedForeground, fontFamily: fonts.semibold, fontSize: 12 }}>{item === 'knitting' ? 'Knitting' : 'Crochet'}</LoomText></Pressable>;
+                return <Pressable key={item} onPress={() => setCraft(item)} style={[styles.choice, { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.selectedWash : colors.background }]}><Feather name={item === 'knitting' ? 'git-merge' : 'corner-down-right'} size={15} color={active ? colors.primary : colors.mutedForeground} /><LoomText style={{ color: active ? colors.primary : colors.mutedForeground, fontFamily: fonts.semibold, fontSize: 15 }}>{item === 'knitting' ? 'Knitting' : 'Crochet'}</LoomText></Pressable>;
               })}
             </View>
             <View style={[styles.divider, { borderColor: colors.border }]} />
@@ -126,7 +126,7 @@ export default function NewProjectScreen() {
               {(['name', 'website'] as const).map((option) => {
                 const active = designerMode === option;
                 return <Pressable key={option} accessibilityRole="button" accessibilityState={{ selected: active }} onPress={() => { setDesignerMode(option); setDesignerPreviewMessage(''); }} style={[styles.designerModeButton, { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.selectedWash : colors.background }]} testID={`button-create-designer-${option}`}>
-                  <LoomText style={{ color: active ? colors.primary : colors.mutedForeground, fontSize: 11, fontFamily: fonts.semibold }}>{option === 'name' ? 'Name' : 'Website link'}</LoomText>
+                  <LoomText style={{ color: active ? colors.primary : colors.mutedForeground, fontSize: 14, fontFamily: fonts.semibold }}>{option === 'name' ? 'Name' : 'Website link'}</LoomText>
                 </Pressable>;
               })}
             </View>
@@ -140,8 +140,8 @@ export default function NewProjectScreen() {
                 <FormFieldLabel>Website link</FormFieldLabel>
                 <TextInput {...inputProps} value={designerWebsite} onChangeText={(value) => { designerWebsiteRef.current = value; setDesignerWebsite(value); setPatternDesigner(''); setDesignerPageTitle(''); setDesignerPreviewMessage(''); }} placeholder="https://example.com" autoCapitalize="none" autoCorrect={false} keyboardType="url" style={fieldStyle} testID="input-create-designer-website" />
                 <LoomButton title="Preview page title" variant="quiet" onPress={previewDesignerTitle} busy={previewTitle.isPending} testID="button-create-preview-designer-title" />
-                {designerPageTitle ? <View style={[styles.designerPagePreview, { backgroundColor: colors.selectedWash, borderColor: colors.border }]}><LoomText style={{ color: colors.mutedForeground, fontSize: 9, letterSpacing: 1 }}>PAGE TITLE PREVIEW</LoomText><LoomText numberOfLines={2} ellipsizeMode="tail" style={[styles.designerPageTitle, { color: colors.foreground, fontFamily: fonts.semibold, fontSize: 12 }]}>{designerPageTitle}</LoomText></View> : null}
-                {designerPreviewMessage ? <LoomText accessibilityRole="alert" style={{ color: colors.mutedForeground, fontSize: 11, lineHeight: 16, marginBottom: 12 }}>{designerPreviewMessage}</LoomText> : null}
+                {designerPageTitle ? <View style={[styles.designerPagePreview, { backgroundColor: colors.selectedWash, borderColor: colors.border }]}><LoomText style={{ color: colors.mutedForeground, fontSize: 13, letterSpacing: 1 }}>PAGE TITLE PREVIEW</LoomText><LoomText numberOfLines={2} ellipsizeMode="tail" style={[styles.designerPageTitle, { color: colors.foreground, fontFamily: fonts.semibold, fontSize: 15 }]}>{designerPageTitle}</LoomText></View> : null}
+                {designerPreviewMessage ? <LoomText accessibilityRole="alert" style={{ color: colors.mutedForeground, fontSize: 14, lineHeight: 20, marginBottom: 12 }}>{designerPreviewMessage}</LoomText> : null}
               </>
             )}
             <LoomText style={[styles.sectionLabel, { color: colors.primary }]}>YARN</LoomText>
@@ -178,14 +178,14 @@ export default function NewProjectScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   nav: { minHeight: 48, paddingHorizontal: 17, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1 },
-  navTitle: { fontFamily: fonts.semibold, fontSize: 13 },
+  navTitle: { fontFamily: fonts.semibold, fontSize: 16 },
   back: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
   form: { width: '100%', maxWidth: 650, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 23, paddingBottom: 40 },
   heading: { fontSize: 32 },
-  intro: { fontSize: 13, marginTop: 6, marginBottom: 18 },
+  intro: { fontSize: 16, marginTop: 6, marginBottom: 18 },
   formCard: { width: '100%', maxWidth: '100%', minWidth: 0, borderWidth: 1, borderRadius: 18, padding: 17 },
-  sectionLabel: { fontFamily: fonts.bold, fontSize: 9, letterSpacing: 1.1, marginBottom: 13 },
-  input: { minHeight: 45, borderWidth: 1, borderRadius: 9, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, fontFamily: fonts.body, marginBottom: 14 },
+  sectionLabel: { fontFamily: fonts.bold, fontSize: 13, letterSpacing: 1.1, marginBottom: 13 },
+  input: { minHeight: 45, borderWidth: 1, borderRadius: 9, paddingHorizontal: 12, paddingVertical: 10, fontSize: 16, fontFamily: fonts.body, marginBottom: 14 },
   choiceRow: { flexDirection: 'row', gap: 9, marginBottom: 14 },
   designerModeRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
   designerModeButton: { flex: 1, minHeight: 39, borderWidth: 1, borderRadius: 9, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
@@ -194,5 +194,5 @@ const styles = StyleSheet.create({
   choice: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, minHeight: 42, borderWidth: 1, borderRadius: 10 },
   divider: { borderTopWidth: 1, marginVertical: 8 },
   multiline: { minHeight: 94, paddingTop: 12 },
-  error: { fontSize: 12, lineHeight: 18, marginBottom: 12 },
+  error: { fontSize: 15, lineHeight: 22, marginBottom: 12 },
 });

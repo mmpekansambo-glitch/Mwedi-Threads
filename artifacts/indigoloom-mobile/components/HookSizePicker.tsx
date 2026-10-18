@@ -52,7 +52,7 @@ export function HookSizePicker({
                   style={[styles.option, { borderBottomColor: colors.border, backgroundColor: selected ? colors.selectedWash : colors.card }]}
                   testID={`${testID}-option-${index}`}
                 >
-                  <LoomText style={{ color: selected ? colors.primary : colors.foreground, fontFamily: selected ? fonts.semibold : fonts.body, fontSize: 12 }}>
+                  <LoomText style={{ color: selected ? colors.primary : colors.foreground, fontFamily: selected ? fonts.semibold : fonts.body, fontSize: 15 }}>
                     {hookSize}
                   </LoomText>
                 </Pressable>
@@ -68,7 +68,7 @@ export function HookSizePicker({
 const styles = StyleSheet.create({
   wrap: { marginBottom: 14 },
   trigger: { minHeight: 46, borderWidth: 1, borderRadius: 9, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
-  triggerText: { flex: 1, fontFamily: fonts.body, fontSize: 12 },
+  triggerText: { flex: 1, fontFamily: fonts.body, fontSize: 15 },
   options: { borderWidth: 1, borderRadius: 9, overflow: 'hidden', marginTop: 5 },
   optionList: { maxHeight: 250 },
   option: { minHeight: 41, paddingHorizontal: 12, justifyContent: 'center', borderBottomWidth: StyleSheet.hairlineWidth },

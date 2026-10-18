@@ -111,14 +111,14 @@ export function DashboardCharts({ charts }: { charts: Charts }) {
 
 const styles = StyleSheet.create({
   card: { borderWidth: 1, borderRadius: 14, padding: 14, marginBottom: 10 },
-  kicker: { fontFamily: fonts.bold, fontSize: 9, letterSpacing: 1.1, marginBottom: 6 },
-  title: { fontSize: 19, marginBottom: 12 },
+  kicker: { fontFamily: fonts.bold, fontSize: 13, letterSpacing: 1.1, marginBottom: 6 },
+  title: { fontSize: 22, marginBottom: 12 },
   plot: { height: plotHeight, flexDirection: 'row', alignItems: 'flex-end', gap: 4, borderBottomWidth: 1 },
   barSlot: { flex: 1, height: '100%', justifyContent: 'flex-end', alignItems: 'center' },
   bar: { width: '100%', maxWidth: 34, borderTopLeftRadius: 4, borderTopRightRadius: 4 },
   labels: { flexDirection: 'row', gap: 4, marginTop: 5 },
-  label: { flex: 1, textAlign: 'center', fontSize: 9, color: axisColor },
-  edgeLabel: { fontSize: 9, color: axisColor },
-  caption: { fontSize: 11, marginTop: 9, lineHeight: 15 },
-  empty: { fontSize: 12, lineHeight: 17, textAlign: 'center', paddingVertical: 34, paddingHorizontal: 10 },
+  label: { flex: 1, textAlign: 'center', fontSize: 13, color: axisColor },
+  edgeLabel: { fontSize: 13, color: axisColor },
+  caption: { fontSize: 14, marginTop: 9, lineHeight: 19 },
+  empty: { fontSize: 15, lineHeight: 21, textAlign: 'center', paddingVertical: 34, paddingHorizontal: 10 },
 });

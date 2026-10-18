@@ -55,7 +55,7 @@ const clerkAppearance = {
     colorInput: '#EEF2F9',
     colorInputForeground: '#1F2F16',
     colorNeutral: '#DDE5F3',
-    fontFamily: 'DM Sans, sans-serif',
+    fontFamily: 'Figtree, sans-serif',
     borderRadius: '1rem',
   },
   elements: {
@@ -220,7 +220,6 @@ function PortalLayout({ children, active }: { children: ReactNode; active: 'dash
         <Link href="/dashboard" className={`rail-link ${active === 'dashboard' ? 'selected' : ''}`} data-testid="link-dashboard"><Layers3 size={18}/><span>Overview</span></Link>
         <Link href="/projects" className={`rail-link ${active === 'projects' ? 'selected' : ''}`} data-testid="link-projects"><BookOpen size={18}/><span>My projects</span></Link>
       </nav>
-      <div className="rail-note"><span className="rail-note-icon"><Feather size={16}/></span><p>Keep the little notes.<br/><b>They become the story.</b></p><span className="rail-stitch"/></div>
       <div className="rail-bottom"><div className="profile-chip"><span className="profile-initial">{initials}</span><span className="profile-name">{displayName}<small>Your workroom</small></span><button type="button" title="Sign out" aria-label="Sign out" onClick={() => signOut({ redirectUrl: basePath || '/' })} data-testid="button-sign-out"><LogOut size={16}/></button></div></div>
     </aside>
     {mobileOpen && <button className="mobile-scrim" onClick={() => setMobileOpen(false)} aria-label="Close navigation" data-testid="button-dismiss-navigation"/>}
@@ -231,8 +230,8 @@ function PortalLayout({ children, active }: { children: ReactNode; active: 'dash
   </div>;
 }
 
-function PageHeading({ overline, title, subtitle, action }: { overline: string; title: ReactNode; subtitle: string; action?: ReactNode }) {
-  return <div className="page-heading"><div><div className="eyebrow"><span className="eyebrow-stitch"/>{overline}</div><h1 className="page-title serif">{title}</h1><p>{subtitle}</p></div>{action}</div>;
+function PageHeading({ overline, title, subtitle, action }: { overline?: string; title: ReactNode; subtitle?: string; action?: ReactNode }) {
+  return <div className="page-heading"><div>{overline ? <div className="eyebrow"><span className="eyebrow-stitch"/>{overline}</div> : null}<h1 className="page-title serif">{title}</h1>{subtitle ? <p>{subtitle}</p> : null}</div>{action}</div>;
 }
 
 function QueryProblem({ retry, message = 'We couldn’t gather this just now.' }: { retry: () => void; message?: string }) {
@@ -322,7 +321,7 @@ function ProjectsPage() {
   const clearFilters = () => { setSearch(''); setStatus(''); setCraft(''); setStarredOnly(false); };
   const query = useGetProjects(params, { query: { queryKey: getGetProjectsQueryKey(params) } });
   return <PortalLayout active="projects">
-    <PageHeading overline="YOUR COLLECTION" title="My projects" subtitle="Every idea, skein, and finished piece — gathered together." action={<Link href="/projects/new" className="button button-primary" data-testid="link-add-project"><Plus size={17}/> Add a project</Link>}/>
+    <PageHeading title="My projects" action={<Link href="/projects/new" className="button button-primary" data-testid="link-add-project"><Plus size={17}/> Add a project</Link>}/>
     <div className="catalog-tools">
       <label className="search-box"><Search size={17}/><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Find a project…" aria-label="Search projects" data-testid="input-search-projects"/>{search && <button type="button" onClick={() => setSearch('')} aria-label="Clear search" data-testid="button-clear-search"><X size={15}/></button>}</label>
       <label className="select-wrap"><Filter size={15}/><select aria-label="Filter by status" value={status} onChange={(event) => setStatus(event.target.value)} data-testid="select-status-filter"><option value="">Every status</option><option value="planning">Planning</option><option value="in_progress">In progress</option><option value="paused">On pause</option><option value="completed">Finished</option></select><ChevronDown size={14}/></label>

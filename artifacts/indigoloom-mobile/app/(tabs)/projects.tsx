@@ -38,7 +38,7 @@ export default function ProjectsScreen() {
       contentContainerStyle={[styles.content, { paddingTop: insets.top + 18, paddingBottom: 104 }]}
       keyboardShouldPersistTaps="handled"
     >
-      <PageHeader title="My projects" subtitle="Every idea, skein, and finished piece — gathered together." action={<Pressable accessibilityRole="button" accessibilityLabel="Add a project" onPress={() => router.push('/projects/new')} style={[styles.addButton, { backgroundColor: colors.primary }]}><Feather name="plus" color={colors.primaryForeground} size={20} /></Pressable>} />
+      <PageHeader title="My projects" action={<Pressable accessibilityRole="button" accessibilityLabel="Add a project" onPress={() => router.push('/projects/new')} style={[styles.addButton, { backgroundColor: colors.primary }]}><Feather name="plus" color={colors.primaryForeground} size={20} /></Pressable>} />
       <View style={[styles.searchWrap, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <Feather name="search" size={16} color={colors.mutedForeground} />
         <TextInput
@@ -53,17 +53,17 @@ export default function ProjectsScreen() {
         {search ? <Pressable accessibilityLabel="Clear search" onPress={() => setSearch('')}><Feather name="x" size={16} color={colors.mutedForeground} /></Pressable> : null}
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
-        <Pressable accessibilityRole="button" accessibilityState={{ selected: starredOnly }} onPress={() => setStarredOnly(!starredOnly)} style={[styles.filterChip, styles.starredChip, { backgroundColor: starredOnly ? colors.accent : colors.card, borderColor: starredOnly ? colors.accent : colors.border }]} testID="button-starred-filter"><Feather name="star" size={12} color={starredOnly ? colors.primary : colors.mutedForeground} /><LoomText style={{ color: starredOnly ? colors.accentForeground : colors.mutedForeground, fontSize: 11, fontFamily: fonts.semibold }}>Starred</LoomText></Pressable>
+        <Pressable accessibilityRole="button" accessibilityState={{ selected: starredOnly }} onPress={() => setStarredOnly(!starredOnly)} style={[styles.filterChip, styles.starredChip, { backgroundColor: starredOnly ? colors.accent : colors.card, borderColor: starredOnly ? colors.accent : colors.border }]} testID="button-starred-filter"><Feather name="star" size={12} color={starredOnly ? colors.primary : colors.mutedForeground} /><LoomText style={{ color: starredOnly ? colors.accentForeground : colors.mutedForeground, fontSize: 14, fontFamily: fonts.semibold }}>Starred</LoomText></Pressable>
         {statusFilters.map((item) => {
           const active = status === item.value;
-          return <Pressable key={item.value || 'all'} onPress={() => setStatus(item.value)} style={[styles.filterChip, { backgroundColor: active ? colors.accent : colors.card, borderColor: active ? colors.accent : colors.border }]}><LoomText style={{ color: active ? colors.accentForeground : colors.mutedForeground, fontSize: 11, fontFamily: fonts.semibold }}>{item.label}</LoomText></Pressable>;
+          return <Pressable key={item.value || 'all'} onPress={() => setStatus(item.value)} style={[styles.filterChip, { backgroundColor: active ? colors.accent : colors.card, borderColor: active ? colors.accent : colors.border }]}><LoomText style={{ color: active ? colors.accentForeground : colors.mutedForeground, fontSize: 14, fontFamily: fonts.semibold }}>{item.label}</LoomText></Pressable>;
         })}
       </ScrollView>
       <View style={styles.craftRow}>
         <Feather name="filter" size={14} color={colors.mutedForeground} />
         {(['', 'knitting', 'crochet'] as const).map((item) => {
           const active = craft === item;
-          return <Pressable key={item || 'craft-all'} onPress={() => setCraft(item)}><LoomText style={{ color: active ? colors.primary : colors.mutedForeground, fontFamily: active ? fonts.semibold : fonts.body, fontSize: 11 }}>{item ? item[0].toUpperCase() + item.slice(1) : 'All crafts'}</LoomText></Pressable>;
+          return <Pressable key={item || 'craft-all'} onPress={() => setCraft(item)}><LoomText style={{ color: active ? colors.primary : colors.mutedForeground, fontFamily: active ? fonts.semibold : fonts.body, fontSize: 14 }}>{item ? item[0].toUpperCase() + item.slice(1) : 'All crafts'}</LoomText></Pressable>;
         })}
       </View>
       {query.isLoading ? <LoadingState /> : query.isError ? <ErrorState onRetry={() => void query.refetch()} /> : query.data?.length ? (
@@ -87,11 +87,11 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: 20, maxWidth: 780, width: '100%', alignSelf: 'center', paddingBottom: 24 },
   addButton: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 21 },
   searchWrap: { minHeight: 46, borderWidth: 1, borderRadius: 11, flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: 12, marginBottom: 12 },
-  searchInput: { flex: 1, paddingVertical: 10, fontSize: 13, fontFamily: fonts.body },
+  searchInput: { flex: 1, paddingVertical: 10, fontSize: 16, fontFamily: fonts.body },
   filterRow: { gap: 7, paddingBottom: 6 },
   filterChip: { borderWidth: 1, paddingHorizontal: 12, minHeight: 31, borderRadius: 99, justifyContent: 'center' },
   starredChip: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   craftRow: { flexDirection: 'row', alignItems: 'center', gap: 13, paddingVertical: 11, marginBottom: 2 },
-  count: { fontSize: 10, marginBottom: 10, fontFamily: fonts.medium },
+  count: { fontSize: 13, marginBottom: 10, fontFamily: fonts.medium },
   bottomAction: { marginTop: 10, marginBottom: 10 },
 });

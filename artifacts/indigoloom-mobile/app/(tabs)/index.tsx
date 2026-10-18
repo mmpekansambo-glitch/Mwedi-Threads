@@ -58,7 +58,7 @@ export default function DashboardScreen() {
               <LoomText style={[styles.kicker, { color: colors.mutedForeground }]}>A FEW THINGS IN MOTION</LoomText>
               <LoomText serif style={[styles.sectionTitle, { color: colors.foreground }]}>Back on your needles</LoomText>
             </View>
-            <Link href="/(tabs)/projects" style={{ color: colors.primary, fontFamily: fonts.semibold, fontSize: 12 }}>All projects</Link>
+            <Link href="/(tabs)/projects" style={{ color: colors.primary, fontFamily: fonts.semibold, fontSize: 15 }}>All projects</Link>
           </View>
           {data.recentProjects.length ? data.recentProjects.slice(0, 3).map((project) => <ProjectCard key={project.id} project={project} />) : (
             <EmptyState title="Your next project starts here." body="Gather a pattern, choose a yarn, and give your next idea its own little page." actionTitle="Start a project" onAction={() => router.push('/projects/new')} />
@@ -82,7 +82,7 @@ export default function DashboardScreen() {
             </Pressable>
           )) : (
             <View style={[styles.noteEmpty, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <LoomText style={{ color: colors.mutedForeground, fontSize: 12 }}>Your progress notes will find a home here.</LoomText>
+              <LoomText style={{ color: colors.mutedForeground, fontSize: 15 }}>Your progress notes will find a home here.</LoomText>
             </View>
           )}
           <LoomText style={[styles.footer, { color: colors.mutedForeground }]}>There’s no rush. The best things are made one stitch at a time.</LoomText>
@@ -95,23 +95,23 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   content: { paddingHorizontal: 20, paddingBottom: 32, maxWidth: 780, width: '100%', alignSelf: 'center' },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
-  kicker: { fontFamily: fonts.bold, fontSize: 9, letterSpacing: 1.1, marginBottom: 6 },
-  greeting: { fontSize: 27, letterSpacing: -0.4 },
+  kicker: { fontFamily: fonts.bold, fontSize: 13, letterSpacing: 1.1, marginBottom: 6 },
+  greeting: { fontSize: 30, letterSpacing: -0.4 },
   logout: { borderWidth: 1, width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
-  subheading: { fontSize: 12, marginTop: 6, marginBottom: 21 },
+  subheading: { fontSize: 15, marginTop: 6, marginBottom: 21 },
   stats: { flexDirection: 'row', gap: 8, marginBottom: 29 },
   stat: { flex: 1, minHeight: 108, justifyContent: 'space-between', borderWidth: 1, borderRadius: 14, padding: 11 },
   featured: { borderColor: 'transparent' },
-  statLabel: { fontFamily: fonts.bold, fontSize: 8, letterSpacing: 0.55 },
+  statLabel: { fontFamily: fonts.bold, fontSize: 13, letterSpacing: 0.55 },
   statValue: { fontSize: 34, lineHeight: 39 },
-  statCaption: { fontSize: 9 },
+  statCaption: { fontSize: 13 },
   sectionHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 13, marginTop: 3 },
-  sectionTitle: { fontSize: 23 },
+  sectionTitle: { fontSize: 26 },
   note: { borderWidth: 1, borderRadius: 13, padding: 13, marginBottom: 8, flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   noteDot: { width: 7, height: 7, borderRadius: 4, marginTop: 5 },
-  noteProject: { fontFamily: fonts.semibold, fontSize: 12 },
-  noteCopy: { fontSize: 11, lineHeight: 16, marginTop: 3 },
-  noteDate: { fontSize: 9, marginTop: 5 },
+  noteProject: { fontFamily: fonts.semibold, fontSize: 15 },
+  noteCopy: { fontSize: 14, lineHeight: 20, marginTop: 3 },
+  noteDate: { fontSize: 13, marginTop: 5 },
   noteEmpty: { minHeight: 86, borderWidth: 1, borderRadius: 13, padding: 16, justifyContent: 'center', alignItems: 'center' },
-  footer: { fontSize: 10, textAlign: 'center', marginTop: 22 },
+  footer: { fontSize: 13, textAlign: 'center', marginTop: 22 },
 });

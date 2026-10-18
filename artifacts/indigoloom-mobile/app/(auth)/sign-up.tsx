@@ -157,7 +157,7 @@ export default function SignUpScreen() {
               <LoomButton title="Send a new code" variant="quiet" onPress={() => void signUp.verifications.sendEmailCode()} />
             </>
           )}
-          <AuthFooter><LoomText style={{ color: colors.mutedForeground, fontSize: 13 }}>Already have an account?</LoomText><AuthLink href="/(auth)/sign-in">Sign in</AuthLink></AuthFooter>
+          <AuthFooter><LoomText style={{ color: colors.mutedForeground, fontSize: 16 }}>Already have an account?</LoomText><AuthLink href="/(auth)/sign-in">Sign in</AuthLink></AuthFooter>
         </View>
       </KeyboardAwareScrollViewCompat>
     </View>
@@ -169,15 +169,15 @@ const styles = StyleSheet.create({
   content: { width: '100%', maxWidth: 520, alignSelf: 'center', paddingHorizontal: 24, paddingTop: 26, paddingBottom: 38 },
   brandLink: { alignSelf: 'center', marginBottom: 25 },
   heading: { alignItems: 'center', marginBottom: 19 },
-  overline: { fontFamily: fonts.bold, fontSize: 9, letterSpacing: 1.3, marginBottom: 8 },
+  overline: { fontFamily: fonts.bold, fontSize: 13, letterSpacing: 1.3, marginBottom: 8 },
   title: { fontSize: 30, textAlign: 'center' },
-  subtitle: { fontSize: 13, marginTop: 6, textAlign: 'center' },
+  subtitle: { fontSize: 16, marginTop: 6, textAlign: 'center' },
   formCard: { borderWidth: 1, borderRadius: 20, padding: 21 },
   divider: { flexDirection: 'row', alignItems: 'center', gap: 9, marginVertical: 17 },
   line: { height: 1, flex: 1 },
-  dividerText: { fontSize: 8, letterSpacing: 1, fontFamily: fonts.bold },
+  dividerText: { fontSize: 13, letterSpacing: 1, fontFamily: fonts.bold },
   field: { marginBottom: 14 },
-  input: { minHeight: 48, paddingHorizontal: 13, borderWidth: 1, borderRadius: 10, fontFamily: fonts.body, fontSize: 14 },
-  hint: { fontSize: 11, lineHeight: 16, marginTop: -4, marginBottom: 14 },
-  message: { fontSize: 12, lineHeight: 18, marginBottom: 13 },
+  input: { minHeight: 48, paddingHorizontal: 13, borderWidth: 1, borderRadius: 10, fontFamily: fonts.body, fontSize: 16 },
+  hint: { fontSize: 14, lineHeight: 20, marginTop: -4, marginBottom: 14 },
+  message: { fontSize: 15, lineHeight: 22, marginBottom: 13 },
 });

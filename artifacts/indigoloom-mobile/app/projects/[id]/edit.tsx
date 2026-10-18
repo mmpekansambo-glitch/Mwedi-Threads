@@ -125,12 +125,12 @@ export default function EditProjectScreen() {
               <TextInput value={title} onChangeText={setTitle} style={inputStyle} />
               <FormFieldLabel>Pattern name</FormFieldLabel>
               <TextInput value={patternName} onChangeText={setPatternName} placeholder="Pattern or source" placeholderTextColor={colors.mutedForeground} style={inputStyle} />
-              <LoomText style={{ color: colors.primary, fontSize: 9, letterSpacing: 1.1, fontFamily: fonts.bold, marginBottom: 11 }}>DESIGNER</LoomText>
+              <LoomText style={{ color: colors.primary, fontSize: 13, letterSpacing: 1.1, fontFamily: fonts.bold, marginBottom: 11 }}>DESIGNER</LoomText>
               <View style={styles.designerModeRow} accessibilityLabel="Designer entry option">
                 {(['name', 'website'] as const).map((option) => {
                   const active = designerMode === option;
                   return <Pressable key={option} accessibilityRole="button" accessibilityState={{ selected: active }} onPress={() => { setDesignerMode(option); setDesignerPreviewMessage(''); }} style={[styles.designerModeButton, { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.selectedWash : colors.background }]} testID={`button-edit-designer-${option}`}>
-                    <LoomText style={{ color: active ? colors.primary : colors.mutedForeground, fontSize: 11, fontFamily: fonts.semibold }}>{option === 'name' ? 'Name' : 'Website link'}</LoomText>
+                    <LoomText style={{ color: active ? colors.primary : colors.mutedForeground, fontSize: 14, fontFamily: fonts.semibold }}>{option === 'name' ? 'Name' : 'Website link'}</LoomText>
                   </Pressable>;
                 })}
               </View>
@@ -144,23 +144,23 @@ export default function EditProjectScreen() {
                   <FormFieldLabel>Website link</FormFieldLabel>
                   <TextInput value={designerWebsite} onChangeText={(value) => { designerWebsiteRef.current = value; setDesignerWebsite(value); setPatternDesigner(''); setDesignerPageTitle(''); setDesignerPreviewMessage(''); }} placeholder="https://example.com" placeholderTextColor={colors.mutedForeground} autoCapitalize="none" autoCorrect={false} keyboardType="url" style={inputStyle} testID="input-edit-designer-website" />
                   <LoomButton title="Preview page title" variant="quiet" onPress={previewDesignerTitle} busy={previewTitle.isPending} testID="button-edit-preview-designer-title" />
-                  {designerPageTitle ? <View style={[styles.designerPagePreview, { backgroundColor: colors.selectedWash, borderColor: colors.border }]}><LoomText style={{ color: colors.mutedForeground, fontSize: 9, letterSpacing: 1 }}>PAGE TITLE PREVIEW</LoomText><LoomText numberOfLines={2} ellipsizeMode="tail" style={[styles.designerPageTitle, { color: colors.foreground, fontFamily: fonts.semibold, fontSize: 12 }]}>{designerPageTitle}</LoomText></View> : null}
-                  {designerPreviewMessage ? <LoomText accessibilityRole="alert" style={{ color: colors.mutedForeground, fontSize: 11, lineHeight: 16, marginBottom: 12 }}>{designerPreviewMessage}</LoomText> : null}
+                  {designerPageTitle ? <View style={[styles.designerPagePreview, { backgroundColor: colors.selectedWash, borderColor: colors.border }]}><LoomText style={{ color: colors.mutedForeground, fontSize: 13, letterSpacing: 1 }}>PAGE TITLE PREVIEW</LoomText><LoomText numberOfLines={2} ellipsizeMode="tail" style={[styles.designerPageTitle, { color: colors.foreground, fontFamily: fonts.semibold, fontSize: 15 }]}>{designerPageTitle}</LoomText></View> : null}
+                  {designerPreviewMessage ? <LoomText accessibilityRole="alert" style={{ color: colors.mutedForeground, fontSize: 14, lineHeight: 20, marginBottom: 12 }}>{designerPreviewMessage}</LoomText> : null}
                 </>
               )}
-              <LoomText style={{ color: colors.primary, fontSize: 9, letterSpacing: 1.1, fontFamily: fonts.bold, marginBottom: 11 }}>YARN</LoomText>
+              <LoomText style={{ color: colors.primary, fontSize: 13, letterSpacing: 1.1, fontFamily: fonts.bold, marginBottom: 11 }}>YARN</LoomText>
               <FormFieldLabel>Brand</FormFieldLabel>
               <TextInput value={yarnBrand} onChangeText={setYarnBrand} placeholder="e.g. Cascade" placeholderTextColor={colors.mutedForeground} style={inputStyle} testID="input-edit-yarn-brand" />
               <FormFieldLabel>Type</FormFieldLabel>
               <TextInput value={yarnType} onChangeText={setYarnType} placeholder="e.g. Merino DK" placeholderTextColor={colors.mutedForeground} style={inputStyle} testID="input-edit-yarn-type" />
               <FormFieldLabel>Color</FormFieldLabel>
               <TextInput value={yarnColor} onChangeText={setYarnColor} placeholder="e.g. Oatmeal" placeholderTextColor={colors.mutedForeground} style={inputStyle} testID="input-edit-yarn-color" />
-              {project.yarn ? <LoomText style={{ color: colors.mutedForeground, fontSize: 11, lineHeight: 17, marginBottom: 14 }}>Saved yarn note: {project.yarn} (kept unchanged from the earlier form)</LoomText> : null}
+              {project.yarn ? <LoomText style={{ color: colors.mutedForeground, fontSize: 14, lineHeight: 22, marginBottom: 14 }}>Saved yarn note: {project.yarn} (kept unchanged from the earlier form)</LoomText> : null}
               {project.craft === 'crochet' ? (
                 <>
                   <FormFieldLabel>Hook size</FormFieldLabel>
                   <HookSizePicker value={hookSize} onChange={setHookSize} testID="select-edit-crochet-hook-size" />
-                  {tools ? <LoomText style={{ color: colors.mutedForeground, fontSize: 11, lineHeight: 17, marginBottom: 14 }}>Saved tools note: {tools} (kept unchanged from the earlier form)</LoomText> : null}
+                  {tools ? <LoomText style={{ color: colors.mutedForeground, fontSize: 14, lineHeight: 22, marginBottom: 14 }}>Saved tools note: {tools} (kept unchanged from the earlier form)</LoomText> : null}
                 </>
               ) : (
                 <>
@@ -171,7 +171,7 @@ export default function EditProjectScreen() {
               {project?.status === 'completed' ? <ProjectDateField label="Finished on" value={completedAt} precision={completedAtPrecision} onChange={setCompletedAt} onPrecisionChange={setCompletedAtPrecision} testID="input-edit-completed-date" /> : null}
               <FormFieldLabel>Notes to future you</FormFieldLabel>
               <TextInput value={description} onChangeText={setDescription} placeholder="What made you fall for this one?" placeholderTextColor={colors.mutedForeground} multiline numberOfLines={4} textAlignVertical="top" style={[...inputStyle, styles.multiline]} />
-              {error ? <LoomText accessibilityRole="alert" style={{ color: colors.destructive, fontSize: 12, marginBottom: 12 }}>{error}</LoomText> : null}
+              {error ? <LoomText accessibilityRole="alert" style={{ color: colors.destructive, fontSize: 15, marginBottom: 12 }}>{error}</LoomText> : null}
               <LoomButton title="Save changes" icon="check" onPress={save} busy={update.isPending} disabled={!title.trim()} />
             </View>
           </KeyboardAwareScrollViewCompat>
@@ -186,12 +186,12 @@ export default function EditProjectScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   nav: { minHeight: 47, paddingHorizontal: 13, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1 },
-  navTitle: { fontSize: 13, fontFamily: fonts.semibold },
+  navTitle: { fontSize: 16, fontFamily: fonts.semibold },
   form: { width: '100%', maxWidth: 650, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 22, paddingBottom: 38 },
   heading: { fontSize: 31 },
-  intro: { fontSize: 13, marginTop: 5, marginBottom: 17 },
+  intro: { fontSize: 16, marginTop: 5, marginBottom: 17 },
   card: { width: '100%', maxWidth: '100%', minWidth: 0, borderWidth: 1, borderRadius: 18, padding: 17 },
-  input: { minHeight: 45, borderWidth: 1, borderRadius: 9, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, fontFamily: fonts.body, marginBottom: 14 },
+  input: { minHeight: 45, borderWidth: 1, borderRadius: 9, paddingHorizontal: 12, paddingVertical: 10, fontSize: 16, fontFamily: fonts.body, marginBottom: 14 },
   designerModeRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
   designerModeButton: { flex: 1, minHeight: 39, borderWidth: 1, borderRadius: 9, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
   designerPagePreview: { width: '100%', maxWidth: '100%', minWidth: 0, alignSelf: 'stretch', overflow: 'hidden', gap: 5, borderWidth: 1, borderRadius: 9, padding: 11, marginBottom: 12 },
