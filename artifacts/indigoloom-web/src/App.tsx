@@ -5,18 +5,20 @@ import { ClerkProvider, SignIn, SignUp, useAuth, useClerk, useSignUp, useUser } 
 import { publishableKeyFromHost } from '@clerk/react/internal';
 import { shadcn } from '@clerk/themes';
 import {
-  requestProgressPhotoUpload, useAddProgress, useCreateProject, useDeleteProgressPhoto, useDeleteProject, useGetDashboard,
+  requestProgressPhotoUpload, requestStashPhotoUpload, useAddProgress, useCreateProject, useDeleteProgressPhoto, useDeleteProject, useGetDashboard,
   usePreviewDesignerWebsiteTitle,
   useGetProject, useGetProjects, useStarProject, useUnstarProject, useUpdateProject,
   getGetDashboardQueryKey, getGetProjectQueryKey, getGetProjectsQueryKey,
+  useCreateStashYarn, useDeleteStashYarn, useGetStashYarn, useGetStashYarns, useGetYarnCatalog, useUpdateStashYarn,
+  getGetStashYarnQueryKey, getGetStashYarnsQueryKey, getGetYarnCatalogQueryKey,
 } from '@workspace/api-client-react';
 import { CrochetHookSize, KnittingNeedleSize, NeedleCableLength } from '@workspace/api-client-react';
-import type { CreateProject, CreateProgress, Project, ProjectStatus, UpdateProject } from '@workspace/api-client-react';
+import type { CreateProject, CreateProgress, GeneralColor, Project, ProjectStatus, StashYarn, UpdateProject, YarnWeight } from '@workspace/api-client-react';
 import { FormProvider as Form, useForm, type UseFormReturn } from 'react-hook-form';
 import {
   ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, Check,
-  ChevronDown, ChevronUp, CircleHelp, Feather, Filter, Flower2,
-  Layers3, LogOut, Menu, Plus, Search, Sparkles, Star, Trash2,
+  Camera, ChevronDown, ChevronUp, CircleHelp, Feather, Filter, Flower2,
+  Layers3, LogOut, Menu, Palette, Plus, Search, Sparkles, Star, Trash2,
   X,
 } from 'lucide-react';
 import {
@@ -30,6 +32,10 @@ import {
   type ProgressAmountDraft, type ProgressSettingsDraft,
 } from '@/components/progress-method';
 import { DashboardCharts } from '@/components/dashboard-charts';
+import {
+  BlendFields, ColorDot, GeneralColorPicker, WeightWheelField, blendForApi, generalColors, weightLabel, yarnWeights,
+  type BlendDraft,
+} from '@/components/yarn-fields';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { trackEvent, trackSuccessfulAction } from '@/lib/analytics';
 import { Toaster } from '@/components/ui/toaster';
@@ -235,7 +241,9 @@ function PrivateRoute({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
-function PortalLayout({ children, active }: { children: ReactNode; active: 'dashboard' | 'projects' }) {
+const portalTitles = { dashboard: 'Overview', projects: 'My projects', stash: 'Yarn stash' };
+
+function PortalLayout({ children, active }: { children: ReactNode; active: keyof typeof portalTitles }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user } = useUser();
   const { signOut } = useClerk();
@@ -247,12 +255,13 @@ function PortalLayout({ children, active }: { children: ReactNode; active: 'dash
       <nav className="rail-nav">
         <Link href="/dashboard" className={`rail-link ${active === 'dashboard' ? 'selected' : ''}`} data-testid="link-dashboard"><Layers3 size={18}/><span>Overview</span></Link>
         <Link href="/projects" className={`rail-link ${active === 'projects' ? 'selected' : ''}`} data-testid="link-projects"><BookOpen size={18}/><span>My projects</span></Link>
+        <Link href="/stash" className={`rail-link ${active === 'stash' ? 'selected' : ''}`} data-testid="link-stash"><Palette size={18}/><span>Yarn stash</span></Link>
       </nav>
       <div className="rail-bottom"><ProfileMenu initials={initials} displayName={displayName} onSignOut={() => signOut({ redirectUrl: basePath || '/' })}/></div>
     </aside>
     {mobileOpen && <button className="mobile-scrim" onClick={() => setMobileOpen(false)} aria-label="Close navigation" data-testid="button-dismiss-navigation"/>}
     <main className="portal-main">
-      <header className="portal-topbar"><button className="menu-toggle" onClick={() => setMobileOpen(true)} aria-label="Open navigation" data-testid="button-open-navigation"><Menu size={21}/></button><div className="breadcrumbs"><span>Mwedi Threads</span><i>/</i><b>{active === 'dashboard' ? 'Overview' : 'My projects'}</b></div><div className="topbar-end"><span className="today-label">{new Intl.DateTimeFormat('en', { weekday: 'short', month: 'long', day: 'numeric' }).format(new Date())}</span><span className="top-avatar">{initials}</span></div></header>
+      <header className="portal-topbar"><button className="menu-toggle" onClick={() => setMobileOpen(true)} aria-label="Open navigation" data-testid="button-open-navigation"><Menu size={21}/></button><div className="breadcrumbs"><span>Mwedi Threads</span><i>/</i><b>{portalTitles[active]}</b></div><div className="topbar-end"><span className="today-label">{new Intl.DateTimeFormat('en', { weekday: 'short', month: 'long', day: 'numeric' }).format(new Date())}</span><span className="top-avatar">{initials}</span></div></header>
       <div className="portal-content appear">{children}</div>
     </main>
   </div>;
@@ -910,6 +919,246 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
   </PortalLayout>;
 }
 
+function stashPhotoUrl(yarn: Pick<StashYarn, 'id' | 'updatedAt'>): string {
+  return `/api/yarn-stash/${yarn.id}/photo?v=${encodeURIComponent(String(yarn.updatedAt))}`;
+}
+
+function yarnName(yarn: Pick<StashYarn, 'brand' | 'subBrand'>): string {
+  return [yarn.brand, yarn.subBrand].filter(Boolean).join(' ');
+}
+
+function skeinsLabel(yarn: Pick<StashYarn, 'skeinsPurchased' | 'skeinsLeft'>): string {
+  if (yarn.skeinsPurchased === null) return '';
+  const left = yarn.skeinsLeft ?? yarn.skeinsPurchased;
+  return `${left} of ${yarn.skeinsPurchased} ${yarn.skeinsPurchased === 1 ? 'skein' : 'skeins'} left`;
+}
+
+function StashYarnCard({ yarn }: { yarn: StashYarn }) {
+  return <Link href={`/stash/${yarn.id}`} className="stash-card loom-card lift" data-testid={`card-stash-yarn-${yarn.id}`}>
+    <span className="stash-photo"><img src={stashPhotoUrl(yarn)} alt={`${yarnName(yarn)}${yarn.color ? ` in ${yarn.color}` : ''}`} loading="lazy"/><ColorDot color={yarn.generalColor} className="stash-photo-dot"/></span>
+    <span className="stash-card-body">
+      <h3>{yarnName(yarn)}</h3>
+      {yarn.color && <p>{yarn.color}</p>}
+      <span className="stash-card-meta">{[weightLabel(yarn.weight), yarn.blend.map((part) => `${part.percent}% ${part.fiber}`).join(', ')].filter(Boolean).join(' · ')}</span>
+      {skeinsLabel(yarn) && <span className="stash-card-skeins">{skeinsLabel(yarn)}</span>}
+    </span>
+  </Link>;
+}
+
+function StashPage() {
+  const [search, setSearch] = useState('');
+  const [weight, setWeight] = useState('');
+  const [color, setColor] = useState('');
+  const params = {
+    ...(search.trim() ? { search: search.trim() } : {}),
+    ...(weight ? { weight: weight as YarnWeight } : {}),
+    ...(color ? { generalColor: color as GeneralColor } : {}),
+  };
+  const clearFilters = () => { setSearch(''); setWeight(''); setColor(''); };
+  const query = useGetStashYarns(params, { query: { queryKey: getGetStashYarnsQueryKey(params) } });
+  const filtered = Boolean(search || weight || color);
+  return <PortalLayout active="stash">
+    <PageHeading title="Yarn stash" action={<Link href="/stash/new" className="button button-primary" data-testid="link-add-yarn"><Plus size={17}/> Add yarn</Link>}/>
+    <div className="catalog-tools">
+      <label className="search-box"><Search size={17}/><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search by brand, color or fiber…" aria-label="Search your stash" data-testid="input-search-stash"/>{search && <button type="button" onClick={() => setSearch('')} aria-label="Clear search"><X size={15}/></button>}</label>
+      <label className="select-wrap"><Filter size={15}/><select aria-label="Filter by weight" value={weight} onChange={(event) => setWeight(event.target.value)} data-testid="select-weight-filter"><option value="">Every weight</option>{yarnWeights.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select><ChevronDown size={14}/></label>
+      <label className="select-wrap">{color ? <ColorDot color={color as GeneralColor}/> : <Palette size={15}/>}<select aria-label="Filter by color" value={color} onChange={(event) => setColor(event.target.value)} data-testid="select-color-filter"><option value="">Every color</option>{generalColors.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select><ChevronDown size={14}/></label>
+      {filtered && <button className="clear-filters" onClick={clearFilters} data-testid="button-clear-stash-filters">Clear filters</button>}
+    </div>
+    <div className="catalog-result-caption">{query.data ? <><b>{query.data.length}</b> {query.data.length === 1 ? 'yarn' : 'yarns'}</> : null}</div>
+    {query.isLoading ? <div className="stash-grid">{[0, 1, 2, 3].map((item) => <div className="card-skeleton" key={item}/>)}</div>
+      : query.isError ? <QueryProblem retry={() => query.refetch()}/>
+      : query.data?.length ? <div className="stash-grid">{query.data.map((yarn) => <StashYarnCard key={yarn.id} yarn={yarn}/>)}</div>
+      : filtered ? <div className="no-results"><Search size={23}/><h3>No yarn matches</h3><p>Try a different search or clear a filter.</p><button className="button button-outline" onClick={clearFilters}>Reset filters</button></div>
+      : <div className="empty-projects"><h3>No yarn yet</h3><p>Add your first yarn to start your stash.</p><Link href="/stash/new" className="button button-primary" data-testid="link-add-first-yarn"><Plus size={16}/> Add yarn</Link></div>}
+  </PortalLayout>;
+}
+
+function useSettledValue(value: string, delay = 300): string {
+  const [settled, setSettled] = useState(value);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setSettled(value), delay);
+    return () => window.clearTimeout(timer);
+  }, [value, delay]);
+  return settled;
+}
+
+function DidYouMean({ suggestion, onAccept, testId }: { suggestion: string | null | undefined; onAccept: (value: string) => void; testId: string }) {
+  if (!suggestion) return null;
+  return <button type="button" className="did-you-mean" onClick={() => onAccept(suggestion)} data-testid={testId}>Did you mean <b>{suggestion}</b>?</button>;
+}
+
+type StashDraft = {
+  brand: string; subBrand: string; color: string; generalColor: GeneralColor | null; weight: YarnWeight | null;
+  blend: BlendDraft; brandLink: string; skeinsPurchased: string; skeinsLeft: string;
+};
+
+const emptyStashDraft: StashDraft = { brand: '', subBrand: '', color: '', generalColor: null, weight: null, blend: [], brandLink: '', skeinsPurchased: '', skeinsLeft: '' };
+
+function draftFromYarn(yarn: StashYarn): StashDraft {
+  return {
+    brand: yarn.brand, subBrand: yarn.subBrand ?? '', color: yarn.color ?? '', generalColor: yarn.generalColor, weight: yarn.weight,
+    blend: yarn.blend.map((part) => ({ fiber: part.fiber, percent: String(part.percent) })), brandLink: yarn.brandLink ?? '',
+    skeinsPurchased: yarn.skeinsPurchased === null ? '' : String(yarn.skeinsPurchased),
+    skeinsLeft: yarn.skeinsLeft === null ? '' : String(yarn.skeinsLeft),
+  };
+}
+
+function skeinsForApi(value: string): number | null | 'invalid' {
+  if (!value.trim()) return null;
+  const number = Number(value);
+  return Number.isFinite(number) && number >= 0 && number <= 999 && Number.isInteger(number * 2) ? number : 'invalid';
+}
+
+function StashYarnFormPage({ yarnId }: { yarnId?: string }) {
+  const existing = useGetStashYarn(yarnId ?? '', { query: { enabled: Boolean(yarnId), queryKey: getGetStashYarnQueryKey(yarnId ?? '') } });
+  if (yarnId && existing.isLoading) return <PortalLayout active="stash"><LoadingScreen label="Finding this yarn…"/></PortalLayout>;
+  if (yarnId && (existing.isError || !existing.data)) return <PortalLayout active="stash"><QueryProblem retry={() => existing.refetch()} message="We couldn’t find this yarn."/></PortalLayout>;
+  return <StashYarnForm yarn={existing.data} key={existing.data?.id ?? 'new'}/>;
+}
+
+function StashYarnForm({ yarn }: { yarn?: StashYarn }) {
+  const [, setLocation] = useLocation();
+  const client = useQueryClient();
+  const create = useCreateStashYarn();
+  const update = useUpdateStashYarn();
+  const remove = useDeleteStashYarn();
+  const [draft, setDraft] = useState<StashDraft>(() => yarn ? draftFromYarn(yarn) : emptyStashDraft);
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState('');
+  const [errors, setErrors] = useState<Partial<Record<'brand' | 'photo' | 'blend' | 'link' | 'skeins' | 'save', string>>>({});
+  const [saving, setSaving] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const errorFor: Partial<Record<keyof StashDraft, keyof typeof errors>> = { brand: 'brand', blend: 'blend', brandLink: 'link', skeinsPurchased: 'skeins', skeinsLeft: 'skeins' };
+  const set = (change: Partial<StashDraft>) => {
+    setDraft((current) => ({ ...current, ...change }));
+    const cleared = Object.keys(change).map((key) => errorFor[key as keyof StashDraft]).filter(Boolean);
+    if (cleared.length) setErrors((current) => Object.fromEntries(Object.entries(current).filter(([key]) => !cleared.includes(key as keyof typeof errors))));
+  };
+
+  useEffect(() => {
+    if (!photo) { setPhotoPreview(''); return; }
+    const preview = URL.createObjectURL(photo);
+    setPhotoPreview(preview);
+    return () => URL.revokeObjectURL(preview);
+  }, [photo]);
+
+  const catalogParams = {
+    brand: useSettledValue(draft.brand.trim()),
+    subBrand: useSettledValue(draft.subBrand.trim()),
+    color: useSettledValue(draft.color.trim()),
+  };
+  const catalog = useGetYarnCatalog(catalogParams, { query: { queryKey: getGetYarnCatalogQueryKey(catalogParams), placeholderData: (previous) => previous } });
+  const fibers = catalog.data?.fibers ?? [];
+
+  // Picking a sub brand or color the catalog already knows fills in what the
+  // first maker saved, without overwriting anything typed here.
+  useEffect(() => {
+    const line = catalog.data?.subBrands.find((item) => item.name === draft.subBrand);
+    if (!line) return;
+    setDraft((current) => ({
+      ...current,
+      blend: current.blend.length ? current.blend : line.blend.map((part) => ({ fiber: part.fiber, percent: String(part.percent) })),
+      brandLink: current.brandLink || line.link || '',
+    }));
+  }, [catalog.data?.subBrands, draft.subBrand]);
+  useEffect(() => {
+    const color = catalog.data?.colors.find((item) => item.name === draft.color);
+    if (color?.generalColor) setDraft((current) => current.generalColor ? current : { ...current, generalColor: color.generalColor });
+  }, [catalog.data?.colors, draft.color]);
+
+  const done = () => {
+    void client.invalidateQueries({ queryKey: getGetStashYarnsQueryKey() });
+    if (yarn) void client.invalidateQueries({ queryKey: getGetStashYarnQueryKey(yarn.id) });
+    setLocation('/stash');
+  };
+
+  const save = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const nextErrors: typeof errors = {};
+    if (!draft.brand.trim()) nextErrors.brand = 'Enter the yarn’s brand.';
+    if (!photo && !yarn) nextErrors.photo = 'Add a photo of this yarn.';
+    if (photo && photo.size > 10 * 1024 * 1024) nextErrors.photo = 'Choose a photo smaller than 10 MB.';
+    if (photo && !['image/jpeg', 'image/png', 'image/webp'].includes(photo.type)) nextErrors.photo = 'Choose a JPEG, PNG, or WebP photo.';
+    const blend = blendForApi(draft.blend);
+    if (typeof blend === 'string') nextErrors.blend = blend;
+    const brandLink = draft.brandLink.trim();
+    if (brandLink && !isHttpWebsiteUrl(brandLink)) nextErrors.link = 'Enter a link starting with http:// or https://.';
+    const skeinsPurchased = skeinsForApi(draft.skeinsPurchased);
+    const skeinsLeft = skeinsForApi(draft.skeinsLeft);
+    if (skeinsPurchased === 'invalid' || skeinsLeft === 'invalid') nextErrors.skeins = 'Enter skeins in whole or half skeins, like 3 or 2.5.';
+    else if (skeinsLeft !== null && skeinsPurchased !== null && skeinsLeft > skeinsPurchased) nextErrors.skeins = 'Skeins left can’t be more than skeins purchased.';
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length || typeof blend === 'string' || skeinsPurchased === 'invalid' || skeinsLeft === 'invalid') return;
+
+    setSaving(true);
+    try {
+      let photoPath = yarn?.photoPath;
+      if (photo) {
+        const contentType = photo.type as 'image/jpeg' | 'image/png' | 'image/webp';
+        const upload = await requestStashPhotoUpload({ name: photo.name || 'yarn-photo', size: photo.size, contentType });
+        const uploaded = await fetch(upload.uploadURL, { method: 'PUT', headers: { 'Content-Type': contentType }, body: photo });
+        if (!uploaded.ok) throw new Error('The photo upload did not finish.');
+        photoPath = upload.photoPath;
+      }
+      const data = {
+        brand: draft.brand.trim(), subBrand: draft.subBrand.trim() || null, color: draft.color.trim() || null,
+        generalColor: draft.generalColor, weight: draft.weight, blend, brandLink: brandLink || null,
+        photoPath: photoPath!, skeinsPurchased, skeinsLeft,
+      };
+      const options = {
+        onSuccess: done,
+        onError: (error: unknown) => setErrors({ save: (error as { data?: { error?: string } })?.data?.error ?? 'We couldn’t save this yarn just now. Please try again.' }),
+        onSettled: () => setSaving(false),
+      };
+      if (yarn) update.mutate({ yarnId: yarn.id, data }, options);
+      else create.mutate({ data }, options);
+    } catch {
+      setErrors({ photo: 'We couldn’t upload that photo. Please try again.' });
+      setSaving(false);
+    }
+  };
+
+  const deleteYarn = () => yarn && remove.mutate({ yarnId: yarn.id }, { onSuccess: done });
+  const photoShown = photoPreview || (yarn ? stashPhotoUrl(yarn) : '');
+
+  return <PortalLayout active="stash">
+    <Link href="/stash" className="back-link" data-testid="link-back-stash"><ArrowLeft size={16}/> Back to stash</Link>
+    <PageHeading title={yarn ? yarnName(yarn) : 'Add yarn'} action={yarn ? <button className="icon-button danger-icon" aria-label="Delete yarn" title="Delete yarn" onClick={() => setConfirmDelete(true)} data-testid="button-delete-yarn"><Trash2 size={17}/></button> : undefined}/>
+    {confirmDelete && <div className="confirm-banner"><div><b>Remove this yarn from your stash?</b><span>Its photo will be deleted too.</span></div><button className="button button-quiet" onClick={() => setConfirmDelete(false)}>Cancel</button><button className="button button-danger" onClick={deleteYarn} disabled={remove.isPending} data-testid="button-confirm-delete-yarn">{remove.isPending ? 'Removing…' : 'Remove yarn'}</button></div>}
+    <form className="project-form loom-card" onSubmit={save} noValidate>
+      <div className="stash-form-top">
+        <div className="field-block stash-photo-field">
+          <label htmlFor="stash-photo">Photo <b>*</b></label>
+          <label className={`stash-photo-picker${photoShown ? ' has-photo' : ''}`} htmlFor="stash-photo">
+            {photoShown ? <img src={photoShown} alt="Yarn photo"/> : <span><Camera size={22}/>Add a photo</span>}
+            <ColorDot color={draft.generalColor} className="stash-photo-dot"/>
+          </label>
+          <input id="stash-photo" className="visually-hidden" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { setPhoto(event.target.files?.[0] ?? null); setErrors(({ photo: _photo, ...rest }) => rest); }} data-testid="input-stash-photo"/>
+          {photoShown && <label htmlFor="stash-photo" className="stash-photo-change">Change photo</label>}
+          {errors.photo && <span className="field-error">{errors.photo}</span>}
+        </div>
+        <div className="stash-names">
+          <div className="field-block"><label htmlFor="stash-brand">Brand <b>*</b></label><input id="stash-brand" list="stash-brand-options" maxLength={80} placeholder="e.g. Lion Brand" value={draft.brand} onChange={(event) => set({ brand: event.target.value })} autoComplete="off" data-testid="input-stash-brand"/><datalist id="stash-brand-options">{catalog.data?.brands.map((name) => <option key={name} value={name}/>)}</datalist><DidYouMean suggestion={catalog.data?.suggestions.brand} onAccept={(brand) => set({ brand })} testId="button-did-you-mean-brand"/>{errors.brand && <span className="field-error">{errors.brand}</span>}</div>
+          <div className="field-block"><label htmlFor="stash-sub-brand">Sub brand</label><input id="stash-sub-brand" list="stash-sub-brand-options" maxLength={80} placeholder="e.g. Wool-Ease" value={draft.subBrand} onChange={(event) => set({ subBrand: event.target.value })} autoComplete="off" data-testid="input-stash-sub-brand"/><datalist id="stash-sub-brand-options">{catalog.data?.subBrands.map((line) => <option key={line.name} value={line.name}/>)}</datalist><DidYouMean suggestion={catalog.data?.suggestions.subBrand} onAccept={(subBrand) => set({ subBrand })} testId="button-did-you-mean-sub-brand"/></div>
+          <div className="field-block"><label htmlFor="stash-color">Color</label><input id="stash-color" list="stash-color-options" maxLength={80} placeholder="e.g. Fisherman" value={draft.color} onChange={(event) => set({ color: event.target.value })} autoComplete="off" data-testid="input-stash-color"/><datalist id="stash-color-options">{catalog.data?.colors.map((item) => <option key={item.name} value={item.name}/>)}</datalist><DidYouMean suggestion={catalog.data?.suggestions.color} onAccept={(color) => set({ color })} testId="button-did-you-mean-color"/></div>
+        </div>
+      </div>
+      <div className="form-grid stash-form-grid">
+        <GeneralColorPicker value={draft.generalColor} onChange={(generalColor) => set({ generalColor })}/>
+        <WeightWheelField value={draft.weight} onChange={(weight) => set({ weight })}/>
+        <div className="field-block"><label htmlFor="stash-link">Brand page link</label><input id="stash-link" type="url" placeholder="https://" value={draft.brandLink} onChange={(event) => set({ brandLink: event.target.value })} data-testid="input-stash-link"/>{errors.link && <span className="field-error">{errors.link}</span>}</div>
+        <BlendFields value={draft.blend} onChange={(blend) => set({ blend })} fibers={fibers} error={errors.blend ?? ''}/>
+        <div className="field-block"><label htmlFor="stash-skeins-purchased">Skeins purchased</label><input id="stash-skeins-purchased" inputMode="decimal" placeholder="e.g. 4" value={draft.skeinsPurchased} onChange={(event) => set({ skeinsPurchased: event.target.value })} data-testid="input-skeins-purchased"/></div>
+        <div className="field-block"><label htmlFor="stash-skeins-left">Skeins left</label><input id="stash-skeins-left" inputMode="decimal" placeholder={draft.skeinsPurchased || 'Same as purchased'} value={draft.skeinsLeft} onChange={(event) => set({ skeinsLeft: event.target.value })} data-testid="input-skeins-left"/></div>
+        {errors.skeins && <span className="field-error field-wide">{errors.skeins}</span>}
+      </div>
+      {errors.save && <p className="mutation-error" role="alert">{errors.save}</p>}
+      <div className="form-actions"><Link href="/stash" className="button button-quiet">Cancel</Link><button type="submit" className="button button-primary" disabled={saving} data-testid="button-save-yarn">{saving ? 'Saving…' : yarn ? 'Save changes' : 'Add to stash'}{!saving && <ArrowRight size={16}/>}</button></div>
+    </form>
+  </PortalLayout>;
+}
+
 function AuthCacheRouter() {
   const [, setLocation] = useLocation();
   return <ClerkProvider
@@ -938,6 +1187,9 @@ function AuthCacheRouter() {
         <Route path="/dashboard"><PrivateRoute><DashboardPage/></PrivateRoute></Route>
         <Route path="/projects"><PrivateRoute><ProjectsPage/></PrivateRoute></Route>
         <Route path="/projects/new"><PrivateRoute><ProjectFormPage/></PrivateRoute></Route>
+        <Route path="/stash"><PrivateRoute><StashPage/></PrivateRoute></Route>
+        <Route path="/stash/new"><PrivateRoute><StashYarnFormPage/></PrivateRoute></Route>
+        <Route path="/stash/:yarnId">{(params) => <PrivateRoute><StashYarnFormPage yarnId={params.yarnId}/></PrivateRoute>}</Route>
         <Route path="/projects/:projectId">{(params) => <PrivateRoute><ProjectDetailPage projectId={params.projectId}/></PrivateRoute>}</Route>
         <Route component={NotFound}/>
       </Switch>

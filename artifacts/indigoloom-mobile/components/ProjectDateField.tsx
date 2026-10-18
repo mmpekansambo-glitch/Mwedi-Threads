@@ -11,7 +11,7 @@ const monthNames = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
-const ITEM_HEIGHT = 44;
+export const ITEM_HEIGHT = 44;
 const NO_DAY = '—';
 const pad2 = (value: number) => String(value).padStart(2, '0');
 const daysIn = (year: number, monthIndex: number) => new Date(year, monthIndex + 1, 0).getDate();
@@ -48,7 +48,7 @@ export function formatProjectDate(
     : `${month}/${day}/${year.slice(-2)}`;
 }
 
-function Wheel({ label, items, index, onChange, flex, testID }: {
+export function Wheel({ label, items, index, onChange, flex, testID }: {
   label: string;
   items: string[];
   index: number;

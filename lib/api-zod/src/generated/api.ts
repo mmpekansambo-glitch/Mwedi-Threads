@@ -591,3 +591,290 @@ export const DeleteProgressPhotoParams = zod.object({
 export const DeleteProgressPhotoResponse = zod.void()
 
 
+/**
+ * @summary List the yarn in the signed-in user's stash
+ */
+export const GetStashYarnsQueryParams = zod.object({
+  "search": zod.coerce.string().optional().describe('Matches brand, sub brand, color or fiber'),
+  "weight": zod.enum(['lace', 'fingering', 'sport', 'dk', 'worsted', 'bulky', 'super_bulky', 'jumbo']).optional(),
+  "generalColor": zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']).optional()
+})
+
+export const getStashYarnsResponseBlendItemFiberMax = 40;
+
+export const getStashYarnsResponseBlendItemPercentMax = 100;
+
+
+
+export const GetStashYarnsResponseItem = zod.object({
+  "id": zod.string().uuid(),
+  "brand": zod.string(),
+  "subBrand": zod.string().nullable(),
+  "color": zod.string().nullable(),
+  "generalColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]),
+  "weight": zod.union([zod.enum(['lace', 'fingering', 'sport', 'dk', 'worsted', 'bulky', 'super_bulky', 'jumbo']),zod.null()]),
+  "blend": zod.array(zod.object({
+  "fiber": zod.string().min(1).max(getStashYarnsResponseBlendItemFiberMax),
+  "percent": zod.number().int().min(1).max(getStashYarnsResponseBlendItemPercentMax)
+})),
+  "brandLink": zod.string().nullable(),
+  "photoPath": zod.string(),
+  "skeinsPurchased": zod.number().nullable(),
+  "skeinsLeft": zod.number().nullable(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const GetStashYarnsResponse = zod.array(GetStashYarnsResponseItem)
+
+
+/**
+ * @summary Add a yarn to the stash
+ */
+export const createStashYarnBodyBrandMax = 80;
+
+export const createStashYarnBodySubBrandMax = 80;
+
+export const createStashYarnBodyColorMax = 80;
+
+export const createStashYarnBodyBlendItemFiberMax = 40;
+
+export const createStashYarnBodyBlendItemPercentMax = 100;
+
+export const createStashYarnBodyBlendMax = 6;
+
+export const createStashYarnBodyBrandLinkMax = 500;
+
+export const createStashYarnBodySkeinsPurchasedMin = 0;
+export const createStashYarnBodySkeinsPurchasedMax = 999;
+
+export const createStashYarnBodySkeinsLeftMin = 0;
+export const createStashYarnBodySkeinsLeftMax = 999;
+
+
+
+export const CreateStashYarnBody = zod.object({
+  "brand": zod.string().min(1).max(createStashYarnBodyBrandMax),
+  "subBrand": zod.string().max(createStashYarnBodySubBrandMax).nullish(),
+  "color": zod.string().max(createStashYarnBodyColorMax).nullish(),
+  "generalColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]).optional(),
+  "weight": zod.union([zod.enum(['lace', 'fingering', 'sport', 'dk', 'worsted', 'bulky', 'super_bulky', 'jumbo']),zod.null()]).optional(),
+  "blend": zod.array(zod.object({
+  "fiber": zod.string().min(1).max(createStashYarnBodyBlendItemFiberMax),
+  "percent": zod.number().int().min(1).max(createStashYarnBodyBlendItemPercentMax)
+})).max(createStashYarnBodyBlendMax).optional(),
+  "brandLink": zod.string().max(createStashYarnBodyBrandLinkMax).nullish(),
+  "photoPath": zod.string(),
+  "skeinsPurchased": zod.number().min(createStashYarnBodySkeinsPurchasedMin).max(createStashYarnBodySkeinsPurchasedMax).nullish(),
+  "skeinsLeft": zod.number().min(createStashYarnBodySkeinsLeftMin).max(createStashYarnBodySkeinsLeftMax).nullish()
+})
+
+export const createStashYarnResponseBlendItemFiberMax = 40;
+
+export const createStashYarnResponseBlendItemPercentMax = 100;
+
+
+
+export const CreateStashYarnResponse = zod.object({
+  "id": zod.string().uuid(),
+  "brand": zod.string(),
+  "subBrand": zod.string().nullable(),
+  "color": zod.string().nullable(),
+  "generalColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]),
+  "weight": zod.union([zod.enum(['lace', 'fingering', 'sport', 'dk', 'worsted', 'bulky', 'super_bulky', 'jumbo']),zod.null()]),
+  "blend": zod.array(zod.object({
+  "fiber": zod.string().min(1).max(createStashYarnResponseBlendItemFiberMax),
+  "percent": zod.number().int().min(1).max(createStashYarnResponseBlendItemPercentMax)
+})),
+  "brandLink": zod.string().nullable(),
+  "photoPath": zod.string(),
+  "skeinsPurchased": zod.number().nullable(),
+  "skeinsLeft": zod.number().nullable(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Request a private upload URL for a stash yarn photo
+ */
+export const requestStashPhotoUploadBodyNameMax = 255;
+
+export const requestStashPhotoUploadBodySizeMax = 10485760;
+
+
+
+export const RequestStashPhotoUploadBody = zod.object({
+  "name": zod.string().min(1).max(requestStashPhotoUploadBodyNameMax),
+  "size": zod.number().int().min(1).max(requestStashPhotoUploadBodySizeMax),
+  "contentType": zod.enum(['image/jpeg', 'image/png', 'image/webp'])
+})
+
+export const RequestStashPhotoUploadResponse = zod.object({
+  "uploadURL": zod.string().url(),
+  "photoPath": zod.string()
+})
+
+
+/**
+ * @summary Get one yarn from the stash
+ */
+export const GetStashYarnParams = zod.object({
+  "yarnId": zod.coerce.string().uuid()
+})
+
+export const getStashYarnResponseBlendItemFiberMax = 40;
+
+export const getStashYarnResponseBlendItemPercentMax = 100;
+
+
+
+export const GetStashYarnResponse = zod.object({
+  "id": zod.string().uuid(),
+  "brand": zod.string(),
+  "subBrand": zod.string().nullable(),
+  "color": zod.string().nullable(),
+  "generalColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]),
+  "weight": zod.union([zod.enum(['lace', 'fingering', 'sport', 'dk', 'worsted', 'bulky', 'super_bulky', 'jumbo']),zod.null()]),
+  "blend": zod.array(zod.object({
+  "fiber": zod.string().min(1).max(getStashYarnResponseBlendItemFiberMax),
+  "percent": zod.number().int().min(1).max(getStashYarnResponseBlendItemPercentMax)
+})),
+  "brandLink": zod.string().nullable(),
+  "photoPath": zod.string(),
+  "skeinsPurchased": zod.number().nullable(),
+  "skeinsLeft": zod.number().nullable(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Change a yarn in the stash
+ */
+export const UpdateStashYarnParams = zod.object({
+  "yarnId": zod.coerce.string().uuid()
+})
+
+export const updateStashYarnBodyBrandMax = 80;
+
+export const updateStashYarnBodySubBrandMax = 80;
+
+export const updateStashYarnBodyColorMax = 80;
+
+export const updateStashYarnBodyBlendItemFiberMax = 40;
+
+export const updateStashYarnBodyBlendItemPercentMax = 100;
+
+export const updateStashYarnBodyBlendMax = 6;
+
+export const updateStashYarnBodyBrandLinkMax = 500;
+
+export const updateStashYarnBodySkeinsPurchasedMin = 0;
+export const updateStashYarnBodySkeinsPurchasedMax = 999;
+
+export const updateStashYarnBodySkeinsLeftMin = 0;
+export const updateStashYarnBodySkeinsLeftMax = 999;
+
+
+
+export const UpdateStashYarnBody = zod.object({
+  "brand": zod.string().min(1).max(updateStashYarnBodyBrandMax).optional(),
+  "subBrand": zod.string().max(updateStashYarnBodySubBrandMax).nullish(),
+  "color": zod.string().max(updateStashYarnBodyColorMax).nullish(),
+  "generalColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]).optional(),
+  "weight": zod.union([zod.enum(['lace', 'fingering', 'sport', 'dk', 'worsted', 'bulky', 'super_bulky', 'jumbo']),zod.null()]).optional(),
+  "blend": zod.array(zod.object({
+  "fiber": zod.string().min(1).max(updateStashYarnBodyBlendItemFiberMax),
+  "percent": zod.number().int().min(1).max(updateStashYarnBodyBlendItemPercentMax)
+})).max(updateStashYarnBodyBlendMax).optional(),
+  "brandLink": zod.string().max(updateStashYarnBodyBrandLinkMax).nullish(),
+  "photoPath": zod.string().optional(),
+  "skeinsPurchased": zod.number().min(updateStashYarnBodySkeinsPurchasedMin).max(updateStashYarnBodySkeinsPurchasedMax).nullish(),
+  "skeinsLeft": zod.number().min(updateStashYarnBodySkeinsLeftMin).max(updateStashYarnBodySkeinsLeftMax).nullish()
+})
+
+export const updateStashYarnResponseBlendItemFiberMax = 40;
+
+export const updateStashYarnResponseBlendItemPercentMax = 100;
+
+
+
+export const UpdateStashYarnResponse = zod.object({
+  "id": zod.string().uuid(),
+  "brand": zod.string(),
+  "subBrand": zod.string().nullable(),
+  "color": zod.string().nullable(),
+  "generalColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]),
+  "weight": zod.union([zod.enum(['lace', 'fingering', 'sport', 'dk', 'worsted', 'bulky', 'super_bulky', 'jumbo']),zod.null()]),
+  "blend": zod.array(zod.object({
+  "fiber": zod.string().min(1).max(updateStashYarnResponseBlendItemFiberMax),
+  "percent": zod.number().int().min(1).max(updateStashYarnResponseBlendItemPercentMax)
+})),
+  "brandLink": zod.string().nullable(),
+  "photoPath": zod.string(),
+  "skeinsPurchased": zod.number().nullable(),
+  "skeinsLeft": zod.number().nullable(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Remove a yarn from the stash
+ */
+export const DeleteStashYarnParams = zod.object({
+  "yarnId": zod.coerce.string().uuid()
+})
+
+export const DeleteStashYarnResponse = zod.void()
+
+
+/**
+ * @summary View a stash yarn's photo
+ */
+export const GetStashYarnPhotoParams = zod.object({
+  "yarnId": zod.coerce.string().uuid()
+})
+
+export const GetStashYarnPhotoResponse = zod.void()
+
+
+/**
+ * Returns brands that match what was typed, the brand's sub brands, the sub brand's colors and the known fibers, plus a "Did you mean" name for any field that looks like a typo of an existing catalog name.
+ * @summary Look up the shared yarn catalog while filling in a stash yarn
+ */
+export const GetYarnCatalogQueryParams = zod.object({
+  "brand": zod.coerce.string().optional(),
+  "subBrand": zod.coerce.string().optional(),
+  "color": zod.coerce.string().optional()
+})
+
+export const getYarnCatalogResponseSubBrandsItemBlendItemFiberMax = 40;
+
+export const getYarnCatalogResponseSubBrandsItemBlendItemPercentMax = 100;
+
+
+
+export const GetYarnCatalogResponse = zod.object({
+  "brands": zod.array(zod.string()),
+  "subBrands": zod.array(zod.object({
+  "name": zod.string(),
+  "blend": zod.array(zod.object({
+  "fiber": zod.string().min(1).max(getYarnCatalogResponseSubBrandsItemBlendItemFiberMax),
+  "percent": zod.number().int().min(1).max(getYarnCatalogResponseSubBrandsItemBlendItemPercentMax)
+})),
+  "link": zod.string().nullable()
+})),
+  "colors": zod.array(zod.object({
+  "name": zod.string(),
+  "generalColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()])
+})),
+  "fibers": zod.array(zod.string()),
+  "suggestions": zod.object({
+  "brand": zod.string().nullable(),
+  "subBrand": zod.string().nullable(),
+  "color": zod.string().nullable()
+}).describe('A catalog name to offer as "Did you mean …?" for each field that looks like a typo.')
+})
+
+

@@ -20,3 +20,4 @@
 export * from "./users";
 export * from "./projects";
 export * from "./stars";
+export * from "./yarnStash";

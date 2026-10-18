@@ -562,3 +562,50 @@ a { color: inherit; text-decoration: none; }
   .field-wide { grid-column: auto; }
   .yarn-trifold { grid-template-columns: 1fr; }
 }
+
+/* Yarn stash */
+.visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.stash-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 15px; }
+.stash-card { display: block; min-width: 0; overflow: hidden; color: var(--evergreen); }
+.stash-photo { position: relative; display: block; aspect-ratio: 1; background: var(--lavender-wash); }
+.stash-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.color-dot { display: inline-block; width: 14px; height: 14px; flex: none; border-radius: 50%; border: 1px solid rgba(31,47,22,.18); }
+.stash-photo-dot { position: absolute; right: 10px; bottom: 10px; width: 22px; height: 22px; border: 2px solid var(--white); box-shadow: 0 2px 6px rgba(31,47,22,.25); }
+.stash-card-body { display: grid; gap: 3px; padding: 12px 14px 14px; }
+.stash-card-body h3 { font: 500 19px/1.2 var(--app-font-serif); margin: 0; overflow-wrap: anywhere; }
+.stash-card-body p { margin: 0; color: var(--slate-deep); font-size: 14px; }
+.stash-card-meta,.stash-card-skeins { color: var(--slate); font-size: 13px; }
+.stash-card-skeins { font-weight: 600; color: var(--granite); }
+.stash-form-top { display: grid; grid-template-columns: 200px 1fr; gap: 22px; margin-bottom: 18px; }
+.stash-names { display: grid; gap: 14px; align-content: start; }
+.stash-photo-picker { position: relative; display: grid; place-items: center; aspect-ratio: 1; border: 1px dashed var(--lavender-deep); border-radius: 12px; background: var(--lavender-wash); overflow: hidden; cursor: pointer; color: var(--slate); }
+.stash-photo-picker.has-photo { border-style: solid; border-color: var(--lavender-soft); }
+.stash-photo-picker img { width: 100%; height: 100%; object-fit: cover; }
+.stash-photo-picker > span:not(.color-dot) { display: grid; justify-items: center; gap: 6px; font-size: 14px; font-weight: 600; }
+.stash-photo-field .stash-photo-picker { font-weight: 600; }
+.stash-photo-change { justify-self: start; color: var(--granite) !important; cursor: pointer; }
+.did-you-mean { justify-self: start; border: 0; padding: 4px 10px; border-radius: 99px; background: var(--powder-wash); color: var(--slate-deep); font-size: 13px; cursor: pointer; }
+.did-you-mean b { color: var(--evergreen); }
+.did-you-mean:hover { background: var(--lavender-soft); }
+.color-picker { display: flex; flex-wrap: wrap; gap: 8px; }
+.color-choice { width: 34px; height: 34px; display: grid; place-items: center; padding: 0; border-radius: 50%; border: 2px solid transparent; background: transparent; cursor: pointer; }
+.color-choice span { width: 24px; height: 24px; border-radius: 50%; border: 1px solid rgba(31,47,22,.18); }
+.color-choice.selected { border-color: var(--granite); }
+.color-choice:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(57,91,80,.2); }
+.weight-wheels { grid-template-columns: 1fr; }
+.blend-row { display: grid; grid-template-columns: 1fr 96px 40px; gap: 8px; align-items: center; }
+.blend-percent { position: relative; display: block; }
+.blend-percent input { padding-right: 28px !important; text-align: right; }
+.blend-percent i { position: absolute; right: 11px; top: 50%; transform: translateY(-50%); font-style: normal; color: var(--slate); font-size: 14px; }
+.blend-remove { height: 40px; display: grid; place-items: center; border: 1px solid var(--lavender-soft); border-radius: 7px; background: var(--white); color: var(--slate); cursor: pointer; }
+.blend-remove:hover { color: #a3413f; }
+.blend-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.blend-foot .button { padding: 0 8px; }
+.blend-total { margin-left: auto; color: var(--granite); font-size: 13px; font-weight: 700; }
+.blend-total.off { color: #a3413f; }
+@media (max-width: 1080px) { .stash-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 767px) {
+  .stash-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; }
+  .stash-form-top { grid-template-columns: 1fr; }
+  .stash-photo-field { max-width: 220px; }
+}
