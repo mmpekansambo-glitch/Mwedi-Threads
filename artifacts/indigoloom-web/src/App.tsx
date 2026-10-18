@@ -153,7 +153,7 @@ function Landing() {
 }
 
 function SignInPage() {
-  return <div className="auth-screen paper-grain"><div className="auth-ornament"><Brand/><p>A softer place to pick up<br/>where you left off.</p><span className="auth-thread"/></div><div className="auth-panel"><SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} /></div></div>;
+  return <div className="auth-screen paper-grain"><div className="auth-ornament"><Brand/><p>A softer place to pick up<br/>where you left off.</p></div><div className="auth-panel"><SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} /></div></div>;
 }
 function SignUpPage() {
   const { signUp } = useSignUp();
@@ -185,7 +185,7 @@ function SignUpPage() {
     trackEvent('account_completed');
   }, [signUp?.createdSessionId, signUp?.status]);
 
-  return <div className="auth-screen paper-grain"><div className="auth-ornament"><Brand/><p>Make room for all the<br/>things you're dreaming up.</p><span className="auth-thread"/></div><div className="auth-panel"><SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} /></div></div>;
+  return <div className="auth-screen paper-grain"><div className="auth-ornament"><Brand/><p>Make room for all the<br/>things you're dreaming up.</p></div><div className="auth-panel"><SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} /></div></div>;
 }
 
 function ClerkCacheInvalidator() {
