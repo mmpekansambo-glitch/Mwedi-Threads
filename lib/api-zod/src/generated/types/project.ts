@@ -7,6 +7,9 @@
  */
 import type { CraftType } from './craftType';
 import type { CrochetHookSize } from './crochetHookSize';
+import type { KnittingNeedleSize } from './knittingNeedleSize';
+import type { KnittingNeedleType } from './knittingNeedleType';
+import type { NeedleCableLength } from './needleCableLength';
 import type { ProgressMethod } from './progressMethod';
 import type { ProgressSection } from './progressSection';
 import type { ProjectDatePrecision } from './projectDatePrecision';
@@ -41,6 +44,12 @@ export interface Project {
   /** @nullable */
   tools: string | null;
   hookSize: CrochetHookSize | null;
+  needleSize: KnittingNeedleSize | null;
+  needleType: KnittingNeedleType | null;
+  needleCableLength: NeedleCableLength | null;
+  secondNeedleSize: KnittingNeedleSize | null;
+  secondNeedleType: KnittingNeedleType | null;
+  secondNeedleCableLength: NeedleCableLength | null;
   /** @nullable */
   startedAt: Date | null;
   startedAtPrecision: ProjectDatePrecision;

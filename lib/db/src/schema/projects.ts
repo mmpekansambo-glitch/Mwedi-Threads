@@ -53,6 +53,13 @@ export const projectsTable = pgTable("projects", {
   yarnColor: text("yarn_color"),
   tools: text("tools"),
   hookSize: text("hook_size"),
+  // Knitting: a main needle and an optional second one (e.g. for ribbing).
+  needleSize: text("needle_size"),
+  needleType: text("needle_type"),
+  needleCableLength: text("needle_cable_length"),
+  secondNeedleSize: text("second_needle_size"),
+  secondNeedleType: text("second_needle_type"),
+  secondNeedleCableLength: text("second_needle_cable_length"),
   startedAt: date("started_at", { mode: "string" }),
   startedAtPrecision: projectDatePrecisionEnum("started_at_precision")
     .notNull()

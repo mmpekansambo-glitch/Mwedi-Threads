@@ -7,6 +7,7 @@ function project(overrides: Record<string, unknown> = {}) {
     id: projectId, title: "Raglan sweater", craft: "knitting", status: "in_progress",
     description: null, patternName: null, patternDesigner: null, designerWebsite: null, designerPageTitle: null,
     yarn: null, yarnBrand: null, yarnType: null, yarnColor: null, tools: null, hookSize: null,
+    needleSize: null, needleType: null, needleCableLength: null, secondNeedleSize: null, secondNeedleType: null, secondNeedleCableLength: null,
     startedAt: null, startedAtPrecision: "day", targetDate: null, targetDatePrecision: "day",
     completedAt: null, completedAtPrecision: "day", starred: false,
     progressMethod: "estimate", progressTotal: null, progressSections: [],

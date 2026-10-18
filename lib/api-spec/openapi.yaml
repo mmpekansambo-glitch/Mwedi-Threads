@@ -414,6 +414,48 @@ components:
         - "16 mm (US Q, UK/Canada —)"
         - "19 mm (US S, UK/Canada —)"
         - "25 mm (US T/U/X, UK/Canada —)"
+    KnittingNeedleSize:
+      type: string
+      enum:
+        - "2.0 mm (US 0, UK/Canada 14)"
+        - "2.25 mm (US 1, UK/Canada 13)"
+        - "2.5 mm (US 1.5, UK/Canada —)"
+        - "2.75 mm (US 2, UK/Canada 12)"
+        - "3.0 mm (US 2.5, UK/Canada 11)"
+        - "3.25 mm (US 3, UK/Canada 10)"
+        - "3.5 mm (US 4, UK/Canada —)"
+        - "3.75 mm (US 5, UK/Canada 9)"
+        - "4.0 mm (US 6, UK/Canada 8)"
+        - "4.5 mm (US 7, UK/Canada 7)"
+        - "5.0 mm (US 8, UK/Canada 6)"
+        - "5.5 mm (US 9, UK/Canada 5)"
+        - "6.0 mm (US 10, UK/Canada 4)"
+        - "6.5 mm (US 10.5, UK/Canada 3)"
+        - "7.0 mm (US —, UK/Canada 2)"
+        - "7.5 mm (US —, UK/Canada 1)"
+        - "8.0 mm (US 11, UK/Canada 0)"
+        - "9.0 mm (US 13, UK/Canada 00)"
+        - "10.0 mm (US 15, UK/Canada 000)"
+        - "12–12.75 mm (US 17, UK/Canada —)"
+        - "15–16 mm (US 19, UK/Canada —)"
+        - "19 mm (US 35, UK/Canada —)"
+        - "20 mm (US 36, UK/Canada —)"
+        - "25 mm (US 50, UK/Canada —)"
+    KnittingNeedleType:
+      type: string
+      enum: [straight, circular, double_pointed, interchangeable]
+    NeedleCableLength:
+      type: string
+      description: Cable length for circular and interchangeable needles.
+      enum:
+        - "23 cm (9 in)"
+        - "30 cm (12 in)"
+        - "40 cm (16 in)"
+        - "60 cm (24 in)"
+        - "80 cm (32 in)"
+        - "100 cm (40 in)"
+        - "120 cm (47 in)"
+        - "150 cm (60 in)"
     Project:
       type: object
       properties:
@@ -451,6 +493,30 @@ components:
         hookSize:
           anyOf:
             - $ref: "#/components/schemas/CrochetHookSize"
+            - type: "null"
+        needleSize:
+          anyOf:
+            - $ref: "#/components/schemas/KnittingNeedleSize"
+            - type: "null"
+        needleType:
+          anyOf:
+            - $ref: "#/components/schemas/KnittingNeedleType"
+            - type: "null"
+        needleCableLength:
+          anyOf:
+            - $ref: "#/components/schemas/NeedleCableLength"
+            - type: "null"
+        secondNeedleSize:
+          anyOf:
+            - $ref: "#/components/schemas/KnittingNeedleSize"
+            - type: "null"
+        secondNeedleType:
+          anyOf:
+            - $ref: "#/components/schemas/KnittingNeedleType"
+            - type: "null"
+        secondNeedleCableLength:
+          anyOf:
+            - $ref: "#/components/schemas/NeedleCableLength"
             - type: "null"
         startedAt:
           type: [string, "null"]
@@ -507,6 +573,12 @@ components:
         - yarnColor
         - tools
         - hookSize
+        - needleSize
+        - needleType
+        - needleCableLength
+        - secondNeedleSize
+        - secondNeedleType
+        - secondNeedleCableLength
         - startedAt
         - startedAtPrecision
         - targetDate
@@ -567,6 +639,30 @@ components:
           anyOf:
             - $ref: "#/components/schemas/CrochetHookSize"
             - type: "null"
+        needleSize:
+          anyOf:
+            - $ref: "#/components/schemas/KnittingNeedleSize"
+            - type: "null"
+        needleType:
+          anyOf:
+            - $ref: "#/components/schemas/KnittingNeedleType"
+            - type: "null"
+        needleCableLength:
+          anyOf:
+            - $ref: "#/components/schemas/NeedleCableLength"
+            - type: "null"
+        secondNeedleSize:
+          anyOf:
+            - $ref: "#/components/schemas/KnittingNeedleSize"
+            - type: "null"
+        secondNeedleType:
+          anyOf:
+            - $ref: "#/components/schemas/KnittingNeedleType"
+            - type: "null"
+        secondNeedleCableLength:
+          anyOf:
+            - $ref: "#/components/schemas/NeedleCableLength"
+            - type: "null"
         startedAt:
           type: [string, "null"]
           format: date
@@ -626,6 +722,30 @@ components:
         hookSize:
           anyOf:
             - $ref: "#/components/schemas/CrochetHookSize"
+            - type: "null"
+        needleSize:
+          anyOf:
+            - $ref: "#/components/schemas/KnittingNeedleSize"
+            - type: "null"
+        needleType:
+          anyOf:
+            - $ref: "#/components/schemas/KnittingNeedleType"
+            - type: "null"
+        needleCableLength:
+          anyOf:
+            - $ref: "#/components/schemas/NeedleCableLength"
+            - type: "null"
+        secondNeedleSize:
+          anyOf:
+            - $ref: "#/components/schemas/KnittingNeedleSize"
+            - type: "null"
+        secondNeedleType:
+          anyOf:
+            - $ref: "#/components/schemas/KnittingNeedleType"
+            - type: "null"
+        secondNeedleCableLength:
+          anyOf:
+            - $ref: "#/components/schemas/NeedleCableLength"
             - type: "null"
         startedAt:
           type: [string, "null"]

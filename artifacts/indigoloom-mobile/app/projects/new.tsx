@@ -1,6 +1,7 @@
 import { useCreateProject, usePreviewDesignerWebsiteTitle, getGetDashboardQueryKey, getGetProjectsQueryKey } from '@workspace/api-client-react';
 import type { CreateProject } from '@workspace/api-client-react';
 import { HookSizePicker, type CrochetHookSizeValue } from '@/components/HookSizePicker';
+import { NeedleFields, emptyNeedles, needlesForApi, type NeedlesDraft } from '@/components/NeedleFields';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
@@ -31,8 +32,8 @@ export default function NewProjectScreen() {
   const [yarnBrand, setYarnBrand] = useState('');
   const [yarnType, setYarnType] = useState('');
   const [yarnColor, setYarnColor] = useState('');
-  const [tools, setTools] = useState('');
   const [hookSize, setHookSize] = useState<CrochetHookSizeValue | null>(null);
+  const [needles, setNeedles] = useState<NeedlesDraft>(emptyNeedles);
   const [startedAt, setStartedAt] = useState('');
   const [startedAtPrecision, setStartedAtPrecision] = useState<ProjectDatePrecision>('day');
   const [targetDate, setTargetDate] = useState('');
@@ -85,8 +86,9 @@ export default function NewProjectScreen() {
       yarnBrand: yarnBrand.trim() || null,
       yarnType: yarnType.trim() || null,
       yarnColor: yarnColor.trim() || null,
-      tools: tools.trim() || null,
+      tools: null,
       hookSize: craft === 'crochet' ? hookSize : null,
+      ...needlesForApi(needles, craft === 'knitting'),
       startedAt: projectDateForApi(startedAt, startedAtPrecision),
       startedAtPrecision,
       targetDate: projectDateForApi(targetDate, targetDatePrecision),
@@ -161,10 +163,7 @@ export default function NewProjectScreen() {
                 <HookSizePicker value={hookSize} onChange={setHookSize} testID="select-crochet-hook-size" />
               </>
             ) : (
-              <>
-                <FormFieldLabel>Tools</FormFieldLabel>
-                <TextInput {...inputProps} value={tools} onChangeText={setTools} placeholder="Needle size or other tools…" style={fieldStyle} testID="input-project-tools" />
-              </>
+              <NeedleFields value={needles} onChange={setNeedles} testIDPrefix="select" />
             )}
             <ProjectDateField label="Started on" value={startedAt} precision={startedAtPrecision} onChange={setStartedAt} onPrecisionChange={setStartedAtPrecision} testID="input-start-date" />
             <ProjectDateField label="Aiming for (optional)" value={targetDate} precision={targetDatePrecision} onChange={setTargetDate} onPrecisionChange={setTargetDatePrecision} testID="input-target-date" />

@@ -17,6 +17,12 @@ type ProjectResponse = {
   yarnColor: string | null;
   tools: string | null;
   hookSize: string | null;
+  needleSize: string | null;
+  needleType: string | null;
+  needleCableLength: string | null;
+  secondNeedleSize: string | null;
+  secondNeedleType: string | null;
+  secondNeedleCableLength: string | null;
   startedAt: string | null;
   startedAtPrecision: "month" | "day";
   targetDate: string | null;
@@ -46,6 +52,12 @@ const projectFixture = (overrides: Partial<ProjectResponse> = {}): ProjectRespon
   yarnColor: null,
   tools: null,
   hookSize: null,
+  needleSize: null,
+  needleType: null,
+  needleCableLength: null,
+  secondNeedleSize: null,
+  secondNeedleType: null,
+  secondNeedleCableLength: null,
   startedAt: null,
   startedAtPrecision: "day",
   targetDate: null,

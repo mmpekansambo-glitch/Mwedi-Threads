@@ -31,6 +31,32 @@ describe("Mwedi Threads project contracts", () => {
     expect(result.success).toBe(false);
   });
 
+  it("accepts a knitting project with a main and second needle", () => {
+    const result = CreateProjectBody.safeParse({
+      title: "Ribbed hat",
+      craft: "knitting",
+      needleSize: "4.0 mm (US 6, UK/Canada 8)",
+      needleType: "circular",
+      needleCableLength: "40 cm (16 in)",
+      secondNeedleSize: "3.25 mm (US 3, UK/Canada 10)",
+      secondNeedleType: "double_pointed",
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects needle sizes, types and cable lengths outside the standard lists", () => {
+    for (const fields of [
+      { needleSize: "4 mm" },
+      { needleType: "bamboo" },
+      { needleCableLength: "50 cm" },
+      { secondNeedleSize: "US 6" },
+    ]) {
+      const result = CreateProjectBody.safeParse({ title: "Invalid needle", craft: "knitting", ...fields });
+      expect(result.success).toBe(false);
+    }
+  });
+
   it("accepts older project clients that omit optional date precision and yarn fields", () => {
     const result = CreateProjectBody.safeParse({
       title: "Legacy project",
