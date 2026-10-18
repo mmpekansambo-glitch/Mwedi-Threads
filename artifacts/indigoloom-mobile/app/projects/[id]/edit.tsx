@@ -124,29 +124,27 @@ export default function EditProjectScreen() {
               <TextInput value={title} onChangeText={setTitle} style={inputStyle} />
               <FormFieldLabel>Pattern name</FormFieldLabel>
               <TextInput value={patternName} onChangeText={setPatternName} placeholder="Pattern or source" placeholderTextColor={colors.mutedForeground} style={inputStyle} />
-              <LoomText style={{ color: colors.primary, fontSize: 15, fontFamily: fonts.semibold, marginBottom: 11 }}>Design</LoomText>
-              <View style={styles.designerModeRow} accessibilityLabel="Designer entry option">
-                {(['name', 'website'] as const).map((option) => {
-                  const active = designerMode === option;
-                  return <Pressable key={option} accessibilityRole="button" accessibilityState={{ selected: active }} onPress={() => { setDesignerMode(option); setDesignerPreviewMessage(''); }} style={[styles.designerModeButton, { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.selectedWash : colors.background }]} testID={`button-edit-designer-${option}`}>
-                    <LoomText style={{ color: active ? colors.primary : colors.mutedForeground, fontSize: 14, fontFamily: fonts.semibold }}>{option === 'name' ? 'Name' : 'Website link'}</LoomText>
-                  </Pressable>;
-                })}
+              <FormFieldLabel>Designer</FormFieldLabel>
+              <View style={styles.designerRow}>
+                <View style={styles.designerModeRow} accessibilityLabel="Designer entry option">
+                  {(['name', 'website'] as const).map((option) => {
+                    const active = designerMode === option;
+                    return <Pressable key={option} accessibilityRole="button" accessibilityState={{ selected: active }} onPress={() => { setDesignerMode(option); setDesignerPreviewMessage(''); }} style={[styles.designerModeButton, { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.selectedWash : colors.background }]} testID={`button-edit-designer-${option}`}>
+                      <LoomText style={{ color: active ? colors.primary : colors.mutedForeground, fontSize: 14, fontFamily: fonts.semibold }}>{option === 'name' ? 'Name' : 'Website'}</LoomText>
+                    </Pressable>;
+                  })}
+                </View>
+                {designerMode === 'name'
+                  ? <TextInput value={patternDesigner} onChangeText={setPatternDesigner} placeholder="Who made the pattern?" placeholderTextColor={colors.mutedForeground} style={[...inputStyle, styles.designerInput]} testID="input-edit-designer" />
+                  : <TextInput value={designerWebsite} onChangeText={(value) => { designerWebsiteRef.current = value; setDesignerWebsite(value); setPatternDesigner(''); setDesignerPageTitle(''); setDesignerPreviewMessage(''); }} placeholder="https://example.com" placeholderTextColor={colors.mutedForeground} autoCapitalize="none" autoCorrect={false} keyboardType="url" style={[...inputStyle, styles.designerInput]} testID="input-edit-designer-website" />}
               </View>
-              {designerMode === 'name' ? (
+              {designerMode === 'website' ? (
                 <>
-                  <FormFieldLabel>Designer name</FormFieldLabel>
-                  <TextInput value={patternDesigner} onChangeText={setPatternDesigner} placeholder="Who made the pattern?" placeholderTextColor={colors.mutedForeground} style={inputStyle} testID="input-edit-designer" />
-                </>
-              ) : (
-                <>
-                  <FormFieldLabel>Website link</FormFieldLabel>
-                  <TextInput value={designerWebsite} onChangeText={(value) => { designerWebsiteRef.current = value; setDesignerWebsite(value); setPatternDesigner(''); setDesignerPageTitle(''); setDesignerPreviewMessage(''); }} placeholder="https://example.com" placeholderTextColor={colors.mutedForeground} autoCapitalize="none" autoCorrect={false} keyboardType="url" style={inputStyle} testID="input-edit-designer-website" />
                   <LoomButton title="Preview page title" variant="quiet" onPress={previewDesignerTitle} busy={previewTitle.isPending} testID="button-edit-preview-designer-title" />
                   {designerPageTitle ? <View style={[styles.designerPagePreview, { backgroundColor: colors.selectedWash, borderColor: colors.border }]}><LoomText style={{ color: colors.mutedForeground, fontSize: 13, letterSpacing: 1 }}>Page title preview</LoomText><LoomText numberOfLines={2} ellipsizeMode="tail" style={[styles.designerPageTitle, { color: colors.foreground, fontFamily: fonts.semibold, fontSize: 15 }]}>{designerPageTitle}</LoomText></View> : null}
                   {designerPreviewMessage ? <LoomText accessibilityRole="alert" style={{ color: colors.mutedForeground, fontSize: 14, lineHeight: 20, marginBottom: 12 }}>{designerPreviewMessage}</LoomText> : null}
                 </>
-              )}
+              ) : null}
               <LoomText style={{ color: colors.primary, fontSize: 15, fontFamily: fonts.semibold, marginBottom: 11 }}>Yarn</LoomText>
               <FormFieldLabel>Brand</FormFieldLabel>
               <TextInput value={yarnBrand} onChangeText={setYarnBrand} placeholder="e.g. Cascade" placeholderTextColor={colors.mutedForeground} style={inputStyle} testID="input-edit-yarn-brand" />
@@ -190,8 +188,10 @@ const styles = StyleSheet.create({
   heading: { fontSize: 31, marginBottom: 17 },
   card: { width: '100%', maxWidth: '100%', minWidth: 0, borderWidth: 1, borderRadius: 18, padding: 17 },
   input: { minHeight: 45, borderWidth: 1, borderRadius: 9, paddingHorizontal: 12, paddingVertical: 10, fontSize: 16, fontFamily: fonts.body, marginBottom: 14 },
-  designerModeRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  designerModeButton: { flex: 1, minHeight: 39, borderWidth: 1, borderRadius: 9, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
+  designerRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 },
+  designerModeRow: { flexDirection: 'row', gap: 4 },
+  designerModeButton: { minHeight: 45, borderWidth: 1, borderRadius: 9, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 10 },
+  designerInput: { flex: 1, minWidth: 0, marginBottom: 0 },
   designerPagePreview: { width: '100%', maxWidth: '100%', minWidth: 0, alignSelf: 'stretch', overflow: 'hidden', gap: 5, borderWidth: 1, borderRadius: 9, padding: 11, marginBottom: 12 },
   designerPageTitle: { width: '100%', maxWidth: '100%', minWidth: 0, flexShrink: 1 },
   multiline: { minHeight: 92, paddingTop: 12 },
