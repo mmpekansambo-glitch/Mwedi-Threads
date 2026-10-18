@@ -14,10 +14,10 @@ import { CrochetHookSize, KnittingNeedleSize, NeedleCableLength } from '@workspa
 import type { CreateProject, CreateProgress, Project, ProjectStatus, UpdateProject } from '@workspace/api-client-react';
 import { FormProvider as Form, useForm, type UseFormReturn } from 'react-hook-form';
 import {
-  ArrowDownRight, ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, Check,
-  ChevronDown, ChevronUp, CircleHelp, Feather, Filter, Flower2, Gauge,
-  Heart, Layers3, LogOut, Menu, Plus, Search, Sparkles, Star, Trash2,
-  TrendingUp, X,
+  ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, Check,
+  ChevronDown, ChevronUp, CircleHelp, Feather, Filter,
+  Layers3, LogOut, Menu, Plus, Search, Star, Trash2,
+  X,
 } from 'lucide-react';
 import {
   Link, Redirect, Route, Switch, useLocation, Router as WouterRouter,
@@ -114,46 +114,68 @@ function HomeRoute() {
 }
 
 function Landing() {
-  return <main className="landing paper-grain">
-    <nav className="landing-nav">
-      <Brand />
-      <div className="landing-nav-links"><a href="#how-it-works">A gentler way to keep track</a><Link href="/sign-in" className="nav-signin" data-testid="link-sign-in">Sign in <ArrowRight size={15}/></Link></div>
-    </nav>
+  return <main className="landing">
     <section className="landing-hero">
-      <div className="hero-copy appear">
-        <div className="eyebrow"><span className="eyebrow-stitch"/>A little home for your making</div>
-        <h1>Your hands are busy.<br/><em>Let your mind rest.</em></h1>
-        <p className="hero-lede">Keep every cast-on, color choice, and almost-finished sleeve in one lovely place. Mwedi Threads is your personal notebook for making things slowly, and well.</p>
-        <div className="hero-actions"><Link href="/sign-up" className="button button-primary" data-testid="link-get-started">Make a free account <ArrowRight size={17}/></Link><a href="#how-it-works" className="text-link">Take a look around <ArrowDownRight size={16}/></a></div>
-        <div className="hero-footnote"><span className="avatar-stack"><i>J</i><i>M</i><i>A</i></span><span>A quiet corner for every kind of maker</span></div>
-      </div>
-      <div className="hero-art appear" aria-label="Illustration of a work in progress">
-        <div className="orbit orbit-one"/><div className="orbit orbit-two"/>
-        <div className="thread thread-a"/><div className="thread thread-b"/>
-        <div className="project-note">
-          <div className="note-top"><span className="note-tag">IN THE MAKING</span><span className="note-dots">•••</span></div>
-          <div className="swatch-art"><span/><span/><span/><span/><span/><span/><span/><span/><span/><span/><span/><span/><span/><span/><span/></div>
-          <div className="note-copy"><small>YOUR NEXT LITTLE WIN</small><strong>Juniper cardigan</strong><div className="mini-progress"><span/></div><div className="mini-progress-meta"><span>18 rows since Sunday</span><b>42%</b></div></div>
-        </div>
-        <div className="yarn-ball"><span/><span/><span/><span/></div>
-        <div className="floating-note"><Sparkles size={14}/><span>one row at a time</span></div>
-        <span className="hero-flower"><Flower2 size={38} strokeWidth={1.1}/></span>
+      <Mark />
+      <h1>Mwedi Threads</h1>
+      <p className="hero-lede">Keep every cast-on, color choice and almost-finished sleeve in one place. No streaks to keep and no pressure to finish, just a record of the things you make and the small steps that got you there.</p>
+      <div className="hero-actions">
+        <Link href="/sign-up" className="button button-primary" data-testid="link-get-started">Sign up</Link>
+        <Link href="/sign-in" className="button button-outline" data-testid="link-sign-in">Sign in</Link>
       </div>
     </section>
-    <section className="landing-ribbon" id="how-it-works"><div><Layers3 size={18}/><span>Every project, gathered</span></div><i/><div><TrendingUp size={18}/><span>Progress you can feel</span></div><i/><div><Heart size={18}/><span>Made for your own rhythm</span></div></section>
-    <section className="landing-story">
-      <div className="story-side"><span className="eyebrow">THE MAKER'S NOTEBOOK</span><h2>From the first idea<br/>to the final weave-in.</h2><p>No streaks to keep. No pressure to finish. Just a thoughtful record of the things you make and the small steps that got you there.</p><Link href="/sign-up" className="underlined-link">Start your project journal <ArrowRight size={16}/></Link></div>
-      <div className="story-cards">
-        <article className="story-card story-card-plum"><span className="story-number">01</span><BookOpen size={23}/><h3>Give every project<br/>a proper place.</h3><p>Pattern, yarn, tools, dates — all the details you meant to remember.</p><div className="yarn-spool spool-a"/><div className="yarn-spool spool-b"/></article>
-        <article className="story-card story-card-apricot"><span className="story-number">02</span><Gauge size={23}/><h3>Notice how far<br/>you've come.</h3><p>Leave a note after a session. Your progress adds up, quietly.</p><Flower2 className="stitch-motif" size={88} strokeWidth={1}/></article>
-      </div>
-    </section>
-    <footer className="landing-footer"><Brand/><span>Made for makers, wherever the yarn takes you.</span><Link href="/sign-up">Your next project is waiting <ArrowRight size={15}/></Link></footer>
+    <LandingFooter/>
+  </main>;
+}
+
+function LandingFooter() {
+  return <footer className="landing-footer">
+    <span>Made for makers, wherever the yarn takes you.</span>
+    <div className="landing-footer-links"><Link href="/about" data-testid="link-about">About</Link><Link href="/sign-up">Your next project is waiting <ArrowRight size={15}/></Link></div>
+  </footer>;
+}
+
+function AboutPage() {
+  return <main className="landing">
+    <nav className="about-nav"><Brand/></nav>
+    <article className="about-page">
+      <h1>About Mwedi Threads</h1>
+      <p>A crochet or knitting project lives in a lot of places at once: the pattern, the designer's page, the yarn label, the hook or needles, a photo of where you stopped. Those pieces end up spread across notes, bookmarks and camera rolls, and it is easy to lose your place. Mwedi Threads keeps the whole project journey together in one place.</p>
+
+      <h2>What you can keep here</h2>
+      <ul>
+        <li>Every project, with its craft, status, pattern, designer and dates.</li>
+        <li>The yarn you used (brand, type and color) and your hook or needles, with mm, US and UK sizes.</li>
+        <li>Dated progress notes with photos, so you always know where you left off.</li>
+        <li>Stars for your favorites, and a dashboard that shows your making habits over time.</li>
+      </ul>
+
+      <h2>Part of IndigoLoom</h2>
+      <p>Mwedi Threads is the first build of IndigoLoom, a platform for a fiber artist's whole journey: discover, plan, create, connect and grow. It starts with crocheters and knitters, and grows toward sourcing yarn, sharing patterns and the community around the craft.</p>
+
+      <h2>Why now</h2>
+      <ul>
+        <li>The global knitting and crochet market is about $11B in 2026 and is projected to reach $18B by 2034. North America holds 38% of it and is growing fastest.<sup>1</sup></li>
+        <li>People aged 18 to 34 make up about 28% of that market.<sup>1</sup></li>
+        <li>Online craft communities passed 100 million users in 2026.<sup>1</sup></li>
+        <li>Ravelry saw 89,250 patterns published in 2020 alone, a record year for digital designers.<sup>2</sup></li>
+        <li>Retailers are making room for yarn: Michaels grew its in-store yarn shelf space by 25% in 2025 and in 2026 expanded fiber shelf space across 90% of its stores.<sup>3</sup></li>
+      </ul>
+
+      <h2>Sources</h2>
+      <ol className="about-sources">
+        <li>Knitting and Crochet Market Size, Share Growth and Industry Analysis. Market Reports World, 2026.</li>
+        <li>Knitting in the 2010s vs Knitting in 2026. Knit Pro, 2026.</li>
+        <li>Michaels Launches Big Twist Yarn In-Store and Online.</li>
+      </ol>
+      <p className="about-credit">Made by Mwengwe Mpekansambo.</p>
+    </article>
+    <LandingFooter/>
   </main>;
 }
 
 function SignInPage() {
-  return <div className="auth-screen paper-grain"><div className="auth-ornament"><Brand/><p>A softer place to pick up<br/>where you left off.</p></div><div className="auth-panel"><SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} /></div></div>;
+  return <div className="auth-screen"><div className="auth-ornament"><Brand/></div><div className="auth-panel"><SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} /></div></div>;
 }
 function SignUpPage() {
   const { signUp } = useSignUp();
@@ -185,7 +207,7 @@ function SignUpPage() {
     trackEvent('account_completed');
   }, [signUp?.createdSessionId, signUp?.status]);
 
-  return <div className="auth-screen paper-grain"><div className="auth-ornament"><Brand/><p>Make room for all the<br/>things you're dreaming up.</p></div><div className="auth-panel"><SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} /></div></div>;
+  return <div className="auth-screen"><div className="auth-ornament"><Brand/></div><div className="auth-panel"><SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} /></div></div>;
 }
 
 function ClerkCacheInvalidator() {
@@ -899,10 +921,10 @@ function AuthCacheRouter() {
     signUpUrl={`${basePath}/sign-up`}
     localization={{
       signIn: {
-        start: { title: 'Welcome back', subtitle: 'Pick up right where you left off.' },
+        start: { title: 'Sign in', subtitle: '' },
       },
       signUp: {
-        start: { title: 'Make a little room', subtitle: 'Your projects deserve a place of their own.' },
+        start: { title: 'Sign up', subtitle: '' },
       },
     }}
     routerPush={(to) => setLocation(stripBase(to))}
@@ -911,6 +933,7 @@ function AuthCacheRouter() {
     <QueryClientProvider client={queryClient}><TooltipProvider><ClerkCacheInvalidator/>
       <Switch>
         <Route path="/" component={HomeRoute}/>
+        <Route path="/about" component={AboutPage}/>
         <Route path="/sign-in/*?" component={SignInPage}/>
         <Route path="/sign-up/*?" component={SignUpPage}/>
         <Route path="/dashboard"><PrivateRoute><DashboardPage/></PrivateRoute></Route>
