@@ -23,6 +23,7 @@ import {
   Link, Redirect, Route, Switch, useLocation, Router as WouterRouter,
 } from 'wouter';
 import { StatDoodle } from '@/components/stat-doodles';
+import { DateWheelField as ProjectDateField } from '@/components/date-wheel-field';
 import { DashboardCharts } from '@/components/dashboard-charts';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { trackEvent, trackSuccessfulAction } from '@/lib/analytics';
@@ -382,53 +383,6 @@ function formatYarnDetails(project: Pick<Project, 'yarn' | 'yarnBrand' | 'yarnTy
   return [project.yarnBrand, project.yarnType, project.yarnColor].filter(Boolean).join(' · ')
     || project.yarn
     || '';
-}
-
-function ProjectDateField({
-  id,
-  label,
-  value,
-  precision,
-  onValueChange,
-  onPrecisionChange,
-  testId,
-}: {
-  id: string;
-  label: string;
-  value: string;
-  precision: ProjectDatePrecision;
-  onValueChange: (value: string) => void;
-  onPrecisionChange: (precision: ProjectDatePrecision) => void;
-  testId: string;
-}) {
-  const changePrecision = (next: ProjectDatePrecision) => {
-    if (next === precision) return;
-    onValueChange(next === 'month' ? value.slice(0, 7) : '');
-    onPrecisionChange(next);
-  };
-  return <div className="field-block project-date-field">
-    <label htmlFor={id}>{label}</label>
-    <div className="project-date-controls">
-      <select
-        aria-label={`${label} format`}
-        value={precision}
-        onChange={(event) => changePrecision(event.target.value as ProjectDatePrecision)}
-        data-testid={`${testId}-precision`}
-      >
-        <option value="month">MM/YY</option>
-        <option value="day">MM/DD/YY</option>
-      </select>
-      <input
-        id={id}
-        type={precision === 'month' ? 'month' : 'date'}
-        value={value}
-        onChange={(event) => onValueChange(event.target.value)}
-        aria-label={`${label} (${precision === 'month' ? 'month and year' : 'month, day, and year'})`}
-        data-testid={testId}
-      />
-    </div>
-    <span className="date-format-hint">{precision === 'month' ? 'Month and year only' : 'Include the day'}</span>
-  </div>;
 }
 
 type DesignerMode = 'name' | 'website';

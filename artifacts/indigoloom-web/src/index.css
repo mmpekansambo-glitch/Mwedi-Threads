@@ -35,7 +35,7 @@
   /* PLAN.md palette (section 6) and the lighter and darker shades built from it */
   --lavender: #C5D1EB;
   --powder: #92AFD7;
-  --slate: var(--slate);
+  --slate: #5A7684;
   --granite: #395B50;
   --evergreen: #1F2F16;
   --white: #FFFFFF;
@@ -337,9 +337,22 @@ a { color: inherit; text-decoration: none; }
 .field-block input::placeholder,.field-block textarea::placeholder { color: var(--slate-light); }
 .field-block textarea { resize: vertical; line-height: 1.55; }
 .field-block select { appearance: auto; }
-.project-date-controls { display: grid; grid-template-columns: minmax(78px, .42fr) minmax(0, 1fr); gap: 7px; }
-.project-date-controls select { padding-left: 8px; padding-right: 8px; }
-.date-format-hint { color: var(--slate); font-size: 13px; line-height: 1.3; }
+.date-wheel-field { position: relative; }
+.date-wheel-controls { display: flex; gap: 7px; }
+.date-wheel-trigger { flex: 1; min-width: 0; display: flex; align-items: center; gap: 9px; padding: 11px 12px; border-radius: 7px; border: 1px solid var(--lavender-soft); background: var(--lavender-wash); color: var(--evergreen); font-size: 15px; text-align: left; cursor: pointer; }
+.date-wheel-trigger svg { color: var(--granite); flex: none; }
+.date-wheel-trigger.empty span { color: var(--slate-light); }
+.date-wheel-trigger:focus-visible,.date-wheel-clear:focus-visible,.date-wheel:focus-visible { outline: none; border-color: var(--slate); box-shadow: 0 0 0 3px rgba(57,91,80,.09); }
+.date-wheel-clear { flex: none; width: 44px; display: grid; place-items: center; border-radius: 7px; border: 1px solid var(--lavender-soft); background: var(--white); color: var(--slate); cursor: pointer; }
+.date-wheel-panel { position: absolute; z-index: 20; top: calc(100% + 6px); left: 0; width: min(380px, calc(100vw - 40px)); padding: 14px; border-radius: 12px; border: 1px solid var(--lavender-soft); background: var(--white); box-shadow: 0 12px 32px rgba(31,47,22,.14); }
+.date-wheels { position: relative; display: grid; grid-template-columns: 1.6fr .8fr 1fr; gap: 4px; border-radius: 9px; background: var(--lavender-wash); -webkit-mask-image: linear-gradient(transparent, #000 32%, #000 68%, transparent); mask-image: linear-gradient(transparent, #000 32%, #000 68%, transparent); }
+.date-wheel-band { position: absolute; left: 8px; right: 8px; top: 84px; height: 42px; border-top: 1.5px solid var(--powder); border-bottom: 1.5px solid var(--powder); pointer-events: none; }
+.date-wheel { height: 210px; overflow-y: auto; padding: 84px 0; scroll-snap-type: y mandatory; scrollbar-width: none; border-radius: 9px; border: 1px solid transparent; }
+.date-wheel::-webkit-scrollbar { display: none; }
+.date-wheel [role="option"] { height: 42px; line-height: 42px; text-align: center; scroll-snap-align: center; font-size: 17px; color: var(--slate-light); cursor: pointer; white-space: nowrap; user-select: none; }
+.date-wheel [role="option"].selected { color: var(--evergreen); font: 500 21px/42px var(--app-font-serif); }
+.date-wheel-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+.date-wheel-actions .button { min-height: 40px; padding: 0 16px; font-size: 15px; }
 .yarn-group { display: grid; gap: 10px; }
 .yarn-group-heading { display: flex; align-items: baseline; gap: 10px; }
 .yarn-group-heading b { color: var(--slate); font-size: 13px; }

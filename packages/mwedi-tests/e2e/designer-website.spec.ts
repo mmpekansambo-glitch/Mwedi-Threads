@@ -120,6 +120,14 @@ async function mockProjectApi(
   });
 }
 
+async function pickDate(page: Page, testId: string, month: string, day: string, year: string) {
+  await page.getByTestId(testId).click();
+  await page.getByTestId(`${testId}-year`).getByRole("option", { name: year, exact: true }).click();
+  await page.getByTestId(`${testId}-month`).getByRole("option", { name: month, exact: true }).click();
+  await page.getByTestId(`${testId}-day`).getByRole("option", { name: day, exact: true }).click();
+  await page.getByTestId(`${testId}-done`).click();
+}
+
 test("creates a crochet project with a hook size, date precision, yarn, and a designer website preview", async ({ page }) => {
   let createdBody: Record<string, unknown> | undefined;
   await mockProjectApi(page, (body) => { createdBody = body; }, () => undefined);
@@ -130,9 +138,10 @@ test("creates a crochet project with a hook size, date precision, yarn, and a de
   await expect(page.getByTestId("select-crochet-hook-size")).toBeVisible();
   await expect(page.getByTestId("input-project-tools")).toBeHidden();
   await page.getByTestId("select-crochet-hook-size").selectOption("4.0 mm (US G-6, UK/Canada 8)");
-  await page.getByTestId("input-start-date").fill("2026-03-01");
-  await page.getByTestId("input-start-date-precision").selectOption("month");
-  await page.getByTestId("input-target-date").fill("2026-05-17");
+  await pickDate(page, "input-start-date", "March", "—", "2026");
+  await expect(page.getByTestId("input-start-date")).toHaveText("March 2026");
+  await pickDate(page, "input-target-date", "May", "17", "2026");
+  await expect(page.getByTestId("input-target-date")).toHaveText("May 17, 2026");
   await page.getByTestId("input-yarn-brand").fill("Brooklyn Tweed");
   await page.getByTestId("input-yarn-type").fill("Shelter");
   await page.getByTestId("input-yarn-color").fill("Cardinal");
