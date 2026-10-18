@@ -267,6 +267,10 @@ router.get("/projects", async (req, res): Promise<void> => {
         ilike(projectsTable.title, `%${search}%`),
         ilike(projectsTable.patternName, `%${search}%`),
         ilike(projectsTable.patternDesigner, `%${search}%`),
+        ilike(projectsTable.yarn, `%${search}%`),
+        ilike(projectsTable.yarnBrand, `%${search}%`),
+        ilike(projectsTable.yarnType, `%${search}%`),
+        ilike(projectsTable.yarnColor, `%${search}%`),
       )!,
     );
   }
