@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useId, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import { ClerkProvider, SignIn, SignUp, useAuth, useClerk, useSignUp, useUser } from '@clerk/react';
@@ -81,7 +81,7 @@ const clerkAppearance = {
     formFieldSuccessText: 'text-[#395B50]',
     alertText: 'text-[#1F2F16]',
     logoBox: 'mb-4',
-    logoImage: 'max-h-10',
+    logoImage: 'max-h-16',
     socialButtonsBlockButton: 'border-[#DDE5F3] bg-[#EEF2F9] hover:bg-[#DDE5F3]',
     formButtonPrimary: 'bg-[#395B50] hover:bg-[#2C4740] shadow-none',
     formFieldInput: 'bg-[#EEF2F9] border-[#DDE5F3] text-[#1F2F16]',
@@ -95,14 +95,15 @@ const clerkAppearance = {
 };
 
 function Mark({ light = false }: { light?: boolean }) {
+  const id = useId();
   return <span className={`brand-mark ${light ? 'brand-mark-light' : ''}`} aria-hidden="true">
-    <svg viewBox="0 0 34 34" fill="none"><path d="M7 7.5c7.1 0 7.1 19 14.2 19S28.3 7.5 21.2 7.5 14.1 26.5 7 26.5" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round"/><path d="M7 13.5c7.1 0 7.1 7 14.2 7S28.3 13.5 21.2 13.5 14.1 20.5 7 20.5" stroke="currentColor" strokeWidth="1.4" opacity=".55" strokeLinecap="round"/></svg>
+    <svg viewBox="0 0 100 100"><clipPath id={`${id}-ring`}><circle cx="50" cy="50" r="42"/></clipPath><clipPath id={`${id}-ball`}><circle cx="50" cy="56" r="25"/></clipPath><circle cx="50" cy="50" r="44" className="bm-fill"/><g clipPath={`url(#${id}-ring)`}><path d="M21.3 79.8L76.2 27.3q2.5 -3.0 5.0 -0.5" fill="none" className="bm-hook" strokeWidth="4" strokeLinecap="round"/><circle cx="50" cy="56" r="25" className="bm-ball"/><g clipPath={`url(#${id}-ball)`} fill="none" className="bm-line" strokeWidth="2.6"><ellipse cx="27.5" cy="56" rx="7.0" ry="40.0" transform="rotate(-30 50 56)"/><ellipse cx="27.5" cy="56" rx="16.0" ry="40.0" transform="rotate(-30 50 56)"/><ellipse cx="27.5" cy="56" rx="25.0" ry="40.0" transform="rotate(-30 50 56)"/><ellipse cx="27.5" cy="56" rx="34.0" ry="40.0" transform="rotate(-30 50 56)"/><ellipse cx="27.5" cy="56" rx="43.0" ry="40.0" transform="rotate(-30 50 56)"/></g><path d="M65.0 76.0C75.0 89.8 79.0 71.7 94 74.2" fill="none" className="bm-thread" strokeWidth="2.2" strokeLinecap="round"/></g><circle cx="50" cy="50" r="44" fill="none" className="bm-ring" strokeWidth="5"/><circle cx="30.2" cy="22.7" r="5.5" className="bm-dot"/></svg>
   </span>;
 }
 
 function Brand({ light = false }: { light?: boolean }) {
   return <Link href="/" className={`brand-lockup ${light ? 'brand-light' : ''}`} data-testid="link-brand-home">
-    <Mark light={light} /><span>Mwedi<span className="brand-soft"> Threads</span></span>
+    <Mark light={light} /><span className="brand-words"><span className="brand-name">Mwedi</span><span className="brand-soft">Threads</span></span>
   </Link>;
 }
 
