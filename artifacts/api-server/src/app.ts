@@ -4,6 +4,7 @@ import pinoHttp from "pino-http";
 import { clerkMiddleware } from "@clerk/express";
 import { publishableKeyFromHost } from "@clerk/shared/keys";
 import router from "./routes";
+import healthRouter from "./routes/health";
 import { logger } from "./lib/logger";
 import {
   CLERK_PROXY_PATH,
@@ -38,6 +39,11 @@ app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
 app.use(cors({ credentials: true, origin: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Health checks come from inside the deployment on an internal host, so they
+// must answer before Clerk, which needs the public domain to pick its key.
+app.use("/api", healthRouter);
+
 app.use(
   clerkMiddleware((req) => ({
     publishableKey: publishableKeyFromHost(

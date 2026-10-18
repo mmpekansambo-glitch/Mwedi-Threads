@@ -218,6 +218,20 @@ describe("Clerk-backed API authentication", () => {
     expect(query.params).not.toContain(forgedUserId);
   });
 
+  it("answers the health check from an internal host without Clerk", async () => {
+    process.env.REPLIT_DOMAINS = "threads.example.com";
+    process.env.REPLIT_DEV_DOMAIN = "";
+    clerkSetupShouldFail.value = true;
+    try {
+      const response = await fetch(`${baseUrl}/api/healthz`);
+
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({ status: "ok" });
+    } finally {
+      clerkSetupShouldFail.value = false;
+    }
+  });
+
   it("returns a generic JSON error when Clerk authentication setup throws", async () => {
     const internalDetails = "CLERK_INTERNAL_SETUP_STACK_SENTINEL";
     clerkSetupShouldFail.value = true;
