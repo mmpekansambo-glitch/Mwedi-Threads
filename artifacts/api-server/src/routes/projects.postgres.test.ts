@@ -393,4 +393,23 @@ describe.skipIf(!databaseUrl)("project authorization against PostgreSQL", () => 
       progressSections: [{ name: "Body", done: true }, { name: "Sleeves", done: true }],
     });
   });
+
+  it("finds projects by yarn brand, type and color", async () => {
+    await getTestDb()
+      .update(projectsTable)
+      .set({ yarnBrand: "Malabrigo", yarnType: "Merino worsted", yarnColor: "Teal" })
+      .where(eq(projectsTable.id, projectAId));
+
+    const search = async (term: string, user = ownerA) => {
+      const response = await request(`/projects?search=${encodeURIComponent(term)}`, { user });
+      expect(response.status).toBe(200);
+      return ((await response.json()) as { id: string }[]).map(({ id }) => id);
+    };
+
+    expect(await search("malabrigo")).toEqual([projectAId]);
+    expect(await search("merino")).toEqual([projectAId]);
+    expect(await search("teal")).toEqual([projectAId]);
+    expect(await search("cotton")).toEqual([]);
+    expect(await search("malabrigo", ownerB)).toEqual([]);
+  });
 });

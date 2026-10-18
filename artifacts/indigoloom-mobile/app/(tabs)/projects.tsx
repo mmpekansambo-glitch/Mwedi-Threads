@@ -44,7 +44,7 @@ export default function ProjectsScreen() {
         <TextInput
           value={search}
           onChangeText={setSearch}
-          placeholder="Find a project…"
+          placeholder="Search by name, pattern or yarn…"
           placeholderTextColor={colors.mutedForeground}
           style={[styles.searchInput, { color: colors.foreground }]}
           accessibilityLabel="Search projects"
