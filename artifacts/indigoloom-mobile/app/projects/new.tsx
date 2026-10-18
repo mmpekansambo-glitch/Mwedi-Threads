@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import { ProjectDateField, projectDateForApi, type ProjectDatePrecision } from '@/components/ProjectDateField';
 import { FormFieldLabel, LoomButton, LoomText, SignedInGate, fonts } from '@/components/loom';
+import { ProgressMethodPicker, defaultProgressSettings, progressSettingsError, progressSettingsForApi, type ProgressSettingsDraft } from '@/components/ProgressMethod';
 import { useColors } from '@/hooks/useColors';
 import { useRef, useState } from 'react';
 
@@ -38,6 +39,8 @@ export default function NewProjectScreen() {
   const [targetDatePrecision, setTargetDatePrecision] = useState<ProjectDatePrecision>('day');
   const [description, setDescription] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [progressSettings, setProgressSettings] = useState<ProgressSettingsDraft>(defaultProgressSettings);
+  const [showProgressError, setShowProgressError] = useState(false);
 
   const fieldStyle = [styles.input, { color: colors.foreground, backgroundColor: colors.card, borderColor: colors.input }];
   const inputProps = { placeholderTextColor: colors.mutedForeground };
@@ -66,6 +69,10 @@ export default function NewProjectScreen() {
       setErrorMessage('Give your project a name to get started.');
       return;
     }
+    if (progressSettingsError(progressSettings)) {
+      setShowProgressError(true);
+      return;
+    }
     const payload: CreateProject = {
       title: title.trim(),
       craft,
@@ -84,6 +91,7 @@ export default function NewProjectScreen() {
       startedAtPrecision,
       targetDate: projectDateForApi(targetDate, targetDatePrecision),
       targetDatePrecision,
+      ...progressSettingsForApi(progressSettings),
     };
     create.mutate({ data: payload }, {
       onSuccess: (project) => {
@@ -114,6 +122,7 @@ export default function NewProjectScreen() {
                 return <Pressable key={item} onPress={() => setCraft(item)} style={[styles.choice, { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.selectedWash : colors.background }]}><Feather name={item === 'knitting' ? 'git-merge' : 'corner-down-right'} size={15} color={active ? colors.primary : colors.mutedForeground} /><LoomText style={{ color: active ? colors.primary : colors.mutedForeground, fontFamily: fonts.semibold, fontSize: 15 }}>{item === 'knitting' ? 'Knitting' : 'Crochet'}</LoomText></Pressable>;
               })}
             </View>
+            <ProgressMethodPicker value={progressSettings} onChange={setProgressSettings} error={showProgressError ? progressSettingsError(progressSettings) : ''} />
             <View style={[styles.divider, { borderColor: colors.border }]} />
             <LoomText style={[styles.sectionLabel, { color: colors.primary }]}>Pattern and materials</LoomText>
             <FormFieldLabel>Pattern name</FormFieldLabel>

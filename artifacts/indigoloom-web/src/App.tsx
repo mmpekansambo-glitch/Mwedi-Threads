@@ -24,6 +24,11 @@ import {
 } from 'wouter';
 import { StatDoodle } from '@/components/stat-doodles';
 import { DateWheelField as ProjectDateField } from '@/components/date-wheel-field';
+import {
+  ProgressAmountField, ProgressMethodFields, amountDraftFor, defaultProgressSettings, progressAmountForApi,
+  progressDetail, progressSettingsError, progressSettingsForApi, progressSettingsFromProject,
+  type ProgressAmountDraft, type ProgressSettingsDraft,
+} from '@/components/progress-method';
 import { DashboardCharts } from '@/components/dashboard-charts';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { trackEvent, trackSuccessfulAction } from '@/lib/analytics';
@@ -463,6 +468,8 @@ function ProjectFormPage() {
   const previewTitle = usePreviewDesignerWebsiteTitle();
   const [designerMode, setDesignerMode] = useState<DesignerMode>('name');
   const [designerPreviewMessage, setDesignerPreviewMessage] = useState('');
+  const [progressSettings, setProgressSettings] = useState<ProgressSettingsDraft>(defaultProgressSettings);
+  const [showProgressSettingsError, setShowProgressSettingsError] = useState(false);
   const form = useForm<ProjectFormValues>({
     defaultValues: { title: '', craft: 'knitting', status: 'planning', description: '', patternName: '', patternDesigner: '', designerWebsite: '', designerPageTitle: '', yarnBrand: '', yarnType: '', yarnColor: '', tools: '', hookSize: '', startedAt: '', startedAtPrecision: 'day', targetDate: '', targetDatePrecision: 'day', completedAt: '', completedAtPrecision: 'day' },
   });
@@ -485,6 +492,10 @@ function ProjectFormPage() {
     });
   };
   const submit = form.handleSubmit((values) => {
+    if (progressSettingsError(progressSettings)) {
+      setShowProgressSettingsError(true);
+      return;
+    }
     const payload: CreateProject = {
       title: values.title.trim(), craft: values.craft, status: values.status,
       description: values.description || null, patternName: values.patternName || null,
@@ -501,6 +512,7 @@ function ProjectFormPage() {
       startedAtPrecision: values.startedAtPrecision,
       targetDate: dateForProjectApi(values.targetDate, values.targetDatePrecision),
       targetDatePrecision: values.targetDatePrecision,
+      ...progressSettingsForApi(progressSettings),
     };
     create.mutate({ data: payload }, {
       onSuccess: trackSuccessfulAction('project_created', (project: Project) => {
@@ -518,6 +530,7 @@ function ProjectFormPage() {
         <div className="field-block field-wide"><label htmlFor="project-title">Project name <b>*</b></label><input id="project-title" maxLength={160} placeholder="e.g. Juniper cardigan" {...form.register('title', { required: 'Give your project a name to get started.' })} data-testid="input-project-title"/>{form.formState.errors.title && <span className="field-error">{form.formState.errors.title.message}</span>}</div>
         <div className="field-block"><label htmlFor="project-craft">Craft</label><select id="project-craft" {...form.register('craft')} data-testid="select-project-craft"><option value="knitting">Knitting</option><option value="crochet">Crochet</option></select></div>
         <div className="field-block"><label htmlFor="project-status">Status</label><select id="project-status" {...form.register('status')} data-testid="select-project-status"><option value="planning">Planning</option><option value="in_progress">In progress</option><option value="paused">On pause</option><option value="completed">Finished</option></select></div>
+        <ProgressMethodFields value={progressSettings} onChange={setProgressSettings} prefix="create" error={showProgressSettingsError ? progressSettingsError(progressSettings) : ''}/>
       </div>
       <div className="form-divider"><span>Pattern and materials</span><i/></div>
       <div className="form-grid">
@@ -593,6 +606,10 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
     setProgressPhotoPreview(preview);
     return () => URL.revokeObjectURL(preview);
   }, [progressPhoto]);
+  const [editProgressSettings, setEditProgressSettings] = useState<ProgressSettingsDraft>(defaultProgressSettings);
+  const [showEditProgressError, setShowEditProgressError] = useState(false);
+  const [progressAmount, setProgressAmount] = useState<ProgressAmountDraft>({ percent: '0', value: '', done: [] });
+  const [progressAmountError, setProgressAmountError] = useState('');
   const editForm = useForm<ProjectFormValues>({
     defaultValues: { title: '', craft: 'knitting', status: 'planning', description: '', patternName: '', patternDesigner: '', designerWebsite: '', designerPageTitle: '', yarnBrand: '', yarnType: '', yarnColor: '', tools: '', hookSize: '', startedAt: '', startedAtPrecision: 'day', targetDate: '', targetDatePrecision: 'day', completedAt: '', completedAtPrecision: 'day' },
   });
@@ -614,7 +631,9 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
     });
     setDesignerMode(project.designerWebsite ? 'website' : 'name');
     setDesignerPreviewMessage('');
-  }, [project?.id, project?.completedAt, editForm.reset]);
+    setEditProgressSettings(progressSettingsFromProject(project));
+    setShowEditProgressError(false);
+  }, [project?.id, project?.completedAt, project?.progressMethod, editForm.reset]);
   const previewEditDesignerTitle = () => {
     const websiteUrl = editForm.getValues('designerWebsite').trim();
     if (!websiteUrl) {
@@ -633,15 +652,20 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
       onError: () => setDesignerPreviewMessage('We could not preview that website. Check the link and try again.'),
     });
   };
-  const progressForm = useForm<{ notes: string; completionPercent: number }>({
-    defaultValues: { notes: '', completionPercent: project?.completionPercent ?? 0 },
-  });
+  const progressForm = useForm<{ notes: string }>({ defaultValues: { notes: '' } });
+  const latestProgressValue = project?.progress.reduce<{ createdAt: string; progressValue: number | null } | undefined>(
+    (latest, entry) => (!latest || entry.createdAt > latest.createdAt ? entry : latest), undefined,
+  )?.progressValue;
   const invalidate = () => {
     void client.invalidateQueries({ queryKey: getGetProjectQueryKey(projectId) });
     void client.invalidateQueries({ queryKey: getGetDashboardQueryKey() });
     void client.invalidateQueries({ queryKey: getGetProjectsQueryKey() });
   };
   const saveEdit = editForm.handleSubmit((values) => {
+    if (progressSettingsError(editProgressSettings)) {
+      setShowEditProgressError(true);
+      return;
+    }
     const payload: UpdateProject = {
       title: values.title.trim(), craft: values.craft, status: values.status,
       description: values.description || null, patternName: values.patternName || null,
@@ -665,11 +689,19 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
             completedAtPrecision: values.completedAtPrecision,
           }
         : {}),
+      ...progressSettingsForApi(editProgressSettings),
     };
     update.mutate({ projectId, data: payload }, { onSuccess: () => { invalidate(); setEditing(false); } });
   });
   const submitProgress = progressForm.handleSubmit(async (values) => {
-    const payload: CreateProgress = { notes: values.notes.trim(), completionPercent: Number(values.completionPercent) };
+    if (!project) return;
+    const amount = progressAmountForApi(project, progressAmount);
+    if (typeof amount === 'string') {
+      setProgressAmountError(amount);
+      return;
+    }
+    setProgressAmountError('');
+    const payload: CreateProgress = { notes: values.notes.trim(), ...amount };
     setProgressPhotoError('');
     try {
       if (progressPhoto) {
@@ -700,7 +732,7 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
           invalidate();
           setShowProgress(false);
           setProgressPhoto(null);
-          progressForm.reset({ notes: '', completionPercent: Math.max(Number(values.completionPercent), project?.completionPercent || 0) });
+          progressForm.reset({ notes: '' });
         }),
       });
     } catch {
@@ -735,6 +767,7 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
       <div className="field-block field-wide"><label htmlFor="edit-title">Project name</label><input id="edit-title" {...editForm.register('title', { required: 'Project name is required.' })} data-testid="input-edit-title"/></div>
       <div className="field-block"><label htmlFor="edit-craft">Craft</label><select id="edit-craft" {...editForm.register('craft')} data-testid="select-edit-craft"><option value="knitting">Knitting</option><option value="crochet">Crochet</option></select></div>
       <div className="field-block"><label htmlFor="edit-status">Status</label><select id="edit-status" {...editForm.register('status')} data-testid="select-edit-status"><option value="planning">Planning</option><option value="in_progress">In progress</option><option value="paused">On pause</option><option value="completed">Finished</option></select></div>
+      <ProgressMethodFields value={editProgressSettings} onChange={setEditProgressSettings} prefix="edit" error={showEditProgressError ? progressSettingsError(editProgressSettings) : ''}/>
       <div className="field-block"><label htmlFor="edit-pattern">Pattern name</label><input id="edit-pattern" {...editForm.register('patternName')} data-testid="input-edit-pattern"/></div>
        <DesignerEntry form={editForm} mode={designerMode} onModeChange={(mode) => { setDesignerMode(mode); setDesignerPreviewMessage(''); }} onPreview={previewEditDesignerTitle} onClearPreview={() => setDesignerPreviewMessage('')} isPreviewing={previewTitle.isPending} message={designerPreviewMessage} prefix="edit"/>
       <div className="yarn-group field-wide">
@@ -758,11 +791,11 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
     </div>{update.isError && <p className="mutation-error">We couldn't save those changes. Try again.</p>}<div className="form-actions"><button type="button" className="button button-quiet" onClick={() => setEditing(false)} data-testid="button-cancel-edit">Cancel</button><button className="button button-primary" type="submit" disabled={update.isPending} data-testid="button-update-project">{update.isPending ? 'Saving…' : 'Save changes'} <Check size={15}/></button></div></form></Form>}
     <section className="detail-main-grid">
       <div className="detail-primary">
-        <article className="progress-hero loom-card"><div className="progress-hero-copy"><h2 className="serif">Progress</h2><p>{progressSummary(project.progress)}</p></div><div className="progress-ring" style={{ '--progress': `${project.completionPercent * 3.6}deg` } as CSSProperties}><div><strong>{project.completionPercent}<small>%</small></strong><span>complete</span></div></div></article>
-        <div className="progress-log-heading"><div><h2 className="serif">Progress journal</h2></div><button className="button button-primary button-small" onClick={() => { setShowProgress(!showProgress); progressForm.setValue('completionPercent', project.completionPercent); }} data-testid="button-add-progress">{showProgress ? <X size={15}/> : <Plus size={15}/>} {showProgress ? 'Close note' : 'Add a note'}</button></div>
-        {showProgress && <Form {...progressForm}><form className="progress-form loom-card" onSubmit={submitProgress} noValidate><div className="field-block"><label htmlFor="progress-notes">What did you work on?</label><textarea id="progress-notes" rows={3} placeholder="A few rows, a tricky bit figured out, a lovely color change…" {...progressForm.register('notes', { required: 'Add a note about this session.', maxLength: { value: 2000, message: 'Keep your note under 2,000 characters.' } })} data-testid="input-progress-notes"/>{progressForm.formState.errors.notes && <span className="field-error">{progressForm.formState.errors.notes.message}</span>}</div><div className="field-block progress-photo-field"><label htmlFor="progress-photo">Add a progress photo (optional)</label><input id="progress-photo" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { setProgressPhoto(event.target.files?.[0] ?? null); setProgressPhotoError(''); }} data-testid="input-progress-photo"/>{progressPhotoPreview && <div className="progress-photo-preview"><img src={progressPhotoPreview} alt="Selected progress photo preview"/><button type="button" className="button button-quiet" onClick={() => setProgressPhoto(null)}>Remove photo</button></div>}</div><div className="progress-form-row"><div className="field-block"><label htmlFor="progress-percent">Overall completion</label><div className="percent-input"><input id="progress-percent" type="number" min={0} max={100} {...progressForm.register('completionPercent', { valueAsNumber: true, min: 0, max: 100 })} data-testid="input-progress-percent"/><span>%</span></div></div></div>{(addProgress.isError || progressPhotoError) && <p className="mutation-error">{progressPhotoError || "Your note didn't stick this time. Please try again."}</p>}<div className="form-actions"><button type="button" className="button button-quiet" onClick={() => { setShowProgress(false); setProgressPhoto(null); }} data-testid="button-cancel-progress">Cancel</button><button type="submit" className="button button-primary" disabled={addProgress.isPending} data-testid="button-save-progress">{addProgress.isPending ? 'Saving note…' : 'Save progress'} <ArrowRight size={15}/></button></div></form></Form>}
+        <article className="progress-hero loom-card"><div className="progress-hero-copy"><h2 className="serif">Progress</h2>{progressDetail(project, latestProgressValue) && <p className="progress-detail" data-testid="text-progress-detail">{progressDetail(project, latestProgressValue)}</p>}<p>{progressSummary(project.progress)}</p></div><div className="progress-ring" style={{ '--progress': `${project.completionPercent * 3.6}deg` } as CSSProperties}><div><strong>{project.completionPercent}<small>%</small></strong><span>complete</span></div></div></article>
+        <div className="progress-log-heading"><div><h2 className="serif">Progress journal</h2></div><button className="button button-primary button-small" onClick={() => { setShowProgress(!showProgress); setProgressAmount(amountDraftFor(project, latestProgressValue)); setProgressAmountError(''); }} data-testid="button-add-progress">{showProgress ? <X size={15}/> : <Plus size={15}/>} {showProgress ? 'Close note' : 'Add a note'}</button></div>
+        {showProgress && <Form {...progressForm}><form className="progress-form loom-card" onSubmit={submitProgress} noValidate><div className="field-block"><label htmlFor="progress-notes">What did you work on?</label><textarea id="progress-notes" rows={3} placeholder="A few rows, a tricky bit figured out, a lovely color change…" {...progressForm.register('notes', { required: 'Add a note about this session.', maxLength: { value: 2000, message: 'Keep your note under 2,000 characters.' } })} data-testid="input-progress-notes"/>{progressForm.formState.errors.notes && <span className="field-error">{progressForm.formState.errors.notes.message}</span>}</div><div className="field-block progress-photo-field"><label htmlFor="progress-photo">Add a progress photo (optional)</label><input id="progress-photo" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { setProgressPhoto(event.target.files?.[0] ?? null); setProgressPhotoError(''); }} data-testid="input-progress-photo"/>{progressPhotoPreview && <div className="progress-photo-preview"><img src={progressPhotoPreview} alt="Selected progress photo preview"/><button type="button" className="button button-quiet" onClick={() => setProgressPhoto(null)}>Remove photo</button></div>}</div><div className="progress-form-row"><ProgressAmountField project={project} value={progressAmount} onChange={setProgressAmount}/>{progressAmountError && <span className="field-error" role="alert">{progressAmountError}</span>}</div>{(addProgress.isError || progressPhotoError) && <p className="mutation-error">{progressPhotoError || "Your note didn't stick this time. Please try again."}</p>}<div className="form-actions"><button type="button" className="button button-quiet" onClick={() => { setShowProgress(false); setProgressPhoto(null); }} data-testid="button-cancel-progress">Cancel</button><button type="submit" className="button button-primary" disabled={addProgress.isPending} data-testid="button-save-progress">{addProgress.isPending ? 'Saving note…' : 'Save progress'} <ArrowRight size={15}/></button></div></form></Form>}
         {photoRemovalError && <p className="mutation-error" role="alert">{photoRemovalError}</p>}
-        {project.progress.length ? <div className="timeline">{[...project.progress].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((entry) => <article className="timeline-entry" key={entry.id} data-testid={`entry-progress-${entry.id}`}><span className="timeline-marker"><Feather size={13}/></span><div className="timeline-card loom-card"><div className="timeline-entry-top"><time>{new Intl.DateTimeFormat('en', { weekday: 'long', month: 'long', day: 'numeric' }).format(new Date(entry.createdAt))}</time><b>{entry.completionPercent}% complete</b></div><p>{entry.notes}</p>{entry.photoPath && <><img className="timeline-photo" src={`/api/projects/${projectId}/progress/${entry.id}/photo`} alt={`Progress photo for ${project.title}`} loading="lazy"/><button type="button" className="button button-quiet button-remove-progress-photo" onClick={() => deleteEntryPhoto(entry.id)} disabled={removingPhotoEntryId === entry.id} data-testid={`button-remove-progress-photo-${entry.id}`}>{removingPhotoEntryId === entry.id ? 'Removing photo…' : 'Remove photo'} <X size={14}/></button></>}<ProgressBar value={entry.completionPercent}/></div></article>)}</div> : <div className="journal-empty"><h3>No notes yet</h3><p>Add a note each time you work on this project.</p><button className="button button-outline" onClick={() => setShowProgress(true)} data-testid="button-first-progress">Add your first note <ArrowRight size={15}/></button></div>}
+        {project.progress.length ? <div className="timeline">{[...project.progress].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((entry) => <article className="timeline-entry" key={entry.id} data-testid={`entry-progress-${entry.id}`}><span className="timeline-marker"><Feather size={13}/></span><div className="timeline-card loom-card"><div className="timeline-entry-top"><time>{new Intl.DateTimeFormat('en', { weekday: 'long', month: 'long', day: 'numeric' }).format(new Date(entry.createdAt))}</time><b>{entry.completionPercent}% complete</b></div><p>{entry.notes}</p>{entry.photoPath && <><img className="timeline-photo" src={`/api/projects/${projectId}/progress/${entry.id}/photo`} alt={`Progress photo for ${project.title}`} loading="lazy"/><button type="button" className="button button-quiet button-remove-progress-photo" onClick={() => deleteEntryPhoto(entry.id)} disabled={removingPhotoEntryId === entry.id} data-testid={`button-remove-progress-photo-${entry.id}`}>{removingPhotoEntryId === entry.id ? 'Removing photo…' : 'Remove photo'} <X size={14}/></button></>}<ProgressBar value={entry.completionPercent}/></div></article>)}</div> : <div className="journal-empty"><h3>No notes yet</h3><p>Add a note each time you work on this project.</p><button className="button button-outline" onClick={() => { setShowProgress(true); setProgressAmount(amountDraftFor(project, latestProgressValue)); setProgressAmountError(''); }} data-testid="button-first-progress">Add your first note <ArrowRight size={15}/></button></div>}
       </div>
       <aside className="detail-aside">
         <div className="aside-card loom-card"><h3 className="serif">Details</h3><dl className="detail-list">

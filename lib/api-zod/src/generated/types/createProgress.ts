@@ -13,10 +13,23 @@ export interface CreateProgress {
      */
   notes: string;
   /**
+     * Required when the project uses the estimate method; worked out by the server otherwise.
      * @minimum 0
      * @maximum 100
      */
-  completionPercent: number;
+  completionPercent?: number;
+  /**
+     * Row or round reached, or skeins used so far.
+     * @minimum 0
+     * @maximum 100000
+     */
+  progressValue?: number;
+  /**
+     * Positions of the pattern sections that are finished.
+     * @maxItems 40
+     * @items.minimum 0
+     */
+  sectionsDone?: number[];
   /** @minLength 1 */
   photoPath?: string;
 }

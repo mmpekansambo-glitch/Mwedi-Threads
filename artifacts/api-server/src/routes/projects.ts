@@ -36,6 +36,7 @@ import {
 } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
 import { buildDashboardCharts, progressChartStart } from "../lib/dashboardCharts";
+import { checkProgressSettings, workOutProgress } from "../lib/progressMethods";
 import {
   normalizeDesignerPageTitle,
   previewWebsitePageTitle,
@@ -302,7 +303,16 @@ router.post("/projects", async (req, res): Promise<void> => {
   }
 
   const ownerId = getOwnerId(res);
-  const { startedAt, targetDate, ...fields } = parsed.data;
+  const { startedAt, targetDate, progressMethod, progressTotal, progressSections, ...fields } = parsed.data;
+  const progressSettings = checkProgressSettings({
+    progressMethod: progressMethod ?? "estimate",
+    progressTotal: progressTotal ?? null,
+    progressSections: progressSections ?? [],
+  });
+  if (!progressSettings.ok) {
+    res.status(400).json({ error: progressSettings.error });
+    return;
+  }
   const [created] = await db
     .insert(projectsTable)
     .values({
@@ -323,6 +333,7 @@ router.post("/projects", async (req, res): Promise<void> => {
       completedAt: null,
       completedAtPrecision: "day",
       ...fields,
+      ...progressSettings.settings,
       title: fields.title.trim(),
       ownerId,
       startedAt: dateOnly(startedAt),
@@ -378,23 +389,35 @@ router.patch("/projects/:projectId", async (req, res): Promise<void> => {
   }
 
   const ownerId = getOwnerId(res);
-  const { startedAt, targetDate, completedAt, title, ...otherChanges } = parsed.data;
-  const changes = {
+  const {
+    startedAt, targetDate, completedAt, title,
+    progressMethod, progressTotal, progressSections,
+    ...otherChanges
+  } = parsed.data;
+  const changes: Partial<Project> & typeof otherChanges = {
     ...otherChanges,
     ...(title !== undefined ? { title: title.trim() } : {}),
     ...(startedAt !== undefined ? { startedAt: dateOnly(startedAt) } : {}),
     ...(targetDate !== undefined ? { targetDate: dateOnly(targetDate) } : {}),
     ...(completedAt !== undefined ? { completedAt: dateOnly(completedAt) } : {}),
   };
-  if (Object.keys(changes).length === 0) {
+  const changesStatus = changes.status !== undefined && completedAt === undefined;
+  const changesProgress =
+    progressMethod !== undefined || progressTotal !== undefined || progressSections !== undefined;
+  if (Object.keys(changes).length === 0 && !changesProgress) {
     res.status(400).json({ error: "Check the project details and try again." });
     return;
   }
 
-  // A completed date sent with the change wins over the automatic one.
-  if (changes.status !== undefined && completedAt === undefined) {
+  if (changesStatus || changesProgress) {
     const [current] = await db
-      .select({ status: projectsTable.status, completedAt: projectsTable.completedAt })
+      .select({
+        status: projectsTable.status,
+        completedAt: projectsTable.completedAt,
+        progressMethod: projectsTable.progressMethod,
+        progressTotal: projectsTable.progressTotal,
+        progressSections: projectsTable.progressSections,
+      })
       .from(projectsTable)
       .where(
         and(
@@ -406,7 +429,23 @@ router.patch("/projects/:projectId", async (req, res): Promise<void> => {
       res.status(404).json({ error: "Project not found." });
       return;
     }
-    Object.assign(changes, completedDateChanges(current, changes.status));
+    // A completed date sent with the change wins over the automatic one.
+    if (changesStatus && changes.status) {
+      Object.assign(changes, completedDateChanges(current, changes.status));
+    }
+    // Switching methods keeps the current percentage until the next note.
+    if (changesProgress) {
+      const progressSettings = checkProgressSettings({
+        progressMethod: progressMethod ?? current.progressMethod,
+        progressTotal: progressTotal !== undefined ? progressTotal : current.progressTotal,
+        progressSections: progressSections ?? current.progressSections,
+      });
+      if (!progressSettings.ok) {
+        res.status(400).json({ error: progressSettings.error });
+        return;
+      }
+      Object.assign(changes, progressSettings.settings);
+    }
   }
 
   const [updated] = await db
@@ -679,6 +718,9 @@ router.post(
         id: projectsTable.id,
         status: projectsTable.status,
         completedAt: projectsTable.completedAt,
+        progressMethod: projectsTable.progressMethod,
+        progressTotal: projectsTable.progressTotal,
+        progressSections: projectsTable.progressSections,
       })
       .from(projectsTable)
       .where(
@@ -700,8 +742,14 @@ router.post(
       return;
     }
 
+    const progress = workOutProgress(project, parsed.data);
+    if (!progress.ok) {
+      res.status(400).json({ error: progress.error });
+      return;
+    }
+
     const nextStatus: ProjectStatus =
-      parsed.data.completionPercent === 100
+      progress.completionPercent === 100
         ? "completed"
         : project.status === "completed"
           ? "in_progress"
@@ -713,13 +761,15 @@ router.post(
           projectId: project.id,
           notes: parsed.data.notes.trim(),
           photoPath: parsed.data.photoPath ?? null,
-          completionPercent: parsed.data.completionPercent,
+          completionPercent: progress.completionPercent,
+          progressValue: progress.progressValue,
         })
         .returning();
       await tx
         .update(projectsTable)
         .set({
-          completionPercent: parsed.data.completionPercent,
+          completionPercent: progress.completionPercent,
+          ...(progress.progressSections ? { progressSections: progress.progressSections } : {}),
           status: nextStatus,
           ...completedDateChanges(project, nextStatus),
         })

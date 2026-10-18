@@ -1,6 +1,8 @@
 import {
   date,
+  doublePrecision,
   integer,
+  jsonb,
   pgEnum,
   pgTable,
   text,
@@ -22,6 +24,15 @@ export const projectDatePrecisionEnum = pgEnum("project_date_precision", [
   "month",
   "day",
 ]);
+
+export const progressMethodEnum = pgEnum("progress_method", [
+  "estimate",
+  "rows",
+  "sections",
+  "skeins",
+]);
+
+export type ProgressSection = { name: string; done: boolean };
 
 export const projectsTable = pgTable("projects", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -54,6 +65,15 @@ export const projectsTable = pgTable("projects", {
   completedAtPrecision: projectDatePrecisionEnum("completed_at_precision")
     .notNull()
     .default("day"),
+  progressMethod: progressMethodEnum("progress_method")
+    .notNull()
+    .default("estimate"),
+  // Total rows or rounds, or skeins planned (halves allowed).
+  progressTotal: doublePrecision("progress_total"),
+  progressSections: jsonb("progress_sections")
+    .$type<ProgressSection[]>()
+    .notNull()
+    .default([]),
   completionPercent: integer("completion_percent").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
@@ -72,6 +92,8 @@ export const progressEntriesTable = pgTable("project_progress_entries", {
   notes: text("notes").notNull(),
   photoPath: text("photo_path"),
   completionPercent: integer("completion_percent").notNull(),
+  // Row or round reached, or skeins used, for projects that track those.
+  progressValue: doublePrecision("progress_value"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

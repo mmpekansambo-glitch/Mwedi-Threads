@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FormFieldLabel, LoomButton, LoomText, ProgressBar, SignedInGate, StatusChip, fonts } from '@/components/loom';
 import { formatProjectDate } from '@/components/ProjectDateField';
 import { StarButton } from '@/components/StarButton';
+import { ProgressAmountInput, amountDraftFor, progressAmountForApi, progressDetail, type ProgressAmountDraft } from '@/components/ProgressMethod';
 import { useColors } from '@/hooks/useColors';
 
 export default function ProjectDetailScreen() {
@@ -25,7 +26,7 @@ export default function ProjectDetailScreen() {
   const removeProgressPhoto = useDeleteProgressPhoto();
   const remove = useDeleteProject();
   const [notes, setNotes] = useState('');
-  const [completion, setCompletion] = useState('');
+  const [amount, setAmount] = useState<ProgressAmountDraft | null>(null);
   const [photo, setPhoto] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [photoUploading, setPhotoUploading] = useState(false);
   const [message, setMessage] = useState('');
@@ -46,10 +47,20 @@ export default function ProjectDetailScreen() {
     void client.invalidateQueries({ queryKey: getGetProjectsQueryKey() });
   };
 
+  const latestProgressValue = project?.progress.reduce<{ createdAt: string; progressValue: number | null } | undefined>(
+    (latest, entry) => (!latest || entry.createdAt > latest.createdAt ? entry : latest), undefined,
+  )?.progressValue;
+  const amountDraft = amount ?? (project ? amountDraftFor(project, latestProgressValue) : null);
+
   const saveProgress = async () => {
-    const percent = Number(completion);
-    if (!notes.trim() || !Number.isInteger(percent) || percent < 0 || percent > 100) {
-      setMessage('Add a note and a whole-number completion value between 0 and 100.');
+    if (!project || !amountDraft) return;
+    if (!notes.trim()) {
+      setMessage('Add a note about this session.');
+      return;
+    }
+    const progressAmount = progressAmountForApi(project, amountDraft);
+    if (typeof progressAmount === 'string') {
+      setMessage(progressAmount);
       return;
     }
     setMessage('');
@@ -89,11 +100,11 @@ export default function ProjectDetailScreen() {
     }
     addProgress.mutate({
       projectId: id,
-      data: { notes: notes.trim(), completionPercent: percent, ...(photoPath ? { photoPath } : {}) },
+      data: { notes: notes.trim(), ...progressAmount, ...(photoPath ? { photoPath } : {}) },
     }, {
       onSuccess: () => {
         setNotes('');
-        setCompletion('');
+        setAmount(null);
         setPhoto(null);
         invalidate();
       },
@@ -161,6 +172,7 @@ export default function ProjectDetailScreen() {
               <LoomText serif style={[styles.title, { color: colors.foreground }]}>{project.title}</LoomText>
               <View style={styles.statusLine}><StatusChip status={project.status} /><LoomText style={{ color: colors.mutedForeground, fontSize: 14 }}>{project.craft === 'knitting' ? 'Knitting' : 'Crochet'} · {project.completionPercent}% complete</LoomText></View>
               <ProgressBar value={project.completionPercent} />
+              {progressDetail(project, latestProgressValue) ? <LoomText style={{ color: colors.primary, fontFamily: fonts.semibold, fontSize: 15, marginTop: 9 }} testID="text-progress-detail">{progressDetail(project, latestProgressValue)}</LoomText> : null}
             </View>
             <View style={[styles.detailCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <LoomText style={[styles.sectionLabel, { color: colors.primary }]}>Details</LoomText>
@@ -192,8 +204,7 @@ export default function ProjectDetailScreen() {
                 {photo ? <Pressable accessibilityRole="button" accessibilityLabel="Remove selected photo" onPress={() => setPhoto(null)} style={styles.removePhotoButton}><Feather name="x" size={18} color={colors.mutedForeground} /></Pressable> : null}
               </View>
               {photo ? <Image source={{ uri: photo.uri }} style={styles.photoPreview} contentFit="cover" accessibilityLabel="Selected progress photo preview" /> : null}
-              <FormFieldLabel>Completion (0–100%)</FormFieldLabel>
-              <TextInput value={completion || String(project.completionPercent)} onChangeText={setCompletion} placeholder="0–100" placeholderTextColor={colors.mutedForeground} keyboardType="number-pad" style={inputStyle} testID="input-progress-percent" />
+              {amountDraft ? <ProgressAmountInput project={project} value={amountDraft} onChange={setAmount} /> : null}
               {message ? <LoomText accessibilityRole="alert" style={{ color: colors.destructive, fontSize: 15, marginBottom: 11 }}>{message}</LoomText> : null}
               <LoomButton title="Save progress note" icon="feather" onPress={saveProgress} busy={addProgress.isPending || photoUploading} disabled={!notes.trim()} testID="button-save-progress" />
             </View>

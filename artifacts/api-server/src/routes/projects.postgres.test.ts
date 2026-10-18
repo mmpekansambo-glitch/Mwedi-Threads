@@ -80,6 +80,7 @@ describe.skipIf(!databaseUrl)("project authorization against PostgreSQL", () => 
       CREATE TYPE ${isolatedSchema}.craft_type AS ENUM ('knitting', 'crochet');
       CREATE TYPE ${isolatedSchema}.project_status AS ENUM ('planning', 'in_progress', 'paused', 'completed');
       CREATE TYPE ${isolatedSchema}.project_date_precision AS ENUM ('month', 'day');
+      CREATE TYPE ${isolatedSchema}.progress_method AS ENUM ('estimate', 'rows', 'sections', 'skeins');
       CREATE TABLE ${isolatedSchema}.users (
         id text PRIMARY KEY,
         email text,
@@ -109,6 +110,9 @@ describe.skipIf(!databaseUrl)("project authorization against PostgreSQL", () => 
         target_date_precision ${isolatedSchema}.project_date_precision NOT NULL DEFAULT 'day',
         completed_at date,
         completed_at_precision ${isolatedSchema}.project_date_precision NOT NULL DEFAULT 'day',
+        progress_method ${isolatedSchema}.progress_method NOT NULL DEFAULT 'estimate',
+        progress_total double precision,
+        progress_sections jsonb NOT NULL DEFAULT '[]'::jsonb,
         completion_percent integer NOT NULL DEFAULT 0,
         created_at timestamptz NOT NULL DEFAULT now(),
         updated_at timestamptz NOT NULL DEFAULT now()
@@ -119,6 +123,7 @@ describe.skipIf(!databaseUrl)("project authorization against PostgreSQL", () => 
         notes text NOT NULL,
         photo_path text,
         completion_percent integer NOT NULL,
+        progress_value double precision,
         created_at timestamptz NOT NULL DEFAULT now()
       );
       CREATE TABLE ${isolatedSchema}.stars (
@@ -319,5 +324,67 @@ describe.skipIf(!databaseUrl)("project authorization against PostgreSQL", () => 
       expect.objectContaining({ projectId: projectAId, notes: "A's private progress" }),
     ]);
     expect(JSON.stringify(dashboard)).not.toContain("B's");
+  });
+
+  it("works out progress from each project's tracking method", async () => {
+    const createResponse = await request("/projects", {
+      method: "POST",
+      user: ownerA,
+      body: { title: "Raglan", craft: "knitting", progressMethod: "rows", progressTotal: 200 },
+    });
+    expect(createResponse.status).toBe(201);
+    const project = await createResponse.json() as { id: string; progressMethod: string; progressTotal: number };
+    expect(project).toMatchObject({ progressMethod: "rows", progressTotal: 200 });
+
+    const missingRow = await request(`/projects/${project.id}/progress`, {
+      method: "POST",
+      user: ownerA,
+      body: { notes: "No row given", completionPercent: 90 },
+    });
+    expect(missingRow.status).toBe(400);
+
+    const rowNote = await request(`/projects/${project.id}/progress`, {
+      method: "POST",
+      user: ownerA,
+      body: { notes: "Finished the yoke", progressValue: 50 },
+    });
+    expect(rowNote.status).toBe(201);
+    expect(await rowNote.json()).toMatchObject({ completionPercent: 25, progressValue: 50 });
+
+    const noSections = await request(`/projects/${project.id}`, {
+      method: "PATCH",
+      user: ownerA,
+      body: { progressMethod: "sections" },
+    });
+    expect(noSections.status).toBe(400);
+
+    const switched = await request(`/projects/${project.id}`, {
+      method: "PATCH",
+      user: ownerA,
+      body: {
+        progressMethod: "sections",
+        progressSections: [{ name: "Body", done: false }, { name: "Sleeves", done: false }],
+      },
+    });
+    expect(switched.status).toBe(200);
+    expect(await switched.json()).toMatchObject({ progressMethod: "sections", completionPercent: 25 });
+
+    const sectionNote = await request(`/projects/${project.id}/progress`, {
+      method: "POST",
+      user: ownerA,
+      body: { notes: "Both done", sectionsDone: [0, 1] },
+    });
+    expect(sectionNote.status).toBe(201);
+
+    const detail = await (await request(`/projects/${project.id}`, { user: ownerA })).json() as {
+      status: string;
+      completionPercent: number;
+      progressSections: { name: string; done: boolean }[];
+    };
+    expect(detail).toMatchObject({
+      status: "completed",
+      completionPercent: 100,
+      progressSections: [{ name: "Body", done: true }, { name: "Sleeves", done: true }],
+    });
   });
 });

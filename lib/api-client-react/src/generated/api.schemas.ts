@@ -39,6 +39,28 @@ export const ProjectDatePrecision = {
   day: 'day',
 } as const;
 
+/**
+ * How a project's completion percentage is worked out.
+ */
+export type ProgressMethod = typeof ProgressMethod[keyof typeof ProgressMethod];
+
+
+export const ProgressMethod = {
+  estimate: 'estimate',
+  rows: 'rows',
+  sections: 'sections',
+  skeins: 'skeins',
+} as const;
+
+export interface ProgressSection {
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  name: string;
+  done: boolean;
+}
+
 export interface ProgressEntry {
   id: string;
   projectId: string;
@@ -50,6 +72,11 @@ export interface ProgressEntry {
      * @maximum 100
      */
   completionPercent: number;
+  /**
+     * The row or round reached, or skeins used, when the project tracks those.
+     * @nullable
+     */
+  progressValue: number | null;
   createdAt: string;
 }
 
@@ -118,6 +145,16 @@ export interface Project {
   completedAt: string | null;
   completedAtPrecision: ProjectDatePrecision;
   starred: boolean;
+  progressMethod: ProgressMethod;
+  /**
+     * Total rows or rounds, or skeins planned.
+     * @maximum 100000
+     * @exclusiveMinimum 0
+     * @nullable
+     */
+  progressTotal: number | null;
+  /** @maxItems 40 */
+  progressSections: ProgressSection[];
   /**
      * @minimum 0
      * @maximum 100
@@ -169,6 +206,16 @@ export interface CreateProject {
   /** @nullable */
   targetDate?: string | null;
   targetDatePrecision?: ProjectDatePrecision;
+  progressMethod?: ProgressMethod;
+  /**
+     * Total rows or rounds, or skeins planned.
+     * @maximum 100000
+     * @exclusiveMinimum 0
+     * @nullable
+     */
+  progressTotal?: number | null;
+  /** @maxItems 40 */
+  progressSections?: ProgressSection[];
 }
 
 export interface UpdateProject {
@@ -212,6 +259,16 @@ export interface UpdateProject {
   /** @nullable */
   completedAt?: string | null;
   completedAtPrecision?: ProjectDatePrecision;
+  progressMethod?: ProgressMethod;
+  /**
+     * Total rows or rounds, or skeins planned.
+     * @maximum 100000
+     * @exclusiveMinimum 0
+     * @nullable
+     */
+  progressTotal?: number | null;
+  /** @maxItems 40 */
+  progressSections?: ProgressSection[];
   /**
      * @minimum 0
      * @maximum 100
@@ -238,10 +295,23 @@ export interface CreateProgress {
      */
   notes: string;
   /**
+     * Required when the project uses the estimate method; worked out by the server otherwise.
      * @minimum 0
      * @maximum 100
      */
-  completionPercent: number;
+  completionPercent?: number;
+  /**
+     * Row or round reached, or skeins used so far.
+     * @minimum 0
+     * @maximum 100000
+     */
+  progressValue?: number;
+  /**
+     * Positions of the pattern sections that are finished.
+     * @maxItems 40
+     * @items.minimum 0
+     */
+  sectionsDone?: number[];
   /** @minLength 1 */
   photoPath?: string;
 }
