@@ -70,6 +70,9 @@ function project(id: string, ownerId: string, title: string) {
     targetDatePrecision: "day" as const,
     completedAt: null as string | null,
     completedAtPrecision: "day" as const,
+    progressMethod: "estimate" as const,
+    progressTotal: null as number | null,
+    progressSections: [] as { name: string; done: boolean }[],
     completionPercent: 25,
     createdAt: timestamp,
     updatedAt: timestamp,
@@ -88,6 +91,7 @@ function progress(
     notes,
     photoPath,
     completionPercent: 25,
+    progressValue: null as number | null,
     createdAt: timestamp,
   };
 }

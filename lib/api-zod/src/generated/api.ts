@@ -21,6 +21,13 @@ export const HealthCheckResponse = zod.object({
  * @summary Get the signed-in user's project overview
  */
 export const getDashboardResponseRecentProjectsItemDesignerWebsiteRegExp = new RegExp('^[Hh][Tt][Tt][Pp][Ss]?:/');
+export const getDashboardResponseRecentProjectsItemProgressTotalExclusiveMin = 0;
+export const getDashboardResponseRecentProjectsItemProgressTotalMax = 100000;
+
+export const getDashboardResponseRecentProjectsItemProgressSectionsItemNameMax = 80;
+
+export const getDashboardResponseRecentProjectsItemProgressSectionsMax = 40;
+
 export const getDashboardResponseRecentProjectsItemCompletionPercentMin = 0;
 export const getDashboardResponseRecentProjectsItemCompletionPercentMax = 100;
 
@@ -53,6 +60,12 @@ export const GetDashboardResponse = zod.object({
   "completedAt": zod.coerce.date().nullable(),
   "completedAtPrecision": zod.enum(['month', 'day']),
   "starred": zod.boolean(),
+  "progressMethod": zod.enum(['estimate', 'rows', 'sections', 'skeins']).describe('How a project\'s completion percentage is worked out.'),
+  "progressTotal": zod.number().gt(getDashboardResponseRecentProjectsItemProgressTotalExclusiveMin).max(getDashboardResponseRecentProjectsItemProgressTotalMax).nullable().describe('Total rows or rounds, or skeins planned.'),
+  "progressSections": zod.array(zod.object({
+  "name": zod.string().min(1).max(getDashboardResponseRecentProjectsItemProgressSectionsItemNameMax),
+  "done": zod.boolean()
+})).max(getDashboardResponseRecentProjectsItemProgressSectionsMax),
   "completionPercent": zod.number().int().min(getDashboardResponseRecentProjectsItemCompletionPercentMin).max(getDashboardResponseRecentProjectsItemCompletionPercentMax),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -93,6 +106,13 @@ export const GetProjectsQueryParams = zod.object({
 })
 
 export const getProjectsResponseDesignerWebsiteRegExp = new RegExp('^[Hh][Tt][Tt][Pp][Ss]?:/');
+export const getProjectsResponseProgressTotalExclusiveMin = 0;
+export const getProjectsResponseProgressTotalMax = 100000;
+
+export const getProjectsResponseProgressSectionsItemNameMax = 80;
+
+export const getProjectsResponseProgressSectionsMax = 40;
+
 export const getProjectsResponseCompletionPercentMin = 0;
 export const getProjectsResponseCompletionPercentMax = 100;
 
@@ -121,6 +141,12 @@ export const GetProjectsResponseItem = zod.object({
   "completedAt": zod.coerce.date().nullable(),
   "completedAtPrecision": zod.enum(['month', 'day']),
   "starred": zod.boolean(),
+  "progressMethod": zod.enum(['estimate', 'rows', 'sections', 'skeins']).describe('How a project\'s completion percentage is worked out.'),
+  "progressTotal": zod.number().gt(getProjectsResponseProgressTotalExclusiveMin).max(getProjectsResponseProgressTotalMax).nullable().describe('Total rows or rounds, or skeins planned.'),
+  "progressSections": zod.array(zod.object({
+  "name": zod.string().min(1).max(getProjectsResponseProgressSectionsItemNameMax),
+  "done": zod.boolean()
+})).max(getProjectsResponseProgressSectionsMax),
   "completionPercent": zod.number().int().min(getProjectsResponseCompletionPercentMin).max(getProjectsResponseCompletionPercentMax),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -134,6 +160,13 @@ export const GetProjectsResponse = zod.array(GetProjectsResponseItem)
 export const createProjectBodyTitleMax = 160;
 
 export const createProjectBodyDesignerWebsiteRegExp = new RegExp('^[Hh][Tt][Tt][Pp][Ss]?:/');
+export const createProjectBodyProgressTotalExclusiveMin = 0;
+export const createProjectBodyProgressTotalMax = 100000;
+
+export const createProjectBodyProgressSectionsItemNameMax = 80;
+
+export const createProjectBodyProgressSectionsMax = 40;
+
 
 
 export const CreateProjectBody = zod.object({
@@ -154,10 +187,23 @@ export const CreateProjectBody = zod.object({
   "startedAt": zod.coerce.date().nullish(),
   "startedAtPrecision": zod.enum(['month', 'day']).optional(),
   "targetDate": zod.coerce.date().nullish(),
-  "targetDatePrecision": zod.enum(['month', 'day']).optional()
+  "targetDatePrecision": zod.enum(['month', 'day']).optional(),
+  "progressMethod": zod.enum(['estimate', 'rows', 'sections', 'skeins']).optional().describe('How a project\'s completion percentage is worked out.'),
+  "progressTotal": zod.number().gt(createProjectBodyProgressTotalExclusiveMin).max(createProjectBodyProgressTotalMax).nullish().describe('Total rows or rounds, or skeins planned.'),
+  "progressSections": zod.array(zod.object({
+  "name": zod.string().min(1).max(createProjectBodyProgressSectionsItemNameMax),
+  "done": zod.boolean()
+})).max(createProjectBodyProgressSectionsMax).optional()
 })
 
 export const createProjectResponseDesignerWebsiteRegExp = new RegExp('^[Hh][Tt][Tt][Pp][Ss]?:/');
+export const createProjectResponseProgressTotalExclusiveMin = 0;
+export const createProjectResponseProgressTotalMax = 100000;
+
+export const createProjectResponseProgressSectionsItemNameMax = 80;
+
+export const createProjectResponseProgressSectionsMax = 40;
+
 export const createProjectResponseCompletionPercentMin = 0;
 export const createProjectResponseCompletionPercentMax = 100;
 
@@ -186,6 +232,12 @@ export const CreateProjectResponse = zod.object({
   "completedAt": zod.coerce.date().nullable(),
   "completedAtPrecision": zod.enum(['month', 'day']),
   "starred": zod.boolean(),
+  "progressMethod": zod.enum(['estimate', 'rows', 'sections', 'skeins']).describe('How a project\'s completion percentage is worked out.'),
+  "progressTotal": zod.number().gt(createProjectResponseProgressTotalExclusiveMin).max(createProjectResponseProgressTotalMax).nullable().describe('Total rows or rounds, or skeins planned.'),
+  "progressSections": zod.array(zod.object({
+  "name": zod.string().min(1).max(createProjectResponseProgressSectionsItemNameMax),
+  "done": zod.boolean()
+})).max(createProjectResponseProgressSectionsMax),
   "completionPercent": zod.number().int().min(createProjectResponseCompletionPercentMin).max(createProjectResponseCompletionPercentMax),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -214,6 +266,13 @@ export const GetProjectParams = zod.object({
 })
 
 export const getProjectResponseOneDesignerWebsiteRegExp = new RegExp('^[Hh][Tt][Tt][Pp][Ss]?:/');
+export const getProjectResponseOneProgressTotalExclusiveMin = 0;
+export const getProjectResponseOneProgressTotalMax = 100000;
+
+export const getProjectResponseOneProgressSectionsItemNameMax = 80;
+
+export const getProjectResponseOneProgressSectionsMax = 40;
+
 export const getProjectResponseOneCompletionPercentMin = 0;
 export const getProjectResponseOneCompletionPercentMax = 100;
 
@@ -245,6 +304,12 @@ export const GetProjectResponse = zod.object({
   "completedAt": zod.coerce.date().nullable(),
   "completedAtPrecision": zod.enum(['month', 'day']),
   "starred": zod.boolean(),
+  "progressMethod": zod.enum(['estimate', 'rows', 'sections', 'skeins']).describe('How a project\'s completion percentage is worked out.'),
+  "progressTotal": zod.number().gt(getProjectResponseOneProgressTotalExclusiveMin).max(getProjectResponseOneProgressTotalMax).nullable().describe('Total rows or rounds, or skeins planned.'),
+  "progressSections": zod.array(zod.object({
+  "name": zod.string().min(1).max(getProjectResponseOneProgressSectionsItemNameMax),
+  "done": zod.boolean()
+})).max(getProjectResponseOneProgressSectionsMax),
   "completionPercent": zod.number().int().min(getProjectResponseOneCompletionPercentMin).max(getProjectResponseOneCompletionPercentMax),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -255,6 +320,7 @@ export const GetProjectResponse = zod.object({
   "notes": zod.string(),
   "photoPath": zod.string().nullable(),
   "completionPercent": zod.number().int().min(getProjectResponseTwoProgressItemCompletionPercentMin).max(getProjectResponseTwoProgressItemCompletionPercentMax),
+  "progressValue": zod.number().nullable().describe('The row or round reached, or skeins used, when the project tracks those.'),
   "createdAt": zod.coerce.date()
 }))
 }))
@@ -270,6 +336,13 @@ export const UpdateProjectParams = zod.object({
 export const updateProjectBodyTitleMax = 160;
 
 export const updateProjectBodyDesignerWebsiteRegExp = new RegExp('^[Hh][Tt][Tt][Pp][Ss]?:/');
+export const updateProjectBodyProgressTotalExclusiveMin = 0;
+export const updateProjectBodyProgressTotalMax = 100000;
+
+export const updateProjectBodyProgressSectionsItemNameMax = 80;
+
+export const updateProjectBodyProgressSectionsMax = 40;
+
 export const updateProjectBodyCompletionPercentMin = 0;
 export const updateProjectBodyCompletionPercentMax = 100;
 
@@ -296,10 +369,23 @@ export const UpdateProjectBody = zod.object({
   "targetDatePrecision": zod.enum(['month', 'day']).optional(),
   "completedAt": zod.coerce.date().nullish(),
   "completedAtPrecision": zod.enum(['month', 'day']).optional(),
+  "progressMethod": zod.enum(['estimate', 'rows', 'sections', 'skeins']).optional().describe('How a project\'s completion percentage is worked out.'),
+  "progressTotal": zod.number().gt(updateProjectBodyProgressTotalExclusiveMin).max(updateProjectBodyProgressTotalMax).nullish().describe('Total rows or rounds, or skeins planned.'),
+  "progressSections": zod.array(zod.object({
+  "name": zod.string().min(1).max(updateProjectBodyProgressSectionsItemNameMax),
+  "done": zod.boolean()
+})).max(updateProjectBodyProgressSectionsMax).optional(),
   "completionPercent": zod.number().int().min(updateProjectBodyCompletionPercentMin).max(updateProjectBodyCompletionPercentMax).optional()
 })
 
 export const updateProjectResponseDesignerWebsiteRegExp = new RegExp('^[Hh][Tt][Tt][Pp][Ss]?:/');
+export const updateProjectResponseProgressTotalExclusiveMin = 0;
+export const updateProjectResponseProgressTotalMax = 100000;
+
+export const updateProjectResponseProgressSectionsItemNameMax = 80;
+
+export const updateProjectResponseProgressSectionsMax = 40;
+
 export const updateProjectResponseCompletionPercentMin = 0;
 export const updateProjectResponseCompletionPercentMax = 100;
 
@@ -328,6 +414,12 @@ export const UpdateProjectResponse = zod.object({
   "completedAt": zod.coerce.date().nullable(),
   "completedAtPrecision": zod.enum(['month', 'day']),
   "starred": zod.boolean(),
+  "progressMethod": zod.enum(['estimate', 'rows', 'sections', 'skeins']).describe('How a project\'s completion percentage is worked out.'),
+  "progressTotal": zod.number().gt(updateProjectResponseProgressTotalExclusiveMin).max(updateProjectResponseProgressTotalMax).nullable().describe('Total rows or rounds, or skeins planned.'),
+  "progressSections": zod.array(zod.object({
+  "name": zod.string().min(1).max(updateProjectResponseProgressSectionsItemNameMax),
+  "done": zod.boolean()
+})).max(updateProjectResponseProgressSectionsMax),
   "completionPercent": zod.number().int().min(updateProjectResponseCompletionPercentMin).max(updateProjectResponseCompletionPercentMax),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -376,12 +468,21 @@ export const addProgressBodyNotesMax = 2000;
 export const addProgressBodyCompletionPercentMin = 0;
 export const addProgressBodyCompletionPercentMax = 100;
 
+export const addProgressBodyProgressValueMin = 0;
+export const addProgressBodyProgressValueMax = 100000;
+
+export const addProgressBodySectionsDoneItemMin = 0;
+
+export const addProgressBodySectionsDoneMax = 40;
+
 
 
 
 export const AddProgressBody = zod.object({
   "notes": zod.string().min(1).max(addProgressBodyNotesMax),
-  "completionPercent": zod.number().int().min(addProgressBodyCompletionPercentMin).max(addProgressBodyCompletionPercentMax),
+  "completionPercent": zod.number().int().min(addProgressBodyCompletionPercentMin).max(addProgressBodyCompletionPercentMax).optional().describe('Required when the project uses the estimate method; worked out by the server otherwise.'),
+  "progressValue": zod.number().min(addProgressBodyProgressValueMin).max(addProgressBodyProgressValueMax).optional().describe('Row or round reached, or skeins used so far.'),
+  "sectionsDone": zod.array(zod.number().int().min(addProgressBodySectionsDoneItemMin)).max(addProgressBodySectionsDoneMax).optional().describe('Positions of the pattern sections that are finished.'),
   "photoPath": zod.string().min(1).optional()
 })
 
@@ -396,6 +497,7 @@ export const AddProgressResponse = zod.object({
   "notes": zod.string(),
   "photoPath": zod.string().nullable(),
   "completionPercent": zod.number().int().min(addProgressResponseCompletionPercentMin).max(addProgressResponseCompletionPercentMax),
+  "progressValue": zod.number().nullable().describe('The row or round reached, or skeins used, when the project tracks those.'),
   "createdAt": zod.coerce.date()
 })
 

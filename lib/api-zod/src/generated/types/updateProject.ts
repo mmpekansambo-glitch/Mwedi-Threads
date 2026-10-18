@@ -7,6 +7,8 @@
  */
 import type { CraftType } from './craftType';
 import type { CrochetHookSize } from './crochetHookSize';
+import type { ProgressMethod } from './progressMethod';
+import type { ProgressSection } from './progressSection';
 import type { ProjectDatePrecision } from './projectDatePrecision';
 import type { ProjectStatus } from './projectStatus';
 
@@ -51,6 +53,16 @@ export interface UpdateProject {
   /** @nullable */
   completedAt?: Date | null;
   completedAtPrecision?: ProjectDatePrecision;
+  progressMethod?: ProgressMethod;
+  /**
+     * Total rows or rounds, or skeins planned.
+     * @maximum 100000
+     * @exclusiveMinimum 0
+     * @nullable
+     */
+  progressTotal?: number | null;
+  /** @maxItems 40 */
+  progressSections?: ProgressSection[];
   /**
      * @minimum 0
      * @maximum 100

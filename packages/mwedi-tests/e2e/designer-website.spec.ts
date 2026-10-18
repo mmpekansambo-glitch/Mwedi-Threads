@@ -21,6 +21,9 @@ type ProjectResponse = {
   startedAtPrecision: "month" | "day";
   targetDate: string | null;
   targetDatePrecision: "month" | "day";
+  progressMethod: "estimate" | "rows" | "sections" | "skeins";
+  progressTotal: number | null;
+  progressSections: { name: string; done: boolean }[];
   completionPercent: number;
   createdAt: string;
   updatedAt: string;
@@ -47,6 +50,9 @@ const projectFixture = (overrides: Partial<ProjectResponse> = {}): ProjectRespon
   startedAtPrecision: "day",
   targetDate: null,
   targetDatePrecision: "day",
+  progressMethod: "estimate",
+  progressTotal: null,
+  progressSections: [],
   completionPercent: 25,
   createdAt: "2026-01-10T12:00:00.000Z",
   updatedAt: "2026-01-10T12:00:00.000Z",

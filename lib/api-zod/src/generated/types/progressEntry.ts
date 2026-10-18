@@ -17,5 +17,10 @@ export interface ProgressEntry {
      * @maximum 100
      */
   completionPercent: number;
+  /**
+     * The row or round reached, or skeins used, when the project tracks those.
+     * @nullable
+     */
+  progressValue: number | null;
   createdAt: Date;
 }

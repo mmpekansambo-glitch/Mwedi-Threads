@@ -353,6 +353,20 @@ components:
     ProjectDatePrecision:
       type: string
       enum: [month, day]
+    ProgressMethod:
+      type: string
+      enum: [estimate, rows, sections, skeins]
+      description: How a project's completion percentage is worked out.
+    ProgressSection:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        done:
+          type: boolean
+      required: [name, done]
     ProgressEntry:
       type: object
       properties:
@@ -370,10 +384,13 @@ components:
           type: integer
           minimum: 0
           maximum: 100
+        progressValue:
+          type: [number, "null"]
+          description: The row or round reached, or skeins used, when the project tracks those.
         createdAt:
           type: string
           format: date-time
-      required: [id, projectId, notes, photoPath, completionPercent, createdAt]
+      required: [id, projectId, notes, photoPath, completionPercent, progressValue, createdAt]
     CrochetHookSize:
       type: string
       enum:
@@ -452,6 +469,18 @@ components:
           $ref: "#/components/schemas/ProjectDatePrecision"
         starred:
           type: boolean
+        progressMethod:
+          $ref: "#/components/schemas/ProgressMethod"
+        progressTotal:
+          type: [number, "null"]
+          exclusiveMinimum: 0
+          maximum: 100000
+          description: Total rows or rounds, or skeins planned.
+        progressSections:
+          type: array
+          maxItems: 40
+          items:
+            $ref: "#/components/schemas/ProgressSection"
         completionPercent:
           type: integer
           minimum: 0
@@ -485,6 +514,9 @@ components:
         - completedAt
         - completedAtPrecision
         - starred
+        - progressMethod
+        - progressTotal
+        - progressSections
         - completionPercent
         - createdAt
         - updatedAt
@@ -545,6 +577,18 @@ components:
           format: date
         targetDatePrecision:
           $ref: "#/components/schemas/ProjectDatePrecision"
+        progressMethod:
+          $ref: "#/components/schemas/ProgressMethod"
+        progressTotal:
+          type: [number, "null"]
+          exclusiveMinimum: 0
+          maximum: 100000
+          description: Total rows or rounds, or skeins planned.
+        progressSections:
+          type: array
+          maxItems: 40
+          items:
+            $ref: "#/components/schemas/ProgressSection"
       required: [title, craft]
     UpdateProject:
       type: object
@@ -598,6 +642,18 @@ components:
           format: date
         completedAtPrecision:
           $ref: "#/components/schemas/ProjectDatePrecision"
+        progressMethod:
+          $ref: "#/components/schemas/ProgressMethod"
+        progressTotal:
+          type: [number, "null"]
+          exclusiveMinimum: 0
+          maximum: 100000
+          description: Total rows or rounds, or skeins planned.
+        progressSections:
+          type: array
+          maxItems: 40
+          items:
+            $ref: "#/components/schemas/ProgressSection"
         completionPercent:
           type: integer
           minimum: 0
@@ -633,10 +689,23 @@ components:
           type: integer
           minimum: 0
           maximum: 100
+          description: Required when the project uses the estimate method; worked out by the server otherwise.
+        progressValue:
+          type: number
+          minimum: 0
+          maximum: 100000
+          description: Row or round reached, or skeins used so far.
+        sectionsDone:
+          type: array
+          maxItems: 40
+          items:
+            type: integer
+            minimum: 0
+          description: Positions of the pattern sections that are finished.
         photoPath:
           type: string
           minLength: 1
-      required: [notes, completionPercent]
+      required: [notes]
     ProgressPhotoUploadRequest:
       type: object
       properties:

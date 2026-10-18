@@ -9,6 +9,7 @@ import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import { FormFieldLabel, LoadingState, LoomButton, LoomText, SignedInGate, fonts } from '@/components/loom';
+import { ProgressMethodPicker, defaultProgressSettings, progressSettingsError, progressSettingsForApi, progressSettingsFromProject, type ProgressSettingsDraft } from '@/components/ProgressMethod';
 import { useColors } from '@/hooks/useColors';
 import { useEffect, useRef, useState } from 'react';
 
@@ -38,6 +39,8 @@ export default function EditProjectScreen() {
   const [completedAt, setCompletedAt] = useState('');
   const [completedAtPrecision, setCompletedAtPrecision] = useState<ProjectDatePrecision>('day');
   const [error, setError] = useState('');
+  const [progressSettings, setProgressSettings] = useState<ProgressSettingsDraft>(defaultProgressSettings);
+  const [showProgressError, setShowProgressError] = useState(false);
   useEffect(() => {
     if (!project) return;
     setTitle(project.title);
@@ -56,6 +59,7 @@ export default function EditProjectScreen() {
     setDescription(project.description || '');
     setCompletedAt(project.completedAt || '');
     setCompletedAtPrecision(project.completedAtPrecision);
+    setProgressSettings(progressSettingsFromProject(project));
   }, [project?.id]);
   const previewDesignerTitle = () => {
     const websiteUrl = designerWebsite.trim();
@@ -82,6 +86,10 @@ export default function EditProjectScreen() {
       setError('A project name is required.');
       return;
     }
+    if (progressSettingsError(progressSettings)) {
+      setShowProgressError(true);
+      return;
+    }
     const data: UpdateProject = {
       title: title.trim(),
       patternName: patternName.trim() || null,
@@ -97,6 +105,7 @@ export default function EditProjectScreen() {
       ...(project.status === 'completed' && completedAt
         ? { completedAt: projectDateForApi(completedAt, completedAtPrecision), completedAtPrecision }
         : {}),
+      ...progressSettingsForApi(progressSettings),
     };
     update.mutate({ projectId: id, data }, {
       onSuccess: () => {
@@ -122,6 +131,7 @@ export default function EditProjectScreen() {
             <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <FormFieldLabel>Project name</FormFieldLabel>
               <TextInput value={title} onChangeText={setTitle} style={inputStyle} />
+              <ProgressMethodPicker value={progressSettings} onChange={setProgressSettings} error={showProgressError ? progressSettingsError(progressSettings) : ''} />
               <FormFieldLabel>Pattern name</FormFieldLabel>
               <TextInput value={patternName} onChangeText={setPatternName} placeholder="Pattern or source" placeholderTextColor={colors.mutedForeground} style={inputStyle} />
               <FormFieldLabel>Designer</FormFieldLabel>
