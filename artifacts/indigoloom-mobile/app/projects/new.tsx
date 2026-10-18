@@ -100,14 +100,11 @@ export default function NewProjectScreen() {
       <View style={[styles.screen, { backgroundColor: colors.background }]}>
         <View style={[styles.nav, { paddingTop: insets.top + 9, borderBottomColor: colors.border }]}>
           <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={() => router.back()} style={styles.back}><Feather name="arrow-left" size={19} color={colors.primary} /></Pressable>
-          <LoomText style={[styles.navTitle, { color: colors.foreground }]}>A fresh cast-on</LoomText>
+          <LoomText style={[styles.navTitle, { color: colors.foreground }]}>New project</LoomText>
           <View style={{ width: 38 }} />
         </View>
         <KeyboardAwareScrollViewCompat contentContainerStyle={styles.form} bottomOffset={80} keyboardShouldPersistTaps="handled">
-          <LoomText serif style={[styles.heading, { color: colors.foreground }]}>Start a project</LoomText>
-          <LoomText style={[styles.intro, { color: colors.mutedForeground }]}>Give your idea a place to take shape.</LoomText>
           <View style={[styles.formCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <LoomText style={[styles.sectionLabel, { color: colors.primary }]}>THE BEGINNINGS</LoomText>
             <FormFieldLabel>Project name *</FormFieldLabel>
             <TextInput {...inputProps} value={title} onChangeText={setTitle} maxLength={160} placeholder="e.g. Juniper cardigan" style={fieldStyle} testID="input-project-title" />
             <FormFieldLabel>Craft</FormFieldLabel>
@@ -118,10 +115,10 @@ export default function NewProjectScreen() {
               })}
             </View>
             <View style={[styles.divider, { borderColor: colors.border }]} />
-            <LoomText style={[styles.sectionLabel, { color: colors.primary }]}>THE LOVELY DETAILS</LoomText>
+            <LoomText style={[styles.sectionLabel, { color: colors.primary }]}>Pattern and materials</LoomText>
             <FormFieldLabel>Pattern name</FormFieldLabel>
             <TextInput {...inputProps} value={patternName} onChangeText={setPatternName} placeholder="Pattern or source" style={fieldStyle} />
-            <LoomText style={[styles.sectionLabel, { color: colors.primary }]}>DESIGNER</LoomText>
+            <LoomText style={[styles.sectionLabel, { color: colors.primary }]}>Design</LoomText>
             <View style={styles.designerModeRow} accessibilityLabel="Designer entry option">
               {(['name', 'website'] as const).map((option) => {
                 const active = designerMode === option;
@@ -140,11 +137,11 @@ export default function NewProjectScreen() {
                 <FormFieldLabel>Website link</FormFieldLabel>
                 <TextInput {...inputProps} value={designerWebsite} onChangeText={(value) => { designerWebsiteRef.current = value; setDesignerWebsite(value); setPatternDesigner(''); setDesignerPageTitle(''); setDesignerPreviewMessage(''); }} placeholder="https://example.com" autoCapitalize="none" autoCorrect={false} keyboardType="url" style={fieldStyle} testID="input-create-designer-website" />
                 <LoomButton title="Preview page title" variant="quiet" onPress={previewDesignerTitle} busy={previewTitle.isPending} testID="button-create-preview-designer-title" />
-                {designerPageTitle ? <View style={[styles.designerPagePreview, { backgroundColor: colors.selectedWash, borderColor: colors.border }]}><LoomText style={{ color: colors.mutedForeground, fontSize: 13, letterSpacing: 1 }}>PAGE TITLE PREVIEW</LoomText><LoomText numberOfLines={2} ellipsizeMode="tail" style={[styles.designerPageTitle, { color: colors.foreground, fontFamily: fonts.semibold, fontSize: 15 }]}>{designerPageTitle}</LoomText></View> : null}
+                {designerPageTitle ? <View style={[styles.designerPagePreview, { backgroundColor: colors.selectedWash, borderColor: colors.border }]}><LoomText style={{ color: colors.mutedForeground, fontSize: 13, letterSpacing: 1 }}>Page title preview</LoomText><LoomText numberOfLines={2} ellipsizeMode="tail" style={[styles.designerPageTitle, { color: colors.foreground, fontFamily: fonts.semibold, fontSize: 15 }]}>{designerPageTitle}</LoomText></View> : null}
                 {designerPreviewMessage ? <LoomText accessibilityRole="alert" style={{ color: colors.mutedForeground, fontSize: 14, lineHeight: 20, marginBottom: 12 }}>{designerPreviewMessage}</LoomText> : null}
               </>
             )}
-            <LoomText style={[styles.sectionLabel, { color: colors.primary }]}>YARN</LoomText>
+            <LoomText style={[styles.sectionLabel, { color: colors.primary }]}>Yarn</LoomText>
             <FormFieldLabel>Brand</FormFieldLabel>
             <TextInput {...inputProps} value={yarnBrand} onChangeText={setYarnBrand} placeholder="e.g. Cascade" style={fieldStyle} testID="input-yarn-brand" />
             <FormFieldLabel>Type</FormFieldLabel>
@@ -164,7 +161,7 @@ export default function NewProjectScreen() {
             )}
             <ProjectDateField label="Started on" value={startedAt} precision={startedAtPrecision} onChange={setStartedAt} onPrecisionChange={setStartedAtPrecision} testID="input-start-date" />
             <ProjectDateField label="Aiming for (optional)" value={targetDate} precision={targetDatePrecision} onChange={setTargetDate} onPrecisionChange={setTargetDatePrecision} testID="input-target-date" />
-            <FormFieldLabel>Notes to future you</FormFieldLabel>
+            <FormFieldLabel>Notes</FormFieldLabel>
             <TextInput {...inputProps} value={description} onChangeText={setDescription} placeholder="What made you fall for this one?" multiline numberOfLines={4} textAlignVertical="top" style={[...fieldStyle, styles.multiline]} />
             {errorMessage ? <LoomText accessibilityRole="alert" style={[styles.error, { color: colors.destructive }]}>{errorMessage}</LoomText> : null}
             <LoomButton title="Save this project" icon="arrow-right" onPress={save} busy={create.isPending} disabled={!title.trim()} testID="button-save-project" />
@@ -181,10 +178,8 @@ const styles = StyleSheet.create({
   navTitle: { fontFamily: fonts.semibold, fontSize: 16 },
   back: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
   form: { width: '100%', maxWidth: 650, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 23, paddingBottom: 40 },
-  heading: { fontSize: 32 },
-  intro: { fontSize: 16, marginTop: 6, marginBottom: 18 },
   formCard: { width: '100%', maxWidth: '100%', minWidth: 0, borderWidth: 1, borderRadius: 18, padding: 17 },
-  sectionLabel: { fontFamily: fonts.bold, fontSize: 13, letterSpacing: 1.1, marginBottom: 13 },
+  sectionLabel: { fontFamily: fonts.semibold, fontSize: 15, marginBottom: 13 },
   input: { minHeight: 45, borderWidth: 1, borderRadius: 9, paddingHorizontal: 12, paddingVertical: 10, fontSize: 16, fontFamily: fonts.body, marginBottom: 14 },
   choiceRow: { flexDirection: 'row', gap: 9, marginBottom: 14 },
   designerModeRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },

@@ -25,12 +25,12 @@ function WrappedTick({ x, y, payload }: { x?: number; y?: number; payload?: { va
   </text>;
 }
 
-function ChartCard({ eyebrow, title, rows, emptyText, unit, note, testId }: {
-  eyebrow: string; title: string; rows: Row[]; emptyText: string; unit: [string, string]; note?: string; testId: string;
+function ChartCard({ title, rows, emptyText, unit, note, testId }: {
+  title: string; rows: Row[]; emptyText: string; unit: [string, string]; note?: string; testId: string;
 }) {
   const hasData = rows.some((row) => row.count > 0);
   return <figure className="chart-card loom-card" data-testid={testId}>
-    <figcaption><span className="eyebrow">{eyebrow}</span><h2 className="serif">{title}</h2></figcaption>
+    <figcaption><h2 className="serif">{title}</h2></figcaption>
     {hasData ? <div className="chart-plot">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={rows} margin={{ top: 8, right: 4, bottom: 0, left: -24 }} barCategoryGap="22%">
@@ -71,12 +71,12 @@ export function DashboardCharts({ charts }: { charts: Charts }) {
   const undated = charts.completedWithoutDate;
 
   return <section className="chart-row" aria-label="Your making habits">
-    <ChartCard testId="chart-projects-by-status" eyebrow="WHERE THINGS STAND" title="Projects by status" rows={statusRows} unit={['project', 'projects']}
+    <ChartCard testId="chart-projects-by-status" title="Projects by status" rows={statusRows} unit={['project', 'projects']}
       emptyText="Add your first project and it will show up here."/>
-    <ChartCard testId="chart-completed-per-month" eyebrow="THE LAST 12 MONTHS" title="Finished each month" rows={monthRows} unit={['project', 'projects']}
+    <ChartCard testId="chart-completed-per-month" title="Finished, last 12 months" rows={monthRows} unit={['project', 'projects']}
       emptyText="Nothing finished in the last year yet. Your first finish will land here."
       note={undated ? `${undated} finished ${undated === 1 ? 'project has' : 'projects have'} no completed date, so ${undated === 1 ? 'it isn’t' : 'they aren’t'} counted here.` : undefined}/>
-    <ChartCard testId="chart-progress-per-week" eyebrow="THE LAST 12 WEEKS" title="Progress notes each week" rows={weekRows} unit={['note', 'notes']}
+    <ChartCard testId="chart-progress-per-week" title="Notes, last 12 weeks" rows={weekRows} unit={['note', 'notes']}
       emptyText="No progress notes in the last 12 weeks. Add one from any project page."/>
   </section>;
 }

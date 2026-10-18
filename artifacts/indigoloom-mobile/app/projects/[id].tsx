@@ -153,18 +153,17 @@ export default function ProjectDetailScreen() {
           {project ? <StarButton project={project} /> : null}
           {project ? <Pressable accessibilityRole="button" accessibilityLabel="Edit project" onPress={() => router.push({ pathname: '/projects/[id]/edit', params: { id } })} style={styles.navButton}><Feather name="edit-2" size={17} color={colors.primary} /></Pressable> : <View style={styles.navButton} />}
         </View>
-        {query.isLoading ? <LoomText style={[styles.loading, { color: colors.mutedForeground }]}>Gathering this project’s notes…</LoomText> : query.isError || !project ? (
+        {query.isLoading ? <LoomText style={[styles.loading, { color: colors.mutedForeground }]}>Loading…</LoomText> : query.isError || !project ? (
           <View style={styles.center}><LoomText serif style={{ color: colors.foreground, fontSize: 26 }}>Project not found</LoomText><LoomText style={{ color: colors.mutedForeground, marginTop: 7 }}>It may have been removed or moved.</LoomText><LoomButton title="Back to projects" onPress={() => router.replace('/(tabs)/projects')} variant="secondary" style={{ marginTop: 16 }} /></View>
         ) : (
           <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 30 }]}>
           <View style={[styles.hero, { backgroundColor: project.craft === 'knitting' ? colors.knitWash : colors.crochetWash }]}>
-              <LoomText style={[styles.kicker, { color: colors.mutedForeground }]}>{project.craft === 'knitting' ? 'KNITTING JOURNAL' : 'CROCHET JOURNAL'}</LoomText>
               <LoomText serif style={[styles.title, { color: colors.foreground }]}>{project.title}</LoomText>
-              <View style={styles.statusLine}><StatusChip status={project.status} /><LoomText style={{ color: colors.mutedForeground, fontSize: 14 }}>{project.completionPercent}% complete</LoomText></View>
+              <View style={styles.statusLine}><StatusChip status={project.status} /><LoomText style={{ color: colors.mutedForeground, fontSize: 14 }}>{project.craft === 'knitting' ? 'Knitting' : 'Crochet'} · {project.completionPercent}% complete</LoomText></View>
               <ProgressBar value={project.completionPercent} />
             </View>
             <View style={[styles.detailCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <LoomText style={[styles.sectionLabel, { color: colors.primary }]}>THE PROJECT NOTES</LoomText>
+              <LoomText style={[styles.sectionLabel, { color: colors.primary }]}>Details</LoomText>
               {[
                 ['Pattern', project.patternName],
                 ['Designer', project.designerWebsite ? designerLinkLabel : project.patternDesigner],
@@ -181,9 +180,8 @@ export default function ProjectDetailScreen() {
               {project.description ? <LoomText style={[styles.description, { color: colors.foreground }]}>{project.description}</LoomText> : null}
             </View>
             <View style={[styles.detailCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <LoomText serif style={[styles.sectionTitle, { color: colors.foreground }]}>Leave a progress note</LoomText>
-              <LoomText style={[styles.help, { color: colors.mutedForeground }]}>A few words after a session. Your progress adds up, quietly.</LoomText>
-              <FormFieldLabel>What changed today?</FormFieldLabel>
+              <LoomText serif style={[styles.sectionTitle, { color: colors.foreground }]}>Add a progress note</LoomText>
+              <FormFieldLabel>What did you work on?</FormFieldLabel>
               <TextInput value={notes} onChangeText={setNotes} placeholder="Rows completed, a tricky section, a new color…" placeholderTextColor={colors.mutedForeground} multiline numberOfLines={3} textAlignVertical="top" style={[...inputStyle, styles.notesInput]} testID="input-progress-notes" />
               <FormFieldLabel>Progress photo (optional)</FormFieldLabel>
               <View style={styles.photoControls}>
@@ -199,7 +197,7 @@ export default function ProjectDetailScreen() {
               {message ? <LoomText accessibilityRole="alert" style={{ color: colors.destructive, fontSize: 15, marginBottom: 11 }}>{message}</LoomText> : null}
               <LoomButton title="Save progress note" icon="feather" onPress={saveProgress} busy={addProgress.isPending || photoUploading} disabled={!notes.trim()} testID="button-save-progress" />
             </View>
-            <View style={styles.sectionHeading}><LoomText serif style={[styles.sectionTitle, { color: colors.foreground }]}>The journey so far</LoomText><LoomText style={{ color: colors.mutedForeground, fontSize: 14 }}>{project.progress.length} notes</LoomText></View>
+            <View style={styles.sectionHeading}><LoomText serif style={[styles.sectionTitle, { color: colors.foreground }]}>Progress journal</LoomText><LoomText style={{ color: colors.mutedForeground, fontSize: 14 }}>{project.progress.length} notes</LoomText></View>
             {project.progress.length ? project.progress.map((entry) => (
               <View key={entry.id} style={[styles.progressEntry, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <View style={[styles.entryMarker, { backgroundColor: colors.accent }]} />
@@ -224,12 +222,12 @@ export default function ProjectDetailScreen() {
                   </> : null}
                 </View>
               </View>
-            )) : <LoomText style={[styles.noNotes, { color: colors.mutedForeground }]}>No notes yet. Add one after your next making session.</LoomText>}
+            )) : <LoomText style={[styles.noNotes, { color: colors.mutedForeground }]}>No notes yet.</LoomText>}
             <View style={styles.deleteSection}>
               {confirmDelete ? (
                 <View style={[styles.confirm, { backgroundColor: colors.warningWash, borderColor: colors.warningBorder }]}>
                   <LoomText style={{ color: colors.warningText, fontFamily: fonts.semibold, fontSize: 15, flex: 1 }}>Delete this project and its progress notes?</LoomText>
-                  <LoomButton title="Keep it" variant="secondary" onPress={() => setConfirmDelete(false)} />
+                  <LoomButton title="Cancel" variant="secondary" onPress={() => setConfirmDelete(false)} />
                   <LoomButton title="Delete" variant="danger" onPress={deleteProject} busy={remove.isPending} />
                 </View>
               ) : <LoomButton title="Delete project" icon="trash-2" variant="quiet" onPress={() => setConfirmDelete(true)} />}
@@ -286,11 +284,10 @@ const styles = StyleSheet.create({
   loading: { textAlign: 'center', marginTop: 55 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 26 },
   hero: { borderRadius: 18, padding: 19, gap: 11, overflow: 'hidden', marginBottom: 13 },
-  kicker: { fontFamily: fonts.bold, fontSize: 13, letterSpacing: 1.1 },
   title: { fontSize: 30, lineHeight: 36 },
   statusLine: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   detailCard: { borderWidth: 1, borderRadius: 16, padding: 17, marginBottom: 13 },
-  sectionLabel: { fontFamily: fonts.bold, fontSize: 13, letterSpacing: 1.1, marginBottom: 12 },
+  sectionLabel: { fontFamily: fonts.semibold, fontSize: 15, marginBottom: 12 },
   infoRow: { width: '100%', minWidth: 0, flexDirection: 'row', gap: 10, alignItems: 'center', paddingVertical: 9, borderBottomWidth: 1 },
   infoLabel: { fontSize: 14 },
   infoValue: { flex: 1, textAlign: 'right', fontSize: 14, fontFamily: fonts.medium },
@@ -298,7 +295,6 @@ const styles = StyleSheet.create({
   designerLinkText: { width: '100%', maxWidth: '100%', minWidth: 0, flexShrink: 1 },
   description: { marginTop: 12, lineHeight: 23, fontSize: 16 },
   sectionTitle: { fontSize: 25 },
-  help: { fontSize: 15, lineHeight: 21, marginTop: 4, marginBottom: 15 },
   input: { minHeight: 45, borderWidth: 1, borderRadius: 9, paddingHorizontal: 12, paddingVertical: 10, fontSize: 16, fontFamily: fonts.body, marginBottom: 12 },
   notesInput: { minHeight: 84, paddingTop: 12 },
   photoControls: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },

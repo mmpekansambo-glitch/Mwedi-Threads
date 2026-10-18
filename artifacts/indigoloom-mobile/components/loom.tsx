@@ -187,25 +187,20 @@ export function ProjectCard({ project }: { project: Project }) {
         pressed && styles.pressed,
       ]}
     >
-      <View style={[styles.cardArt, { backgroundColor: project.craft === 'knitting' ? colors.knitWash : colors.crochetWash }]}>
-        <View style={[styles.cardOrb, { borderColor: project.craft === 'knitting' ? colors.primary : colors.accent }]} />
-        <View>
-          <LoomText style={[styles.cardKicker, { color: colors.mutedForeground }]}>{craft.toUpperCase()}</LoomText>
-          <LoomText serif style={[styles.cardTitle, { color: colors.foreground }]} numberOfLines={1}>{project.title}</LoomText>
-        </View>
+      <View style={styles.cardBody}>
         <View style={styles.cardActions}>
           <StatusChip status={project.status} />
           <StarButton project={project} />
         </View>
-      </View>
-      <View style={styles.cardBody}>
-        <LoomText numberOfLines={1} style={[styles.cardSub, { color: colors.mutedForeground }]}>
-          {project.patternName || project.yarn || 'Your next little project'}
-        </LoomText>
-        <ProgressBar value={project.completionPercent} />
+        <View>
+          <LoomText serif style={[styles.cardTitle, { color: colors.foreground }]} numberOfLines={2}>{project.title}</LoomText>
+          <LoomText numberOfLines={1} style={[styles.cardSub, { color: colors.mutedForeground }]}>
+            {[craft, project.patternName].filter(Boolean).join(' · ')}
+          </LoomText>
+        </View>
         <View style={styles.cardFooter}>
-          <LoomText style={[styles.cardPercent, { color: colors.primary }]}>{project.completionPercent}% complete</LoomText>
-          <Feather name="arrow-up-right" size={16} color={colors.mutedForeground} />
+          <View style={{ flex: 1 }}><ProgressBar value={project.completionPercent} /></View>
+          <LoomText style={[styles.cardPercent, { color: colors.primary }]}>{project.completionPercent}%</LoomText>
         </View>
       </View>
     </Pressable>
@@ -251,8 +246,8 @@ export function ErrorState({ onRetry }: { onRetry: () => void }) {
   return (
     <View style={[styles.errorCard, { borderColor: colors.border, backgroundColor: colors.card }]}>
       <Feather name="alert-circle" size={22} color={colors.destructive} />
-      <LoomText serif style={styles.emptyTitle}>A little snag in the thread</LoomText>
-      <LoomText style={[styles.emptyBody, { color: colors.mutedForeground }]}>Your work is safe. Try loading this page again.</LoomText>
+      <LoomText serif style={styles.emptyTitle}>Something went wrong</LoomText>
+      <LoomText style={[styles.emptyBody, { color: colors.mutedForeground }]}>Your work is safe. Please try again.</LoomText>
       <LoomButton title="Try again" icon="refresh-cw" variant="secondary" onPress={onRetry} style={{ marginTop: 14 }} />
     </View>
   );
@@ -260,7 +255,7 @@ export function ErrorState({ onRetry }: { onRetry: () => void }) {
 
 export function SignedInGate({ children }: { children: ReactNode }) {
   const { isLoaded, isSignedIn } = useAuth();
-  if (!isLoaded) return <LoadingState label="Opening your workroom…" />;
+  if (!isLoaded) return <LoadingState label="Loading…" />;
   if (!isSignedIn) return <Redirect href="/" />;
   return <>{children}</>;
 }
@@ -284,7 +279,7 @@ const styles = StyleSheet.create({
   brand: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   mark: { width: 31, height: 31, alignItems: 'center', justifyContent: 'center' },
   brandName: { fontSize: 21, letterSpacing: -0.6, fontFamily: fonts.bold },
-  button: { minHeight: 48, paddingHorizontal: 18, borderRadius: 999, borderWidth: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9 },
+  button: { minHeight: 48, paddingHorizontal: 18, borderRadius: 10, borderWidth: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9 },
   buttonText: { fontFamily: fonts.semibold, fontSize: 16 },
   pressed: { opacity: 0.82, transform: [{ scale: 0.985 }] },
   disabled: { opacity: 0.55 },
@@ -295,11 +290,8 @@ const styles = StyleSheet.create({
   progressTrack: { height: 5, borderRadius: 9, overflow: 'hidden', width: '100%' },
   progressFill: { height: '100%', borderRadius: 9 },
   statusChip: { borderRadius: 999, paddingHorizontal: 9, paddingVertical: 5 },
-  projectCard: { overflow: 'hidden', borderWidth: 1, borderRadius: 17, marginBottom: 13 },
-  cardActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  cardArt: { minHeight: 95, padding: 15, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 10, overflow: 'hidden' },
-  cardOrb: { position: 'absolute', width: 165, height: 72, borderWidth: 1, borderRadius: 100, opacity: 0.25, right: -12, top: 8, transform: [{ rotate: '-23deg' }] },
-  cardKicker: { fontSize: 13, letterSpacing: 1.1, marginBottom: 4, fontFamily: fonts.bold },
+  projectCard: { overflow: 'hidden', borderWidth: 1, borderRadius: 12, marginBottom: 12 },
+  cardActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   cardTitle: { fontSize: 23, maxWidth: 180 },
   cardBody: { paddingHorizontal: 15, paddingVertical: 13, gap: 10 },
   cardSub: { fontSize: 15 },
