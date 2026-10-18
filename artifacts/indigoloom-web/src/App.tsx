@@ -15,7 +15,7 @@ import type { CreateProject, CreateProgress, Project, ProjectStatus, UpdateProje
 import { FormProvider as Form, useForm, type UseFormReturn } from 'react-hook-form';
 import {
   ArrowDownRight, ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, Check,
-  ChevronDown, CircleHelp, Clock3, Feather, Filter, Flower2, Gauge,
+  ChevronDown, ChevronUp, CircleHelp, Feather, Filter, Flower2, Gauge,
   Heart, Layers3, LogOut, Menu, Plus, Search, Sparkles, Star, Trash2,
   TrendingUp, X,
 } from 'lucide-react';
@@ -215,12 +215,11 @@ function PortalLayout({ children, active }: { children: ReactNode; active: 'dash
   return <div className="portal-shell">
     <aside className={`side-rail ${mobileOpen ? 'mobile-open' : ''}`}>
       <div className="rail-brand"><Brand light/><button className="rail-close" type="button" onClick={() => setMobileOpen(false)} aria-label="Close navigation" data-testid="button-close-navigation"><X size={19}/></button></div>
-      <div className="rail-caption">YOUR WORKROOM</div>
       <nav className="rail-nav">
         <Link href="/dashboard" className={`rail-link ${active === 'dashboard' ? 'selected' : ''}`} data-testid="link-dashboard"><Layers3 size={18}/><span>Overview</span></Link>
         <Link href="/projects" className={`rail-link ${active === 'projects' ? 'selected' : ''}`} data-testid="link-projects"><BookOpen size={18}/><span>My projects</span></Link>
       </nav>
-      <div className="rail-bottom"><div className="profile-chip"><span className="profile-initial">{initials}</span><span className="profile-name">{displayName}<small>Your workroom</small></span><button type="button" title="Sign out" aria-label="Sign out" onClick={() => signOut({ redirectUrl: basePath || '/' })} data-testid="button-sign-out"><LogOut size={16}/></button></div></div>
+      <div className="rail-bottom"><ProfileMenu initials={initials} displayName={displayName} onSignOut={() => signOut({ redirectUrl: basePath || '/' })}/></div>
     </aside>
     {mobileOpen && <button className="mobile-scrim" onClick={() => setMobileOpen(false)} aria-label="Close navigation" data-testid="button-dismiss-navigation"/>}
     <main className="portal-main">
@@ -230,12 +229,37 @@ function PortalLayout({ children, active }: { children: ReactNode; active: 'dash
   </div>;
 }
 
+function ProfileMenu({ initials, displayName, onSignOut }: { initials: string; displayName: string; onSignOut: () => void }) {
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const close = (event: MouseEvent | KeyboardEvent) => {
+      if (event instanceof KeyboardEvent ? event.key === 'Escape' : !menuRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', close);
+    document.addEventListener('keydown', close);
+    return () => { document.removeEventListener('mousedown', close); document.removeEventListener('keydown', close); };
+  }, [open]);
+  return <div className="profile-menu" ref={menuRef}>
+    {open && <div className="profile-menu-list" role="menu"><button type="button" role="menuitem" onClick={onSignOut} data-testid="button-sign-out"><LogOut size={16}/> Sign out</button></div>}
+    <button type="button" className="profile-chip" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)} data-testid="button-profile-menu"><span className="profile-initial">{initials}</span><span className="profile-name">{displayName}</span><ChevronUp size={16}/></button>
+  </div>;
+}
+
 function PageHeading({ overline, title, subtitle, action }: { overline?: string; title: ReactNode; subtitle?: string; action?: ReactNode }) {
   return <div className="page-heading"><div>{overline ? <div className="eyebrow"><span className="eyebrow-stitch"/>{overline}</div> : null}<h1 className="page-title serif">{title}</h1>{subtitle ? <p>{subtitle}</p> : null}</div>{action}</div>;
 }
 
 function QueryProblem({ retry, message = 'We couldn’t gather this just now.' }: { retry: () => void; message?: string }) {
-  return <div className="query-problem"><span><CircleHelp size={20}/></span><h3>A little snag in the thread</h3><p>{message} Your work is safe — give it another try.</p><button className="button button-outline" onClick={retry} data-testid="button-retry">Try again <ArrowRight size={16}/></button></div>;
+  return <div className="query-problem"><span><CircleHelp size={20}/></span><h3>Something went wrong</h3><p>{message} Your work is safe. Please try again.</p><button className="button button-outline" onClick={retry} data-testid="button-retry">Try again <ArrowRight size={16}/></button></div>;
+}
+
+function progressSummary(progress: { createdAt: string }[]): string {
+  if (!progress.length) return 'No notes yet';
+  const last = progress.reduce((latest, entry) => (entry.createdAt > latest ? entry.createdAt : latest), progress[0].createdAt);
+  const day = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' }).format(new Date(last));
+  return `${progress.length} ${progress.length === 1 ? 'note' : 'notes'} · last one ${day}`;
 }
 
 function ProgressBar({ value }: { value: number }) {
@@ -243,7 +267,7 @@ function ProgressBar({ value }: { value: number }) {
 }
 
 function StatusPill({ status }: { status: ProjectStatus }) {
-  const labels: Record<ProjectStatus, string> = { planning: 'On the needles', in_progress: 'In progress', paused: 'On pause', completed: 'Finished' };
+  const labels: Record<ProjectStatus, string> = { planning: 'Planning', in_progress: 'In progress', paused: 'On pause', completed: 'Finished' };
   return <span className={`status-pill status-${status}`} data-testid={`status-project-${status}`}>{status === 'completed' && <Check size={12}/>} {labels[status]}</span>;
 }
 
@@ -269,8 +293,7 @@ function StarButton({ project, className = '' }: { project: Project; className?:
 function ProjectCard({ project }: { project: Project }) {
   const craftLabel = project.craft === 'knitting' ? 'Knitting' : 'Crochet';
   return <div className="project-card-wrap"><StarButton project={project} className="card-star"/><Link href={`/projects/${project.id}`} className="project-card loom-card lift" data-testid={`card-project-${project.id}`}>
-    <div className={`project-card-art art-${project.craft}`}><span className="art-kicker">{craftLabel}</span><span className="art-mark">{project.craft === 'knitting' ? '〰' : '⌘'}</span><span className="art-corner">{project.completionPercent}%</span></div>
-    <div className="project-card-body"><div className="project-card-meta"><StatusPill status={project.status}/><span className="updated-label">{project.updatedAt ? `Updated ${new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' }).format(new Date(project.updatedAt))}` : ''}</span></div><h3>{project.title}</h3><p>{project.patternName || project.description || `${craftLabel} project`}</p><ProgressBar value={project.completionPercent}/><div className="card-foot"><span>{formatYarnDetails(project) || 'Details tucked away'}</span><ArrowUpRight size={16}/></div></div>
+    <div className="project-card-body"><div className="project-card-meta"><StatusPill status={project.status}/></div><h3>{project.title}</h3><p>{[craftLabel, project.patternName].filter(Boolean).join(' · ')}</p><div className="card-progress"><ProgressBar value={project.completionPercent}/><span>{project.completionPercent}%</span></div><div className="card-foot">{formatYarnDetails(project) && <span>{formatYarnDetails(project)}</span>}{project.updatedAt && <span className="updated-label">Updated {new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' }).format(new Date(project.updatedAt))}</span>}</div></div>
   </Link></div>;
 }
 
@@ -280,31 +303,30 @@ function DashboardPage() {
   const { user } = useUser();
   const name = user?.firstName || 'maker';
   return <PortalLayout active="dashboard">
-    <PageHeading overline="YOUR WORKROOM" title={<>Good to see you, {name}.</>} subtitle="A little look at all the good things taking shape." action={<Link href="/projects/new" className="button button-primary" data-testid="link-new-project"><Plus size={17}/> New project</Link>}/>
+    <PageHeading title={<>Hi, {name}</>} action={<Link href="/projects/new" className="button button-primary" data-testid="link-new-project"><Plus size={17}/> New project</Link>}/>
     {query.isLoading ? <div className="dashboard-loading"><div className="stat-skeleton"/><div className="stat-skeleton"/><div className="stat-skeleton"/></div> : query.isError || !data ? <QueryProblem retry={() => query.refetch()}/> : <>
       <section className="stat-row" aria-label="Project totals">
-        <div className="stat-card stat-card-featured"><span className="stat-label"><Layers3 size={16}/> IN YOUR WORKROOM</span><strong>{data.totalProjects}</strong><span className="stat-caption">projects, gathered in one place</span><div className="stat-decoration">〰</div></div>
-        <div className="stat-card"><span className="stat-label"><Clock3 size={16}/> TAKING SHAPE</span><strong>{data.activeProjects}</strong><span className="stat-caption">active works in progress</span><div className="stat-mini-line"><i/></div></div>
-        <div className="stat-card"><span className="stat-label"><Check size={16}/> ON THE SHELF</span><strong>{data.completedProjects}</strong><span className="stat-caption">finished and ready to love</span><div className="stat-confetti"><span/><span/><span/></div></div>
+        <div className="stat-card"><span className="stat-label">All projects</span><strong>{data.totalProjects}</strong></div>
+        <div className="stat-card"><span className="stat-label">In progress</span><strong>{data.activeProjects}</strong></div>
+        <div className="stat-card"><span className="stat-label">Finished</span><strong>{data.completedProjects}</strong></div>
       </section>
       <DashboardCharts charts={data.charts}/>
       <section className="dashboard-grid">
         <div className="dashboard-work">
-          <div className="section-heading"><div><span className="eyebrow">A FEW THINGS IN MOTION</span><h2 className="serif">Back on your needles</h2></div><Link href="/projects" className="quiet-link" data-testid="link-view-all-projects">All projects <ArrowRight size={15}/></Link></div>
+          <div className="section-heading"><div><h2 className="serif">Recent projects</h2></div><Link href="/projects" className="quiet-link" data-testid="link-view-all-projects">All projects <ArrowRight size={15}/></Link></div>
           {data.recentProjects.length ? <div className="project-card-grid">{data.recentProjects.slice(0, 3).map((project) => <ProjectCard key={project.id} project={project}/>)}</div> : <EmptyProjects compact/>}
         </div>
         <aside className="recent-panel loom-card">
-          <div className="section-heading"><div><span className="eyebrow">LITTLE BY LITTLE</span><h2 className="serif">Recent notes</h2></div><span className="recent-icon"><Feather size={17}/></span></div>
-          {data.recentProgress.length ? <div className="notes-list">{data.recentProgress.slice(0, 5).map((item, index) => <Link key={`${item.projectId}-${item.createdAt}`} href={`/projects/${item.projectId}`} className="note-row" data-testid={`link-progress-note-${index}`}><span className="note-dot"/><span className="note-row-copy"><b>{item.projectTitle}</b><span>{item.notes}</span><small>{new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' }).format(new Date(item.createdAt))} · now {item.completionPercent}%</small></span><ArrowUpRight size={14}/></Link>)}</div> : <div className="notes-empty"><Feather size={21}/><p>Your progress notes will find a home here.</p><span>Every little session counts.</span></div>}
+          <div className="section-heading"><div><h2 className="serif">Recent notes</h2></div></div>
+          {data.recentProgress.length ? <div className="notes-list">{data.recentProgress.slice(0, 5).map((item, index) => <Link key={`${item.projectId}-${item.createdAt}`} href={`/projects/${item.projectId}`} className="note-row" data-testid={`link-progress-note-${index}`}><span className="note-dot"/><span className="note-row-copy"><b>{item.projectTitle}</b><span>{item.notes}</span><small>{new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' }).format(new Date(item.createdAt))} · now {item.completionPercent}%</small></span><ArrowUpRight size={14}/></Link>)}</div> : <div className="notes-empty"><p>No progress notes yet.</p></div>}
         </aside>
       </section>
-      <div className="dashboard-footer-note"><Sparkles size={15}/><span>There's no rush. The best things are made one stitch at a time.</span></div>
     </>}
   </PortalLayout>;
 }
 
 function EmptyProjects({ compact = false }: { compact?: boolean }) {
-  return <div className={`empty-projects ${compact ? 'empty-compact' : ''}`}><div className="empty-art"><span className="empty-loop">〰</span><span className="empty-dot"/></div><h3>Your next project starts here.</h3><p>Gather a pattern, choose a yarn, and give your next idea its own little page.</p><Link href="/projects/new" className="button button-primary" data-testid="link-create-first-project"><Plus size={16}/> Start a project</Link></div>;
+  return <div className={`empty-projects ${compact ? 'empty-compact' : ''}`}><h3>No projects yet</h3><p>Add your first project to start tracking it.</p><Link href="/projects/new" className="button button-primary" data-testid="link-create-first-project"><Plus size={16}/> Start a project</Link></div>;
 }
 
 function ProjectsPage() {
@@ -329,8 +351,8 @@ function ProjectsPage() {
       <button type="button" className={`starred-filter${starredOnly ? ' is-active' : ''}`} aria-pressed={starredOnly} onClick={() => setStarredOnly(!starredOnly)} data-testid="button-starred-filter"><Star size={14} fill={starredOnly ? 'currentColor' : 'none'}/> Starred</button>
       {(search || status || craft || starredOnly) && <button className="clear-filters" onClick={clearFilters} data-testid="button-clear-filters">Clear filters</button>}
     </div>
-    <div className="catalog-result-caption">{query.data ? <><b>{query.data.length}</b> {query.data.length === 1 ? 'project' : 'projects'} in your collection</> : 'Your collection'}</div>
-    {query.isLoading ? <div className="project-card-grid">{[0, 1, 2].map((item) => <div className="card-skeleton" key={item}/>)}</div> : query.isError ? <QueryProblem retry={() => query.refetch()}/> : query.data?.length ? <div className="project-card-grid catalog-grid">{query.data.map((project) => <ProjectCard key={project.id} project={project}/>)}</div> : starredOnly && !search && !status && !craft ? <div className="no-results"><Star size={23}/><h3>No starred projects yet</h3><p>Tap the star on any project to keep your favorites here.</p><button className="button button-outline" onClick={clearFilters} data-testid="button-reset-filters">Show all projects</button></div> : search || status || craft || starredOnly ? <div className="no-results"><Search size={23}/><h3>Nothing in this little corner yet</h3><p>Try a different search or loosen one of the filters.</p><button className="button button-outline" onClick={clearFilters} data-testid="button-reset-filters">Reset filters</button></div> : <EmptyProjects/>}
+    <div className="catalog-result-caption">{query.data ? <><b>{query.data.length}</b> {query.data.length === 1 ? 'project' : 'projects'}</> : null}</div>
+    {query.isLoading ? <div className="project-card-grid">{[0, 1, 2].map((item) => <div className="card-skeleton" key={item}/>)}</div> : query.isError ? <QueryProblem retry={() => query.refetch()}/> : query.data?.length ? <div className="project-card-grid catalog-grid">{query.data.map((project) => <ProjectCard key={project.id} project={project}/>)}</div> : starredOnly && !search && !status && !craft ? <div className="no-results"><Star size={23}/><h3>No starred projects yet</h3><p>Tap the star on any project to keep your favorites here.</p><button className="button button-outline" onClick={clearFilters} data-testid="button-reset-filters">Show all projects</button></div> : search || status || craft || starredOnly ? <div className="no-results"><Search size={23}/><h3>No projects match</h3><p>Try a different search or clear a filter.</p><button className="button button-outline" onClick={clearFilters} data-testid="button-reset-filters">Reset filters</button></div> : <EmptyProjects/>}
   </PortalLayout>;
 }
 
@@ -535,20 +557,19 @@ function ProjectFormPage() {
   });
   return <PortalLayout active="projects">
     <Link href="/projects" className="back-link" data-testid="link-back-projects"><ArrowLeft size={16}/> Back to projects</Link>
-    <PageHeading overline="A FRESH CAST-ON" title="Start a project" subtitle="Give your idea a place to take shape."/>
+    <PageHeading title="New project"/>
     <Form {...form}><form className="project-form loom-card" onSubmit={submit} noValidate>
-      <div className="form-intro"><span className="form-number">01</span><div><h2 className="serif">The beginnings</h2><p>Start with a name and the way you like to make.</p></div><span className="form-icon"><Feather size={18}/></span></div>
       <div className="form-grid">
         <div className="field-block field-wide"><label htmlFor="project-title">Project name <b>*</b></label><input id="project-title" maxLength={160} placeholder="e.g. Juniper cardigan" {...form.register('title', { required: 'Give your project a name to get started.' })} data-testid="input-project-title"/>{form.formState.errors.title && <span className="field-error">{form.formState.errors.title.message}</span>}</div>
         <div className="field-block"><label htmlFor="project-craft">Craft</label><select id="project-craft" {...form.register('craft')} data-testid="select-project-craft"><option value="knitting">Knitting</option><option value="crochet">Crochet</option></select></div>
-        <div className="field-block"><label htmlFor="project-status">Where it is now</label><select id="project-status" {...form.register('status')} data-testid="select-project-status"><option value="planning">Planning</option><option value="in_progress">In progress</option><option value="paused">On pause</option><option value="completed">Finished</option></select></div>
+        <div className="field-block"><label htmlFor="project-status">Status</label><select id="project-status" {...form.register('status')} data-testid="select-project-status"><option value="planning">Planning</option><option value="in_progress">In progress</option><option value="paused">On pause</option><option value="completed">Finished</option></select></div>
       </div>
-      <div className="form-divider"><span>THE LOVELY DETAILS</span><i/></div>
+      <div className="form-divider"><span>Pattern and materials</span><i/></div>
       <div className="form-grid">
         <div className="field-block"><label htmlFor="pattern-name">Pattern name</label><input id="pattern-name" placeholder="Pattern or source" {...form.register('patternName')} data-testid="input-pattern-name"/></div>
         <DesignerEntry form={form} mode={designerMode} onModeChange={(mode) => { setDesignerMode(mode); setDesignerPreviewMessage(''); }} onPreview={previewDesignerTitle} onClearPreview={() => setDesignerPreviewMessage('')} isPreviewing={previewTitle.isPending} message={designerPreviewMessage} prefix="create"/>
         <div className="yarn-group field-wide">
-          <div className="yarn-group-heading"><b>Yarn</b><span>Keep brand, type, and color easy to find.</span></div>
+          <div className="yarn-group-heading"><b>Yarn</b></div>
           <div className="yarn-trifold">
             <div className="field-block"><label htmlFor="project-yarn-brand">Brand</label><input id="project-yarn-brand" placeholder="e.g. Cascade" {...form.register('yarnBrand')} data-testid="input-yarn-brand"/></div>
             <div className="field-block"><label htmlFor="project-yarn-type">Type</label><input id="project-yarn-type" placeholder="e.g. Merino DK" {...form.register('yarnType')} data-testid="input-yarn-type"/></div>
@@ -753,16 +774,16 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
   const craftLabel = project.craft === 'knitting' ? 'Knitting' : 'Crochet';
   return <PortalLayout active="projects">
     <Link href="/projects" className="back-link" data-testid="link-back-projects"><ArrowLeft size={16}/> Back to projects</Link>
-     <div className="detail-heading"><div><div className="eyebrow"><span className="eyebrow-stitch"/>{craftLabel} · PROJECT JOURNAL</div><h1 className="serif">{project.title}</h1><div className="detail-status"><StatusPill status={project.status}/><span>Started {formatProjectDate(project.startedAt, project.startedAtPrecision) || 'when you were ready'}</span></div></div><div className="detail-actions"><StarButton project={project} className="detail-star"/><button className="button button-outline" onClick={() => setEditing(!editing)} data-testid="button-edit-project">{editing ? <X size={16}/> : <Feather size={16}/>} {editing ? 'Close edit' : 'Edit details'}</button><button className="icon-button danger-icon" aria-label="Delete project" title="Delete project" onClick={() => setConfirmDelete(true)} data-testid="button-delete-project"><Trash2 size={17}/></button></div></div>
-    {confirmDelete && <div className="confirm-banner"><div><b>Let this one go?</b><span>This will permanently remove the project and its progress notes.</span></div><button className="button button-quiet" onClick={() => setConfirmDelete(false)} data-testid="button-cancel-delete">Keep it</button><button className="button button-danger" onClick={deleteProject} disabled={remove.isPending} data-testid="button-confirm-delete">{remove.isPending ? 'Removing…' : 'Delete project'}</button></div>}
-    {editing && <Form {...editForm}><form className="edit-form loom-card" onSubmit={saveEdit} noValidate><div className="form-intro"><span className="form-number">EDIT</span><div><h2 className="serif">Project details</h2><p>Change any detail whenever the project shifts.</p></div></div><div className="form-grid">
+     <div className="detail-heading"><div><h1 className="serif">{project.title}</h1><div className="detail-status"><StatusPill status={project.status}/><span>{craftLabel}</span>{project.startedAt && <span>Started {formatProjectDate(project.startedAt, project.startedAtPrecision)}</span>}</div></div><div className="detail-actions"><StarButton project={project} className="detail-star"/><button className="button button-outline" onClick={() => setEditing(!editing)} data-testid="button-edit-project">{editing ? <X size={16}/> : <Feather size={16}/>} {editing ? 'Close edit' : 'Edit details'}</button><button className="icon-button danger-icon" aria-label="Delete project" title="Delete project" onClick={() => setConfirmDelete(true)} data-testid="button-delete-project"><Trash2 size={17}/></button></div></div>
+    {confirmDelete && <div className="confirm-banner"><div><b>Delete this project?</b><span>This will permanently remove the project and its progress notes.</span></div><button className="button button-quiet" onClick={() => setConfirmDelete(false)} data-testid="button-cancel-delete">Cancel</button><button className="button button-danger" onClick={deleteProject} disabled={remove.isPending} data-testid="button-confirm-delete">{remove.isPending ? 'Removing…' : 'Delete project'}</button></div>}
+    {editing && <Form {...editForm}><form className="edit-form loom-card" onSubmit={saveEdit} noValidate><div className="form-intro"><h2 className="serif">Edit details</h2></div><div className="form-grid">
       <div className="field-block field-wide"><label htmlFor="edit-title">Project name</label><input id="edit-title" {...editForm.register('title', { required: 'Project name is required.' })} data-testid="input-edit-title"/></div>
       <div className="field-block"><label htmlFor="edit-craft">Craft</label><select id="edit-craft" {...editForm.register('craft')} data-testid="select-edit-craft"><option value="knitting">Knitting</option><option value="crochet">Crochet</option></select></div>
       <div className="field-block"><label htmlFor="edit-status">Status</label><select id="edit-status" {...editForm.register('status')} data-testid="select-edit-status"><option value="planning">Planning</option><option value="in_progress">In progress</option><option value="paused">On pause</option><option value="completed">Finished</option></select></div>
       <div className="field-block"><label htmlFor="edit-pattern">Pattern name</label><input id="edit-pattern" {...editForm.register('patternName')} data-testid="input-edit-pattern"/></div>
        <DesignerEntry form={editForm} mode={designerMode} onModeChange={(mode) => { setDesignerMode(mode); setDesignerPreviewMessage(''); }} onPreview={previewEditDesignerTitle} onClearPreview={() => setDesignerPreviewMessage('')} isPreviewing={previewTitle.isPending} message={designerPreviewMessage} prefix="edit"/>
       <div className="yarn-group field-wide">
-        <div className="yarn-group-heading"><b>Yarn</b><span>Keep brand, type, and color easy to find.</span></div>
+        <div className="yarn-group-heading"><b>Yarn</b></div>
         <div className="yarn-trifold">
           <div className="field-block"><label htmlFor="edit-yarn-brand">Brand</label><input id="edit-yarn-brand" placeholder="e.g. Cascade" {...editForm.register('yarnBrand')} data-testid="input-edit-yarn-brand"/></div>
           <div className="field-block"><label htmlFor="edit-yarn-type">Type</label><input id="edit-yarn-type" placeholder="e.g. Merino DK" {...editForm.register('yarnType')} data-testid="input-edit-yarn-type"/></div>
@@ -782,14 +803,14 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
     </div>{update.isError && <p className="mutation-error">We couldn't save those changes. Try again.</p>}<div className="form-actions"><button type="button" className="button button-quiet" onClick={() => setEditing(false)} data-testid="button-cancel-edit">Cancel</button><button className="button button-primary" type="submit" disabled={update.isPending} data-testid="button-update-project">{update.isPending ? 'Saving…' : 'Save changes'} <Check size={15}/></button></div></form></Form>}
     <section className="detail-main-grid">
       <div className="detail-primary">
-        <article className="progress-hero loom-card"><div className="progress-hero-copy"><span className="eyebrow">THE LONG AND LOVELY MIDDLE</span><h2 className="serif">Look how far<br/>you've come.</h2><p>Your progress doesn't need to be perfect to count.</p></div><div className="progress-ring" style={{ '--progress': `${project.completionPercent * 3.6}deg` } as CSSProperties}><div><strong>{project.completionPercent}<small>%</small></strong><span>complete</span></div></div><span className="hero-ornament">〰</span></article>
-        <div className="progress-log-heading"><div><span className="eyebrow">NOTES FROM THE MAKING</span><h2 className="serif">Progress journal</h2></div><button className="button button-primary button-small" onClick={() => { setShowProgress(!showProgress); progressForm.setValue('completionPercent', project.completionPercent); }} data-testid="button-add-progress">{showProgress ? <X size={15}/> : <Plus size={15}/>} {showProgress ? 'Close note' : 'Add a note'}</button></div>
-        {showProgress && <Form {...progressForm}><form className="progress-form loom-card" onSubmit={submitProgress} noValidate><div className="field-block"><label htmlFor="progress-notes">What did you work on?</label><textarea id="progress-notes" rows={3} placeholder="A few rows, a tricky bit figured out, a lovely color change…" {...progressForm.register('notes', { required: 'Add a note about this session.', maxLength: { value: 2000, message: 'Keep your note under 2,000 characters.' } })} data-testid="input-progress-notes"/>{progressForm.formState.errors.notes && <span className="field-error">{progressForm.formState.errors.notes.message}</span>}</div><div className="field-block progress-photo-field"><label htmlFor="progress-photo">Add a progress photo (optional)</label><input id="progress-photo" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { setProgressPhoto(event.target.files?.[0] ?? null); setProgressPhotoError(''); }} data-testid="input-progress-photo"/>{progressPhotoPreview && <div className="progress-photo-preview"><img src={progressPhotoPreview} alt="Selected progress photo preview"/><button type="button" className="button button-quiet" onClick={() => setProgressPhoto(null)}>Remove photo</button></div>}</div><div className="progress-form-row"><div className="field-block"><label htmlFor="progress-percent">Overall completion</label><div className="percent-input"><input id="progress-percent" type="number" min={0} max={100} {...progressForm.register('completionPercent', { valueAsNumber: true, min: 0, max: 100 })} data-testid="input-progress-percent"/><span>%</span></div></div><div className="progress-form-hint"><Sparkles size={15}/> A little progress is still progress.</div></div>{(addProgress.isError || progressPhotoError) && <p className="mutation-error">{progressPhotoError || "Your note didn't stick this time. Please try again."}</p>}<div className="form-actions"><button type="button" className="button button-quiet" onClick={() => { setShowProgress(false); setProgressPhoto(null); }} data-testid="button-cancel-progress">Cancel</button><button type="submit" className="button button-primary" disabled={addProgress.isPending} data-testid="button-save-progress">{addProgress.isPending ? 'Saving note…' : 'Save progress'} <ArrowRight size={15}/></button></div></form></Form>}
+        <article className="progress-hero loom-card"><div className="progress-hero-copy"><h2 className="serif">Progress</h2><p>{progressSummary(project.progress)}</p></div><div className="progress-ring" style={{ '--progress': `${project.completionPercent * 3.6}deg` } as CSSProperties}><div><strong>{project.completionPercent}<small>%</small></strong><span>complete</span></div></div></article>
+        <div className="progress-log-heading"><div><h2 className="serif">Progress journal</h2></div><button className="button button-primary button-small" onClick={() => { setShowProgress(!showProgress); progressForm.setValue('completionPercent', project.completionPercent); }} data-testid="button-add-progress">{showProgress ? <X size={15}/> : <Plus size={15}/>} {showProgress ? 'Close note' : 'Add a note'}</button></div>
+        {showProgress && <Form {...progressForm}><form className="progress-form loom-card" onSubmit={submitProgress} noValidate><div className="field-block"><label htmlFor="progress-notes">What did you work on?</label><textarea id="progress-notes" rows={3} placeholder="A few rows, a tricky bit figured out, a lovely color change…" {...progressForm.register('notes', { required: 'Add a note about this session.', maxLength: { value: 2000, message: 'Keep your note under 2,000 characters.' } })} data-testid="input-progress-notes"/>{progressForm.formState.errors.notes && <span className="field-error">{progressForm.formState.errors.notes.message}</span>}</div><div className="field-block progress-photo-field"><label htmlFor="progress-photo">Add a progress photo (optional)</label><input id="progress-photo" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { setProgressPhoto(event.target.files?.[0] ?? null); setProgressPhotoError(''); }} data-testid="input-progress-photo"/>{progressPhotoPreview && <div className="progress-photo-preview"><img src={progressPhotoPreview} alt="Selected progress photo preview"/><button type="button" className="button button-quiet" onClick={() => setProgressPhoto(null)}>Remove photo</button></div>}</div><div className="progress-form-row"><div className="field-block"><label htmlFor="progress-percent">Overall completion</label><div className="percent-input"><input id="progress-percent" type="number" min={0} max={100} {...progressForm.register('completionPercent', { valueAsNumber: true, min: 0, max: 100 })} data-testid="input-progress-percent"/><span>%</span></div></div></div>{(addProgress.isError || progressPhotoError) && <p className="mutation-error">{progressPhotoError || "Your note didn't stick this time. Please try again."}</p>}<div className="form-actions"><button type="button" className="button button-quiet" onClick={() => { setShowProgress(false); setProgressPhoto(null); }} data-testid="button-cancel-progress">Cancel</button><button type="submit" className="button button-primary" disabled={addProgress.isPending} data-testid="button-save-progress">{addProgress.isPending ? 'Saving note…' : 'Save progress'} <ArrowRight size={15}/></button></div></form></Form>}
         {photoRemovalError && <p className="mutation-error" role="alert">{photoRemovalError}</p>}
-        {project.progress.length ? <div className="timeline">{[...project.progress].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((entry) => <article className="timeline-entry" key={entry.id} data-testid={`entry-progress-${entry.id}`}><span className="timeline-marker"><Feather size={13}/></span><div className="timeline-card loom-card"><div className="timeline-entry-top"><time>{new Intl.DateTimeFormat('en', { weekday: 'long', month: 'long', day: 'numeric' }).format(new Date(entry.createdAt))}</time><b>{entry.completionPercent}% complete</b></div><p>{entry.notes}</p>{entry.photoPath && <><img className="timeline-photo" src={`/api/projects/${projectId}/progress/${entry.id}/photo`} alt={`Progress photo for ${project.title}`} loading="lazy"/><button type="button" className="button button-quiet button-remove-progress-photo" onClick={() => deleteEntryPhoto(entry.id)} disabled={removingPhotoEntryId === entry.id} data-testid={`button-remove-progress-photo-${entry.id}`}>{removingPhotoEntryId === entry.id ? 'Removing photo…' : 'Remove photo'} <X size={14}/></button></>}<ProgressBar value={entry.completionPercent}/></div></article>)}</div> : <div className="journal-empty"><span className="journal-empty-icon"><Feather size={20}/></span><h3>The first stitch in your journal</h3><p>When you've spent a little time with this project, leave yourself a note here.</p><button className="button button-outline" onClick={() => setShowProgress(true)} data-testid="button-first-progress">Add your first note <ArrowRight size={15}/></button></div>}
+        {project.progress.length ? <div className="timeline">{[...project.progress].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((entry) => <article className="timeline-entry" key={entry.id} data-testid={`entry-progress-${entry.id}`}><span className="timeline-marker"><Feather size={13}/></span><div className="timeline-card loom-card"><div className="timeline-entry-top"><time>{new Intl.DateTimeFormat('en', { weekday: 'long', month: 'long', day: 'numeric' }).format(new Date(entry.createdAt))}</time><b>{entry.completionPercent}% complete</b></div><p>{entry.notes}</p>{entry.photoPath && <><img className="timeline-photo" src={`/api/projects/${projectId}/progress/${entry.id}/photo`} alt={`Progress photo for ${project.title}`} loading="lazy"/><button type="button" className="button button-quiet button-remove-progress-photo" onClick={() => deleteEntryPhoto(entry.id)} disabled={removingPhotoEntryId === entry.id} data-testid={`button-remove-progress-photo-${entry.id}`}>{removingPhotoEntryId === entry.id ? 'Removing photo…' : 'Remove photo'} <X size={14}/></button></>}<ProgressBar value={entry.completionPercent}/></div></article>)}</div> : <div className="journal-empty"><h3>No notes yet</h3><p>Add a note each time you work on this project.</p><button className="button button-outline" onClick={() => setShowProgress(true)} data-testid="button-first-progress">Add your first note <ArrowRight size={15}/></button></div>}
       </div>
       <aside className="detail-aside">
-        <div className="aside-card loom-card"><span className="eyebrow">A FEW DETAILS</span><h3 className="serif">On the table</h3><dl className="detail-list">
+        <div className="aside-card loom-card"><h3 className="serif">Details</h3><dl className="detail-list">
           <div><dt>Pattern</dt><dd>{project.patternName || 'Not added yet'}</dd></div>
           <div><dt>Designer</dt><dd>{project.designerWebsite ? <a href={project.designerWebsite} target="_blank" rel="noopener noreferrer" data-testid="link-designer-website">{designerWebsiteLabel(project.designerWebsite, project.designerPageTitle, project.patternDesigner)}</a> : project.patternDesigner || 'Not added yet'}</dd></div>
           <div><dt>Yarn</dt><dd>{formatYarnDetails(project) || 'Not added yet'}</dd></div>
@@ -798,8 +819,7 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
           {project.craft === 'crochet' && project.tools && <div><dt>Saved tools note</dt><dd>{project.tools}</dd></div>}
           <div><dt>Target date</dt><dd>{formatProjectDate(project.targetDate, project.targetDatePrecision) || 'No date in mind'}</dd></div>
           {project.completedAt && <div><dt>Finished on</dt><dd data-testid="text-completed-date">{formatProjectDate(project.completedAt, project.completedAtPrecision)}</dd></div>}
-        </dl>{project.description && <div className="personal-note"><span>NOTE TO SELF</span><p>{project.description}</p></div>}<button className="aside-edit" onClick={() => setEditing(!editing)} data-testid="button-edit-details"><Feather size={14}/> Edit details</button></div>
-        <div className="aside-encouragement"><Flower2 className="encouragement-mark" size={48} strokeWidth={1}/><p>“Slow work is still<br/>beautiful work.”</p><span>YOUR WORKROOM, YOUR PACE</span></div>
+        </dl>{project.description && <div className="personal-note"><span>Notes</span><p>{project.description}</p></div>}<button className="aside-edit" onClick={() => setEditing(!editing)} data-testid="button-edit-details"><Feather size={14}/> Edit details</button></div>
       </aside>
     </section>
   </PortalLayout>;

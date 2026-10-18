@@ -23,8 +23,8 @@ const weekFormat = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric
 
 type Row = { label: string; detail: string; count: number };
 
-function BarChartCard({ kicker, title, rows, unit, emptyText, note, edgeLabelsOnly = false }: {
-  kicker: string; title: string; rows: Row[]; unit: [string, string]; emptyText: string; note?: string; edgeLabelsOnly?: boolean;
+function BarChartCard({ title, rows, unit, emptyText, note, edgeLabelsOnly = false }: {
+  title: string; rows: Row[]; unit: [string, string]; emptyText: string; note?: string; edgeLabelsOnly?: boolean;
 }) {
   const colors = useColors();
   const [selected, setSelected] = useState<number | null>(null);
@@ -34,7 +34,6 @@ function BarChartCard({ kicker, title, rows, unit, emptyText, note, edgeLabelsOn
 
   return (
     <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      <LoomText style={[styles.kicker, { color: colors.mutedForeground }]}>{kicker}</LoomText>
       <LoomText serif style={[styles.title, { color: colors.foreground }]}>{title}</LoomText>
       {max > 0 ? (
         <>
@@ -98,12 +97,12 @@ export function DashboardCharts({ charts }: { charts: Charts }) {
 
   return (
     <View>
-      <BarChartCard kicker="WHERE THINGS STAND" title="Projects by status" rows={statusRows} unit={['project', 'projects']}
+      <BarChartCard title="Projects by status" rows={statusRows} unit={['project', 'projects']}
         emptyText="Add your first project and it will show up here." />
-      <BarChartCard kicker="THE LAST 12 MONTHS" title="Finished each month" rows={monthRows} unit={['project', 'projects']} edgeLabelsOnly
+      <BarChartCard title="Finished, last 12 months" rows={monthRows} unit={['project', 'projects']} edgeLabelsOnly
         emptyText="Nothing finished in the last year yet. Your first finish will land here."
         note={undated ? `${undated} finished ${undated === 1 ? 'project has' : 'projects have'} no completed date, so ${undated === 1 ? 'it isn’t' : 'they aren’t'} counted here.` : undefined} />
-      <BarChartCard kicker="THE LAST 12 WEEKS" title="Progress notes each week" rows={weekRows} unit={['note', 'notes']} edgeLabelsOnly
+      <BarChartCard title="Notes, last 12 weeks" rows={weekRows} unit={['note', 'notes']} edgeLabelsOnly
         emptyText="No progress notes in the last 12 weeks. Add one from any project page." />
     </View>
   );
@@ -111,7 +110,6 @@ export function DashboardCharts({ charts }: { charts: Charts }) {
 
 const styles = StyleSheet.create({
   card: { borderWidth: 1, borderRadius: 14, padding: 14, marginBottom: 10 },
-  kicker: { fontFamily: fonts.bold, fontSize: 13, letterSpacing: 1.1, marginBottom: 6 },
   title: { fontSize: 22, marginBottom: 12 },
   plot: { height: plotHeight, flexDirection: 'row', alignItems: 'flex-end', gap: 4, borderBottomWidth: 1 },
   barSlot: { flex: 1, height: '100%', justifyContent: 'flex-end', alignItems: 'center' },

@@ -100,7 +100,7 @@ function ClassicTabLayout() {
 
 export default function TabLayout() {
   const { isLoaded, isSignedIn } = useAuth();
-  if (!isLoaded) return <LoadingState label="Opening your workroom…" />;
+  if (!isLoaded) return <LoadingState label="Loading…" />;
   if (!isSignedIn) return <Redirect href="/" />;
   if (isLiquidGlassAvailable()) {
     return <NativeTabLayout />;

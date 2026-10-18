@@ -68,15 +68,15 @@ export default function ProjectsScreen() {
       </View>
       {query.isLoading ? <LoadingState /> : query.isError ? <ErrorState onRetry={() => void query.refetch()} /> : query.data?.length ? (
         <>
-          <LoomText style={[styles.count, { color: colors.mutedForeground }]}>{query.data.length} {query.data.length === 1 ? 'project' : 'projects'} in your collection</LoomText>
+          <LoomText style={[styles.count, { color: colors.mutedForeground }]}>{query.data.length} {query.data.length === 1 ? 'project' : 'projects'}</LoomText>
           {query.data.map((project) => <ProjectCard key={project.id} project={project} />)}
         </>
       ) : starredOnly && !search && !status && !craft ? (
-        <EmptyState title="No starred projects yet." body="Tap the star on any project to keep your favorites here." actionTitle="Show all projects" onAction={clearFilters} />
+        <EmptyState title="No starred projects yet" body="Tap the star on any project to keep your favorites here." actionTitle="Show all projects" onAction={clearFilters} />
       ) : search || status || craft || starredOnly ? (
-        <EmptyState title="Nothing in this little corner yet." body="Try a different search or clear a filter to see more projects." actionTitle="Clear filters" onAction={clearFilters} />
+        <EmptyState title="No projects match" body="Try a different search or clear a filter." actionTitle="Clear filters" onAction={clearFilters} />
       ) : (
-        <EmptyState title="Your next project starts here." body="Gather a pattern, choose a yarn, and give your next idea its own little page." actionTitle="Add a project" onAction={() => router.push('/projects/new')} />
+        <EmptyState title="No projects yet" body="Add your first project to start tracking it." actionTitle="Add a project" onAction={() => router.push('/projects/new')} />
       )}
       <View style={styles.bottomAction}><LoomButton title="Add a project" icon="plus" onPress={() => router.push('/projects/new')} testID="button-add-project" /></View>
     </ScrollView>
