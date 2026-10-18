@@ -71,7 +71,7 @@ export function ProgressMethodFields({ value, onChange, prefix, error }: {
   });
 
   return <div className="progress-method field-wide">
-    <div className="designer-entry-heading"><b>Track progress by</b><span>{chosen.hint}</span></div>
+    <div className="progress-method-heading"><b>Track progress by</b><span>{chosen.hint}</span></div>
     <div className="designer-mode-switch progress-method-switch" role="radiogroup" aria-label="Track progress by">
       {methods.map((method) => <button
         key={method.value}
