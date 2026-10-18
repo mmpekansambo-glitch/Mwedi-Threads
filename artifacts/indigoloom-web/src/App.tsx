@@ -420,26 +420,27 @@ function DesignerEntry({
     validate: (value) => mode !== 'website' || !value || isHttpWebsiteUrl(value) || 'Enter a website link starting with http:// or https://.',
   });
 
-  return <div className="designer-entry field-wide">
-    <div className="designer-entry-heading"><b>Design</b><span>Use a name or link to their website.</span></div>
-    <div className="designer-mode-switch" role="group" aria-label="Designer entry option">
-      <button type="button" aria-pressed={mode === 'name'} className={mode === 'name' ? 'selected' : ''} onClick={() => onModeChange('name')} data-testid={`button-${prefix}-designer-name`}>Name</button>
-      <button type="button" aria-pressed={mode === 'website'} className={mode === 'website' ? 'selected' : ''} onClick={() => onModeChange('website')} data-testid={`button-${prefix}-designer-website`}>Website link</button>
+  const inputId = mode === 'name' ? `${prefix}-pattern-designer` : `${prefix}-designer-website`;
+  return <div className="field-block designer-entry field-wide">
+    <label htmlFor={inputId}>Designer</label>
+    <div className="designer-row">
+      <div className="designer-mode-switch" role="group" aria-label="Designer entry option">
+        <button type="button" aria-pressed={mode === 'name'} className={mode === 'name' ? 'selected' : ''} onClick={() => onModeChange('name')} data-testid={`button-${prefix}-designer-name`}>Name</button>
+        <button type="button" aria-pressed={mode === 'website'} className={mode === 'website' ? 'selected' : ''} onClick={() => onModeChange('website')} data-testid={`button-${prefix}-designer-website`}>Website link</button>
+      </div>
+      {mode === 'name' ? (
+        <input id={inputId} placeholder="Who made the pattern?" {...form.register('patternDesigner')} data-testid={prefix === 'create' ? 'input-pattern-designer' : 'input-edit-designer'}/>
+      ) : <>
+        <input id={inputId} type="url" autoCapitalize="none" autoCorrect="off" placeholder="https://example.com" {...websiteRegistration} onChange={(event) => { void websiteRegistration.onChange(event); form.setValue('designerPageTitle', '', { shouldDirty: true }); form.setValue('patternDesigner', '', { shouldDirty: true }); onClearPreview(); }} data-testid={`input-${prefix}-designer-website`}/>
+        <button type="button" className="button button-outline designer-preview-button" onClick={onPreview} disabled={isPreviewing} data-testid={`button-${prefix}-preview-designer-title`}>{isPreviewing ? 'Previewing…' : 'Preview page title'}</button>
+      </>}
     </div>
-    {mode === 'name' ? (
-      <div className="field-block"><label htmlFor={`${prefix}-pattern-designer`}>Designer name</label><input id={`${prefix}-pattern-designer`} placeholder="Who made the pattern?" {...form.register('patternDesigner')} data-testid={prefix === 'create' ? 'input-pattern-designer' : 'input-edit-designer'}/></div>
-    ) : (
-      <>
-        <div className="designer-website-row">
-          <div className="field-block"><label htmlFor={`${prefix}-designer-website`}>Website link</label><input id={`${prefix}-designer-website`} type="url" autoCapitalize="none" autoCorrect="off" placeholder="https://example.com" {...websiteRegistration} onChange={(event) => { void websiteRegistration.onChange(event); form.setValue('designerPageTitle', '', { shouldDirty: true }); form.setValue('patternDesigner', '', { shouldDirty: true }); onClearPreview(); }} data-testid={`input-${prefix}-designer-website`}/></div>
-          <button type="button" className="button button-outline designer-preview-button" onClick={onPreview} disabled={isPreviewing} data-testid={`button-${prefix}-preview-designer-title`}>{isPreviewing ? 'Previewing…' : 'Preview page title'}</button>
-        </div>
-        {form.formState.errors.designerWebsite?.message && <p className="field-error" role="alert">{form.formState.errors.designerWebsite.message}</p>}
-        <input type="hidden" {...form.register('designerPageTitle')}/>
-        {pageTitle && <div className="designer-page-preview" role="status" data-testid="designer-page-title-preview"><span>Page title preview</span><strong>{pageTitle}</strong></div>}
-        {message && <p className="designer-preview-message" role="status">{message}</p>}
-      </>
-    )}
+    {mode === 'website' && <>
+      {form.formState.errors.designerWebsite?.message && <p className="field-error" role="alert">{form.formState.errors.designerWebsite.message}</p>}
+      <input type="hidden" {...form.register('designerPageTitle')}/>
+      {pageTitle && <div className="designer-page-preview" role="status" data-testid="designer-page-title-preview"><span>Page title preview</span><strong>{pageTitle}</strong></div>}
+      {message && <p className="designer-preview-message" role="status">{message}</p>}
+    </>}
   </div>;
 }
 
