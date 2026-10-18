@@ -466,7 +466,7 @@ function DesignerEntry({
   });
 
   return <div className="designer-entry field-wide">
-    <div className="designer-entry-heading"><b>Designer</b><span>Use a name or link to their website.</span></div>
+    <div className="designer-entry-heading"><b>Design</b><span>Use a name or link to their website.</span></div>
     <div className="designer-mode-switch" role="group" aria-label="Designer entry option">
       <button type="button" aria-pressed={mode === 'name'} className={mode === 'name' ? 'selected' : ''} onClick={() => onModeChange('name')} data-testid={`button-${prefix}-designer-name`}>Name</button>
       <button type="button" aria-pressed={mode === 'website'} className={mode === 'website' ? 'selected' : ''} onClick={() => onModeChange('website')} data-testid={`button-${prefix}-designer-website`}>Website link</button>

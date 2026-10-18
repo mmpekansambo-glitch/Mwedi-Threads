@@ -124,7 +124,7 @@ export default function EditProjectScreen() {
               <TextInput value={title} onChangeText={setTitle} style={inputStyle} />
               <FormFieldLabel>Pattern name</FormFieldLabel>
               <TextInput value={patternName} onChangeText={setPatternName} placeholder="Pattern or source" placeholderTextColor={colors.mutedForeground} style={inputStyle} />
-              <LoomText style={{ color: colors.primary, fontSize: 15, fontFamily: fonts.semibold, marginBottom: 11 }}>Designer</LoomText>
+              <LoomText style={{ color: colors.primary, fontSize: 15, fontFamily: fonts.semibold, marginBottom: 11 }}>Design</LoomText>
               <View style={styles.designerModeRow} accessibilityLabel="Designer entry option">
                 {(['name', 'website'] as const).map((option) => {
                   const active = designerMode === option;

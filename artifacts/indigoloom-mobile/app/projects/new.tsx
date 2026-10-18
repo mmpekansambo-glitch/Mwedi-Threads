@@ -118,7 +118,7 @@ export default function NewProjectScreen() {
             <LoomText style={[styles.sectionLabel, { color: colors.primary }]}>Pattern and materials</LoomText>
             <FormFieldLabel>Pattern name</FormFieldLabel>
             <TextInput {...inputProps} value={patternName} onChangeText={setPatternName} placeholder="Pattern or source" style={fieldStyle} />
-            <LoomText style={[styles.sectionLabel, { color: colors.primary }]}>Designer</LoomText>
+            <LoomText style={[styles.sectionLabel, { color: colors.primary }]}>Design</LoomText>
             <View style={styles.designerModeRow} accessibilityLabel="Designer entry option">
               {(['name', 'website'] as const).map((option) => {
                 const active = designerMode === option;
