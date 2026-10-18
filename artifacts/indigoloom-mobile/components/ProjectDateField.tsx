@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Feather } from '@expo/vector-icons';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import type { CreateProject } from '@workspace/api-client-react';
 import { FormFieldLabel, LoomText, fonts } from '@/components/loom';
 import { useColors } from '@/hooks/useColors';
@@ -11,8 +11,25 @@ const monthNames = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
-const weekdays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+const ITEM_HEIGHT = 44;
+const NO_DAY = '—';
 const pad2 = (value: number) => String(value).padStart(2, '0');
+const daysIn = (year: number, monthIndex: number) => new Date(year, monthIndex + 1, 0).getDate();
+
+type Draft = { year: number; month: number; day: number };
+
+function draftFromValue(value: string, precision: ProjectDatePrecision): Draft {
+  const [year, month, day] = value.split('-').map(Number);
+  const now = new Date();
+  if (!year || !month) return { year: now.getFullYear(), month: now.getMonth(), day: 0 };
+  return { year, month: month - 1, day: precision === 'day' && day ? day : 0 };
+}
+
+function formatWheelDate(value: string, precision: ProjectDatePrecision): string {
+  if (!value) return '';
+  const { year, month, day } = draftFromValue(value, precision);
+  return day ? `${monthNames[month]} ${day}, ${year}` : `${monthNames[month]} ${year}`;
+}
 
 export function projectDateForApi(value: string, precision: ProjectDatePrecision): string | null {
   if (!value) return null;
@@ -29,6 +46,69 @@ export function formatProjectDate(
   return precision === 'month'
     ? `${month}/${year.slice(-2)}`
     : `${month}/${day}/${year.slice(-2)}`;
+}
+
+function Wheel({ label, items, index, onChange, flex, testID }: {
+  label: string;
+  items: string[];
+  index: number;
+  onChange: (index: number) => void;
+  flex: number;
+  testID: string;
+}) {
+  const colors = useColors();
+  const ref = useRef<ScrollView>(null);
+  const offset = useRef(index * ITEM_HEIGHT);
+
+  useEffect(() => {
+    if (Math.round(offset.current / ITEM_HEIGHT) !== index) ref.current?.scrollTo({ y: index * ITEM_HEIGHT, animated: true });
+  }, [index]);
+
+  const settle = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    offset.current = event.nativeEvent.contentOffset.y;
+    const next = Math.max(0, Math.min(items.length - 1, Math.round(offset.current / ITEM_HEIGHT)));
+    if (next !== index) onChange(next);
+  };
+
+  return (
+    <View
+      style={{ flex, height: ITEM_HEIGHT * 5 }}
+      accessible
+      accessibilityRole="adjustable"
+      accessibilityLabel={label}
+      accessibilityValue={{ text: items[index] === NO_DAY ? 'No day' : items[index] }}
+      accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
+      onAccessibilityAction={(event) => onChange(Math.max(0, Math.min(items.length - 1, index + (event.nativeEvent.actionName === 'increment' ? 1 : -1))))}
+    >
+      <ScrollView
+        ref={ref}
+        showsVerticalScrollIndicator={false}
+        snapToInterval={ITEM_HEIGHT}
+        decelerationRate="fast"
+        contentOffset={{ x: 0, y: index * ITEM_HEIGHT }}
+        contentContainerStyle={{ paddingVertical: ITEM_HEIGHT * 2 }}
+        scrollEventThrottle={32}
+        onScroll={(event) => { offset.current = event.nativeEvent.contentOffset.y; }}
+        onMomentumScrollEnd={settle}
+        onScrollEndDrag={(event) => { if (!event.nativeEvent.velocity || Math.abs(event.nativeEvent.velocity.y) < 0.05) settle(event); }}
+        nestedScrollEnabled
+        testID={testID}
+      >
+        {items.map((item, itemIndex) => {
+          const selected = itemIndex === index;
+          return (
+            <Pressable key={item} onPress={() => onChange(itemIndex)} style={styles.wheelItem} importantForAccessibility="no">
+              <LoomText
+                serif={selected}
+                numberOfLines={1}
+                style={{ color: selected ? colors.foreground : colors.mutedForeground, fontSize: selected ? 21 : 17, opacity: selected ? 1 : Math.max(0.35, 1 - Math.abs(itemIndex - index) * 0.3) }}
+              >{item}</LoomText>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+    </View>
+  );
 }
 
 export function ProjectDateField({
@@ -48,237 +128,72 @@ export function ProjectDateField({
 }) {
   const colors = useColors();
   const [isOpen, setIsOpen] = useState(false);
-  const [visibleMonth, setVisibleMonth] = useState(() => new Date());
-  const selectedParts = value.split('-').map(Number);
-  const visibleYear = visibleMonth.getFullYear();
-  const visibleMonthIndex = visibleMonth.getMonth();
-  const firstWeekday = new Date(visibleYear, visibleMonthIndex, 1).getDay();
-  const daysInMonth = new Date(visibleYear, visibleMonthIndex + 1, 0).getDate();
-  const cells = Array.from(
-    { length: Math.ceil((firstWeekday + daysInMonth) / 7) * 7 },
-    (_, index) => {
-      const day = index - firstWeekday + 1;
-      return day > 0 && day <= daysInMonth ? day : null;
-    },
-  );
-  const displayValue = formatProjectDate(value, precision);
+  const [draft, setDraft] = useState<Draft>(() => draftFromValue(value, precision));
+  const thisYear = new Date().getFullYear();
+  const years = Array.from({ length: 71 }, (_, offset) => thisYear - 60 + offset);
+  const dayItems = [NO_DAY, ...Array.from({ length: daysIn(draft.year, draft.month) }, (_, offset) => String(offset + 1))];
+  const displayValue = formatWheelDate(value, precision);
 
   const openPicker = () => {
-    const [selectedYear, selectedMonth] = selectedParts;
-    const now = new Date();
-    setVisibleMonth(new Date(
-      selectedYear || now.getFullYear(),
-      selectedMonth ? selectedMonth - 1 : now.getMonth(),
-      1,
-    ));
+    setDraft(draftFromValue(value, precision));
     setIsOpen(true);
   };
 
-  const changePrecision = (next: ProjectDatePrecision) => {
-    if (next === precision) return;
-    onChange(next === 'month' ? value.slice(0, 7) : '');
-    onPrecisionChange(next);
-  };
+  const update = (next: Partial<Draft>) => setDraft((current) => {
+    const merged = { ...current, ...next };
+    return { ...merged, day: Math.min(merged.day, daysIn(merged.year, merged.month)) };
+  });
 
-  const moveCalendar = (direction: -1 | 1) => {
-    setVisibleMonth(precision === 'month'
-      ? new Date(visibleYear + direction, visibleMonthIndex, 1)
-      : new Date(visibleYear, visibleMonthIndex + direction, 1));
-  };
-
-  const chooseDay = (day: number) => {
-    onChange(`${visibleYear}-${pad2(visibleMonthIndex + 1)}-${pad2(day)}`);
-    setIsOpen(false);
-  };
-
-  const chooseMonth = (monthIndex: number) => {
-    onChange(`${visibleYear}-${pad2(monthIndex + 1)}`);
+  const save = () => {
+    const monthValue = `${draft.year}-${pad2(draft.month + 1)}`;
+    onPrecisionChange(draft.day ? 'day' : 'month');
+    onChange(draft.day ? `${monthValue}-${pad2(draft.day)}` : monthValue);
     setIsOpen(false);
   };
 
   return (
     <View style={styles.field}>
       <FormFieldLabel>{label}</FormFieldLabel>
-      <View style={styles.precisionRow}>
-        {([
-          ['month', 'MM/YY'],
-          ['day', 'MM/DD/YY'],
-        ] as const).map(([item, title]) => {
-          const active = precision === item;
-          return (
-            <Pressable
-              key={item}
-              accessibilityRole="radio"
-              accessibilityState={{ selected: active }}
-              onPress={() => changePrecision(item)}
-              style={[
-                styles.precisionButton,
-                {
-                  backgroundColor: active ? colors.selectedWash : colors.background,
-                  borderColor: active ? colors.primary : colors.border,
-                },
-              ]}
-              testID={`${testID}-precision-${item}`}
-            >
-              <LoomText style={{
-                color: active ? colors.primary : colors.mutedForeground,
-                fontFamily: active ? fonts.semibold : fonts.body,
-                fontSize: 14,
-              }}>{title}</LoomText>
-            </Pressable>
-          );
-        })}
-      </View>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${label}: ${displayValue || (precision === 'month' ? 'Choose month and year' : 'Choose date')}`}
+        accessibilityLabel={`${label}: ${displayValue || 'Choose a date'}`}
         onPress={openPicker}
         style={[styles.dateButton, { backgroundColor: colors.card, borderColor: colors.input }]}
         testID={`${testID}-calendar`}
       >
         <Feather name="calendar" size={16} color={colors.primary} />
-        <LoomText style={{ color: displayValue ? colors.foreground : colors.mutedForeground, fontSize: 16 }}>
-          {displayValue || (precision === 'month' ? 'Choose month and year' : 'Choose date')}
+        <LoomText style={{ flex: 1, color: displayValue ? colors.foreground : colors.mutedForeground, fontSize: 16 }}>
+          {displayValue || 'Choose a date'}
         </LoomText>
         <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
       </Pressable>
 
-      <Modal
-        visible={isOpen}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setIsOpen(false)}
-      >
+      <Modal visible={isOpen} transparent animationType="slide" onRequestClose={() => setIsOpen(false)}>
         <View style={styles.modalBackdrop}>
-          <Pressable
-            accessibilityLabel="Close calendar"
-            onPress={() => setIsOpen(false)}
-            style={StyleSheet.absoluteFill}
-          />
-          <View style={[styles.sheet, { backgroundColor: colors.card, paddingBottom: 20 }]}>
-            <View style={[styles.sheetHeading, { borderBottomColor: colors.border }]}>
-              <View>
-                <LoomText serif style={{ color: colors.foreground, fontSize: 24 }}>
-                  {precision === 'month' ? 'Choose month and year' : 'Choose a date'}
-                </LoomText>
-                <LoomText style={{ color: colors.mutedForeground, fontSize: 15, marginTop: 3 }}>
-                  {precision === 'month' ? 'Month and year only · MM/YY' : 'Select a day · MM/DD/YY'}
-                </LoomText>
-              </View>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Close calendar"
-                onPress={() => setIsOpen(false)}
-                style={styles.closeButton}
-              >
-                <Feather name="x" size={19} color={colors.mutedForeground} />
+          <Pressable accessibilityLabel="Close date picker" onPress={() => setIsOpen(false)} style={StyleSheet.absoluteFill} />
+          <View style={[styles.sheet, { backgroundColor: colors.card }]}>
+            <View style={styles.sheetHeading}>
+              <Pressable accessibilityRole="button" onPress={() => setIsOpen(false)} style={styles.headingButton}>
+                <LoomText style={{ color: colors.mutedForeground, fontSize: 16 }}>Cancel</LoomText>
+              </Pressable>
+              <LoomText serif style={{ color: colors.foreground, fontSize: 20 }}>{label.replace(' (optional)', '')}</LoomText>
+              <Pressable accessibilityRole="button" onPress={save} style={styles.headingButton} testID={`${testID}-done`}>
+                <LoomText style={{ color: colors.primary, fontFamily: fonts.semibold, fontSize: 16, textAlign: 'right' }}>Done</LoomText>
               </Pressable>
             </View>
 
-            <View style={styles.calendarHeader}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={precision === 'month' ? 'Previous year' : 'Previous month'}
-                onPress={() => moveCalendar(-1)}
-                style={[styles.calendarNavButton, { borderColor: colors.border }]}
-              >
-                <Feather name="chevron-left" size={17} color={colors.primary} />
-              </Pressable>
-              <LoomText style={{ color: colors.foreground, fontFamily: fonts.semibold, fontSize: 17 }}>
-                {precision === 'month'
-                  ? String(visibleYear)
-                  : new Intl.DateTimeFormat('en', { month: 'long', year: 'numeric' }).format(visibleMonth)}
-              </LoomText>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={precision === 'month' ? 'Next year' : 'Next month'}
-                onPress={() => moveCalendar(1)}
-                style={[styles.calendarNavButton, { borderColor: colors.border }]}
-              >
-                <Feather name="chevron-right" size={17} color={colors.primary} />
-              </Pressable>
+            <View style={[styles.wheels, { backgroundColor: colors.selectedWash }]}>
+              <View pointerEvents="none" style={[styles.wheelBand, { borderColor: colors.accent }]} />
+              <Wheel label="Month" items={monthNames} index={draft.month} onChange={(month) => update({ month })} flex={1.6} testID={`${testID}-month`} />
+              <Wheel label="Day, optional" items={dayItems} index={draft.day} onChange={(day) => update({ day })} flex={0.8} testID={`${testID}-day`} />
+              <Wheel label="Year" items={years.map(String)} index={Math.max(0, years.indexOf(draft.year))} onChange={(yearIndex) => update({ year: years[yearIndex] })} flex={1} testID={`${testID}-year`} />
             </View>
 
-            {precision === 'month' ? (
-              <View style={styles.monthGrid}>
-                {monthNames.map((monthName, monthIndex) => {
-                  const selected = selectedParts[0] === visibleYear && selectedParts[1] === monthIndex + 1;
-                  return (
-                    <Pressable
-                      key={monthName}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${monthName} ${visibleYear}`}
-                      onPress={() => chooseMonth(monthIndex)}
-                      style={[
-                        styles.monthCell,
-                        {
-                          backgroundColor: selected ? colors.selectedWash : colors.background,
-                          borderColor: selected ? colors.primary : colors.border,
-                        },
-                      ]}
-                    >
-                      <LoomText style={{
-                        color: selected ? colors.primary : colors.foreground,
-                        fontFamily: selected ? fonts.semibold : fonts.body,
-                        fontSize: 15,
-                      }}>{monthName.slice(0, 3)}</LoomText>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            ) : (
-              <>
-                <View style={styles.weekdayRow}>
-                  {weekdays.map((weekday, index) => (
-                    <LoomText key={`${weekday}-${index}`} style={[styles.weekday, { color: colors.mutedForeground }]}>
-                      {weekday}
-                    </LoomText>
-                  ))}
-                </View>
-                <View style={styles.dayGrid}>
-                  {cells.map((day, index) => {
-                    if (day === null) return <View key={`blank-${index}`} style={styles.dayCell} />;
-                    const selected = selectedParts[0] === visibleYear
-                      && selectedParts[1] === visibleMonthIndex + 1
-                      && selectedParts[2] === day;
-                    return (
-                      <Pressable
-                        key={day}
-                        accessibilityRole="button"
-                        accessibilityLabel={new Date(visibleYear, visibleMonthIndex, day).toLocaleDateString()}
-                        accessibilityState={{ selected }}
-                        onPress={() => chooseDay(day)}
-                        style={[
-                          styles.dayCell,
-                          selected && { backgroundColor: colors.primary },
-                        ]}
-                      >
-                        <LoomText style={{
-                          color: selected ? colors.card : colors.foreground,
-                          fontFamily: selected ? fonts.semibold : fonts.body,
-                          fontSize: 16,
-                        }}>{day}</LoomText>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              </>
-            )}
-
-            <View style={[styles.sheetFooter, { borderTopColor: colors.border }]}>
-              {value ? (
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => { onChange(''); setIsOpen(false); }}
-                  style={styles.clearButton}
-                >
-                  <LoomText style={{ color: colors.destructive, fontFamily: fonts.semibold, fontSize: 15 }}>Clear date</LoomText>
-                </Pressable>
-              ) : <View />}
-              <Pressable accessibilityRole="button" onPress={() => setIsOpen(false)} style={styles.doneButton}>
-                <LoomText style={{ color: colors.primary, fontFamily: fonts.semibold, fontSize: 15 }}>Done</LoomText>
+            {value ? (
+              <Pressable accessibilityRole="button" onPress={() => { onChange(''); setIsOpen(false); }} style={styles.clearButton}>
+                <LoomText style={{ color: colors.destructive, fontFamily: fonts.semibold, fontSize: 15 }}>Clear date</LoomText>
               </Pressable>
-            </View>
+            ) : null}
           </View>
         </View>
       </Modal>
@@ -288,22 +203,13 @@ export function ProjectDateField({
 
 const styles = StyleSheet.create({
   field: { marginBottom: 14 },
-  precisionRow: { flexDirection: 'row', gap: 8, marginTop: 8, marginBottom: 8 },
-  precisionButton: { minHeight: 34, paddingHorizontal: 13, borderRadius: 9, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  dateButton: { minHeight: 46, borderRadius: 9, borderWidth: 1, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  dateButton: { minHeight: 46, marginTop: 8, borderRadius: 9, borderWidth: 1, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 10 },
   modalBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(31, 47, 22, 0.42)' },
-  sheet: { borderTopLeftRadius: 22, borderTopRightRadius: 22, paddingHorizontal: 20, paddingTop: 18, minHeight: 410 },
-  sheetHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 15, borderBottomWidth: 1 },
-  closeButton: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
-  calendarHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 14, marginBottom: 12 },
-  calendarNavButton: { width: 38, height: 36, borderRadius: 9, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  weekdayRow: { flexDirection: 'row', marginBottom: 4 },
-  weekday: { width: '14.2857%', textAlign: 'center', fontSize: 14, fontFamily: fonts.semibold, paddingVertical: 6 },
-  dayGrid: { flexDirection: 'row', flexWrap: 'wrap' },
-  dayCell: { width: '14.2857%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 22 },
-  monthGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
-  monthCell: { width: '31.8%', minHeight: 48, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: 10 },
-  sheetFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, marginTop: 12, paddingTop: 12 },
-  clearButton: { paddingVertical: 10, paddingHorizontal: 4 },
-  doneButton: { paddingVertical: 10, paddingHorizontal: 4 },
+  sheet: { borderTopLeftRadius: 22, borderTopRightRadius: 22, paddingHorizontal: 16, paddingTop: 10, paddingBottom: 34 },
+  sheetHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 10 },
+  headingButton: { minWidth: 64, paddingVertical: 10 },
+  wheels: { flexDirection: 'row', borderRadius: 12, overflow: 'hidden', paddingHorizontal: 6 },
+  wheelBand: { position: 'absolute', left: 8, right: 8, top: ITEM_HEIGHT * 2, height: ITEM_HEIGHT, borderTopWidth: 1.5, borderBottomWidth: 1.5 },
+  wheelItem: { height: ITEM_HEIGHT, alignItems: 'center', justifyContent: 'center' },
+  clearButton: { alignSelf: 'center', paddingVertical: 12, marginTop: 6 },
 });
