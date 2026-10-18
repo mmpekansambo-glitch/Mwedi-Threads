@@ -154,6 +154,7 @@ function AboutPage() {
     <nav className="about-nav"><Brand/></nav>
     <article className="about-page">
       <h1>About Mwedi Threads</h1>
+      <img className="about-photo" src={`${basePath}/about-photo.jpg`} width={1200} height={800} alt="Mwengwe Mpekansambo smiling, surrounded by balls and skeins of yarn"/>
       <p>A crochet or knitting project lives in a lot of places at once: the pattern, the designer's page, the yarn label, the hook or needles, a photo of where you stopped. Those pieces end up spread across notes, bookmarks and camera rolls, and it is easy to lose your place. Mwedi Threads keeps the whole project journey together in one place.</p>
 
       <h2>What you can keep here</h2>
