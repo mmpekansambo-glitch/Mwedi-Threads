@@ -15,8 +15,8 @@ import type { CreateProject, CreateProgress, Project, ProjectStatus, UpdateProje
 import { FormProvider as Form, useForm, type UseFormReturn } from 'react-hook-form';
 import {
   ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, Check,
-  ChevronDown, ChevronUp, CircleHelp, Feather, Filter,
-  Layers3, LogOut, Menu, Plus, Search, Star, Trash2,
+  ChevronDown, ChevronUp, CircleHelp, Feather, Filter, Flower2,
+  Layers3, LogOut, Menu, Plus, Search, Sparkles, Star, Trash2,
   X,
 } from 'lucide-react';
 import {
@@ -115,13 +115,27 @@ function HomeRoute() {
 
 function Landing() {
   return <main className="landing">
+    <nav className="landing-nav"><Brand /></nav>
     <section className="landing-hero">
-      <Mark />
-      <h1>Mwedi Threads</h1>
-      <p className="hero-lede">Keep every cast-on, color choice and almost-finished sleeve in one place. No streaks to keep and no pressure to finish, just a record of the things you make and the small steps that got you there.</p>
-      <div className="hero-actions">
-        <Link href="/sign-up" className="button button-primary" data-testid="link-get-started">Sign up</Link>
-        <Link href="/sign-in" className="button button-outline" data-testid="link-sign-in">Sign in</Link>
+      <div className="hero-copy">
+        <h1>Your hands are busy.<br/><em>Let your mind rest.</em></h1>
+        <p className="hero-lede">Keep every cast-on, color choice and almost-finished sleeve in one place. No streaks to keep and no pressure to finish, just a record of the things you make and the small steps that got you there.</p>
+        <div className="hero-actions">
+          <Link href="/sign-up" className="button button-primary" data-testid="link-get-started">Sign up</Link>
+          <Link href="/sign-in" className="button button-outline" data-testid="link-sign-in">Sign in</Link>
+        </div>
+      </div>
+      <div className="hero-art" aria-hidden="true">
+        <div className="orbit orbit-one"/><div className="orbit orbit-two"/>
+        <div className="thread thread-a"/><div className="thread thread-b"/>
+        <div className="project-note">
+          <div className="note-top"><span className="note-tag">IN THE MAKING</span><span className="note-dots">•••</span></div>
+          <div className="swatch-art"><span/><span/><span/><span/><span/><span/><span/><span/><span/><span/><span/><span/><span/><span/><span/></div>
+          <div className="note-copy"><small>YOUR NEXT LITTLE WIN</small><strong>Juniper cardigan</strong><div className="mini-progress"><span/></div><div className="mini-progress-meta"><span>18 rows since Sunday</span><b>42%</b></div></div>
+        </div>
+        <div className="yarn-ball"><span/><span/><span/><span/></div>
+        <div className="floating-note"><Sparkles size={14}/><span>one row at a time</span></div>
+        <span className="hero-flower"><Flower2 size={38} strokeWidth={1.1}/></span>
       </div>
     </section>
     <LandingFooter/>
@@ -136,7 +150,7 @@ function LandingFooter() {
 }
 
 function AboutPage() {
-  return <main className="landing">
+  return <main className="landing landing-about">
     <nav className="about-nav"><Brand/></nav>
     <article className="about-page">
       <h1>About Mwedi Threads</h1>
@@ -150,24 +164,9 @@ function AboutPage() {
         <li>Stars for your favorites, and a dashboard that shows your making habits over time.</li>
       </ul>
 
-      <h2>Part of IndigoLoom</h2>
-      <p>Mwedi Threads is the first build of IndigoLoom, a platform for a fiber artist's whole journey: discover, plan, create, connect and grow. It starts with crocheters and knitters, and grows toward sourcing yarn, sharing patterns and the community around the craft.</p>
+      <h2>Grown from IndigoLoom</h2>
+      <p>Mwedi Threads is the evolution of IndigoLoom, a vision for a platform that supports a fiber artist's whole journey: discover, plan, create, connect and grow. It starts with crocheters and knitters, and grows toward sourcing yarn, sharing patterns and the community around the craft.</p>
 
-      <h2>Why now</h2>
-      <ul>
-        <li>The global knitting and crochet market is about $11B in 2026 and is projected to reach $18B by 2034. North America holds 38% of it and is growing fastest.<sup>1</sup></li>
-        <li>People aged 18 to 34 make up about 28% of that market.<sup>1</sup></li>
-        <li>Online craft communities passed 100 million users in 2026.<sup>1</sup></li>
-        <li>Ravelry saw 89,250 patterns published in 2020 alone, a record year for digital designers.<sup>2</sup></li>
-        <li>Retailers are making room for yarn: Michaels grew its in-store yarn shelf space by 25% in 2025 and in 2026 expanded fiber shelf space across 90% of its stores.<sup>3</sup></li>
-      </ul>
-
-      <h2>Sources</h2>
-      <ol className="about-sources">
-        <li>Knitting and Crochet Market Size, Share Growth and Industry Analysis. Market Reports World, 2026.</li>
-        <li>Knitting in the 2010s vs Knitting in 2026. Knit Pro, 2026.</li>
-        <li>Michaels Launches Big Twist Yarn In-Store and Online.</li>
-      </ol>
       <p className="about-credit">Made by Mwengwe Mpekansambo.</p>
     </article>
     <LandingFooter/>

@@ -16,6 +16,7 @@ export default function WelcomeScreen() {
     <View style={[styles.screen, { backgroundColor: colors.background, paddingTop: Platform.OS === 'web' ? 67 : insets.top + 18, paddingBottom: Platform.OS === 'web' ? 34 : insets.bottom + 20 }]}>
       <View style={styles.hero}>
         <Image source={require('../assets/images/icon.png')} style={styles.logo} accessibilityLabel="Mwedi Threads" />
+        <LoomText serif style={[styles.title, { color: colors.foreground }]}>Your hands are busy.{'\n'}<LoomText serif style={{ color: colors.primary }}>Let your mind rest.</LoomText></LoomText>
         <LoomText style={[styles.line, { color: colors.mutedForeground }]}>Keep every cast-on, color choice and almost-finished sleeve in one place. No streaks to keep and no pressure to finish, just a record of the things you make and the small steps that got you there.</LoomText>
       </View>
       <View style={styles.actions}>
@@ -30,8 +31,9 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, paddingHorizontal: 24 },
   hero: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 28 },
-  logo: { width: 240, height: 240 },
-  line: { fontSize: 17, lineHeight: 25, textAlign: 'center', maxWidth: 320, marginTop: 4 },
+  logo: { width: 200, height: 200 },
+  title: { fontSize: 34, lineHeight: 40, textAlign: 'center', letterSpacing: -0.6, marginTop: 8 },
+  line: { fontSize: 17, lineHeight: 25, textAlign: 'center', maxWidth: 320, marginTop: 14 },
   actions: { gap: 11 },
   footnote: { textAlign: 'center', marginTop: 20, fontSize: 14 },
 });
