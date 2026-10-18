@@ -157,6 +157,8 @@ function AboutPage() {
       <img className="about-photo" src={`${basePath}/about-photo.jpg`} width={1200} height={800} alt="Mwengwe Mpekansambo smiling, surrounded by balls and skeins of yarn"/>
       <p>A crochet or knitting project lives in a lot of places at once: the pattern, the designer's page, the yarn label, the hook or needles, a photo of where you stopped. Those pieces end up spread across notes, bookmarks and camera rolls, and it is easy to lose your place. Mwedi Threads keeps the whole project journey together in one place.</p>
 
+      <p>Mwedi Threads is the evolution of a vision for a platform that supports a fiber artist's whole journey: discover, plan, create, connect and grow. It starts with crocheters and knitters, and grows toward sourcing yarn, sharing patterns and the community around the craft.</p>
+
       <h2>What you can keep here</h2>
       <ul>
         <li>Every project, with its craft, status, pattern, designer and dates.</li>
@@ -164,9 +166,6 @@ function AboutPage() {
         <li>Dated progress notes with photos, so you always know where you left off.</li>
         <li>Stars for your favorites, and a dashboard that shows your making habits over time.</li>
       </ul>
-
-      <h2>Grown from IndigoLoom</h2>
-      <p>Mwedi Threads is the evolution of IndigoLoom, a vision for a platform that supports a fiber artist's whole journey: discover, plan, create, connect and grow. It starts with crocheters and knitters, and grows toward sourcing yarn, sharing patterns and the community around the craft.</p>
 
       <p className="about-credit">Made by Mwengwe Mpekansambo.</p>
     </article>
