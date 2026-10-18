@@ -17,6 +17,27 @@ export function HookSizePicker({
   onChange: (value: CrochetHookSizeValue) => void;
   testID?: string;
 }) {
+  return <OptionPicker label="Hook size" placeholder="Choose a hook size" options={crochetHookSizes} value={value} onChange={onChange} testID={testID} />;
+}
+
+// A dropdown that opens in place, used for hook sizes and knitting needles.
+export function OptionPicker<T extends string>({
+  label,
+  placeholder,
+  options,
+  optionLabel = (option) => option,
+  value,
+  onChange,
+  testID,
+}: {
+  label: string;
+  placeholder: string;
+  options: readonly T[];
+  optionLabel?: (option: T) => string;
+  value: T | null;
+  onChange: (value: T) => void;
+  testID: string;
+}) {
   const colors = useColors();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -25,35 +46,35 @@ export function HookSizePicker({
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ expanded: isOpen }}
-        accessibilityLabel={`Hook size: ${value || 'Choose a hook size'}`}
+        accessibilityLabel={`${label}: ${value ? optionLabel(value) : placeholder}`}
         onPress={() => setIsOpen((open) => !open)}
         style={[styles.trigger, { borderColor: colors.input, backgroundColor: colors.card }]}
         testID={testID}
       >
         <LoomText style={[styles.triggerText, { color: value ? colors.foreground : colors.mutedForeground }]}>
-          {value || 'Choose a hook size'}
+          {value ? optionLabel(value) : placeholder}
         </LoomText>
         <Feather name={isOpen ? 'chevron-up' : 'chevron-down'} size={17} color={colors.mutedForeground} />
       </Pressable>
       {isOpen ? (
         <View style={[styles.options, { borderColor: colors.border, backgroundColor: colors.card }]}>
           <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled" style={styles.optionList}>
-            {crochetHookSizes.map((hookSize, index) => {
-              const selected = value === hookSize;
+            {options.map((option, index) => {
+              const selected = value === option;
               return (
                 <Pressable
-                  key={hookSize}
+                  key={option}
                   accessibilityRole="button"
                   accessibilityState={{ selected }}
                   onPress={() => {
-                    onChange(hookSize);
+                    onChange(option);
                     setIsOpen(false);
                   }}
                   style={[styles.option, { borderBottomColor: colors.border, backgroundColor: selected ? colors.selectedWash : colors.card }]}
                   testID={`${testID}-option-${index}`}
                 >
                   <LoomText style={{ color: selected ? colors.primary : colors.foreground, fontFamily: selected ? fonts.semibold : fonts.body, fontSize: 15 }}>
-                    {hookSize}
+                    {optionLabel(option)}
                   </LoomText>
                 </Pressable>
               );

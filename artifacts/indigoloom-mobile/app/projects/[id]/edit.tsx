@@ -1,6 +1,7 @@
 import { useGetProject, useUpdateProject, usePreviewDesignerWebsiteTitle, getGetDashboardQueryKey, getGetProjectQueryKey, getGetProjectsQueryKey } from '@workspace/api-client-react';
 import type { UpdateProject } from '@workspace/api-client-react';
 import { HookSizePicker, type CrochetHookSizeValue } from '@/components/HookSizePicker';
+import { NeedleFields, emptyNeedles, needlesForApi, needlesFromProject, type NeedlesDraft } from '@/components/NeedleFields';
 import { ProjectDateField, projectDateForApi, type ProjectDatePrecision } from '@/components/ProjectDateField';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
@@ -35,6 +36,7 @@ export default function EditProjectScreen() {
   const [yarnColor, setYarnColor] = useState('');
   const [tools, setTools] = useState('');
   const [hookSize, setHookSize] = useState<CrochetHookSizeValue | null>(null);
+  const [needles, setNeedles] = useState<NeedlesDraft>(emptyNeedles);
   const [description, setDescription] = useState('');
   const [completedAt, setCompletedAt] = useState('');
   const [completedAtPrecision, setCompletedAtPrecision] = useState<ProjectDatePrecision>('day');
@@ -56,6 +58,7 @@ export default function EditProjectScreen() {
     setYarnColor(project.yarnColor || '');
     setTools(project.tools || '');
     setHookSize(project.hookSize || null);
+    setNeedles(needlesFromProject(project));
     setDescription(project.description || '');
     setCompletedAt(project.completedAt || '');
     setCompletedAtPrecision(project.completedAtPrecision);
@@ -101,6 +104,7 @@ export default function EditProjectScreen() {
       yarnColor: yarnColor.trim() || null,
       tools: tools.trim() || null,
       hookSize: project.craft === 'crochet' ? hookSize : null,
+      ...needlesForApi(needles, project.craft === 'knitting'),
       description: description.trim() || null,
       ...(project.status === 'completed' && completedAt
         ? { completedAt: projectDateForApi(completedAt, completedAtPrecision), completedAtPrecision }
@@ -171,8 +175,8 @@ export default function EditProjectScreen() {
                 </>
               ) : (
                 <>
-                  <FormFieldLabel>Tools</FormFieldLabel>
-                  <TextInput value={tools} onChangeText={setTools} placeholder="Needle size or other tools…" placeholderTextColor={colors.mutedForeground} style={inputStyle} />
+                  <NeedleFields value={needles} onChange={setNeedles} testIDPrefix="select-edit" />
+                  {tools ? <LoomText style={{ color: colors.mutedForeground, fontSize: 14, lineHeight: 22, marginBottom: 14 }}>Saved tools note: {tools} (kept unchanged from the earlier form)</LoomText> : null}
                 </>
               )}
               {project?.status === 'completed' ? <ProjectDateField label="Finished on" value={completedAt} precision={completedAtPrecision} onChange={setCompletedAt} onPrecisionChange={setCompletedAtPrecision} testID="input-edit-completed-date" /> : null}

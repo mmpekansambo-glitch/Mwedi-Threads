@@ -14,6 +14,7 @@ import { FormFieldLabel, LoomButton, LoomText, ProgressBar, SignedInGate, Status
 import { formatProjectDate } from '@/components/ProjectDateField';
 import { StarButton } from '@/components/StarButton';
 import { ProgressAmountInput, amountDraftFor, progressAmountForApi, progressDetail, type ProgressAmountDraft } from '@/components/ProgressMethod';
+import { describeNeedle } from '@/components/NeedleFields';
 import { useColors } from '@/hooks/useColors';
 
 export default function ProjectDetailScreen() {
@@ -181,8 +182,13 @@ export default function ProjectDetailScreen() {
                 ['Designer', project.designerWebsite ? designerLinkLabel : project.patternDesigner],
                 ['Yarn', [project.yarnBrand, project.yarnType, project.yarnColor].filter(Boolean).join(' · ') || null],
                 ['Previous yarn note', project.yarn],
-                [project.craft === 'crochet' ? 'Hook size' : 'Tools', project.craft === 'crochet' ? project.hookSize || 'Not added yet' : project.tools],
-                ...(project.craft === 'crochet' && project.tools ? [['Saved tools note', project.tools]] : []),
+                ...(project.craft === 'crochet'
+                  ? [['Hook size', project.hookSize || 'Not added yet']]
+                  : [
+                      ['Needle', describeNeedle(project.needleSize, project.needleType, project.needleCableLength) || 'Not added yet'],
+                      ['Second needle', describeNeedle(project.secondNeedleSize, project.secondNeedleType, project.secondNeedleCableLength) || null],
+                    ]),
+                ['Saved tools note', project.tools],
                 ['Started', project.startedAt ? formatProjectDate(project.startedAt, project.startedAtPrecision) : null],
                 ['Target date', project.targetDate ? formatProjectDate(project.targetDate, project.targetDatePrecision) : null],
                 ['Finished on', project.completedAt ? formatProjectDate(project.completedAt, project.completedAtPrecision) : null],

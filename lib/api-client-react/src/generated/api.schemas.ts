@@ -106,6 +106,63 @@ export const CrochetHookSize = {
   '25_mm_(US_T/U/X,_UK/Canada_—)': '25 mm (US T/U/X, UK/Canada —)',
 } as const;
 
+export type KnittingNeedleSize = typeof KnittingNeedleSize[keyof typeof KnittingNeedleSize];
+
+
+export const KnittingNeedleSize = {
+  '20_mm_(US_0,_UK/Canada_14)': '2.0 mm (US 0, UK/Canada 14)',
+  '225_mm_(US_1,_UK/Canada_13)': '2.25 mm (US 1, UK/Canada 13)',
+  '25_mm_(US_15,_UK/Canada_—)': '2.5 mm (US 1.5, UK/Canada —)',
+  '275_mm_(US_2,_UK/Canada_12)': '2.75 mm (US 2, UK/Canada 12)',
+  '30_mm_(US_25,_UK/Canada_11)': '3.0 mm (US 2.5, UK/Canada 11)',
+  '325_mm_(US_3,_UK/Canada_10)': '3.25 mm (US 3, UK/Canada 10)',
+  '35_mm_(US_4,_UK/Canada_—)': '3.5 mm (US 4, UK/Canada —)',
+  '375_mm_(US_5,_UK/Canada_9)': '3.75 mm (US 5, UK/Canada 9)',
+  '40_mm_(US_6,_UK/Canada_8)': '4.0 mm (US 6, UK/Canada 8)',
+  '45_mm_(US_7,_UK/Canada_7)': '4.5 mm (US 7, UK/Canada 7)',
+  '50_mm_(US_8,_UK/Canada_6)': '5.0 mm (US 8, UK/Canada 6)',
+  '55_mm_(US_9,_UK/Canada_5)': '5.5 mm (US 9, UK/Canada 5)',
+  '60_mm_(US_10,_UK/Canada_4)': '6.0 mm (US 10, UK/Canada 4)',
+  '65_mm_(US_105,_UK/Canada_3)': '6.5 mm (US 10.5, UK/Canada 3)',
+  '70_mm_(US_—,_UK/Canada_2)': '7.0 mm (US —, UK/Canada 2)',
+  '75_mm_(US_—,_UK/Canada_1)': '7.5 mm (US —, UK/Canada 1)',
+  '80_mm_(US_11,_UK/Canada_0)': '8.0 mm (US 11, UK/Canada 0)',
+  '90_mm_(US_13,_UK/Canada_00)': '9.0 mm (US 13, UK/Canada 00)',
+  '100_mm_(US_15,_UK/Canada_000)': '10.0 mm (US 15, UK/Canada 000)',
+  '12–1275_mm_(US_17,_UK/Canada_—)': '12–12.75 mm (US 17, UK/Canada —)',
+  '15–16_mm_(US_19,_UK/Canada_—)': '15–16 mm (US 19, UK/Canada —)',
+  '19_mm_(US_35,_UK/Canada_—)': '19 mm (US 35, UK/Canada —)',
+  '20_mm_(US_36,_UK/Canada_—)': '20 mm (US 36, UK/Canada —)',
+  '25_mm_(US_50,_UK/Canada_—)': '25 mm (US 50, UK/Canada —)',
+} as const;
+
+export type KnittingNeedleType = typeof KnittingNeedleType[keyof typeof KnittingNeedleType];
+
+
+export const KnittingNeedleType = {
+  straight: 'straight',
+  circular: 'circular',
+  double_pointed: 'double_pointed',
+  interchangeable: 'interchangeable',
+} as const;
+
+/**
+ * Cable length for circular and interchangeable needles.
+ */
+export type NeedleCableLength = typeof NeedleCableLength[keyof typeof NeedleCableLength];
+
+
+export const NeedleCableLength = {
+  '23_cm_(9_in)': '23 cm (9 in)',
+  '30_cm_(12_in)': '30 cm (12 in)',
+  '40_cm_(16_in)': '40 cm (16 in)',
+  '60_cm_(24_in)': '60 cm (24 in)',
+  '80_cm_(32_in)': '80 cm (32 in)',
+  '100_cm_(40_in)': '100 cm (40 in)',
+  '120_cm_(47_in)': '120 cm (47 in)',
+  '150_cm_(60_in)': '150 cm (60 in)',
+} as const;
+
 export interface Project {
   id: string;
   title: string;
@@ -135,6 +192,12 @@ export interface Project {
   /** @nullable */
   tools: string | null;
   hookSize: CrochetHookSize | null;
+  needleSize: KnittingNeedleSize | null;
+  needleType: KnittingNeedleType | null;
+  needleCableLength: NeedleCableLength | null;
+  secondNeedleSize: KnittingNeedleSize | null;
+  secondNeedleType: KnittingNeedleType | null;
+  secondNeedleCableLength: NeedleCableLength | null;
   /** @nullable */
   startedAt: string | null;
   startedAtPrecision: ProjectDatePrecision;
@@ -200,6 +263,12 @@ export interface CreateProject {
   /** @nullable */
   tools?: string | null;
   hookSize?: CrochetHookSize | null;
+  needleSize?: KnittingNeedleSize | null;
+  needleType?: KnittingNeedleType | null;
+  needleCableLength?: NeedleCableLength | null;
+  secondNeedleSize?: KnittingNeedleSize | null;
+  secondNeedleType?: KnittingNeedleType | null;
+  secondNeedleCableLength?: NeedleCableLength | null;
   /** @nullable */
   startedAt?: string | null;
   startedAtPrecision?: ProjectDatePrecision;
@@ -250,6 +319,12 @@ export interface UpdateProject {
   /** @nullable */
   tools?: string | null;
   hookSize?: CrochetHookSize | null;
+  needleSize?: KnittingNeedleSize | null;
+  needleType?: KnittingNeedleType | null;
+  needleCableLength?: NeedleCableLength | null;
+  secondNeedleSize?: KnittingNeedleSize | null;
+  secondNeedleType?: KnittingNeedleType | null;
+  secondNeedleCableLength?: NeedleCableLength | null;
   /** @nullable */
   startedAt?: string | null;
   startedAtPrecision?: ProjectDatePrecision;
