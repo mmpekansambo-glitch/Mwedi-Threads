@@ -22,6 +22,7 @@ import {
 import {
   Link, Redirect, Route, Switch, useLocation, Router as WouterRouter,
 } from 'wouter';
+import { StatDoodle } from '@/components/stat-doodles';
 import { DashboardCharts } from '@/components/dashboard-charts';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { trackEvent, trackSuccessfulAction } from '@/lib/analytics';
@@ -306,9 +307,9 @@ function DashboardPage() {
     <PageHeading title={<>Hi, {name}</>} action={<Link href="/projects/new" className="button button-primary" data-testid="link-new-project"><Plus size={17}/> New project</Link>}/>
     {query.isLoading ? <div className="dashboard-loading"><div className="stat-skeleton"/><div className="stat-skeleton"/><div className="stat-skeleton"/></div> : query.isError || !data ? <QueryProblem retry={() => query.refetch()}/> : <>
       <section className="stat-row" aria-label="Project totals">
-        <div className="stat-card"><span className="stat-label">All projects</span><strong>{data.totalProjects}</strong></div>
-        <div className="stat-card"><span className="stat-label">In progress</span><strong>{data.activeProjects}</strong></div>
-        <div className="stat-card"><span className="stat-label">Finished</span><strong>{data.completedProjects}</strong></div>
+        <div className="stat-card stat-card-all"><span className="stat-label">All projects</span><strong>{data.totalProjects}</strong><StatDoodle kind="yarn"/></div>
+        <div className="stat-card stat-card-active"><span className="stat-label">In progress</span><strong>{data.activeProjects}</strong><StatDoodle kind="hook"/></div>
+        <div className="stat-card stat-card-finished"><span className="stat-label">Finished</span><strong>{data.completedProjects}</strong><StatDoodle kind="square"/></div>
       </section>
       <DashboardCharts charts={data.charts}/>
       <section className="dashboard-grid">

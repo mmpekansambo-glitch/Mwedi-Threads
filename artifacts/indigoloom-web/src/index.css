@@ -229,6 +229,13 @@ a { color: inherit; text-decoration: none; }
 .stat-card { min-height: 112px; border: 1px solid var(--lavender-soft); background: var(--white); border-radius: 13px; padding: 21px 23px; position: relative; overflow: hidden; }
 .stat-label { display: block; font-size: 15px; font-weight: 600; color: var(--slate); }
 .stat-card > strong { display: block; font: 500 42px/.98 var(--app-font-serif); margin-top: 15px; position: relative; z-index: 1; }
+.stat-card-all { background: #EEF2FA; }
+.stat-card-active { background: #DCE6F4; border-color: #DCE6F4; }
+.stat-card-finished { background: #E1EAE5; border-color: #E1EAE5; }
+.stat-doodle { position: absolute; right: 16px; bottom: 12px; width: 72px; height: 72px; fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.stat-doodle-yarn { stroke: var(--powder); }
+.stat-doodle-hook { stroke: #5A7684; }
+.stat-doodle-square { stroke: var(--granite); }
 .dashboard-grid { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(275px, .88fr); gap: 27px; margin-top: 42px; align-items: start; }
 .chart-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 14px; }
 .chart-card { margin: 0; padding: 18px 18px 14px; min-width: 0; display: flex; flex-direction: column; }
@@ -497,6 +504,7 @@ a { color: inherit; text-decoration: none; }
   .chart-row { grid-template-columns: 1fr; gap: 10px; margin-top: 10px; }
   .stat-card { height: 138px; padding: 16px; }
   .stat-card > strong { font-size: 37px; margin-top: 14px; }
+  .stat-doodle { width: 52px; height: 52px; right: 10px; bottom: 10px; }
   .stat-label { font-size: 13px; }
   .dashboard-grid { margin-top: 33px; gap: 25px; }
   .project-card-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -545,7 +553,6 @@ a { color: inherit; text-decoration: none; }
   .story-card { min-height: 246px; }
   .notes-list { grid-template-columns: 1fr; }
   .stat-card { padding: 14px 12px; }
-  .stat-label { letter-spacing: .09em; }
   .form-grid { grid-template-columns: 1fr; }
   .field-wide { grid-column: auto; }
   .yarn-trifold { grid-template-columns: 1fr; }

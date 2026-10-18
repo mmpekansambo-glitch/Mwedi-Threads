@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { DashboardCharts } from '@/components/DashboardCharts';
+import { StatDoodle } from '@/components/StatDoodle';
 import { EmptyState, ErrorState, LoadingState, LoomButton, LoomText, PageHeader, ProjectCard, fonts } from '@/components/loom';
 import { useColors } from '@/hooks/useColors';
 
@@ -44,10 +45,15 @@ export default function DashboardScreen() {
       {query.isLoading ? <LoadingState /> : query.isError || !data ? <ErrorState onRetry={() => void query.refetch()} /> : (
         <>
           <View style={styles.stats}>
-            {([['All projects', data.totalProjects], ['In progress', data.activeProjects], ['Finished', data.completedProjects]] as const).map(([label, value]) => (
-              <View key={label} style={[styles.stat, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            {([
+              ['All projects', data.totalProjects, 'yarn', '#EEF2FA', '#92AFD7'],
+              ['In progress', data.activeProjects, 'hook', '#DCE6F4', '#5A7684'],
+              ['Finished', data.completedProjects, 'square', '#E1EAE5', '#395B50'],
+            ] as const).map(([label, value, doodle, tint, ink]) => (
+              <View key={label} style={[styles.stat, { backgroundColor: tint, borderColor: tint }]}>
                 <LoomText style={[styles.statLabel, { color: colors.mutedForeground }]}>{label}</LoomText>
                 <LoomText serif style={[styles.statValue, { color: colors.foreground }]}>{value}</LoomText>
+                <View style={styles.statDoodle}><StatDoodle kind={doodle} color={ink} size={40} /></View>
               </View>
             ))}
           </View>
@@ -91,7 +97,8 @@ const styles = StyleSheet.create({
   menu: { position: 'absolute', top: 48, right: 0, minWidth: 150, borderWidth: 1, borderRadius: 10, padding: 6 },
   menuItem: { flexDirection: 'row', alignItems: 'center', gap: 9, padding: 10 },
   stats: { flexDirection: 'row', gap: 8, marginBottom: 29 },
-  stat: { flex: 1, minHeight: 108, justifyContent: 'space-between', borderWidth: 1, borderRadius: 14, padding: 11 },
+  stat: { flex: 1, minHeight: 108, justifyContent: 'space-between', borderWidth: 1, borderRadius: 14, padding: 11, overflow: 'hidden' },
+  statDoodle: { position: 'absolute', right: 6, bottom: 6 },
   statLabel: { fontFamily: fonts.semibold, fontSize: 14 },
   statValue: { fontSize: 34, lineHeight: 39 },
   sectionHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 13, marginTop: 3 },
