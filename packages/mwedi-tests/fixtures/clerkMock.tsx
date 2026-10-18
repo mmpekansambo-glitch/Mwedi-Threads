@@ -15,6 +15,15 @@ const mockClerk = {
   openSignUp: () => undefined,
 };
 
+// Tests that need the signed-out screens set localStorage "mwedi-e2e-signed-out".
+function signedIn() {
+  try {
+    return !window.localStorage.getItem("mwedi-e2e-signed-out");
+  } catch {
+    return true;
+  }
+}
+
 export function ClerkProvider({ children }: { children: ReactNode }) {
   return children;
 }
@@ -30,8 +39,8 @@ export function SignUp() {
 export function useAuth() {
   return {
     isLoaded: true,
-    isSignedIn: true,
-    userId: mockUser.id,
+    isSignedIn: signedIn(),
+    userId: signedIn() ? mockUser.id : null,
     getToken: async () => "test-session-token",
   };
 }
@@ -45,7 +54,7 @@ export function useSignUp() {
 }
 
 export function useUser() {
-  return { isLoaded: true, isSignedIn: true, user: mockUser };
+  return { isLoaded: true, isSignedIn: signedIn(), user: signedIn() ? mockUser : null };
 }
 
 export function publishableKeyFromHost() {

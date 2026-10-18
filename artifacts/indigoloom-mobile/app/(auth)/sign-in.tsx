@@ -87,13 +87,11 @@ export default function SignInScreen() {
       <KeyboardAwareScrollViewCompat contentContainerStyle={styles.content} bottomOffset={24} keyboardShouldPersistTaps="handled">
         <Link href="/" style={styles.brandLink}><Brand /></Link>
         <View style={styles.heading}>
-          <LoomText style={[styles.overline, { color: colors.mutedForeground }]}>YOUR WORKROOM</LoomText>
-          <LoomText serif style={[styles.title, { color: colors.foreground }]}>Welcome back.</LoomText>
-          <LoomText style={[styles.subtitle, { color: colors.mutedForeground }]}>Pick up right where you left off.</LoomText>
+          <LoomText serif style={[styles.title, { color: colors.foreground }]}>Sign in</LoomText>
         </View>
         <View style={[styles.formCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <LoomButton title="Continue with Google" icon="globe" variant="secondary" onPress={() => void signInWithGoogle()} busy={busyGoogle} testID="button-google-signin" />
-          <View style={styles.divider}><View style={[styles.line, { backgroundColor: colors.border }]} /><LoomText style={[styles.dividerText, { color: colors.mutedForeground }]}>OR WITH YOUR ACCOUNT</LoomText><View style={[styles.line, { backgroundColor: colors.border }]} /></View>
+          <View style={styles.divider}><View style={[styles.line, { backgroundColor: colors.border }]} /><LoomText style={[styles.dividerText, { color: colors.mutedForeground }]}>or</LoomText><View style={[styles.line, { backgroundColor: colors.border }]} /></View>
           <View style={styles.field}>
             <FormFieldLabel>Username or email</FormFieldLabel>
             <TextInput
@@ -137,13 +135,11 @@ const styles = StyleSheet.create({
   content: { width: '100%', maxWidth: 520, alignSelf: 'center', paddingHorizontal: 24, paddingTop: 28, paddingBottom: 36 },
   brandLink: { alignSelf: 'center', marginBottom: 31 },
   heading: { alignItems: 'center', marginBottom: 22 },
-  overline: { fontFamily: fonts.bold, fontSize: 13, letterSpacing: 1.3, marginBottom: 8 },
   title: { fontSize: 32, textAlign: 'center' },
-  subtitle: { fontSize: 16, marginTop: 6, textAlign: 'center' },
   formCard: { borderWidth: 1, borderRadius: 20, padding: 21 },
   divider: { flexDirection: 'row', alignItems: 'center', gap: 9, marginVertical: 18 },
   line: { height: 1, flex: 1 },
-  dividerText: { fontSize: 13, letterSpacing: 1, fontFamily: fonts.bold },
+  dividerText: { fontSize: 14 },
   field: { marginBottom: 15 },
   input: { minHeight: 48, paddingHorizontal: 13, borderWidth: 1, borderRadius: 10, fontFamily: fonts.body, fontSize: 16 },
   message: { fontSize: 15, lineHeight: 22, marginBottom: 13 },
