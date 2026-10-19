@@ -27,7 +27,7 @@ export function formatWheelDate(value: string, precision: DatePrecision): string
   return day ? `${monthNames[month]} ${day}, ${year}` : `${monthNames[month]} ${year}`;
 }
 
-function Wheel({ label, items, index, onChange, testId }: {
+export function Wheel({ label, items, index, onChange, testId }: {
   label: string;
   items: string[];
   index: number;

@@ -14,6 +14,8 @@ tags:
     description: Knitting and crochet project catalog
   - name: dashboard
     description: Project overview and recent progress
+  - name: stash
+    description: A maker's yarn stash and the shared yarn catalog
 paths:
   /healthz:
     get:
@@ -310,6 +312,186 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+  /yarn-stash:
+    get:
+      operationId: getStashYarns
+      tags: [stash]
+      summary: List the yarn in the signed-in user's stash
+      parameters:
+        - in: query
+          name: search
+          description: Matches brand, sub brand, color or fiber
+          schema:
+            type: string
+        - in: query
+          name: weight
+          schema:
+            $ref: "#/components/schemas/YarnWeight"
+        - in: query
+          name: generalColor
+          schema:
+            $ref: "#/components/schemas/GeneralColor"
+      responses:
+        "200":
+          description: Matching stash yarn
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StashYarn"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      operationId: createStashYarn
+      tags: [stash]
+      summary: Add a yarn to the stash
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateStashYarn"
+      responses:
+        "201":
+          description: Yarn added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StashYarn"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /yarn-stash/photo-upload:
+    post:
+      operationId: requestStashPhotoUpload
+      tags: [stash]
+      summary: Request a private upload URL for a stash yarn photo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProgressPhotoUploadRequest"
+      responses:
+        "200":
+          description: Private upload URL generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProgressPhotoUploadResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /yarn-stash/{yarnId}:
+    parameters:
+      - in: path
+        name: yarnId
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: getStashYarn
+      tags: [stash]
+      summary: Get one yarn from the stash
+      responses:
+        "200":
+          description: Stash yarn
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StashYarn"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updateStashYarn
+      tags: [stash]
+      summary: Change a yarn in the stash
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateStashYarn"
+      responses:
+        "200":
+          description: Yarn updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StashYarn"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteStashYarn
+      tags: [stash]
+      summary: Remove a yarn from the stash
+      responses:
+        "204":
+          description: Yarn removed
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /yarn-stash/{yarnId}/photo:
+    parameters:
+      - in: path
+        name: yarnId
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: getStashYarnPhoto
+      tags: [stash]
+      summary: View a stash yarn's photo
+      responses:
+        "302":
+          description: Redirects to a short-lived private image URL
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /yarn-catalog:
+    get:
+      operationId: getYarnCatalog
+      tags: [stash]
+      summary: Look up the shared yarn catalog while filling in a stash yarn
+      description: >-
+        Returns brands that match what was typed, the brand's sub brands, the
+        sub brand's colors and the known fibers, plus a "Did you mean" name
+        for any field that looks like a typo of an existing catalog name.
+      parameters:
+        - in: query
+          name: brand
+          schema:
+            type: string
+        - in: query
+          name: subBrand
+          schema:
+            type: string
+        - in: query
+          name: color
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Catalog matches
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/YarnCatalog"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 components:
   responses:
     Unauthorized:
@@ -932,3 +1114,192 @@ components:
                 type: integer
             required: [weekStart, count]
       required: [projectsByStatus, completedPerMonth, completedWithoutDate, progressPerWeek]
+    YarnWeight:
+      type: string
+      enum: [lace, fingering, sport, dk, worsted, bulky, super_bulky, jumbo]
+    GeneralColor:
+      type: string
+      enum: [red, orange, yellow, green, blue, purple, pink, brown, black, gray, white, cream, multi]
+    YarnBlendPart:
+      type: object
+      properties:
+        fiber:
+          type: string
+          minLength: 1
+          maxLength: 40
+        percent:
+          type: integer
+          minimum: 1
+          maximum: 100
+      required: [fiber, percent]
+    StashYarn:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        brand:
+          type: string
+        subBrand:
+          type: [string, "null"]
+        color:
+          type: [string, "null"]
+        generalColor:
+          oneOf:
+            - $ref: "#/components/schemas/GeneralColor"
+            - type: "null"
+        weight:
+          oneOf:
+            - $ref: "#/components/schemas/YarnWeight"
+            - type: "null"
+        blend:
+          type: array
+          items:
+            $ref: "#/components/schemas/YarnBlendPart"
+        brandLink:
+          type: [string, "null"]
+        photoPath:
+          type: string
+        skeinsPurchased:
+          type: [number, "null"]
+        skeinsLeft:
+          type: [number, "null"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, brand, subBrand, color, generalColor, weight, blend, brandLink, photoPath, skeinsPurchased, skeinsLeft, createdAt, updatedAt]
+    CreateStashYarn:
+      type: object
+      properties:
+        brand:
+          type: string
+          minLength: 1
+          maxLength: 80
+        subBrand:
+          type: [string, "null"]
+          maxLength: 80
+        color:
+          type: [string, "null"]
+          maxLength: 80
+        generalColor:
+          oneOf:
+            - $ref: "#/components/schemas/GeneralColor"
+            - type: "null"
+        weight:
+          oneOf:
+            - $ref: "#/components/schemas/YarnWeight"
+            - type: "null"
+        blend:
+          type: array
+          maxItems: 6
+          items:
+            $ref: "#/components/schemas/YarnBlendPart"
+        brandLink:
+          type: [string, "null"]
+          maxLength: 500
+        photoPath:
+          type: string
+        skeinsPurchased:
+          type: [number, "null"]
+          minimum: 0
+          maximum: 999
+        skeinsLeft:
+          type: [number, "null"]
+          minimum: 0
+          maximum: 999
+      required: [brand, photoPath]
+    UpdateStashYarn:
+      type: object
+      properties:
+        brand:
+          type: string
+          minLength: 1
+          maxLength: 80
+        subBrand:
+          type: [string, "null"]
+          maxLength: 80
+        color:
+          type: [string, "null"]
+          maxLength: 80
+        generalColor:
+          oneOf:
+            - $ref: "#/components/schemas/GeneralColor"
+            - type: "null"
+        weight:
+          oneOf:
+            - $ref: "#/components/schemas/YarnWeight"
+            - type: "null"
+        blend:
+          type: array
+          maxItems: 6
+          items:
+            $ref: "#/components/schemas/YarnBlendPart"
+        brandLink:
+          type: [string, "null"]
+          maxLength: 500
+        photoPath:
+          type: string
+        skeinsPurchased:
+          type: [number, "null"]
+          minimum: 0
+          maximum: 999
+        skeinsLeft:
+          type: [number, "null"]
+          minimum: 0
+          maximum: 999
+    YarnCatalogSubBrand:
+      type: object
+      properties:
+        name:
+          type: string
+        blend:
+          type: array
+          items:
+            $ref: "#/components/schemas/YarnBlendPart"
+        link:
+          type: [string, "null"]
+      required: [name, blend, link]
+    YarnCatalogColor:
+      type: object
+      properties:
+        name:
+          type: string
+        generalColor:
+          oneOf:
+            - $ref: "#/components/schemas/GeneralColor"
+            - type: "null"
+      required: [name, generalColor]
+    YarnCatalog:
+      type: object
+      properties:
+        brands:
+          type: array
+          items:
+            type: string
+        subBrands:
+          type: array
+          items:
+            $ref: "#/components/schemas/YarnCatalogSubBrand"
+        colors:
+          type: array
+          items:
+            $ref: "#/components/schemas/YarnCatalogColor"
+        fibers:
+          type: array
+          items:
+            type: string
+        suggestions:
+          type: object
+          description: A catalog name to offer as "Did you mean …?" for each field that looks like a typo.
+          properties:
+            brand:
+              type: [string, "null"]
+            subBrand:
+              type: [string, "null"]
+            color:
+              type: [string, "null"]
+          required: [brand, subBrand, color]
+      required: [brands, subBrands, colors, fibers, suggestions]

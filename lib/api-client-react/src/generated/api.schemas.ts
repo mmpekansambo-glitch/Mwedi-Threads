@@ -464,6 +464,186 @@ export interface Dashboard {
   charts: DashboardCharts;
 }
 
+export type YarnWeight = typeof YarnWeight[keyof typeof YarnWeight];
+
+
+export const YarnWeight = {
+  lace: 'lace',
+  fingering: 'fingering',
+  sport: 'sport',
+  dk: 'dk',
+  worsted: 'worsted',
+  bulky: 'bulky',
+  super_bulky: 'super_bulky',
+  jumbo: 'jumbo',
+} as const;
+
+export type GeneralColor = typeof GeneralColor[keyof typeof GeneralColor];
+
+
+export const GeneralColor = {
+  red: 'red',
+  orange: 'orange',
+  yellow: 'yellow',
+  green: 'green',
+  blue: 'blue',
+  purple: 'purple',
+  pink: 'pink',
+  brown: 'brown',
+  black: 'black',
+  gray: 'gray',
+  white: 'white',
+  cream: 'cream',
+  multi: 'multi',
+} as const;
+
+export interface YarnBlendPart {
+  /**
+     * @minLength 1
+     * @maxLength 40
+     */
+  fiber: string;
+  /**
+     * @minimum 1
+     * @maximum 100
+     */
+  percent: number;
+}
+
+export interface StashYarn {
+  id: string;
+  brand: string;
+  /** @nullable */
+  subBrand: string | null;
+  /** @nullable */
+  color: string | null;
+  generalColor: GeneralColor | null;
+  weight: YarnWeight | null;
+  blend: YarnBlendPart[];
+  /** @nullable */
+  brandLink: string | null;
+  photoPath: string;
+  /** @nullable */
+  skeinsPurchased: number | null;
+  /** @nullable */
+  skeinsLeft: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateStashYarn {
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  brand: string;
+  /**
+     * @maxLength 80
+     * @nullable
+     */
+  subBrand?: string | null;
+  /**
+     * @maxLength 80
+     * @nullable
+     */
+  color?: string | null;
+  generalColor?: GeneralColor | null;
+  weight?: YarnWeight | null;
+  /** @maxItems 6 */
+  blend?: YarnBlendPart[];
+  /**
+     * @maxLength 500
+     * @nullable
+     */
+  brandLink?: string | null;
+  photoPath: string;
+  /**
+     * @minimum 0
+     * @maximum 999
+     * @nullable
+     */
+  skeinsPurchased?: number | null;
+  /**
+     * @minimum 0
+     * @maximum 999
+     * @nullable
+     */
+  skeinsLeft?: number | null;
+}
+
+export interface UpdateStashYarn {
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  brand?: string;
+  /**
+     * @maxLength 80
+     * @nullable
+     */
+  subBrand?: string | null;
+  /**
+     * @maxLength 80
+     * @nullable
+     */
+  color?: string | null;
+  generalColor?: GeneralColor | null;
+  weight?: YarnWeight | null;
+  /** @maxItems 6 */
+  blend?: YarnBlendPart[];
+  /**
+     * @maxLength 500
+     * @nullable
+     */
+  brandLink?: string | null;
+  photoPath?: string;
+  /**
+     * @minimum 0
+     * @maximum 999
+     * @nullable
+     */
+  skeinsPurchased?: number | null;
+  /**
+     * @minimum 0
+     * @maximum 999
+     * @nullable
+     */
+  skeinsLeft?: number | null;
+}
+
+export interface YarnCatalogSubBrand {
+  name: string;
+  blend: YarnBlendPart[];
+  /** @nullable */
+  link: string | null;
+}
+
+export interface YarnCatalogColor {
+  name: string;
+  generalColor: GeneralColor | null;
+}
+
+/**
+ * A catalog name to offer as "Did you mean …?" for each field that looks like a typo.
+ */
+export type YarnCatalogSuggestions = {
+  /** @nullable */
+  brand: string | null;
+  /** @nullable */
+  subBrand: string | null;
+  /** @nullable */
+  color: string | null;
+};
+
+export interface YarnCatalog {
+  brands: string[];
+  subBrands: YarnCatalogSubBrand[];
+  colors: YarnCatalogColor[];
+  fibers: string[];
+  /** A catalog name to offer as "Did you mean …?" for each field that looks like a typo. */
+  suggestions: YarnCatalogSuggestions;
+}
+
 /**
  * Sign in is required
  */
@@ -487,5 +667,20 @@ craft?: CraftType;
  * Only return projects the signed-in user has starred
  */
 starred?: boolean;
+};
+
+export type GetStashYarnsParams = {
+/**
+ * Matches brand, sub brand, color or fiber
+ */
+search?: string;
+weight?: YarnWeight;
+generalColor?: GeneralColor;
+};
+
+export type GetYarnCatalogParams = {
+brand?: string;
+subBrand?: string;
+color?: string;
 };
 

@@ -48,6 +48,8 @@ function RootLayoutNav() {
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="projects/new" options={{ presentation: 'modal' }} />
       <Stack.Screen name="projects/[id]" />
+      <Stack.Screen name="stash/new" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="stash/[id]" />
     </Stack>
   );
 }

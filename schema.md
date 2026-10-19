@@ -10,6 +10,12 @@ erDiagram
     projects ||--o{ project_progress_entries : has
     users ||--o{ stars : gives
     projects ||--o{ stars : receives
+    users ||--o{ stash_yarns : owns
+    yarn_brands ||--o{ yarn_lines : has
+    yarn_lines ||--o{ yarn_colors : has
+    yarn_brands ||--o{ stash_yarns : "names"
+    yarn_lines |o--o{ stash_yarns : "names"
+    yarn_colors |o--o{ stash_yarns : "names"
 
     users {
         text id PK
@@ -37,11 +43,38 @@ erDiagram
         uuid project_id PK, FK
         timestamptz created_at
     }
+    stash_yarns {
+        uuid id PK
+        text owner_id FK
+        uuid brand_id FK
+        uuid line_id FK
+        uuid color_id FK
+        text photo_path
+    }
+    yarn_brands {
+        uuid id PK
+        text name
+        text match_key
+    }
+    yarn_lines {
+        uuid id PK
+        uuid brand_id FK
+        text name
+        jsonb blend
+    }
+    yarn_colors {
+        uuid id PK
+        uuid line_id FK
+        text name
+        general_color general_color
+    }
 ```
 
 - **users → projects:** one-to-many. Every project belongs to one user, and each user only ever sees their own projects.
 - **projects → project_progress_entries:** one-to-many. A project has many dated progress notes. Deleting a project deletes its notes.
 - **users ↔ projects through stars:** many-to-many. One row means "this user starred this project." Deleting either side removes the star.
+- **users → stash_yarns:** one-to-many. Each maker's yarn stash is private to them.
+- **Shared yarn catalog:** `yarn_brands` → `yarn_lines` (sub brands) → `yarn_colors`, built from what makers add to their stash and shared by everyone. Each stash yarn points at its brand, and at its sub brand and color when it has them.
 
 The diagram shows the key columns only. Every column is listed below.
 
@@ -123,6 +156,40 @@ One row means "this user starred this project."
 
 The primary key is the pair (`user_id`, `project_id`), so a project can only be starred once per person.
 
+## stash_yarns
+
+One row per yarn in a maker's stash. The brand, sub brand and color names are copied from the shared catalog when the yarn is saved.
+
+| Column | Type | Required | Default | Notes |
+|---|---|---|---|---|
+| id | uuid | yes | random | Primary key. |
+| owner_id | text | yes | | Links to `users.id`. Deleted with the user. |
+| brand_id | uuid | yes | | Links to `yarn_brands.id`. |
+| line_id | uuid | no | | Links to `yarn_lines.id`. |
+| color_id | uuid | no | | Links to `yarn_colors.id`. Only set when the yarn has a sub brand. |
+| brand | text | yes | | |
+| sub_brand | text | no | | |
+| color | text | no | | The yarn's own color name, such as "Fisherman". |
+| general_color | general_color | no | | Shown as a color dot on the photo. |
+| weight | yarn_weight | no | | |
+| blend | jsonb | yes | `[]` | List of `{ fiber, percent }` adding up to 100. |
+| brand_link | text | no | | Link to the brand's page for this yarn. |
+| photo_path | text | yes | | Private photo, only shown to its owner. |
+| skeins_purchased | double precision | no | | Halves allowed. |
+| skeins_left | double precision | no | | Starts at skeins purchased. Can't be more than that. |
+| created_at | timestamp with time zone | yes | now | |
+| updated_at | timestamp with time zone | yes | now | Updated on every change. |
+
+## yarn_brands, yarn_lines and yarn_colors
+
+The shared yarn catalog. Every name has a `match_key` (lowercase letters and digits only), so "Lion Brand" and "lionbrand" are the same entry instead of a duplicate.
+
+| Table | Columns | Notes |
+|---|---|---|
+| yarn_brands | id, name, match_key, created_at | `match_key` is unique. |
+| yarn_lines | id, brand_id, name, match_key, blend, link, created_at | A brand's sub brands. Unique per brand and `match_key`. Blend and link come from the first maker who adds the sub brand and pre-fill the form for the next one. |
+| yarn_colors | id, line_id, name, match_key, general_color, created_at | A sub brand's real color names. Unique per sub brand and `match_key`. |
+
 ## Enums
 
 | Enum | Values |
@@ -131,6 +198,8 @@ The primary key is the pair (`user_id`, `project_id`), so a project can only be 
 | project_status | `planning`, `in_progress`, `paused`, `completed` |
 | project_date_precision | `month`, `day` |
 | progress_method | `estimate`, `rows`, `sections`, `skeins` |
+| yarn_weight | `lace`, `fingering`, `sport`, `dk`, `worsted`, `bulky`, `super_bulky`, `jumbo` |
+| general_color | `red`, `orange`, `yellow`, `green`, `blue`, `purple`, `pink`, `brown`, `black`, `gray`, `white`, `cream`, `multi` |
 
 ## Date rule
 

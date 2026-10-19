@@ -23,11 +23,14 @@ import type {
   BadRequestResponse,
   CreateProgress,
   CreateProject,
+  CreateStashYarn,
   Dashboard,
   DesignerWebsiteTitlePreviewRequest,
   DesignerWebsiteTitlePreviewResponse,
   Error,
   GetProjectsParams,
+  GetStashYarnsParams,
+  GetYarnCatalogParams,
   HealthStatus,
   NotFoundResponse,
   ProgressEntry,
@@ -35,8 +38,11 @@ import type {
   ProgressPhotoUploadResponse,
   Project,
   ProjectDetail,
+  StashYarn,
   UnauthorizedResponse,
-  UpdateProject
+  UpdateProject,
+  UpdateStashYarn,
+  YarnCatalog
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -1204,4 +1210,666 @@ export const useDeleteProgressPhoto = <TError = ErrorType<UnauthorizedResponse |
       > => {
       return useMutation(getDeleteProgressPhotoMutationOptions(options));
     }
+
+export const getGetStashYarnsUrl = (params?: GetStashYarnsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/yarn-stash?${stringifiedParams}` : `/api/yarn-stash`
+}
+
+/**
+ * @summary List the yarn in the signed-in user's stash
+ */
+export const getStashYarns = async (params?: GetStashYarnsParams, options?: Parameters<typeof customFetch>[1]): Promise<StashYarn[]> => {
+
+  return customFetch<StashYarn[]>(getGetStashYarnsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStashYarnsQueryKey = (params?: GetStashYarnsParams,) => {
+    return [
+    `/api/yarn-stash`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetStashYarnsQueryOptions = <TData = Awaited<ReturnType<typeof getStashYarns>>, TError = ErrorType<UnauthorizedResponse>>(params?: GetStashYarnsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStashYarns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStashYarnsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStashYarns>>> = ({ signal }) => getStashYarns(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStashYarns>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStashYarnsQueryResult = NonNullable<Awaited<ReturnType<typeof getStashYarns>>>
+export type GetStashYarnsQueryError = ErrorType<UnauthorizedResponse>
+
+
+/**
+ * @summary List the yarn in the signed-in user's stash
+ */
+
+export function useGetStashYarns<TData = Awaited<ReturnType<typeof getStashYarns>>, TError = ErrorType<UnauthorizedResponse>>(
+ params?: GetStashYarnsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStashYarns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStashYarnsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateStashYarnUrl = () => {
+
+
+
+
+  return `/api/yarn-stash`
+}
+
+/**
+ * @summary Add a yarn to the stash
+ */
+export const createStashYarn = async (createStashYarnBody: CreateStashYarn, options?: Parameters<typeof customFetch>[1]): Promise<StashYarn> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<StashYarn>(getCreateStashYarnUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(createStashYarnBody)
+  }
+);}
+
+
+
+
+
+export const getCreateStashYarnMutationKey = () => ['createStashYarn'] as const;
+
+export const getCreateStashYarnMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStashYarn>>, TError,CreateStashYarnMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createStashYarn>>, TError,CreateStashYarnMutationVariables, TContext> => {
+
+const mutationKey = getCreateStashYarnMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createStashYarn>>, CreateStashYarnMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createStashYarn(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateStashYarnMutationResult = NonNullable<Awaited<ReturnType<typeof createStashYarn>>>
+    export type CreateStashYarnMutationBody = BodyType<CreateStashYarn>
+    export type CreateStashYarnMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse>
+    export type CreateStashYarnMutationVariables = {data: BodyType<CreateStashYarn>}
+
+    /**
+ * @summary Add a yarn to the stash
+ */
+export const useCreateStashYarn = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStashYarn>>, TError,CreateStashYarnMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createStashYarn>>,
+        TError,
+        CreateStashYarnMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateStashYarnMutationOptions(options));
+    }
+
+export const getRequestStashPhotoUploadUrl = () => {
+
+
+
+
+  return `/api/yarn-stash/photo-upload`
+}
+
+/**
+ * @summary Request a private upload URL for a stash yarn photo
+ */
+export const requestStashPhotoUpload = async (progressPhotoUploadRequest: ProgressPhotoUploadRequest, options?: Parameters<typeof customFetch>[1]): Promise<ProgressPhotoUploadResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<ProgressPhotoUploadResponse>(getRequestStashPhotoUploadUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(progressPhotoUploadRequest)
+  }
+);}
+
+
+
+
+
+export const getRequestStashPhotoUploadMutationKey = () => ['requestStashPhotoUpload'] as const;
+
+export const getRequestStashPhotoUploadMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestStashPhotoUpload>>, TError,RequestStashPhotoUploadMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestStashPhotoUpload>>, TError,RequestStashPhotoUploadMutationVariables, TContext> => {
+
+const mutationKey = getRequestStashPhotoUploadMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestStashPhotoUpload>>, RequestStashPhotoUploadMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  requestStashPhotoUpload(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequestStashPhotoUploadMutationResult = NonNullable<Awaited<ReturnType<typeof requestStashPhotoUpload>>>
+    export type RequestStashPhotoUploadMutationBody = BodyType<ProgressPhotoUploadRequest>
+    export type RequestStashPhotoUploadMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse>
+    export type RequestStashPhotoUploadMutationVariables = {data: BodyType<ProgressPhotoUploadRequest>}
+
+    /**
+ * @summary Request a private upload URL for a stash yarn photo
+ */
+export const useRequestStashPhotoUpload = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestStashPhotoUpload>>, TError,RequestStashPhotoUploadMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof requestStashPhotoUpload>>,
+        TError,
+        RequestStashPhotoUploadMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRequestStashPhotoUploadMutationOptions(options));
+    }
+
+export const getGetStashYarnUrl = (yarnId: string,) => {
+
+
+
+
+  return `/api/yarn-stash/${yarnId}`
+}
+
+/**
+ * @summary Get one yarn from the stash
+ */
+export const getStashYarn = async (yarnId: string, options?: Parameters<typeof customFetch>[1]): Promise<StashYarn> => {
+
+  return customFetch<StashYarn>(getGetStashYarnUrl(yarnId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStashYarnQueryKey = (yarnId: string,) => {
+    return [
+    `/api/yarn-stash/${yarnId}`
+    ] as const;
+    }
+
+
+export const getGetStashYarnQueryOptions = <TData = Awaited<ReturnType<typeof getStashYarn>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse>>(yarnId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStashYarn>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStashYarnQueryKey(yarnId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStashYarn>>> = ({ signal }) => getStashYarn(yarnId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: yarnId !== null && yarnId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStashYarn>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStashYarnQueryResult = NonNullable<Awaited<ReturnType<typeof getStashYarn>>>
+export type GetStashYarnQueryError = ErrorType<UnauthorizedResponse | NotFoundResponse>
+
+
+/**
+ * @summary Get one yarn from the stash
+ */
+
+export function useGetStashYarn<TData = Awaited<ReturnType<typeof getStashYarn>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse>>(
+ yarnId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStashYarn>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStashYarnQueryOptions(yarnId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateStashYarnUrl = (yarnId: string,) => {
+
+
+
+
+  return `/api/yarn-stash/${yarnId}`
+}
+
+/**
+ * @summary Change a yarn in the stash
+ */
+export const updateStashYarn = async (yarnId: string,
+    updateStashYarnBody: UpdateStashYarn, options?: Parameters<typeof customFetch>[1]): Promise<StashYarn> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<StashYarn>(getUpdateStashYarnUrl(yarnId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(updateStashYarnBody)
+  }
+);}
+
+
+
+
+
+export const getUpdateStashYarnMutationKey = () => ['updateStashYarn'] as const;
+
+export const getUpdateStashYarnMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateStashYarn>>, TError,UpdateStashYarnMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateStashYarn>>, TError,UpdateStashYarnMutationVariables, TContext> => {
+
+const mutationKey = getUpdateStashYarnMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateStashYarn>>, UpdateStashYarnMutationVariables> = (props) => {
+          const {yarnId,data} = props ?? {};
+
+          return  updateStashYarn(yarnId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateStashYarnMutationResult = NonNullable<Awaited<ReturnType<typeof updateStashYarn>>>
+    export type UpdateStashYarnMutationBody = BodyType<UpdateStashYarn>
+    export type UpdateStashYarnMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse>
+    export type UpdateStashYarnMutationVariables = {yarnId: string;data: BodyType<UpdateStashYarn>}
+
+    /**
+ * @summary Change a yarn in the stash
+ */
+export const useUpdateStashYarn = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateStashYarn>>, TError,UpdateStashYarnMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateStashYarn>>,
+        TError,
+        UpdateStashYarnMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateStashYarnMutationOptions(options));
+    }
+
+export const getDeleteStashYarnUrl = (yarnId: string,) => {
+
+
+
+
+  return `/api/yarn-stash/${yarnId}`
+}
+
+/**
+ * @summary Remove a yarn from the stash
+ */
+export const deleteStashYarn = async (yarnId: string, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getDeleteStashYarnUrl(yarnId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteStashYarnMutationKey = () => ['deleteStashYarn'] as const;
+
+export const getDeleteStashYarnMutationOptions = <TError = ErrorType<UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteStashYarn>>, TError,DeleteStashYarnMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteStashYarn>>, TError,DeleteStashYarnMutationVariables, TContext> => {
+
+const mutationKey = getDeleteStashYarnMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteStashYarn>>, DeleteStashYarnMutationVariables> = (props) => {
+          const {yarnId} = props ?? {};
+
+          return  deleteStashYarn(yarnId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteStashYarnMutationResult = NonNullable<Awaited<ReturnType<typeof deleteStashYarn>>>
+
+    export type DeleteStashYarnMutationError = ErrorType<UnauthorizedResponse | NotFoundResponse>
+    export type DeleteStashYarnMutationVariables = {yarnId: string}
+
+    /**
+ * @summary Remove a yarn from the stash
+ */
+export const useDeleteStashYarn = <TError = ErrorType<UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteStashYarn>>, TError,DeleteStashYarnMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteStashYarn>>,
+        TError,
+        DeleteStashYarnMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeleteStashYarnMutationOptions(options));
+    }
+
+export const getGetStashYarnPhotoUrl = (yarnId: string,) => {
+
+
+
+
+  return `/api/yarn-stash/${yarnId}/photo`
+}
+
+/**
+ * @summary View a stash yarn's photo
+ */
+export const getStashYarnPhoto = async (yarnId: string, options?: Parameters<typeof customFetch>[1]): Promise<unknown> => {
+
+  return customFetch<unknown>(getGetStashYarnPhotoUrl(yarnId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStashYarnPhotoQueryKey = (yarnId: string,) => {
+    return [
+    `/api/yarn-stash/${yarnId}/photo`
+    ] as const;
+    }
+
+
+export const getGetStashYarnPhotoQueryOptions = <TData = Awaited<ReturnType<typeof getStashYarnPhoto>>, TError = ErrorType<void | UnauthorizedResponse | NotFoundResponse>>(yarnId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStashYarnPhoto>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStashYarnPhotoQueryKey(yarnId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStashYarnPhoto>>> = ({ signal }) => getStashYarnPhoto(yarnId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: yarnId !== null && yarnId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStashYarnPhoto>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStashYarnPhotoQueryResult = NonNullable<Awaited<ReturnType<typeof getStashYarnPhoto>>>
+export type GetStashYarnPhotoQueryError = ErrorType<void | UnauthorizedResponse | NotFoundResponse>
+
+
+/**
+ * @summary View a stash yarn's photo
+ */
+
+export function useGetStashYarnPhoto<TData = Awaited<ReturnType<typeof getStashYarnPhoto>>, TError = ErrorType<void | UnauthorizedResponse | NotFoundResponse>>(
+ yarnId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStashYarnPhoto>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStashYarnPhotoQueryOptions(yarnId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetYarnCatalogUrl = (params?: GetYarnCatalogParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/yarn-catalog?${stringifiedParams}` : `/api/yarn-catalog`
+}
+
+/**
+ * Returns brands that match what was typed, the brand's sub brands, the sub brand's colors and the known fibers, plus a "Did you mean" name for any field that looks like a typo of an existing catalog name.
+ * @summary Look up the shared yarn catalog while filling in a stash yarn
+ */
+export const getYarnCatalog = async (params?: GetYarnCatalogParams, options?: Parameters<typeof customFetch>[1]): Promise<YarnCatalog> => {
+
+  return customFetch<YarnCatalog>(getGetYarnCatalogUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetYarnCatalogQueryKey = (params?: GetYarnCatalogParams,) => {
+    return [
+    `/api/yarn-catalog`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetYarnCatalogQueryOptions = <TData = Awaited<ReturnType<typeof getYarnCatalog>>, TError = ErrorType<UnauthorizedResponse>>(params?: GetYarnCatalogParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getYarnCatalog>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetYarnCatalogQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getYarnCatalog>>> = ({ signal }) => getYarnCatalog(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getYarnCatalog>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetYarnCatalogQueryResult = NonNullable<Awaited<ReturnType<typeof getYarnCatalog>>>
+export type GetYarnCatalogQueryError = ErrorType<UnauthorizedResponse>
+
+
+/**
+ * @summary Look up the shared yarn catalog while filling in a stash yarn
+ */
+
+export function useGetYarnCatalog<TData = Awaited<ReturnType<typeof getYarnCatalog>>, TError = ErrorType<UnauthorizedResponse>>(
+ params?: GetYarnCatalogParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getYarnCatalog>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetYarnCatalogQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 

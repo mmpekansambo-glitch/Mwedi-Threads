@@ -28,6 +28,10 @@ function NativeTabLayout() {
         <NativeTabs.Trigger.Icon sf={{ default: 'square.grid.2x2', selected: 'square.grid.2x2.fill' }} />
         <NativeTabs.Trigger.Label>Projects</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="stash">
+        <NativeTabs.Trigger.Icon sf={{ default: 'paintpalette', selected: 'paintpalette.fill' }} />
+        <NativeTabs.Trigger.Label>Yarn stash</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
     </NativeTabs>
   );
 }
@@ -91,6 +95,18 @@ function ClassicTabLayout() {
               <SymbolView name="square.grid.2x2" tintColor={color} size={23} />
             ) : (
               <Feather name="grid" size={21} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="stash"
+        options={{
+          title: 'Yarn stash',
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="paintpalette" tintColor={color} size={23} />
+            ) : (
+              <Feather name="droplet" size={21} color={color} />
             ),
         }}
       />

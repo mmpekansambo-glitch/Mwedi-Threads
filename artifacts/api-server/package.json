@@ -8,7 +8,7 @@
     "build": "node ./build.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
     "test": "vitest run",
-    "test:postgres": "node -e \"if (!process.env.PROJECTS_AUTH_TEST_DATABASE_URL) { console.error('Set PROJECTS_AUTH_TEST_DATABASE_URL to a non-production PostgreSQL URL'); process.exit(1); }\" && vitest run src/routes/projects.postgres.test.ts",
+    "test:postgres": "node -e \"if (!process.env.PROJECTS_AUTH_TEST_DATABASE_URL) { console.error('Set PROJECTS_AUTH_TEST_DATABASE_URL to a non-production PostgreSQL URL'); process.exit(1); }\" && vitest run src/routes/projects.postgres.test.ts src/routes/yarnStash.postgres.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
