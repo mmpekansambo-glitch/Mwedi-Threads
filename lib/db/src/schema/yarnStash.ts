@@ -97,6 +97,7 @@ export const yarnColorsTable = pgTable(
 
 // One row per yarn in a maker's stash. The names are copied from the shared
 // catalog when the yarn is saved; the photo stays private to its owner.
+// Yarn added from a project form has no photo until the maker adds one.
 export const stashYarnsTable = pgTable("stash_yarns", {
   id: uuid("id").primaryKey().defaultRandom(),
   ownerId: text("owner_id")
@@ -114,7 +115,7 @@ export const stashYarnsTable = pgTable("stash_yarns", {
   weight: yarnWeightEnum("weight"),
   blend: jsonb("blend").$type<YarnBlendPart[]>().notNull().default([]),
   brandLink: text("brand_link"),
-  photoPath: text("photo_path").notNull(),
+  photoPath: text("photo_path"),
   skeinsPurchased: doublePrecision("skeins_purchased"),
   skeinsLeft: doublePrecision("skeins_left"),
   createdAt: timestamp("created_at", { withTimezone: true })
@@ -130,3 +131,36 @@ export type YarnBrand = typeof yarnBrandsTable.$inferSelect;
 export type YarnLine = typeof yarnLinesTable.$inferSelect;
 export type YarnColor = typeof yarnColorsTable.$inferSelect;
 export type StashYarn = typeof stashYarnsTable.$inferSelect;
+
+export const catalogFieldEnum = pgEnum("catalog_field", ["brand", "sub_brand", "color"]);
+export const catalogReviewStatusEnum = pgEnum("catalog_review_status", [
+  "open",
+  "renamed",
+  "kept",
+]);
+
+// A maker asking for a second look at how a name was merged in the shared
+// catalog. A reviewer either renames the catalog entry or keeps it.
+export const catalogReviewsTable = pgTable("catalog_reviews", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  requesterId: text("requester_id")
+    .notNull()
+    .references(() => usersTable.id, { onDelete: "cascade" }),
+  stashYarnId: uuid("stash_yarn_id").references(() => stashYarnsTable.id, {
+    onDelete: "set null",
+  }),
+  field: catalogFieldEnum("field").notNull(),
+  // The catalog entry the review is about (a brand, line or color id).
+  catalogId: uuid("catalog_id").notNull(),
+  currentName: text("current_name").notNull(),
+  suggestedName: text("suggested_name").notNull(),
+  note: text("note"),
+  status: catalogReviewStatusEnum("status").notNull().default("open"),
+  reviewerNote: text("reviewer_note"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+});
+
+export type CatalogReview = typeof catalogReviewsTable.$inferSelect;

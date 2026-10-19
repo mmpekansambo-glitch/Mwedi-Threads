@@ -21,7 +21,11 @@ export interface StashYarn {
   blend: YarnBlendPart[];
   /** @nullable */
   brandLink: string | null;
-  photoPath: string;
+  /**
+     * Empty for yarn added from a project that still needs a photo.
+     * @nullable
+     */
+  photoPath: string | null;
   /** @nullable */
   skeinsPurchased: number | null;
   /** @nullable */

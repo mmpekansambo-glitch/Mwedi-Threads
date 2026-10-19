@@ -14,6 +14,7 @@ import type { ProgressMethod } from './progressMethod';
 import type { ProgressSection } from './progressSection';
 import type { ProjectDatePrecision } from './projectDatePrecision';
 import type { ProjectStatus } from './projectStatus';
+import type { ProjectYarnInput } from './projectYarnInput';
 
 export interface UpdateProject {
   /**
@@ -38,12 +39,8 @@ export interface UpdateProject {
   designerPageTitle?: string | null;
   /** @nullable */
   yarn?: string | null;
-  /** @nullable */
-  yarnBrand?: string | null;
-  /** @nullable */
-  yarnType?: string | null;
-  /** @nullable */
-  yarnColor?: string | null;
+  /** @maxItems 12 */
+  yarns?: ProjectYarnInput[];
   /** @nullable */
   tools?: string | null;
   hookSize?: CrochetHookSize | null;

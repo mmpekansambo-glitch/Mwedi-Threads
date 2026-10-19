@@ -1,4 +1,5 @@
-import { useGetProject, useUpdateProject, usePreviewDesignerWebsiteTitle, getGetDashboardQueryKey, getGetProjectQueryKey, getGetProjectsQueryKey } from '@workspace/api-client-react';
+import { useGetProject, useUpdateProject, usePreviewDesignerWebsiteTitle, getGetDashboardQueryKey, getGetProjectQueryKey, getGetProjectsQueryKey, getGetStashYarnsQueryKey } from '@workspace/api-client-react';
+import { ProjectYarnsField, yarnDraftsFromProject, yarnsForApi, type YarnDraft } from '@/components/ProjectYarns';
 import type { UpdateProject } from '@workspace/api-client-react';
 import { HookSizePicker, type CrochetHookSizeValue } from '@/components/HookSizePicker';
 import { NeedleFields, emptyNeedles, needlesForApi, needlesFromProject, type NeedlesDraft } from '@/components/NeedleFields';
@@ -31,9 +32,8 @@ export default function EditProjectScreen() {
   const designerWebsiteRef = useRef('');
   const [designerPageTitle, setDesignerPageTitle] = useState('');
   const [designerPreviewMessage, setDesignerPreviewMessage] = useState('');
-  const [yarnBrand, setYarnBrand] = useState('');
-  const [yarnType, setYarnType] = useState('');
-  const [yarnColor, setYarnColor] = useState('');
+  const [yarns, setYarns] = useState<YarnDraft[]>([]);
+  const [yarnsError, setYarnsError] = useState('');
   const [tools, setTools] = useState('');
   const [hookSize, setHookSize] = useState<CrochetHookSizeValue | null>(null);
   const [needles, setNeedles] = useState<NeedlesDraft>(emptyNeedles);
@@ -53,9 +53,7 @@ export default function EditProjectScreen() {
     setDesignerPageTitle(project.designerPageTitle || '');
     setDesignerMode(project.designerWebsite ? 'website' : 'name');
     setDesignerPreviewMessage('');
-    setYarnBrand(project.yarnBrand || '');
-    setYarnType(project.yarnType || '');
-    setYarnColor(project.yarnColor || '');
+    setYarns(yarnDraftsFromProject(project.yarns));
     setTools(project.tools || '');
     setHookSize(project.hookSize || null);
     setNeedles(needlesFromProject(project));
@@ -93,15 +91,16 @@ export default function EditProjectScreen() {
       setShowProgressError(true);
       return;
     }
+    const yarnList = yarnsForApi(yarns);
+    setYarnsError(typeof yarnList === 'string' ? yarnList : '');
+    if (typeof yarnList === 'string') return;
     const data: UpdateProject = {
       title: title.trim(),
       patternName: patternName.trim() || null,
       patternDesigner: patternDesigner.trim() || null,
       designerWebsite: designerMode === 'website' ? designerWebsite.trim() || null : null,
       designerPageTitle: designerMode === 'website' ? designerPageTitle.trim() || null : null,
-      yarnBrand: yarnBrand.trim() || null,
-      yarnType: yarnType.trim() || null,
-      yarnColor: yarnColor.trim() || null,
+      yarns: yarnList,
       tools: tools.trim() || null,
       hookSize: project.craft === 'crochet' ? hookSize : null,
       ...needlesForApi(needles, project.craft === 'knitting'),
@@ -116,6 +115,7 @@ export default function EditProjectScreen() {
         void client.invalidateQueries({ queryKey: getGetProjectQueryKey(id) });
         void client.invalidateQueries({ queryKey: getGetDashboardQueryKey() });
         void client.invalidateQueries({ queryKey: getGetProjectsQueryKey() });
+        void client.invalidateQueries({ queryKey: getGetStashYarnsQueryKey() });
         router.back();
       },
       onError: () => setError('We could not save those changes. Please try again.'),
@@ -160,12 +160,7 @@ export default function EditProjectScreen() {
                 </>
               ) : null}
               <LoomText style={{ color: colors.primary, fontSize: 15, fontFamily: fonts.semibold, marginBottom: 11 }}>Yarn</LoomText>
-              <FormFieldLabel>Brand</FormFieldLabel>
-              <TextInput value={yarnBrand} onChangeText={setYarnBrand} placeholder="e.g. Cascade" placeholderTextColor={colors.mutedForeground} style={inputStyle} testID="input-edit-yarn-brand" />
-              <FormFieldLabel>Type</FormFieldLabel>
-              <TextInput value={yarnType} onChangeText={setYarnType} placeholder="e.g. Merino DK" placeholderTextColor={colors.mutedForeground} style={inputStyle} testID="input-edit-yarn-type" />
-              <FormFieldLabel>Color</FormFieldLabel>
-              <TextInput value={yarnColor} onChangeText={setYarnColor} placeholder="e.g. Oatmeal" placeholderTextColor={colors.mutedForeground} style={inputStyle} testID="input-edit-yarn-color" />
+              <ProjectYarnsField value={yarns} onChange={(value) => { setYarns(value); setYarnsError(''); }} error={yarnsError} />
               {project.yarn ? <LoomText style={{ color: colors.mutedForeground, fontSize: 14, lineHeight: 22, marginBottom: 14 }}>Saved yarn note: {project.yarn} (kept unchanged from the earlier form)</LoomText> : null}
               {project.craft === 'crochet' ? (
                 <>

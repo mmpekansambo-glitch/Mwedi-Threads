@@ -26,6 +26,20 @@ vi.mock("@clerk/express", () => ({
 
 vi.mock("../lib/users", () => ({ ensureUserRow: async () => undefined }));
 
+// Project yarns are covered against PostgreSQL in projects.postgres.test.ts;
+// here they are kept in memory.
+const savedYarns = new Map<string, unknown[]>();
+vi.mock("../lib/projectYarns", async (importOriginal) => ({
+  ...await importOriginal<typeof import("../lib/projectYarns")>(),
+  moveOldProjectYarns: async () => undefined,
+  saveProjectYarns: async (_tx: unknown, _ownerId: string, projectId: string, yarns: object[]) => {
+    savedYarns.set(projectId, yarns.map((yarn, index) => ({ id: `0000000${index}-0000-4000-8000-000000000000`, generalColor: null, ...yarn })));
+  },
+  projectYarnsFor: async (ids: string[]) => new Map(ids.map((id) => [id, savedYarns.get(id) ?? []])),
+  suggestSkeinsLeft: async () => undefined,
+  withdrawSkeinSuggestions: async () => undefined,
+}));
+
 vi.mock("@workspace/db", async () => {
   const schema = await vi.importActual<typeof import("@workspace/db/schema")>(
     "@workspace/db/schema",
@@ -59,9 +73,9 @@ function project(id: string, ownerId: string, title: string) {
     designerWebsite: null,
     designerPageTitle: null,
     yarn: null,
-    yarnBrand: null,
-    yarnType: null,
-    yarnColor: null,
+    yarnBrand: null as string | null,
+    yarnType: null as string | null,
+    yarnColor: null as string | null,
     tools: null,
     hookSize: null,
     needleSize: null,
@@ -332,6 +346,8 @@ beforeEach(() => {
   mockDb.update.mockImplementation((table) => new Query("update").from(table));
   mockDb.delete.mockImplementation((table) => new Query("delete").from(table));
   mockDb.transaction.mockReset();
+  mockDb.transaction.mockImplementation(async (callback) => callback(mockDb));
+  savedYarns.clear();
   logError.mockReset();
   logWarn.mockReset();
   mockPreviewWebsitePageTitle.mockReset();
@@ -353,9 +369,7 @@ describe("project authorization", () => {
         patternDesigner: null,
         designerWebsite: "https://designer.example.test",
         designerPageTitle: "Designer collection",
-        yarnBrand: "Brooklyn Tweed",
-        yarnType: "Tough Love Sock",
-        yarnColor: "Wild Horse",
+        yarns: [{ brand: "Brooklyn Tweed", subBrand: "Tough Love Sock", color: "Wild Horse" }],
       },
     });
     const createdText = await createdResponse.text();
@@ -368,9 +382,7 @@ describe("project authorization", () => {
       targetDatePrecision: "day",
       designerWebsite: "https://designer.example.test",
       designerPageTitle: "Designer collection",
-      yarnBrand: "Brooklyn Tweed",
-      yarnType: "Tough Love Sock",
-      yarnColor: "Wild Horse",
+      yarns: [{ brand: "Brooklyn Tweed", subBrand: "Tough Love Sock", color: "Wild Horse", heldTogether: false }],
       hookSize: "4.0 mm (US G-6, UK/Canada 8)",
     });
 
@@ -384,7 +396,10 @@ describe("project authorization", () => {
         designerWebsite: null,
         designerPageTitle: null,
         patternDesigner: "Mara Designer",
-        yarnColor: "Cardinal",
+        yarns: [
+          { brand: "Brooklyn Tweed", subBrand: "Tough Love Sock", color: "Cardinal" },
+          { brand: "Brooklyn Tweed", subBrand: "Tough Love Sock", color: "Wild Horse", heldTogether: true, skeinsUsed: 1.5 },
+        ],
       },
     });
     expect(updatedResponse.status).toBe(200);
@@ -395,7 +410,10 @@ describe("project authorization", () => {
       designerWebsite: null,
       designerPageTitle: null,
       patternDesigner: "Mara Designer",
-      yarnColor: "Cardinal",
+      yarns: [
+        { color: "Cardinal", heldTogether: false },
+        { color: "Wild Horse", heldTogether: true, skeinsUsed: 1.5 },
+      ],
     });
   });
 

@@ -7,7 +7,12 @@
  */
 
 export * from './badRequestResponse';
+export * from './catalogField';
+export * from './catalogReview';
+export * from './catalogReviewAccess';
+export * from './catalogReviewStatus';
 export * from './craftType';
+export * from './createCatalogReview';
 export * from './createProgress';
 export * from './createProject';
 export * from './createStashYarn';
@@ -23,6 +28,7 @@ export * from './designerWebsiteTitlePreviewResponse';
 export * from './error';
 export * from './generalColor';
 export * from './getProjectsParams';
+export * from './getSkeinSuggestionsParams';
 export * from './getStashYarnsParams';
 export * from './getYarnCatalogParams';
 export * from './healthStatus';
@@ -40,6 +46,11 @@ export * from './project';
 export * from './projectDatePrecision';
 export * from './projectDetail';
 export * from './projectStatus';
+export * from './projectYarn';
+export * from './projectYarnInput';
+export * from './resolveCatalogReview';
+export * from './resolveCatalogReviewAction';
+export * from './skeinSuggestion';
 export * from './stashYarn';
 export * from './unauthorizedResponse';
 export * from './updateProject';

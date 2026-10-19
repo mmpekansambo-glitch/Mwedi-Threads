@@ -1,4 +1,5 @@
-import { useCreateProject, usePreviewDesignerWebsiteTitle, getGetDashboardQueryKey, getGetProjectsQueryKey } from '@workspace/api-client-react';
+import { useCreateProject, usePreviewDesignerWebsiteTitle, getGetDashboardQueryKey, getGetProjectsQueryKey, getGetStashYarnsQueryKey } from '@workspace/api-client-react';
+import { ProjectYarnsField, yarnsForApi, type YarnDraft } from '@/components/ProjectYarns';
 import type { CreateProject } from '@workspace/api-client-react';
 import { HookSizePicker, type CrochetHookSizeValue } from '@/components/HookSizePicker';
 import { NeedleFields, emptyNeedles, needlesForApi, type NeedlesDraft } from '@/components/NeedleFields';
@@ -29,9 +30,8 @@ export default function NewProjectScreen() {
   const designerWebsiteRef = useRef('');
   const [designerPageTitle, setDesignerPageTitle] = useState('');
   const [designerPreviewMessage, setDesignerPreviewMessage] = useState('');
-  const [yarnBrand, setYarnBrand] = useState('');
-  const [yarnType, setYarnType] = useState('');
-  const [yarnColor, setYarnColor] = useState('');
+  const [yarns, setYarns] = useState<YarnDraft[]>([]);
+  const [yarnsError, setYarnsError] = useState('');
   const [hookSize, setHookSize] = useState<CrochetHookSizeValue | null>(null);
   const [needles, setNeedles] = useState<NeedlesDraft>(emptyNeedles);
   const [startedAt, setStartedAt] = useState('');
@@ -74,6 +74,9 @@ export default function NewProjectScreen() {
       setShowProgressError(true);
       return;
     }
+    const yarnList = yarnsForApi(yarns);
+    setYarnsError(typeof yarnList === 'string' ? yarnList : '');
+    if (typeof yarnList === 'string') return;
     const payload: CreateProject = {
       title: title.trim(),
       craft,
@@ -83,9 +86,7 @@ export default function NewProjectScreen() {
       patternDesigner: patternDesigner.trim() || null,
       designerWebsite: designerMode === 'website' ? designerWebsite.trim() || null : null,
       designerPageTitle: designerMode === 'website' ? designerPageTitle.trim() || null : null,
-      yarnBrand: yarnBrand.trim() || null,
-      yarnType: yarnType.trim() || null,
-      yarnColor: yarnColor.trim() || null,
+      yarns: yarnList,
       tools: null,
       hookSize: craft === 'crochet' ? hookSize : null,
       ...needlesForApi(needles, craft === 'knitting'),
@@ -99,6 +100,7 @@ export default function NewProjectScreen() {
       onSuccess: (project) => {
         void client.invalidateQueries({ queryKey: getGetProjectsQueryKey() });
         void client.invalidateQueries({ queryKey: getGetDashboardQueryKey() });
+        void client.invalidateQueries({ queryKey: getGetStashYarnsQueryKey() });
         router.replace({ pathname: '/projects/[id]', params: { id: project.id } });
       },
       onError: () => setErrorMessage('We could not save this project just now. Your details are still here — please try again.'),
@@ -151,12 +153,7 @@ export default function NewProjectScreen() {
               </>
             ) : null}
             <LoomText style={[styles.sectionLabel, { color: colors.primary }]}>Yarn</LoomText>
-            <FormFieldLabel>Brand</FormFieldLabel>
-            <TextInput {...inputProps} value={yarnBrand} onChangeText={setYarnBrand} placeholder="e.g. Cascade" style={fieldStyle} testID="input-yarn-brand" />
-            <FormFieldLabel>Type</FormFieldLabel>
-            <TextInput {...inputProps} value={yarnType} onChangeText={setYarnType} placeholder="e.g. Merino DK" style={fieldStyle} testID="input-yarn-type" />
-            <FormFieldLabel>Color</FormFieldLabel>
-            <TextInput {...inputProps} value={yarnColor} onChangeText={setYarnColor} placeholder="e.g. Oatmeal" style={fieldStyle} testID="input-yarn-color" />
+            <ProjectYarnsField value={yarns} onChange={(value) => { setYarns(value); setYarnsError(''); }} error={yarnsError} />
             {craft === 'crochet' ? (
               <>
                 <FormFieldLabel>Hook size</FormFieldLabel>

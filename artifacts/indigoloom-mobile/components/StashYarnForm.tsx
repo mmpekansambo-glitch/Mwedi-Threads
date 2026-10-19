@@ -9,10 +9,11 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Alert, Linking, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  requestStashPhotoUpload, useCreateStashYarn, useDeleteStashYarn, useGetYarnCatalog, useUpdateStashYarn,
-  getGetStashYarnQueryKey, getGetStashYarnsQueryKey, getGetYarnCatalogQueryKey,
+  requestStashPhotoUpload, useCreateStashYarn, useDeleteStashYarn, useGetStashYarnReviews, useGetYarnCatalog, useUpdateStashYarn,
+  getGetStashYarnQueryKey, getGetStashYarnReviewsQueryKey, getGetStashYarnsQueryKey, getGetYarnCatalogQueryKey,
 } from '@workspace/api-client-react';
-import type { GeneralColor, StashYarn, YarnWeight } from '@workspace/api-client-react';
+import type { CatalogField, GeneralColor, StashYarn, YarnWeight } from '@workspace/api-client-react';
+import { NameReviewForm, NameReviewList, ReviewableLabel } from '@/components/NameReview';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import { FormFieldLabel, LoomButton, LoomText, fonts } from '@/components/loom';
 import {
@@ -56,6 +57,9 @@ export function StashYarnForm({ yarn }: { yarn?: StashYarn }) {
   const [skeinsPurchased, setSkeinsPurchased] = useState(yarn?.skeinsPurchased === null || !yarn ? '' : String(yarn.skeinsPurchased));
   const [skeinsLeft, setSkeinsLeft] = useState(yarn?.skeinsLeft === null || !yarn ? '' : String(yarn.skeinsLeft));
   const [photo, setPhoto] = useState<ImagePicker.ImagePickerAsset | null>(null);
+  const [reviewing, setReviewing] = useState<CatalogField | null>(null);
+  const toggleReview = (field: CatalogField) => setReviewing((current) => current === field ? null : field);
+  const reviews = useGetStashYarnReviews(yarn?.id ?? '', { query: { enabled: Boolean(yarn), queryKey: getGetStashYarnReviewsQueryKey(yarn?.id ?? '') } });
   const [message, setMessage] = useState('');
   const [blendError, setBlendError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -112,7 +116,7 @@ export function StashYarnForm({ yarn }: { yarn?: StashYarn }) {
     const left = skeinsForApi(skeinsLeft);
     const link = brandLink.trim();
     if (!brand.trim()) return setMessage('Enter the yarn’s brand.');
-    if (!photo && !yarn) return setMessage('Add a photo of this yarn.');
+    if (!photo && !yarn?.photoPath) return setMessage('Add a photo of this yarn.');
     if (typeof blendForSave === 'string') return;
     if (link && !isWebLink(link)) return setMessage('Enter a brand page link starting with http:// or https://.');
     if (purchased === 'invalid' || left === 'invalid') return setMessage('Enter skeins in whole or half skeins, like 3 or 2.5.');
@@ -176,21 +180,25 @@ export function StashYarnForm({ yarn }: { yarn?: StashYarn }) {
         ) : null}
         <View style={[styles.formCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <FormFieldLabel>Photo *</FormFieldLabel>
-          <Pressable accessibilityRole="button" accessibilityLabel={photo || yarn ? 'Change photo' : 'Add a photo'} onPress={pickPhoto} style={[styles.photoPicker, { borderColor: colors.input, backgroundColor: colors.selectedWash }]} testID="button-stash-photo">
+          <Pressable accessibilityRole="button" accessibilityLabel={photo || yarn?.photoPath ? 'Change photo' : 'Add a photo'} onPress={pickPhoto} style={[styles.photoPicker, { borderColor: colors.input, backgroundColor: colors.selectedWash }]} testID="button-stash-photo">
             {photo ? <Image source={{ uri: photo.uri }} style={styles.photo} contentFit="cover" accessibilityLabel="Chosen yarn photo" />
-              : yarn ? <StashPhoto yarn={yarn} style={styles.photo} />
+              : yarn?.photoPath ? <StashPhoto yarn={yarn} style={styles.photo} />
               : <View style={styles.photoEmpty}><Feather name="camera" size={22} color={colors.primary} /><LoomText style={{ color: colors.primary, fontFamily: fonts.semibold }}>Add a photo</LoomText></View>}
             <ColorDot color={generalColor} size={24} style={styles.photoDot} />
           </Pressable>
-          {photo || yarn ? <LoomText style={[styles.changePhoto, { color: colors.primary }]} onPress={pickPhoto}>Change photo</LoomText> : null}
+          {photo || yarn?.photoPath ? <LoomText style={[styles.changePhoto, { color: colors.primary }]} onPress={pickPhoto}>Change photo</LoomText> : null}
 
-          <FormFieldLabel>Brand *</FormFieldLabel>
+          <ReviewableLabel field="brand" canReview={Boolean(yarn)} open={reviewing === 'brand'} onToggle={() => toggleReview('brand')}>Brand *</ReviewableLabel>
+          {yarn && reviewing === 'brand' ? <NameReviewForm yarnId={yarn.id} field="brand" currentName={yarn.brand} onDone={() => setReviewing(null)} /> : null}
           <TextInput {...inputProps} value={brand} onChangeText={setBrand} onFocus={() => setFocused('brand')} maxLength={80} placeholder="e.g. Lion Brand" style={inputStyle} autoCorrect={false} testID="input-stash-brand" />
           <CatalogChoices options={focused === 'brand' ? catalog?.brands ?? [] : []} typed={brand} suggestion={catalog?.suggestions.brand} onPick={setBrand} testID="stash-brand" />
-          <FormFieldLabel>Sub brand</FormFieldLabel>
+          <ReviewableLabel field="sub_brand" canReview={Boolean(yarn?.subBrand)} open={reviewing === 'sub_brand'} onToggle={() => toggleReview('sub_brand')}>Sub brand</ReviewableLabel>
+          {yarn?.subBrand && reviewing === 'sub_brand' ? <NameReviewForm yarnId={yarn.id} field="sub_brand" currentName={yarn.subBrand} onDone={() => setReviewing(null)} /> : null}
           <TextInput {...inputProps} value={subBrand} onChangeText={setSubBrand} onFocus={() => setFocused('subBrand')} maxLength={80} placeholder="e.g. Wool-Ease" style={inputStyle} autoCorrect={false} testID="input-stash-sub-brand" />
           <CatalogChoices options={focused === 'subBrand' ? catalog?.subBrands.map((line) => line.name) ?? [] : []} typed={subBrand} suggestion={catalog?.suggestions.subBrand} onPick={setSubBrand} testID="stash-sub-brand" />
-          <FormFieldLabel>Color</FormFieldLabel>
+          <ReviewableLabel field="color" canReview={Boolean(yarn?.color)} open={reviewing === 'color'} onToggle={() => toggleReview('color')}>Color</ReviewableLabel>
+          {yarn?.color && reviewing === 'color' ? <NameReviewForm yarnId={yarn.id} field="color" currentName={yarn.color} onDone={() => setReviewing(null)} /> : null}
+          <NameReviewList reviews={reviews.data ?? []} />
           <TextInput {...inputProps} value={color} onChangeText={setColor} onFocus={() => setFocused('color')} maxLength={80} placeholder="e.g. Fisherman" style={inputStyle} autoCorrect={false} testID="input-stash-color" />
           <CatalogChoices options={focused === 'color' ? catalog?.colors.map((item) => item.name) ?? [] : []} typed={color} suggestion={catalog?.suggestions.color} onPick={setColor} testID="stash-color" />
 

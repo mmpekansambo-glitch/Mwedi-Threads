@@ -5,6 +5,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import * as schema from "@workspace/db/schema";
 import { usersTable } from "@workspace/db/schema";
+import { stashTablesSql } from "../test/stashTablesSql";
 
 vi.mock("@clerk/express", () => ({
   getAuth: (req: Request) => ({
@@ -76,59 +77,16 @@ describe.skipIf(!databaseUrl)("yarn stash against PostgreSQL", () => {
     await adminPool.query(`CREATE SCHEMA ${isolatedSchema}`);
     schemaCreated = true;
     await adminPool.query(`
-      CREATE TYPE ${isolatedSchema}.yarn_weight AS ENUM ('lace', 'fingering', 'sport', 'dk', 'worsted', 'bulky', 'super_bulky', 'jumbo');
-      CREATE TYPE ${isolatedSchema}.general_color AS ENUM ('red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi');
       CREATE TABLE ${isolatedSchema}.users (
         id text PRIMARY KEY,
         email text,
         display_name text,
         joined_at timestamptz NOT NULL DEFAULT now()
       );
-      CREATE TABLE ${isolatedSchema}.yarn_brands (
-        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-        name text NOT NULL,
-        match_key text NOT NULL,
-        created_at timestamptz NOT NULL DEFAULT now()
+      CREATE TABLE ${isolatedSchema}.projects (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid()
       );
-      CREATE UNIQUE INDEX yarn_brands_match_key ON ${isolatedSchema}.yarn_brands (match_key);
-      CREATE TABLE ${isolatedSchema}.yarn_lines (
-        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-        brand_id uuid NOT NULL REFERENCES ${isolatedSchema}.yarn_brands(id) ON DELETE CASCADE,
-        name text NOT NULL,
-        match_key text NOT NULL,
-        blend jsonb NOT NULL DEFAULT '[]'::jsonb,
-        link text,
-        created_at timestamptz NOT NULL DEFAULT now()
-      );
-      CREATE UNIQUE INDEX yarn_lines_brand_match_key ON ${isolatedSchema}.yarn_lines (brand_id, match_key);
-      CREATE TABLE ${isolatedSchema}.yarn_colors (
-        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-        line_id uuid NOT NULL REFERENCES ${isolatedSchema}.yarn_lines(id) ON DELETE CASCADE,
-        name text NOT NULL,
-        match_key text NOT NULL,
-        general_color ${isolatedSchema}.general_color,
-        created_at timestamptz NOT NULL DEFAULT now()
-      );
-      CREATE UNIQUE INDEX yarn_colors_line_match_key ON ${isolatedSchema}.yarn_colors (line_id, match_key);
-      CREATE TABLE ${isolatedSchema}.stash_yarns (
-        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-        owner_id text NOT NULL REFERENCES ${isolatedSchema}.users(id) ON DELETE CASCADE,
-        brand_id uuid NOT NULL REFERENCES ${isolatedSchema}.yarn_brands(id),
-        line_id uuid REFERENCES ${isolatedSchema}.yarn_lines(id),
-        color_id uuid REFERENCES ${isolatedSchema}.yarn_colors(id),
-        brand text NOT NULL,
-        sub_brand text,
-        color text,
-        general_color ${isolatedSchema}.general_color,
-        weight ${isolatedSchema}.yarn_weight,
-        blend jsonb NOT NULL DEFAULT '[]'::jsonb,
-        brand_link text,
-        photo_path text NOT NULL,
-        skeins_purchased double precision,
-        skeins_left double precision,
-        created_at timestamptz NOT NULL DEFAULT now(),
-        updated_at timestamptz NOT NULL DEFAULT now()
-      );
+      ${stashTablesSql(isolatedSchema)}
     `);
 
     testPool = new pg.Pool({

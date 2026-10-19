@@ -10,6 +10,11 @@ const { mockSelect, clerkSetupShouldFail, clerkHostArguments } = vi.hoisted(() =
 }));
 
 vi.mock("../lib/users", () => ({ ensureUserRow: async () => undefined }));
+vi.mock("../lib/projectYarns", async (importOriginal) => ({
+  ...await importOriginal<typeof import("../lib/projectYarns")>(),
+  moveOldProjectYarns: async () => undefined,
+  projectYarnsFor: async (ids: string[]) => new Map(ids.map((id) => [id, []])),
+}));
 
 vi.mock("@workspace/db", async () => {
   const schema = await vi.importActual<typeof import("@workspace/db/schema")>(

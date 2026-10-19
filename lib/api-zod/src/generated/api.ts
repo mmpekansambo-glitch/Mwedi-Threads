@@ -48,9 +48,16 @@ export const GetDashboardResponse = zod.object({
   "designerWebsite": zod.string().url().regex(getDashboardResponseRecentProjectsItemDesignerWebsiteRegExp).nullable(),
   "designerPageTitle": zod.string().nullable(),
   "yarn": zod.string().nullable(),
-  "yarnBrand": zod.string().nullable(),
-  "yarnType": zod.string().nullable(),
-  "yarnColor": zod.string().nullable(),
+  "yarns": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "stashYarnId": zod.string().uuid().nullable(),
+  "brand": zod.string().nullable(),
+  "subBrand": zod.string().nullable(),
+  "color": zod.string().nullable(),
+  "generalColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]).describe('The linked stash yarn\'s color family.'),
+  "heldTogether": zod.boolean().describe('Worked as one strand with the yarn listed just above.'),
+  "skeinsUsed": zod.number().nullable()
+})),
   "tools": zod.string().nullable(),
   "hookSize": zod.union([zod.enum(['2.25 mm (US B-1, UK/Canada 13)', '2.75 mm (US C-2, UK/Canada 12)', '3.25 mm (US D-3, UK/Canada 10)', '3.5 mm (US E-4, UK/Canada 9)', '3.75 mm (US F-5, UK/Canada —)', '4.0 mm (US G-6, UK/Canada 8)', '4.5 mm (US 7, UK/Canada 7)', '5.0 mm (US H-8, UK/Canada 6)', '5.5 mm (US I-9, UK/Canada 5)', '6.0 mm (US J-10, UK/Canada 4)', '6.5 mm (US K-10½, UK/Canada 3)', '7.0 mm (US —, UK/Canada 2)', '8.0 mm (US L-11, UK/Canada 0)', '9.0 mm (US M/N-13, UK/Canada 00)', '10.0 mm (US N/P-15, UK/Canada 000)', '11.5 mm (US P-16, UK/Canada —)', '15 mm (US P/Q, UK/Canada —)', '16 mm (US Q, UK/Canada —)', '19 mm (US S, UK/Canada —)', '25 mm (US T/U/X, UK/Canada —)']),zod.null()]),
   "needleSize": zod.union([zod.enum(['2.0 mm (US 0, UK/Canada 14)', '2.25 mm (US 1, UK/Canada 13)', '2.5 mm (US 1.5, UK/Canada —)', '2.75 mm (US 2, UK/Canada 12)', '3.0 mm (US 2.5, UK/Canada 11)', '3.25 mm (US 3, UK/Canada 10)', '3.5 mm (US 4, UK/Canada —)', '3.75 mm (US 5, UK/Canada 9)', '4.0 mm (US 6, UK/Canada 8)', '4.5 mm (US 7, UK/Canada 7)', '5.0 mm (US 8, UK/Canada 6)', '5.5 mm (US 9, UK/Canada 5)', '6.0 mm (US 10, UK/Canada 4)', '6.5 mm (US 10.5, UK/Canada 3)', '7.0 mm (US —, UK/Canada 2)', '7.5 mm (US —, UK/Canada 1)', '8.0 mm (US 11, UK/Canada 0)', '9.0 mm (US 13, UK/Canada 00)', '10.0 mm (US 15, UK/Canada 000)', '12–12.75 mm (US 17, UK/Canada —)', '15–16 mm (US 19, UK/Canada —)', '19 mm (US 35, UK/Canada —)', '20 mm (US 36, UK/Canada —)', '25 mm (US 50, UK/Canada —)']),zod.null()]),
@@ -135,9 +142,16 @@ export const GetProjectsResponseItem = zod.object({
   "designerWebsite": zod.string().url().regex(getProjectsResponseDesignerWebsiteRegExp).nullable(),
   "designerPageTitle": zod.string().nullable(),
   "yarn": zod.string().nullable(),
-  "yarnBrand": zod.string().nullable(),
-  "yarnType": zod.string().nullable(),
-  "yarnColor": zod.string().nullable(),
+  "yarns": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "stashYarnId": zod.string().uuid().nullable(),
+  "brand": zod.string().nullable(),
+  "subBrand": zod.string().nullable(),
+  "color": zod.string().nullable(),
+  "generalColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]).describe('The linked stash yarn\'s color family.'),
+  "heldTogether": zod.boolean().describe('Worked as one strand with the yarn listed just above.'),
+  "skeinsUsed": zod.number().nullable()
+})),
   "tools": zod.string().nullable(),
   "hookSize": zod.union([zod.enum(['2.25 mm (US B-1, UK/Canada 13)', '2.75 mm (US C-2, UK/Canada 12)', '3.25 mm (US D-3, UK/Canada 10)', '3.5 mm (US E-4, UK/Canada 9)', '3.75 mm (US F-5, UK/Canada —)', '4.0 mm (US G-6, UK/Canada 8)', '4.5 mm (US 7, UK/Canada 7)', '5.0 mm (US H-8, UK/Canada 6)', '5.5 mm (US I-9, UK/Canada 5)', '6.0 mm (US J-10, UK/Canada 4)', '6.5 mm (US K-10½, UK/Canada 3)', '7.0 mm (US —, UK/Canada 2)', '8.0 mm (US L-11, UK/Canada 0)', '9.0 mm (US M/N-13, UK/Canada 00)', '10.0 mm (US N/P-15, UK/Canada 000)', '11.5 mm (US P-16, UK/Canada —)', '15 mm (US P/Q, UK/Canada —)', '16 mm (US Q, UK/Canada —)', '19 mm (US S, UK/Canada —)', '25 mm (US T/U/X, UK/Canada —)']),zod.null()]),
   "needleSize": zod.union([zod.enum(['2.0 mm (US 0, UK/Canada 14)', '2.25 mm (US 1, UK/Canada 13)', '2.5 mm (US 1.5, UK/Canada —)', '2.75 mm (US 2, UK/Canada 12)', '3.0 mm (US 2.5, UK/Canada 11)', '3.25 mm (US 3, UK/Canada 10)', '3.5 mm (US 4, UK/Canada —)', '3.75 mm (US 5, UK/Canada 9)', '4.0 mm (US 6, UK/Canada 8)', '4.5 mm (US 7, UK/Canada 7)', '5.0 mm (US 8, UK/Canada 6)', '5.5 mm (US 9, UK/Canada 5)', '6.0 mm (US 10, UK/Canada 4)', '6.5 mm (US 10.5, UK/Canada 3)', '7.0 mm (US —, UK/Canada 2)', '7.5 mm (US —, UK/Canada 1)', '8.0 mm (US 11, UK/Canada 0)', '9.0 mm (US 13, UK/Canada 00)', '10.0 mm (US 15, UK/Canada 000)', '12–12.75 mm (US 17, UK/Canada —)', '15–16 mm (US 19, UK/Canada —)', '19 mm (US 35, UK/Canada —)', '20 mm (US 36, UK/Canada —)', '25 mm (US 50, UK/Canada —)']),zod.null()]),
@@ -172,6 +186,17 @@ export const GetProjectsResponse = zod.array(GetProjectsResponseItem)
 export const createProjectBodyTitleMax = 160;
 
 export const createProjectBodyDesignerWebsiteRegExp = new RegExp('^[Hh][Tt][Tt][Pp][Ss]?:/');
+export const createProjectBodyYarnsItemBrandMax = 80;
+
+export const createProjectBodyYarnsItemSubBrandMax = 80;
+
+export const createProjectBodyYarnsItemColorMax = 80;
+
+export const createProjectBodyYarnsItemSkeinsUsedMin = 0;
+export const createProjectBodyYarnsItemSkeinsUsedMax = 999;
+
+export const createProjectBodyYarnsMax = 12;
+
 export const createProjectBodyProgressTotalExclusiveMin = 0;
 export const createProjectBodyProgressTotalMax = 100000;
 
@@ -191,9 +216,14 @@ export const CreateProjectBody = zod.object({
   "designerWebsite": zod.string().url().regex(createProjectBodyDesignerWebsiteRegExp).nullish(),
   "designerPageTitle": zod.string().nullish(),
   "yarn": zod.string().nullish(),
-  "yarnBrand": zod.string().nullish(),
-  "yarnType": zod.string().nullish(),
-  "yarnColor": zod.string().nullish(),
+  "yarns": zod.array(zod.object({
+  "stashYarnId": zod.string().uuid().nullish(),
+  "brand": zod.string().max(createProjectBodyYarnsItemBrandMax).nullish(),
+  "subBrand": zod.string().max(createProjectBodyYarnsItemSubBrandMax).nullish(),
+  "color": zod.string().max(createProjectBodyYarnsItemColorMax).nullish(),
+  "heldTogether": zod.boolean().optional(),
+  "skeinsUsed": zod.number().min(createProjectBodyYarnsItemSkeinsUsedMin).max(createProjectBodyYarnsItemSkeinsUsedMax).nullish()
+})).max(createProjectBodyYarnsMax).optional(),
   "tools": zod.string().nullish(),
   "hookSize": zod.union([zod.enum(['2.25 mm (US B-1, UK/Canada 13)', '2.75 mm (US C-2, UK/Canada 12)', '3.25 mm (US D-3, UK/Canada 10)', '3.5 mm (US E-4, UK/Canada 9)', '3.75 mm (US F-5, UK/Canada —)', '4.0 mm (US G-6, UK/Canada 8)', '4.5 mm (US 7, UK/Canada 7)', '5.0 mm (US H-8, UK/Canada 6)', '5.5 mm (US I-9, UK/Canada 5)', '6.0 mm (US J-10, UK/Canada 4)', '6.5 mm (US K-10½, UK/Canada 3)', '7.0 mm (US —, UK/Canada 2)', '8.0 mm (US L-11, UK/Canada 0)', '9.0 mm (US M/N-13, UK/Canada 00)', '10.0 mm (US N/P-15, UK/Canada 000)', '11.5 mm (US P-16, UK/Canada —)', '15 mm (US P/Q, UK/Canada —)', '16 mm (US Q, UK/Canada —)', '19 mm (US S, UK/Canada —)', '25 mm (US T/U/X, UK/Canada —)']),zod.null()]).optional(),
   "needleSize": zod.union([zod.enum(['2.0 mm (US 0, UK/Canada 14)', '2.25 mm (US 1, UK/Canada 13)', '2.5 mm (US 1.5, UK/Canada —)', '2.75 mm (US 2, UK/Canada 12)', '3.0 mm (US 2.5, UK/Canada 11)', '3.25 mm (US 3, UK/Canada 10)', '3.5 mm (US 4, UK/Canada —)', '3.75 mm (US 5, UK/Canada 9)', '4.0 mm (US 6, UK/Canada 8)', '4.5 mm (US 7, UK/Canada 7)', '5.0 mm (US 8, UK/Canada 6)', '5.5 mm (US 9, UK/Canada 5)', '6.0 mm (US 10, UK/Canada 4)', '6.5 mm (US 10.5, UK/Canada 3)', '7.0 mm (US —, UK/Canada 2)', '7.5 mm (US —, UK/Canada 1)', '8.0 mm (US 11, UK/Canada 0)', '9.0 mm (US 13, UK/Canada 00)', '10.0 mm (US 15, UK/Canada 000)', '12–12.75 mm (US 17, UK/Canada —)', '15–16 mm (US 19, UK/Canada —)', '19 mm (US 35, UK/Canada —)', '20 mm (US 36, UK/Canada —)', '25 mm (US 50, UK/Canada —)']),zod.null()]).optional(),
@@ -238,9 +268,16 @@ export const CreateProjectResponse = zod.object({
   "designerWebsite": zod.string().url().regex(createProjectResponseDesignerWebsiteRegExp).nullable(),
   "designerPageTitle": zod.string().nullable(),
   "yarn": zod.string().nullable(),
-  "yarnBrand": zod.string().nullable(),
-  "yarnType": zod.string().nullable(),
-  "yarnColor": zod.string().nullable(),
+  "yarns": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "stashYarnId": zod.string().uuid().nullable(),
+  "brand": zod.string().nullable(),
+  "subBrand": zod.string().nullable(),
+  "color": zod.string().nullable(),
+  "generalColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]).describe('The linked stash yarn\'s color family.'),
+  "heldTogether": zod.boolean().describe('Worked as one strand with the yarn listed just above.'),
+  "skeinsUsed": zod.number().nullable()
+})),
   "tools": zod.string().nullable(),
   "hookSize": zod.union([zod.enum(['2.25 mm (US B-1, UK/Canada 13)', '2.75 mm (US C-2, UK/Canada 12)', '3.25 mm (US D-3, UK/Canada 10)', '3.5 mm (US E-4, UK/Canada 9)', '3.75 mm (US F-5, UK/Canada —)', '4.0 mm (US G-6, UK/Canada 8)', '4.5 mm (US 7, UK/Canada 7)', '5.0 mm (US H-8, UK/Canada 6)', '5.5 mm (US I-9, UK/Canada 5)', '6.0 mm (US J-10, UK/Canada 4)', '6.5 mm (US K-10½, UK/Canada 3)', '7.0 mm (US —, UK/Canada 2)', '8.0 mm (US L-11, UK/Canada 0)', '9.0 mm (US M/N-13, UK/Canada 00)', '10.0 mm (US N/P-15, UK/Canada 000)', '11.5 mm (US P-16, UK/Canada —)', '15 mm (US P/Q, UK/Canada —)', '16 mm (US Q, UK/Canada —)', '19 mm (US S, UK/Canada —)', '25 mm (US T/U/X, UK/Canada —)']),zod.null()]),
   "needleSize": zod.union([zod.enum(['2.0 mm (US 0, UK/Canada 14)', '2.25 mm (US 1, UK/Canada 13)', '2.5 mm (US 1.5, UK/Canada —)', '2.75 mm (US 2, UK/Canada 12)', '3.0 mm (US 2.5, UK/Canada 11)', '3.25 mm (US 3, UK/Canada 10)', '3.5 mm (US 4, UK/Canada —)', '3.75 mm (US 5, UK/Canada 9)', '4.0 mm (US 6, UK/Canada 8)', '4.5 mm (US 7, UK/Canada 7)', '5.0 mm (US 8, UK/Canada 6)', '5.5 mm (US 9, UK/Canada 5)', '6.0 mm (US 10, UK/Canada 4)', '6.5 mm (US 10.5, UK/Canada 3)', '7.0 mm (US —, UK/Canada 2)', '7.5 mm (US —, UK/Canada 1)', '8.0 mm (US 11, UK/Canada 0)', '9.0 mm (US 13, UK/Canada 00)', '10.0 mm (US 15, UK/Canada 000)', '12–12.75 mm (US 17, UK/Canada —)', '15–16 mm (US 19, UK/Canada —)', '19 mm (US 35, UK/Canada —)', '20 mm (US 36, UK/Canada —)', '25 mm (US 50, UK/Canada —)']),zod.null()]),
@@ -316,9 +353,16 @@ export const GetProjectResponse = zod.object({
   "designerWebsite": zod.string().url().regex(getProjectResponseOneDesignerWebsiteRegExp).nullable(),
   "designerPageTitle": zod.string().nullable(),
   "yarn": zod.string().nullable(),
-  "yarnBrand": zod.string().nullable(),
-  "yarnType": zod.string().nullable(),
-  "yarnColor": zod.string().nullable(),
+  "yarns": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "stashYarnId": zod.string().uuid().nullable(),
+  "brand": zod.string().nullable(),
+  "subBrand": zod.string().nullable(),
+  "color": zod.string().nullable(),
+  "generalColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]).describe('The linked stash yarn\'s color family.'),
+  "heldTogether": zod.boolean().describe('Worked as one strand with the yarn listed just above.'),
+  "skeinsUsed": zod.number().nullable()
+})),
   "tools": zod.string().nullable(),
   "hookSize": zod.union([zod.enum(['2.25 mm (US B-1, UK/Canada 13)', '2.75 mm (US C-2, UK/Canada 12)', '3.25 mm (US D-3, UK/Canada 10)', '3.5 mm (US E-4, UK/Canada 9)', '3.75 mm (US F-5, UK/Canada —)', '4.0 mm (US G-6, UK/Canada 8)', '4.5 mm (US 7, UK/Canada 7)', '5.0 mm (US H-8, UK/Canada 6)', '5.5 mm (US I-9, UK/Canada 5)', '6.0 mm (US J-10, UK/Canada 4)', '6.5 mm (US K-10½, UK/Canada 3)', '7.0 mm (US —, UK/Canada 2)', '8.0 mm (US L-11, UK/Canada 0)', '9.0 mm (US M/N-13, UK/Canada 00)', '10.0 mm (US N/P-15, UK/Canada 000)', '11.5 mm (US P-16, UK/Canada —)', '15 mm (US P/Q, UK/Canada —)', '16 mm (US Q, UK/Canada —)', '19 mm (US S, UK/Canada —)', '25 mm (US T/U/X, UK/Canada —)']),zod.null()]),
   "needleSize": zod.union([zod.enum(['2.0 mm (US 0, UK/Canada 14)', '2.25 mm (US 1, UK/Canada 13)', '2.5 mm (US 1.5, UK/Canada —)', '2.75 mm (US 2, UK/Canada 12)', '3.0 mm (US 2.5, UK/Canada 11)', '3.25 mm (US 3, UK/Canada 10)', '3.5 mm (US 4, UK/Canada —)', '3.75 mm (US 5, UK/Canada 9)', '4.0 mm (US 6, UK/Canada 8)', '4.5 mm (US 7, UK/Canada 7)', '5.0 mm (US 8, UK/Canada 6)', '5.5 mm (US 9, UK/Canada 5)', '6.0 mm (US 10, UK/Canada 4)', '6.5 mm (US 10.5, UK/Canada 3)', '7.0 mm (US —, UK/Canada 2)', '7.5 mm (US —, UK/Canada 1)', '8.0 mm (US 11, UK/Canada 0)', '9.0 mm (US 13, UK/Canada 00)', '10.0 mm (US 15, UK/Canada 000)', '12–12.75 mm (US 17, UK/Canada —)', '15–16 mm (US 19, UK/Canada —)', '19 mm (US 35, UK/Canada —)', '20 mm (US 36, UK/Canada —)', '25 mm (US 50, UK/Canada —)']),zod.null()]),
@@ -366,6 +410,17 @@ export const UpdateProjectParams = zod.object({
 export const updateProjectBodyTitleMax = 160;
 
 export const updateProjectBodyDesignerWebsiteRegExp = new RegExp('^[Hh][Tt][Tt][Pp][Ss]?:/');
+export const updateProjectBodyYarnsItemBrandMax = 80;
+
+export const updateProjectBodyYarnsItemSubBrandMax = 80;
+
+export const updateProjectBodyYarnsItemColorMax = 80;
+
+export const updateProjectBodyYarnsItemSkeinsUsedMin = 0;
+export const updateProjectBodyYarnsItemSkeinsUsedMax = 999;
+
+export const updateProjectBodyYarnsMax = 12;
+
 export const updateProjectBodyProgressTotalExclusiveMin = 0;
 export const updateProjectBodyProgressTotalMax = 100000;
 
@@ -388,9 +443,14 @@ export const UpdateProjectBody = zod.object({
   "designerWebsite": zod.string().url().regex(updateProjectBodyDesignerWebsiteRegExp).nullish(),
   "designerPageTitle": zod.string().nullish(),
   "yarn": zod.string().nullish(),
-  "yarnBrand": zod.string().nullish(),
-  "yarnType": zod.string().nullish(),
-  "yarnColor": zod.string().nullish(),
+  "yarns": zod.array(zod.object({
+  "stashYarnId": zod.string().uuid().nullish(),
+  "brand": zod.string().max(updateProjectBodyYarnsItemBrandMax).nullish(),
+  "subBrand": zod.string().max(updateProjectBodyYarnsItemSubBrandMax).nullish(),
+  "color": zod.string().max(updateProjectBodyYarnsItemColorMax).nullish(),
+  "heldTogether": zod.boolean().optional(),
+  "skeinsUsed": zod.number().min(updateProjectBodyYarnsItemSkeinsUsedMin).max(updateProjectBodyYarnsItemSkeinsUsedMax).nullish()
+})).max(updateProjectBodyYarnsMax).optional(),
   "tools": zod.string().nullish(),
   "hookSize": zod.union([zod.enum(['2.25 mm (US B-1, UK/Canada 13)', '2.75 mm (US C-2, UK/Canada 12)', '3.25 mm (US D-3, UK/Canada 10)', '3.5 mm (US E-4, UK/Canada 9)', '3.75 mm (US F-5, UK/Canada —)', '4.0 mm (US G-6, UK/Canada 8)', '4.5 mm (US 7, UK/Canada 7)', '5.0 mm (US H-8, UK/Canada 6)', '5.5 mm (US I-9, UK/Canada 5)', '6.0 mm (US J-10, UK/Canada 4)', '6.5 mm (US K-10½, UK/Canada 3)', '7.0 mm (US —, UK/Canada 2)', '8.0 mm (US L-11, UK/Canada 0)', '9.0 mm (US M/N-13, UK/Canada 00)', '10.0 mm (US N/P-15, UK/Canada 000)', '11.5 mm (US P-16, UK/Canada —)', '15 mm (US P/Q, UK/Canada —)', '16 mm (US Q, UK/Canada —)', '19 mm (US S, UK/Canada —)', '25 mm (US T/U/X, UK/Canada —)']),zod.null()]).optional(),
   "needleSize": zod.union([zod.enum(['2.0 mm (US 0, UK/Canada 14)', '2.25 mm (US 1, UK/Canada 13)', '2.5 mm (US 1.5, UK/Canada —)', '2.75 mm (US 2, UK/Canada 12)', '3.0 mm (US 2.5, UK/Canada 11)', '3.25 mm (US 3, UK/Canada 10)', '3.5 mm (US 4, UK/Canada —)', '3.75 mm (US 5, UK/Canada 9)', '4.0 mm (US 6, UK/Canada 8)', '4.5 mm (US 7, UK/Canada 7)', '5.0 mm (US 8, UK/Canada 6)', '5.5 mm (US 9, UK/Canada 5)', '6.0 mm (US 10, UK/Canada 4)', '6.5 mm (US 10.5, UK/Canada 3)', '7.0 mm (US —, UK/Canada 2)', '7.5 mm (US —, UK/Canada 1)', '8.0 mm (US 11, UK/Canada 0)', '9.0 mm (US 13, UK/Canada 00)', '10.0 mm (US 15, UK/Canada 000)', '12–12.75 mm (US 17, UK/Canada —)', '15–16 mm (US 19, UK/Canada —)', '19 mm (US 35, UK/Canada —)', '20 mm (US 36, UK/Canada —)', '25 mm (US 50, UK/Canada —)']),zod.null()]).optional(),
@@ -438,9 +498,16 @@ export const UpdateProjectResponse = zod.object({
   "designerWebsite": zod.string().url().regex(updateProjectResponseDesignerWebsiteRegExp).nullable(),
   "designerPageTitle": zod.string().nullable(),
   "yarn": zod.string().nullable(),
-  "yarnBrand": zod.string().nullable(),
-  "yarnType": zod.string().nullable(),
-  "yarnColor": zod.string().nullable(),
+  "yarns": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "stashYarnId": zod.string().uuid().nullable(),
+  "brand": zod.string().nullable(),
+  "subBrand": zod.string().nullable(),
+  "color": zod.string().nullable(),
+  "generalColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]).describe('The linked stash yarn\'s color family.'),
+  "heldTogether": zod.boolean().describe('Worked as one strand with the yarn listed just above.'),
+  "skeinsUsed": zod.number().nullable()
+})),
   "tools": zod.string().nullable(),
   "hookSize": zod.union([zod.enum(['2.25 mm (US B-1, UK/Canada 13)', '2.75 mm (US C-2, UK/Canada 12)', '3.25 mm (US D-3, UK/Canada 10)', '3.5 mm (US E-4, UK/Canada 9)', '3.75 mm (US F-5, UK/Canada —)', '4.0 mm (US G-6, UK/Canada 8)', '4.5 mm (US 7, UK/Canada 7)', '5.0 mm (US H-8, UK/Canada 6)', '5.5 mm (US I-9, UK/Canada 5)', '6.0 mm (US J-10, UK/Canada 4)', '6.5 mm (US K-10½, UK/Canada 3)', '7.0 mm (US —, UK/Canada 2)', '8.0 mm (US L-11, UK/Canada 0)', '9.0 mm (US M/N-13, UK/Canada 00)', '10.0 mm (US N/P-15, UK/Canada 000)', '11.5 mm (US P-16, UK/Canada —)', '15 mm (US P/Q, UK/Canada —)', '16 mm (US Q, UK/Canada —)', '19 mm (US S, UK/Canada —)', '25 mm (US T/U/X, UK/Canada —)']),zod.null()]),
   "needleSize": zod.union([zod.enum(['2.0 mm (US 0, UK/Canada 14)', '2.25 mm (US 1, UK/Canada 13)', '2.5 mm (US 1.5, UK/Canada —)', '2.75 mm (US 2, UK/Canada 12)', '3.0 mm (US 2.5, UK/Canada 11)', '3.25 mm (US 3, UK/Canada 10)', '3.5 mm (US 4, UK/Canada —)', '3.75 mm (US 5, UK/Canada 9)', '4.0 mm (US 6, UK/Canada 8)', '4.5 mm (US 7, UK/Canada 7)', '5.0 mm (US 8, UK/Canada 6)', '5.5 mm (US 9, UK/Canada 5)', '6.0 mm (US 10, UK/Canada 4)', '6.5 mm (US 10.5, UK/Canada 3)', '7.0 mm (US —, UK/Canada 2)', '7.5 mm (US —, UK/Canada 1)', '8.0 mm (US 11, UK/Canada 0)', '9.0 mm (US 13, UK/Canada 00)', '10.0 mm (US 15, UK/Canada 000)', '12–12.75 mm (US 17, UK/Canada —)', '15–16 mm (US 19, UK/Canada —)', '19 mm (US 35, UK/Canada —)', '20 mm (US 36, UK/Canada —)', '25 mm (US 50, UK/Canada —)']),zod.null()]),
@@ -618,7 +685,7 @@ export const GetStashYarnsResponseItem = zod.object({
   "percent": zod.number().int().min(1).max(getStashYarnsResponseBlendItemPercentMax)
 })),
   "brandLink": zod.string().nullable(),
-  "photoPath": zod.string(),
+  "photoPath": zod.string().nullable().describe('Empty for yarn added from a project that still needs a photo.'),
   "skeinsPurchased": zod.number().nullable(),
   "skeinsLeft": zod.number().nullable(),
   "createdAt": zod.coerce.date(),
@@ -686,12 +753,75 @@ export const CreateStashYarnResponse = zod.object({
   "percent": zod.number().int().min(1).max(createStashYarnResponseBlendItemPercentMax)
 })),
   "brandLink": zod.string().nullable(),
-  "photoPath": zod.string(),
+  "photoPath": zod.string().nullable().describe('Empty for yarn added from a project that still needs a photo.'),
   "skeinsPurchased": zod.number().nullable(),
   "skeinsLeft": zod.number().nullable(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
+
+
+/**
+ * @summary Skeins-left suggestions waiting for the maker to confirm
+ */
+export const GetSkeinSuggestionsQueryParams = zod.object({
+  "projectId": zod.coerce.string().uuid().optional()
+})
+
+export const GetSkeinSuggestionsResponseItem = zod.object({
+  "id": zod.string().uuid(),
+  "stashYarnId": zod.string().uuid(),
+  "projectId": zod.string().uuid(),
+  "projectTitle": zod.string(),
+  "yarnName": zod.string(),
+  "skeinsUsed": zod.number(),
+  "skeinsLeft": zod.number(),
+  "suggestedLeft": zod.number()
+})
+export const GetSkeinSuggestionsResponse = zod.array(GetSkeinSuggestionsResponseItem)
+
+
+/**
+ * @summary Take the project's skeins off what's left of the stash yarn
+ */
+export const AcceptSkeinSuggestionParams = zod.object({
+  "suggestionId": zod.coerce.string().uuid()
+})
+
+export const acceptSkeinSuggestionResponseBlendItemFiberMax = 40;
+
+export const acceptSkeinSuggestionResponseBlendItemPercentMax = 100;
+
+
+
+export const AcceptSkeinSuggestionResponse = zod.object({
+  "id": zod.string().uuid(),
+  "brand": zod.string(),
+  "subBrand": zod.string().nullable(),
+  "color": zod.string().nullable(),
+  "generalColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]),
+  "weight": zod.union([zod.enum(['lace', 'fingering', 'sport', 'dk', 'worsted', 'bulky', 'super_bulky', 'jumbo']),zod.null()]),
+  "blend": zod.array(zod.object({
+  "fiber": zod.string().min(1).max(acceptSkeinSuggestionResponseBlendItemFiberMax),
+  "percent": zod.number().int().min(1).max(acceptSkeinSuggestionResponseBlendItemPercentMax)
+})),
+  "brandLink": zod.string().nullable(),
+  "photoPath": zod.string().nullable().describe('Empty for yarn added from a project that still needs a photo.'),
+  "skeinsPurchased": zod.number().nullable(),
+  "skeinsLeft": zod.number().nullable(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Leave the stash yarn's skeins as they are
+ */
+export const DismissSkeinSuggestionParams = zod.object({
+  "suggestionId": zod.coerce.string().uuid()
+})
+
+export const DismissSkeinSuggestionResponse = zod.void()
 
 
 /**
@@ -740,7 +870,7 @@ export const GetStashYarnResponse = zod.object({
   "percent": zod.number().int().min(1).max(getStashYarnResponseBlendItemPercentMax)
 })),
   "brandLink": zod.string().nullable(),
-  "photoPath": zod.string(),
+  "photoPath": zod.string().nullable().describe('Empty for yarn added from a project that still needs a photo.'),
   "skeinsPurchased": zod.number().nullable(),
   "skeinsLeft": zod.number().nullable(),
   "createdAt": zod.coerce.date(),
@@ -811,7 +941,7 @@ export const UpdateStashYarnResponse = zod.object({
   "percent": zod.number().int().min(1).max(updateStashYarnResponseBlendItemPercentMax)
 })),
   "brandLink": zod.string().nullable(),
-  "photoPath": zod.string(),
+  "photoPath": zod.string().nullable().describe('Empty for yarn added from a project that still needs a photo.'),
   "skeinsPurchased": zod.number().nullable(),
   "skeinsLeft": zod.number().nullable(),
   "createdAt": zod.coerce.date(),
@@ -837,6 +967,121 @@ export const GetStashYarnPhotoParams = zod.object({
 })
 
 export const GetStashYarnPhotoResponse = zod.void()
+
+
+/**
+ * @summary Name reviews the maker asked for on this yarn
+ */
+export const GetStashYarnReviewsParams = zod.object({
+  "yarnId": zod.coerce.string().uuid()
+})
+
+export const GetStashYarnReviewsResponseItem = zod.object({
+  "id": zod.string().uuid(),
+  "stashYarnId": zod.string().uuid().nullable(),
+  "field": zod.enum(['brand', 'sub_brand', 'color']),
+  "currentName": zod.string(),
+  "suggestedName": zod.string(),
+  "note": zod.string().nullable(),
+  "status": zod.enum(['open', 'renamed', 'kept']),
+  "reviewerNote": zod.string().nullable(),
+  "requesterName": zod.string().nullable(),
+  "createdAt": zod.coerce.date(),
+  "resolvedAt": zod.coerce.date().nullable()
+})
+export const GetStashYarnReviewsResponse = zod.array(GetStashYarnReviewsResponseItem)
+
+
+/**
+ * @summary Name reviews for the catalog reviewer, open ones first
+ */
+export const GetCatalogReviewsResponseItem = zod.object({
+  "id": zod.string().uuid(),
+  "stashYarnId": zod.string().uuid().nullable(),
+  "field": zod.enum(['brand', 'sub_brand', 'color']),
+  "currentName": zod.string(),
+  "suggestedName": zod.string(),
+  "note": zod.string().nullable(),
+  "status": zod.enum(['open', 'renamed', 'kept']),
+  "reviewerNote": zod.string().nullable(),
+  "requesterName": zod.string().nullable(),
+  "createdAt": zod.coerce.date(),
+  "resolvedAt": zod.coerce.date().nullable()
+})
+export const GetCatalogReviewsResponse = zod.array(GetCatalogReviewsResponseItem)
+
+
+/**
+ * @summary Ask for a review of how a yarn name was merged in the catalog
+ */
+export const createCatalogReviewBodySuggestedNameMax = 80;
+
+export const createCatalogReviewBodyNoteMax = 500;
+
+
+
+export const CreateCatalogReviewBody = zod.object({
+  "stashYarnId": zod.string().uuid(),
+  "field": zod.enum(['brand', 'sub_brand', 'color']),
+  "suggestedName": zod.string().min(1).max(createCatalogReviewBodySuggestedNameMax),
+  "note": zod.string().max(createCatalogReviewBodyNoteMax).nullish()
+})
+
+export const CreateCatalogReviewResponse = zod.object({
+  "id": zod.string().uuid(),
+  "stashYarnId": zod.string().uuid().nullable(),
+  "field": zod.enum(['brand', 'sub_brand', 'color']),
+  "currentName": zod.string(),
+  "suggestedName": zod.string(),
+  "note": zod.string().nullable(),
+  "status": zod.enum(['open', 'renamed', 'kept']),
+  "reviewerNote": zod.string().nullable(),
+  "requesterName": zod.string().nullable(),
+  "createdAt": zod.coerce.date(),
+  "resolvedAt": zod.coerce.date().nullable()
+})
+
+
+/**
+ * @summary Whether the signed-in user reviews catalog names
+ */
+export const GetCatalogReviewAccessResponse = zod.object({
+  "reviewer": zod.boolean()
+})
+
+
+/**
+ * @summary Rename the catalog entry or keep it as it is
+ */
+export const ResolveCatalogReviewParams = zod.object({
+  "reviewId": zod.coerce.string().uuid()
+})
+
+export const resolveCatalogReviewBodyNameMax = 80;
+
+export const resolveCatalogReviewBodyReviewerNoteMax = 500;
+
+
+
+export const ResolveCatalogReviewBody = zod.object({
+  "action": zod.enum(['rename', 'keep']),
+  "name": zod.string().min(1).max(resolveCatalogReviewBodyNameMax).optional().describe('The new catalog name when renaming.'),
+  "reviewerNote": zod.string().max(resolveCatalogReviewBodyReviewerNoteMax).nullish()
+})
+
+export const ResolveCatalogReviewResponse = zod.object({
+  "id": zod.string().uuid(),
+  "stashYarnId": zod.string().uuid().nullable(),
+  "field": zod.enum(['brand', 'sub_brand', 'color']),
+  "currentName": zod.string(),
+  "suggestedName": zod.string(),
+  "note": zod.string().nullable(),
+  "status": zod.enum(['open', 'renamed', 'kept']),
+  "reviewerNote": zod.string().nullable(),
+  "requesterName": zod.string().nullable(),
+  "createdAt": zod.coerce.date(),
+  "resolvedAt": zod.coerce.date().nullable()
+})
 
 
 /**

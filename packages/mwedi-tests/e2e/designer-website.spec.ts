@@ -12,9 +12,7 @@ type ProjectResponse = {
   designerWebsite: string | null;
   designerPageTitle: string | null;
   yarn: string | null;
-  yarnBrand: string | null;
-  yarnType: string | null;
-  yarnColor: string | null;
+  yarns: Array<Record<string, unknown>>;
   tools: string | null;
   hookSize: string | null;
   needleSize: string | null;
@@ -47,9 +45,7 @@ const projectFixture = (overrides: Partial<ProjectResponse> = {}): ProjectRespon
   designerWebsite: null,
   designerPageTitle: null,
   yarn: null,
-  yarnBrand: null,
-  yarnType: null,
-  yarnColor: null,
+  yarns: [],
   tools: null,
   hookSize: null,
   needleSize: null,
@@ -160,9 +156,9 @@ test("creates a crochet project with a hook size, date precision, yarn, and a de
   await expect(page.getByTestId("input-start-date")).toHaveText("March 2026");
   await pickDate(page, "input-target-date", "May", "17", "2026");
   await expect(page.getByTestId("input-target-date")).toHaveText("May 17, 2026");
-  await page.getByTestId("input-yarn-brand").fill("Brooklyn Tweed");
-  await page.getByTestId("input-yarn-type").fill("Shelter");
-  await page.getByTestId("input-yarn-color").fill("Cardinal");
+  await page.getByTestId("project-yarn-0-brand").fill("Brooklyn Tweed");
+  await page.getByTestId("project-yarn-0-sub-brand").fill("Shelter");
+  await page.getByTestId("project-yarn-0-color").fill("Cardinal");
 
   await page.getByTestId("button-create-designer-website").click();
   await page.getByTestId("input-create-designer-website").fill("https://maker.example.org/patterns");
@@ -181,9 +177,7 @@ test("creates a crochet project with a hook size, date precision, yarn, and a de
     targetDate: "2026-05-17",
     targetDatePrecision: "day",
     hookSize: "4.0 mm (US G-6, UK/Canada 8)",
-    yarnBrand: "Brooklyn Tweed",
-    yarnType: "Shelter",
-    yarnColor: "Cardinal",
+    yarns: [{ stashYarnId: null, brand: "Brooklyn Tweed", subBrand: "Shelter", color: "Cardinal", heldTogether: false, skeinsUsed: null }],
   });
 });
 

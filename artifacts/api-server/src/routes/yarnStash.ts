@@ -2,7 +2,11 @@ import { and, asc, desc, eq, ilike, like, or, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { Router, type IRouter, type Response } from "express";
 import {
+  AcceptSkeinSuggestionParams,
   CreateStashYarnBody,
+  DismissSkeinSuggestionParams,
+  GetSkeinSuggestionsQueryParams,
+  GetSkeinSuggestionsResponse,
   DeleteStashYarnParams,
   GetStashYarnParams,
   GetStashYarnPhotoParams,
@@ -17,6 +21,8 @@ import {
 } from "@workspace/api-zod";
 import {
   db,
+  projectsTable,
+  skeinSuggestionsTable,
   stashYarnsTable,
   yarnBrandsTable,
   yarnColorsTable,
@@ -25,6 +31,8 @@ import {
 } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
 import { deleteStoredObject, signedObjectUrl, storageLocation } from "../lib/objectStorage";
+import { addToCatalog, type CatalogInput } from "../lib/yarnCatalogStore";
+import { skeinsAfter } from "../lib/projectYarns";
 import {
   checkBlend,
   checkSkeins,
@@ -39,10 +47,6 @@ import {
 const router: IRouter = Router();
 const allowedPhotoTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
 const maxPhotoSize = 10 * 1024 * 1024;
-
-type Database = typeof db;
-type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
-type GeneralColor = NonNullable<StashYarn["generalColor"]>;
 
 function getOwnerId(res: Response): string {
   return res.locals.userId as string;
@@ -71,91 +75,6 @@ async function knownFibers(): Promise<string[]> {
     if (fiber && !byKey.has(matchKey(fiber))) byKey.set(matchKey(fiber), fiber);
   }
   return [...byKey.values()].sort((a, b) => a.localeCompare(b));
-}
-
-type CatalogInput = {
-  brand: string;
-  subBrand: string | null;
-  color: string | null;
-  generalColor: GeneralColor | null;
-  blend: BlendPart[];
-  brandLink: string | null;
-};
-
-// Adds the yarn's brand, sub brand and color to the shared catalog, or finds
-// the entries that already match, and returns the catalog's own spelling.
-// The first maker to add a sub brand or color sets its blend, link and
-// general color; later makers only fill in what is still missing.
-async function addToCatalog(tx: Transaction, input: CatalogInput) {
-  const brandName = tidyName(input.brand);
-  await tx
-    .insert(yarnBrandsTable)
-    .values({ name: brandName, matchKey: matchKey(brandName) })
-    .onConflictDoNothing({ target: yarnBrandsTable.matchKey });
-  const [brand] = await tx
-    .select()
-    .from(yarnBrandsTable)
-    .where(eq(yarnBrandsTable.matchKey, matchKey(brandName)));
-
-  const lineName = input.subBrand ? tidyName(input.subBrand) : "";
-  let line: typeof yarnLinesTable.$inferSelect | undefined;
-  if (matchKey(lineName)) {
-    await tx
-      .insert(yarnLinesTable)
-      .values({
-        brandId: brand.id,
-        name: lineName,
-        matchKey: matchKey(lineName),
-        blend: input.blend,
-        link: input.brandLink,
-      })
-      .onConflictDoNothing({ target: [yarnLinesTable.brandId, yarnLinesTable.matchKey] });
-    [line] = await tx
-      .select()
-      .from(yarnLinesTable)
-      .where(and(eq(yarnLinesTable.brandId, brand.id), eq(yarnLinesTable.matchKey, matchKey(lineName))));
-    const missing = {
-      ...(line.blend.length === 0 && input.blend.length ? { blend: input.blend } : {}),
-      ...(!line.link && input.brandLink ? { link: input.brandLink } : {}),
-    };
-    if (Object.keys(missing).length) {
-      [line] = await tx.update(yarnLinesTable).set(missing).where(eq(yarnLinesTable.id, line.id)).returning();
-    }
-  }
-
-  const colorName = input.color ? tidyName(input.color) : "";
-  let color: typeof yarnColorsTable.$inferSelect | undefined;
-  if (line && matchKey(colorName)) {
-    await tx
-      .insert(yarnColorsTable)
-      .values({
-        lineId: line.id,
-        name: colorName,
-        matchKey: matchKey(colorName),
-        generalColor: input.generalColor,
-      })
-      .onConflictDoNothing({ target: [yarnColorsTable.lineId, yarnColorsTable.matchKey] });
-    [color] = await tx
-      .select()
-      .from(yarnColorsTable)
-      .where(and(eq(yarnColorsTable.lineId, line.id), eq(yarnColorsTable.matchKey, matchKey(colorName))));
-    if (!color.generalColor && input.generalColor) {
-      [color] = await tx
-        .update(yarnColorsTable)
-        .set({ generalColor: input.generalColor })
-        .where(eq(yarnColorsTable.id, color.id))
-        .returning();
-    }
-  }
-
-  return {
-    brandId: brand.id,
-    brand: brand.name,
-    lineId: line?.id ?? null,
-    subBrand: line?.name ?? null,
-    colorId: color?.id ?? null,
-    color: color?.name ?? (matchKey(colorName) ? colorName : null),
-  };
 }
 
 type YarnDetails = CatalogInput & {
@@ -228,8 +147,9 @@ async function saveYarn(
 // is cleanup: a failure is logged and the request still succeeds.
 async function removeStashPhoto(
   log: { error: (details: object, message: string) => void },
-  photoPath: string,
+  photoPath: string | null,
 ) {
+  if (!photoPath) return;
   try {
     await deleteStoredObject(photoPath.slice("/objects/".length));
   } catch (error) {
@@ -313,6 +233,123 @@ router.get("/yarn-stash", requireAuth, async (req, res): Promise<void> => {
     .where(and(...filters))
     .orderBy(desc(stashYarnsTable.updatedAt));
   res.json(rows.map(serializeStashYarn));
+});
+
+function yarnName(yarn: { brand: string; subBrand: string | null; color: string | null }): string {
+  return [yarn.brand, yarn.subBrand, yarn.color].filter(Boolean).join(" ");
+}
+
+router.get("/yarn-stash/skein-suggestions", requireAuth, async (req, res): Promise<void> => {
+  const parsed = GetSkeinSuggestionsQueryParams.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid project ID." });
+    return;
+  }
+
+  const filters = [
+    eq(skeinSuggestionsTable.ownerId, getOwnerId(res)),
+    eq(skeinSuggestionsTable.status, "pending"),
+  ];
+  if (parsed.data.projectId) filters.push(eq(skeinSuggestionsTable.projectId, parsed.data.projectId));
+  const rows = await db
+    .select({
+      id: skeinSuggestionsTable.id,
+      stashYarnId: skeinSuggestionsTable.stashYarnId,
+      projectId: skeinSuggestionsTable.projectId,
+      projectTitle: projectsTable.title,
+      skeinsUsed: skeinSuggestionsTable.skeinsUsed,
+      brand: stashYarnsTable.brand,
+      subBrand: stashYarnsTable.subBrand,
+      color: stashYarnsTable.color,
+      skeinsLeft: stashYarnsTable.skeinsLeft,
+      skeinsPurchased: stashYarnsTable.skeinsPurchased,
+    })
+    .from(skeinSuggestionsTable)
+    .innerJoin(stashYarnsTable, eq(skeinSuggestionsTable.stashYarnId, stashYarnsTable.id))
+    .innerJoin(projectsTable, eq(skeinSuggestionsTable.projectId, projectsTable.id))
+    .where(and(...filters))
+    .orderBy(desc(skeinSuggestionsTable.createdAt));
+  // A yarn with no skein count has nothing to take the skeins off.
+  res.json(GetSkeinSuggestionsResponse.parse(rows.flatMap((row) => {
+    const left = row.skeinsLeft ?? row.skeinsPurchased;
+    if (left === null) return [];
+    return [{
+      id: row.id,
+      stashYarnId: row.stashYarnId,
+      projectId: row.projectId,
+      projectTitle: row.projectTitle,
+      yarnName: yarnName(row),
+      skeinsUsed: row.skeinsUsed,
+      skeinsLeft: left,
+      suggestedLeft: skeinsAfter(left, row.skeinsUsed),
+    }];
+  })));
+});
+
+router.post("/yarn-stash/skein-suggestions/:suggestionId/accept", requireAuth, async (req, res): Promise<void> => {
+  const params = AcceptSkeinSuggestionParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: "Invalid suggestion ID." });
+    return;
+  }
+
+  const ownerId = getOwnerId(res);
+  const updated = await db.transaction(async (tx) => {
+    const [suggestion] = await tx
+      .select()
+      .from(skeinSuggestionsTable)
+      .where(and(
+        eq(skeinSuggestionsTable.id, params.data.suggestionId),
+        eq(skeinSuggestionsTable.ownerId, ownerId),
+        eq(skeinSuggestionsTable.status, "pending"),
+      ))
+      .for("update");
+    if (!suggestion) return undefined;
+    const [yarn] = await tx
+      .select()
+      .from(stashYarnsTable)
+      .where(and(eq(stashYarnsTable.id, suggestion.stashYarnId), eq(stashYarnsTable.ownerId, ownerId)));
+    const left = yarn ? yarn.skeinsLeft ?? yarn.skeinsPurchased : null;
+    if (!yarn || left === null) return undefined;
+    await tx
+      .update(skeinSuggestionsTable)
+      .set({ status: "accepted" })
+      .where(eq(skeinSuggestionsTable.id, suggestion.id));
+    const [saved] = await tx
+      .update(stashYarnsTable)
+      .set({ skeinsLeft: skeinsAfter(left, suggestion.skeinsUsed) })
+      .where(eq(stashYarnsTable.id, yarn.id))
+      .returning();
+    return saved;
+  });
+  if (!updated) {
+    res.status(404).json({ error: "Suggestion not found." });
+    return;
+  }
+  res.json(serializeStashYarn(updated));
+});
+
+router.post("/yarn-stash/skein-suggestions/:suggestionId/dismiss", requireAuth, async (req, res): Promise<void> => {
+  const params = DismissSkeinSuggestionParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: "Invalid suggestion ID." });
+    return;
+  }
+
+  const [dismissed] = await db
+    .update(skeinSuggestionsTable)
+    .set({ status: "dismissed" })
+    .where(and(
+      eq(skeinSuggestionsTable.id, params.data.suggestionId),
+      eq(skeinSuggestionsTable.ownerId, getOwnerId(res)),
+      eq(skeinSuggestionsTable.status, "pending"),
+    ))
+    .returning({ id: skeinSuggestionsTable.id });
+  if (!dismissed) {
+    res.status(404).json({ error: "Suggestion not found." });
+    return;
+  }
+  res.sendStatus(204);
 });
 
 router.post("/yarn-stash/photo-upload", requireAuth, async (req, res): Promise<void> => {
@@ -408,7 +445,7 @@ router.patch("/yarn-stash/:yarnId", requireAuth, async (req, res): Promise<void>
     weight: changes.weight !== undefined ? changes.weight : current.weight,
     blend: changes.blend ?? current.blend,
     brandLink: changes.brandLink !== undefined ? changes.brandLink : current.brandLink,
-    photoPath: changes.photoPath ?? current.photoPath,
+    photoPath: changes.photoPath ?? current.photoPath ?? "",
     skeinsPurchased: changes.skeinsPurchased !== undefined ? changes.skeinsPurchased : current.skeinsPurchased,
     skeinsLeft: changes.skeinsLeft !== undefined ? changes.skeinsLeft : current.skeinsLeft,
   });
@@ -457,7 +494,7 @@ router.get("/yarn-stash/:yarnId/photo", requireAuth, async (req, res): Promise<v
     .select({ photoPath: stashYarnsTable.photoPath })
     .from(stashYarnsTable)
     .where(and(eq(stashYarnsTable.id, params.data.yarnId), eq(stashYarnsTable.ownerId, ownerId)));
-  if (!yarn || !isOwnStashPhoto(ownerId, yarn.photoPath)) {
+  if (!yarn?.photoPath || !isOwnStashPhoto(ownerId, yarn.photoPath)) {
     res.status(404).json({ error: "Yarn photo not found." });
     return;
   }

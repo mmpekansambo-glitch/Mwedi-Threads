@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useAddProgress, useDeleteProgressPhoto, useDeleteProject, useGetProject, getGetDashboardQueryKey, getGetProjectQueryKey, getGetProjectsQueryKey, requestProgressPhotoUpload } from '@workspace/api-client-react';
+import { useAddProgress, useDeleteProgressPhoto, useDeleteProject, useGetProject, getGetDashboardQueryKey, getGetProjectQueryKey, getGetProjectsQueryKey, getGetSkeinSuggestionsQueryKey, requestProgressPhotoUpload } from '@workspace/api-client-react';
 import { useAuth } from '@clerk/expo';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
@@ -15,6 +15,8 @@ import { formatProjectDate } from '@/components/ProjectDateField';
 import { StarButton } from '@/components/StarButton';
 import { ProgressAmountInput, amountDraftFor, progressAmountForApi, progressDetail, type ProgressAmountDraft } from '@/components/ProgressMethod';
 import { describeNeedle } from '@/components/NeedleFields';
+import { describeProjectYarn } from '@/components/ProjectYarns';
+import { SkeinSuggestions } from '@/components/SkeinSuggestions';
 import { useColors } from '@/hooks/useColors';
 
 export default function ProjectDetailScreen() {
@@ -46,6 +48,7 @@ export default function ProjectDetailScreen() {
     void client.invalidateQueries({ queryKey: getGetProjectQueryKey(id) });
     void client.invalidateQueries({ queryKey: getGetDashboardQueryKey() });
     void client.invalidateQueries({ queryKey: getGetProjectsQueryKey() });
+    void client.invalidateQueries({ queryKey: getGetSkeinSuggestionsQueryKey() });
   };
 
   const latestProgressValue = project?.progress.reduce<{ createdAt: string; progressValue: number | null } | undefined>(
@@ -169,6 +172,7 @@ export default function ProjectDetailScreen() {
           <View style={styles.center}><LoomText serif style={{ color: colors.foreground, fontSize: 26 }}>Project not found</LoomText><LoomText style={{ color: colors.mutedForeground, marginTop: 7 }}>It may have been removed or moved.</LoomText><LoomButton title="Back to projects" onPress={() => router.replace('/(tabs)/projects')} variant="secondary" style={{ marginTop: 16 }} /></View>
         ) : (
           <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 30 }]}>
+          <SkeinSuggestions projectId={project.id} />
           <View style={[styles.hero, { backgroundColor: project.craft === 'knitting' ? colors.knitWash : colors.crochetWash }]}>
               <LoomText serif style={[styles.title, { color: colors.foreground }]}>{project.title}</LoomText>
               <View style={styles.statusLine}><StatusChip status={project.status} /><LoomText style={{ color: colors.mutedForeground, fontSize: 14 }}>{project.craft === 'knitting' ? 'Knitting' : 'Crochet'} · {project.completionPercent}% complete</LoomText></View>
@@ -180,8 +184,14 @@ export default function ProjectDetailScreen() {
               {[
                 ['Pattern', project.patternName],
                 ['Designer', project.designerWebsite ? designerLinkLabel : project.patternDesigner],
-                ['Yarn', [project.yarnBrand, project.yarnType, project.yarnColor].filter(Boolean).join(' · ') || null],
-                ['Previous yarn note', project.yarn],
+                [project.yarns.length > 1 ? 'Yarns' : 'Yarn', project.yarns.length
+                  ? project.yarns.map((yarn) => [
+                      yarn.heldTogether ? 'Held with the yarn above: ' : '',
+                      describeProjectYarn(yarn),
+                      yarn.skeinsUsed !== null ? ` · ${yarn.skeinsUsed} ${yarn.skeinsUsed === 1 ? 'skein' : 'skeins'} used` : '',
+                    ].join('')).join('\n')
+                  : project.yarn],
+                ['Previous yarn note', project.yarns.length ? project.yarn : null],
                 ...(project.craft === 'crochet'
                   ? [['Hook size', project.hookSize || 'Not added yet']]
                   : [

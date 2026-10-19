@@ -10,9 +10,10 @@ describe("Mwedi Threads project contracts", () => {
       startedAtPrecision: "month",
       targetDate: "2026-12-15",
       targetDatePrecision: "day",
-      yarnBrand: "Brooklyn Tweed",
-      yarnType: "Tough Love Sock",
-      yarnColor: "Wild Horse",
+      yarns: [
+        { brand: "Brooklyn Tweed", subBrand: "Tough Love Sock", color: "Wild Horse", skeinsUsed: 2 },
+        { brand: "Brooklyn Tweed", subBrand: "Tough Love Sock", color: "Cardinal", heldTogether: true },
+      ],
       designerWebsite: "https://maker.example.org/patterns",
       designerPageTitle: "Maker Pattern Library",
       hookSize: "4.0 mm (US G-6, UK/Canada 8)",
@@ -70,10 +71,20 @@ describe("Mwedi Threads project contracts", () => {
     const result = UpdateProjectBody.safeParse({
       targetDate: "2026-12-01",
       targetDatePrecision: "month",
-      yarnColor: "Cardinal",
+      yarns: [{ color: "Cardinal" }],
     });
 
     expect(result.success).toBe(true);
+  });
+
+  it("rejects more than 12 yarns, negative skeins and a stash link that isn't an ID", () => {
+    for (const yarns of [
+      Array.from({ length: 13 }, (_, index) => ({ color: `Color ${index}` })),
+      [{ color: "Teal", skeinsUsed: -1 }],
+      [{ stashYarnId: "not-an-id" }],
+    ]) {
+      expect(UpdateProjectBody.safeParse({ yarns }).success).toBe(false);
+    }
   });
 
   it("accepts a valid designer website title preview request", () => {
