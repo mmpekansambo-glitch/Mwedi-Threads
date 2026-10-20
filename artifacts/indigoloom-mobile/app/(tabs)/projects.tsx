@@ -6,6 +6,7 @@ import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EmptyState, ErrorState, LoadingState, LoomButton, LoomText, PageHeader, ProjectCard, fonts } from '@/components/loom';
+import { SortRow, projectSorts, sortProjects, useSavedSort } from '@/components/Sorting';
 import { useColors } from '@/hooks/useColors';
 
 const statusFilters: Array<{ value: ProjectStatus | ''; label: string }> = [
@@ -23,6 +24,7 @@ export default function ProjectsScreen() {
   const [status, setStatus] = useState<ProjectStatus | ''>('');
   const [craft, setCraft] = useState<'knitting' | 'crochet' | ''>('');
   const [starredOnly, setStarredOnly] = useState(false);
+  const [sort, setSort] = useSavedSort('mwedi:projects-sort', projectSorts);
   const params = useMemo(() => ({
     ...(search.trim() ? { search: search.trim() } : {}),
     ...(status ? { status } : {}),
@@ -66,10 +68,11 @@ export default function ProjectsScreen() {
           return <Pressable key={item || 'craft-all'} onPress={() => setCraft(item)}><LoomText style={{ color: active ? colors.primary : colors.mutedForeground, fontFamily: active ? fonts.semibold : fonts.body, fontSize: 14 }}>{item ? item[0].toUpperCase() + item.slice(1) : 'All crafts'}</LoomText></Pressable>;
         })}
       </View>
+      <SortRow options={projectSorts} value={sort} onChange={setSort} testID="project-sort" />
       {query.isLoading ? <LoadingState /> : query.isError ? <ErrorState onRetry={() => void query.refetch()} /> : query.data?.length ? (
         <>
           <LoomText style={[styles.count, { color: colors.mutedForeground }]}>{query.data.length} {query.data.length === 1 ? 'project' : 'projects'}</LoomText>
-          {query.data.map((project) => <ProjectCard key={project.id} project={project} />)}
+          {sortProjects(query.data, sort).map((project) => <ProjectCard key={project.id} project={project} />)}
         </>
       ) : starredOnly && !search && !status && !craft ? (
         <EmptyState title="No starred projects yet" body="Tap the star on any project to keep your favorites here." actionTitle="Show all projects" onAction={clearFilters} />

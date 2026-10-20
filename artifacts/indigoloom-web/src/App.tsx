@@ -18,11 +18,12 @@ import { CrochetHookSize, KnittingNeedleSize, NeedleCableLength } from '@workspa
 import type { CatalogField, CatalogReview, CreateProject, CreateProgress, GeneralColor, Project, ProjectStatus, StashYarn, UpdateProject, YarnWeight } from '@workspace/api-client-react';
 import { FormProvider as Form, useForm, type UseFormReturn } from 'react-hook-form';
 import {
-  ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, Check,
+  ArrowLeft, ArrowRight, ArrowUpDown, ArrowUpRight, BookOpen, Check,
   Camera, ChevronDown, ChevronUp, CircleHelp, Feather, Filter, Flower2,
   Layers3, LogOut, Menu, Palette, Plus, Search, Sparkles, Star, Trash2,
   X,
 } from 'lucide-react';
+import { projectSorts, sortProjects, sortStash, stashSorts, useSavedSort } from './lib/sorting';
 import {
   Link, Redirect, Route, Switch, useLocation, Router as WouterRouter,
 } from 'wouter';
@@ -381,6 +382,7 @@ function ProjectsPage() {
   const [status, setStatus] = useState('');
   const [craft, setCraft] = useState('');
   const [starredOnly, setStarredOnly] = useState(false);
+  const [sort, setSort] = useSavedSort('mwedi:projects-sort', projectSorts);
   const params = {
     ...(search.trim() ? { search: search.trim() } : {}),
     ...(status ? { status: status as ProjectStatus } : {}),
@@ -395,11 +397,12 @@ function ProjectsPage() {
       <label className="search-box"><Search size={17}/><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search by name, pattern or yarn…" aria-label="Search projects" data-testid="input-search-projects"/>{search && <button type="button" onClick={() => setSearch('')} aria-label="Clear search" data-testid="button-clear-search"><X size={15}/></button>}</label>
       <label className="select-wrap"><Filter size={15}/><select aria-label="Filter by status" value={status} onChange={(event) => setStatus(event.target.value)} data-testid="select-status-filter"><option value="">Every status</option><option value="planning">Planning</option><option value="in_progress">In progress</option><option value="paused">On pause</option><option value="completed">Finished</option></select><ChevronDown size={14}/></label>
       <label className="select-wrap"><select aria-label="Filter by craft" value={craft} onChange={(event) => setCraft(event.target.value)} data-testid="select-craft-filter"><option value="">Every craft</option><option value="knitting">Knitting</option><option value="crochet">Crochet</option></select><ChevronDown size={14}/></label>
+      <label className="select-wrap"><ArrowUpDown size={15}/><select aria-label="Sort projects" value={sort} onChange={(event) => setSort(event.target.value as typeof sort)} data-testid="select-project-sort">{projectSorts.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select><ChevronDown size={14}/></label>
       <button type="button" className={`starred-filter${starredOnly ? ' is-active' : ''}`} aria-pressed={starredOnly} onClick={() => setStarredOnly(!starredOnly)} data-testid="button-starred-filter"><Star size={14} fill={starredOnly ? 'currentColor' : 'none'}/> Starred</button>
       {(search || status || craft || starredOnly) && <button className="clear-filters" onClick={clearFilters} data-testid="button-clear-filters">Clear filters</button>}
     </div>
     <div className="catalog-result-caption">{query.data ? <><b>{query.data.length}</b> {query.data.length === 1 ? 'project' : 'projects'}</> : null}</div>
-    {query.isLoading ? <div className="project-card-grid">{[0, 1, 2].map((item) => <div className="card-skeleton" key={item}/>)}</div> : query.isError ? <QueryProblem retry={() => query.refetch()}/> : query.data?.length ? <div className="project-card-grid catalog-grid">{query.data.map((project) => <ProjectCard key={project.id} project={project}/>)}</div> : starredOnly && !search && !status && !craft ? <div className="no-results"><Star size={23}/><h3>No starred projects yet</h3><p>Tap the star on any project to keep your favorites here.</p><button className="button button-outline" onClick={clearFilters} data-testid="button-reset-filters">Show all projects</button></div> : search || status || craft || starredOnly ? <div className="no-results"><Search size={23}/><h3>No projects match</h3><p>Try a different search or clear a filter.</p><button className="button button-outline" onClick={clearFilters} data-testid="button-reset-filters">Reset filters</button></div> : <EmptyProjects/>}
+    {query.isLoading ? <div className="project-card-grid">{[0, 1, 2].map((item) => <div className="card-skeleton" key={item}/>)}</div> : query.isError ? <QueryProblem retry={() => query.refetch()}/> : query.data?.length ? <div className="project-card-grid catalog-grid">{sortProjects(query.data, sort).map((project) => <ProjectCard key={project.id} project={project}/>)}</div> : starredOnly && !search && !status && !craft ? <div className="no-results"><Star size={23}/><h3>No starred projects yet</h3><p>Tap the star on any project to keep your favorites here.</p><button className="button button-outline" onClick={clearFilters} data-testid="button-reset-filters">Show all projects</button></div> : search || status || craft || starredOnly ? <div className="no-results"><Search size={23}/><h3>No projects match</h3><p>Try a different search or clear a filter.</p><button className="button button-outline" onClick={clearFilters} data-testid="button-reset-filters">Reset filters</button></div> : <EmptyProjects/>}
   </PortalLayout>;
 }
 
@@ -963,6 +966,7 @@ function StashPage() {
   const [search, setSearch] = useState('');
   const [weight, setWeight] = useState('');
   const [color, setColor] = useState('');
+  const [sort, setSort] = useSavedSort('mwedi:stash-sort', stashSorts);
   const params = {
     ...(search.trim() ? { search: search.trim() } : {}),
     ...(weight ? { weight: weight as YarnWeight } : {}),
@@ -978,12 +982,13 @@ function StashPage() {
       <label className="search-box"><Search size={17}/><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search by brand, color or fiber…" aria-label="Search your stash" data-testid="input-search-stash"/>{search && <button type="button" onClick={() => setSearch('')} aria-label="Clear search"><X size={15}/></button>}</label>
       <label className="select-wrap"><Filter size={15}/><select aria-label="Filter by weight" value={weight} onChange={(event) => setWeight(event.target.value)} data-testid="select-weight-filter"><option value="">Every weight</option>{yarnWeights.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select><ChevronDown size={14}/></label>
       <label className="select-wrap">{color ? <ColorDot color={color as GeneralColor}/> : <Palette size={15}/>}<select aria-label="Filter by color" value={color} onChange={(event) => setColor(event.target.value)} data-testid="select-color-filter"><option value="">Every color</option>{generalColors.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select><ChevronDown size={14}/></label>
+      <label className="select-wrap"><ArrowUpDown size={15}/><select aria-label="Sort your stash" value={sort} onChange={(event) => setSort(event.target.value as typeof sort)} data-testid="select-stash-sort">{stashSorts.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select><ChevronDown size={14}/></label>
       {filtered && <button className="clear-filters" onClick={clearFilters} data-testid="button-clear-stash-filters">Clear filters</button>}
     </div>
     <div className="catalog-result-caption">{query.data ? <><b>{query.data.length}</b> {query.data.length === 1 ? 'yarn' : 'yarns'}</> : null}</div>
     {query.isLoading ? <div className="stash-grid">{[0, 1, 2, 3].map((item) => <div className="card-skeleton" key={item}/>)}</div>
       : query.isError ? <QueryProblem retry={() => query.refetch()}/>
-      : query.data?.length ? <div className="stash-grid">{query.data.map((yarn) => <StashYarnCard key={yarn.id} yarn={yarn}/>)}</div>
+      : query.data?.length ? <div className="stash-grid">{sortStash(query.data, sort).map((yarn) => <StashYarnCard key={yarn.id} yarn={yarn}/>)}</div>
       : filtered ? <div className="no-results"><Search size={23}/><h3>No yarn matches</h3><p>Try a different search or clear a filter.</p><button className="button button-outline" onClick={clearFilters}>Reset filters</button></div>
       : <div className="empty-projects"><h3>No yarn yet</h3><p>Add your first yarn to start your stash.</p><Link href="/stash/new" className="button button-primary" data-testid="link-add-first-yarn"><Plus size={16}/> Add yarn</Link></div>}
   </PortalLayout>;
