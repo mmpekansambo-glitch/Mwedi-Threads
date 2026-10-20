@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EmptyState, ErrorState, LoadingState, LoomButton, LoomText, PageHeader, fonts } from '@/components/loom';
 import { ColorDot, StashPhoto, generalColors, weightLabel, yarnWeights } from '@/components/YarnFields';
 import { SkeinSuggestions } from '@/components/SkeinSuggestions';
+import { SortRow, sortStash, stashSorts, useSavedSort } from '@/components/Sorting';
 import { useColors } from '@/hooks/useColors';
 
 function skeinsLabel(yarn: StashYarn): string {
@@ -49,6 +50,7 @@ export default function StashScreen() {
   const [search, setSearch] = useState('');
   const [weight, setWeight] = useState<YarnWeight | ''>('');
   const [generalColor, setGeneralColor] = useState<GeneralColor | ''>('');
+  const [sort, setSort] = useSavedSort('mwedi:stash-sort', stashSorts);
   const params = useMemo(() => ({
     ...(search.trim() ? { search: search.trim() } : {}),
     ...(weight ? { weight } : {}),
@@ -85,10 +87,11 @@ export default function StashScreen() {
           return <Pressable key={item.value} onPress={() => setWeight(active ? '' : item.value)} style={chip(active)}><LoomText style={{ color: active ? colors.accentForeground : colors.mutedForeground, fontSize: 14, fontFamily: fonts.semibold }}>{item.label}</LoomText></Pressable>;
         })}
       </ScrollView>
+      <SortRow options={stashSorts} value={sort} onChange={setSort} testID="stash-sort" />
       {query.isLoading ? <LoadingState label="Gathering your yarn…" /> : query.isError ? <ErrorState onRetry={() => void query.refetch()} /> : query.data?.length ? (
         <>
           <LoomText style={[styles.count, { color: colors.mutedForeground }]}>{query.data.length} {query.data.length === 1 ? 'yarn' : 'yarns'}</LoomText>
-          <View style={styles.grid}>{query.data.map((yarn) => <StashCard key={yarn.id} yarn={yarn} />)}</View>
+          <View style={styles.grid}>{sortStash(query.data, sort).map((yarn) => <StashCard key={yarn.id} yarn={yarn} />)}</View>
         </>
       ) : filtered ? (
         <EmptyState title="No yarn matches" body="Try a different search or clear a filter." actionTitle="Clear filters" onAction={clearFilters} />
