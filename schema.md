@@ -21,12 +21,21 @@ erDiagram
     stash_yarns ||--o{ skein_suggestions : "skeins left for"
     projects ||--o{ skein_suggestions : "finished in"
     users ||--o{ catalog_reviews : asks
+    users ||--o{ stash_fabrics : owns
 
     users {
         text id PK
         text email
         text display_name
         timestamptz joined_at
+        boolean yarn_enabled
+        boolean sewing_enabled
+    }
+    stash_fabrics {
+        uuid id PK
+        text owner_id FK
+        fabric_type fabric_type
+        text_array photo_paths
     }
     projects {
         uuid id PK
@@ -105,6 +114,7 @@ erDiagram
 - **projects → project_yarns:** one-to-many. A project lists every yarn it uses, one row per yarn or per color. A yarn with a brand is linked to the maker's stash, and added to the stash if it isn't there yet.
 - **skein_suggestions:** when a project is finished, each linked stash yarn gets a suggestion to take the project's skeins off what's left. The maker confirms or dismisses it.
 - **catalog_reviews:** a maker asking the catalog reviewer to look at how a name was merged.
+- **users → stash_fabrics:** one-to-many. The Sewing room's fabric stash, separate from the yarn stash.
 
 The diagram shows the key columns only. Every column is listed below.
 
@@ -118,6 +128,9 @@ One row per person who has signed in. A row is created the first time someone ma
 | email | text | no | | Copied from Clerk. |
 | display_name | text | no | | Copied from Clerk. |
 | joined_at | timestamp with time zone | yes | now | |
+| yarn_enabled | boolean | yes | true | The Yarn studio is on. |
+| sewing_enabled | boolean | yes | false | The Sewing room is on. At least one of the two stays on. |
+| crafts_chosen_at | timestamp with time zone | no | | Set when the person picks their crafts. A new person with nothing saved and no choice yet is asked "What do you make?". |
 
 ## projects
 
@@ -210,6 +223,27 @@ One row per yarn in a maker's stash. The brand, sub brand and color names are co
 | created_at | timestamp with time zone | yes | now | |
 | updated_at | timestamp with time zone | yes | now | Updated on every change. |
 
+## stash_fabrics
+
+One row per piece of fabric in a maker's Sewing room stash. There is no shared catalog for fabric.
+
+| Column | Type | Required | Default | Notes |
+|---|---|---|---|---|
+| id | uuid | yes | random | Primary key. |
+| owner_id | text | yes | | Links to `users.id`. Deleted with the user. |
+| fabric_type | fabric_type | yes | | |
+| construction | fabric_construction | no | | Woven or knit. |
+| print | fabric_print | no | | |
+| general_color | general_color | no | | Shown as a color dot on the photo. |
+| unit | fabric_unit | yes | `meters` | Meters go with centimeter widths, yards with inch widths. |
+| amount | double precision | no | | How much is left, to two decimals. |
+| width | double precision | no | | |
+| brand | text | no | | |
+| notes | text | no | | |
+| photo_paths | text[] | yes | `{}` | Private photos, only shown to their owner. The first is the print close-up (required), then up to three more. |
+| created_at | timestamp with time zone | yes | now | |
+| updated_at | timestamp with time zone | yes | now | Updated on every change. |
+
 ## project_yarns
 
 Every yarn a project uses, in the order the maker listed them.
@@ -280,6 +314,10 @@ The shared yarn catalog. Every name has a `match_key` (lowercase letters and dig
 | skein_suggestion_status | `pending`, `accepted`, `dismissed` |
 | catalog_field | `brand`, `sub_brand`, `color` |
 | catalog_review_status | `open`, `renamed`, `kept` |
+| fabric_type | `cotton`, `linen`, `jersey`, `denim`, `silk`, `wool`, `polyester`, `blend`, `other` |
+| fabric_construction | `woven`, `knit` |
+| fabric_print | `solid`, `floral`, `stripe`, `check`, `dots`, `geometric`, `abstract`, `animal`, `novelty` |
+| fabric_unit | `meters`, `yards` |
 
 ## Date rule
 

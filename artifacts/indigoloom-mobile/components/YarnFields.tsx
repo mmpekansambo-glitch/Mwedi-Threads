@@ -42,12 +42,12 @@ export const generalColors: Array<{ value: GeneralColor; label: string; swatch: 
 ];
 const multiColors = ['#C0392B', '#E9C46A', '#5B8C51', '#3D6FB6', '#7D5BA6'] as const;
 
-export function ColorDot({ color, size = 14, style }: { color: GeneralColor | null | undefined; size?: number; style?: ViewStyle }) {
+export function ColorDot({ color, size = 14, style, noun = 'yarn' }: { color: GeneralColor | null | undefined; size?: number; style?: ViewStyle; noun?: string }) {
   const match = generalColors.find((item) => item.value === color);
   if (!match) return null;
   const shape = { width: size, height: size, borderRadius: size / 2 };
   return (
-    <View accessible accessibilityRole="image" accessibilityLabel={`${match.label} yarn`} style={[styles.dot, shape, style]}>
+    <View accessible accessibilityRole="image" accessibilityLabel={`${match.label} ${noun}`} style={[styles.dot, shape, style]}>
       {match.value === 'multi'
         ? <LinearGradient colors={multiColors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[StyleSheet.absoluteFill, shape]} />
         : <View style={[StyleSheet.absoluteFill, shape, { backgroundColor: match.swatch }]} />}

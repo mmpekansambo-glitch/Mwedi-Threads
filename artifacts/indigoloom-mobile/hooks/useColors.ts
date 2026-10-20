@@ -21,3 +21,8 @@ export function useColors() {
       : colors.light;
   return { ...palette, radius: colors.radius };
 }
+
+// The Sewing room's screens use the same tokens with its own washes.
+export function useSewingColors() {
+  return { ...useColors(), ...colors.sewing };
+}

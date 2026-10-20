@@ -86,7 +86,10 @@ describe.skipIf(!databaseUrl)("project authorization against PostgreSQL", () => 
         id text PRIMARY KEY,
         email text,
         display_name text,
-        joined_at timestamptz NOT NULL DEFAULT now()
+        joined_at timestamptz NOT NULL DEFAULT now(),
+        yarn_enabled boolean NOT NULL DEFAULT true,
+        sewing_enabled boolean NOT NULL DEFAULT false,
+        crafts_chosen_at timestamptz
       );
       CREATE TABLE ${isolatedSchema}.projects (
         id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

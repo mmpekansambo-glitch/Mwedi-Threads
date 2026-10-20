@@ -22,3 +22,4 @@ export * from "./projects";
 export * from "./stars";
 export * from "./yarnStash";
 export * from "./projectYarns";
+export * from "./fabricStash";

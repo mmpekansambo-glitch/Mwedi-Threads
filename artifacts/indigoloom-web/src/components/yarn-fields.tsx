@@ -34,10 +34,10 @@ export const generalColors: Array<{ value: GeneralColor; label: string; swatch: 
   { value: 'multi', label: 'Multicolor', swatch: 'conic-gradient(#C0392B, #E9C46A, #5B8C51, #3D6FB6, #7D5BA6, #C0392B)' },
 ];
 
-export function ColorDot({ color, className = '' }: { color: GeneralColor | null | undefined; className?: string }) {
+export function ColorDot({ color, className = '', noun = 'yarn' }: { color: GeneralColor | null | undefined; className?: string; noun?: string }) {
   const match = generalColors.find((item) => item.value === color);
   if (!match) return null;
-  return <span className={`color-dot ${className}`} style={{ background: match.swatch }} title={match.label} aria-label={`${match.label} yarn`} role="img"/>;
+  return <span className={`color-dot ${className}`} style={{ background: match.swatch }} title={match.label} aria-label={`${match.label} ${noun}`} role="img"/>;
 }
 
 export function GeneralColorPicker({ value, onChange }: { value: GeneralColor | null; onChange: (value: GeneralColor | null) => void }) {

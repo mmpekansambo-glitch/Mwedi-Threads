@@ -51,6 +51,16 @@ const colors = {
     warningText: '#694b4b',
   },
 
+  // The Sewing room's own look: a cooler Granite wash behind its screens.
+  sewing: {
+    background: '#E1EAE5',
+    border: '#CFDCD5',
+    input: '#CFDCD5',
+    selectedWash: '#EEF3F0',
+    accent: '#395B50',
+    accentForeground: '#FFFFFF',
+  },
+
   radius: 16,
 };
 

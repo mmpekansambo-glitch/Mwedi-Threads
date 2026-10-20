@@ -23,9 +23,11 @@ import type {
   BadRequestResponse,
   CatalogReview,
   CatalogReviewAccess,
+  Crafts,
   CreateCatalogReview,
   CreateProgress,
   CreateProject,
+  CreateStashFabric,
   CreateStashYarn,
   Dashboard,
   DesignerWebsiteTitlePreviewRequest,
@@ -33,6 +35,7 @@ import type {
   Error,
   GetProjectsParams,
   GetSkeinSuggestionsParams,
+  GetStashFabricsParams,
   GetStashYarnsParams,
   GetYarnCatalogParams,
   HealthStatus,
@@ -44,9 +47,12 @@ import type {
   ProjectDetail,
   ResolveCatalogReview,
   SkeinSuggestion,
+  StashFabric,
   StashYarn,
   UnauthorizedResponse,
+  UpdateCrafts,
   UpdateProject,
+  UpdateStashFabric,
   UpdateStashYarn,
   YarnCatalog
 } from './api.schemas';
@@ -2507,6 +2513,753 @@ export function useGetYarnCatalog<TData = Awaited<ReturnType<typeof getYarnCatal
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetYarnCatalogQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetMyCraftsUrl = () => {
+
+
+
+
+  return `/api/me/crafts`
+}
+
+/**
+ * @summary Which crafts the signed-in maker has turned on
+ */
+export const getMyCrafts = async ( options?: Parameters<typeof customFetch>[1]): Promise<Crafts> => {
+
+  return customFetch<Crafts>(getGetMyCraftsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMyCraftsQueryKey = () => {
+    return [
+    `/api/me/crafts`
+    ] as const;
+    }
+
+
+export const getGetMyCraftsQueryOptions = <TData = Awaited<ReturnType<typeof getMyCrafts>>, TError = ErrorType<UnauthorizedResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyCrafts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyCraftsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyCrafts>>> = ({ signal }) => getMyCrafts({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyCrafts>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMyCraftsQueryResult = NonNullable<Awaited<ReturnType<typeof getMyCrafts>>>
+export type GetMyCraftsQueryError = ErrorType<UnauthorizedResponse>
+
+
+/**
+ * @summary Which crafts the signed-in maker has turned on
+ */
+
+export function useGetMyCrafts<TData = Awaited<ReturnType<typeof getMyCrafts>>, TError = ErrorType<UnauthorizedResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyCrafts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMyCraftsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateMyCraftsUrl = () => {
+
+
+
+
+  return `/api/me/crafts`
+}
+
+/**
+ * @summary Turn yarn or sewing on or off (at least one stays on)
+ */
+export const updateMyCrafts = async (updateCrafts: UpdateCrafts, options?: Parameters<typeof customFetch>[1]): Promise<Crafts> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Crafts>(getUpdateMyCraftsUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(updateCrafts)
+  }
+);}
+
+
+
+
+
+export const getUpdateMyCraftsMutationKey = () => ['updateMyCrafts'] as const;
+
+export const getUpdateMyCraftsMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMyCrafts>>, TError,UpdateMyCraftsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateMyCrafts>>, TError,UpdateMyCraftsMutationVariables, TContext> => {
+
+const mutationKey = getUpdateMyCraftsMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateMyCrafts>>, UpdateMyCraftsMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateMyCrafts(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateMyCraftsMutationResult = NonNullable<Awaited<ReturnType<typeof updateMyCrafts>>>
+    export type UpdateMyCraftsMutationBody = BodyType<UpdateCrafts>
+    export type UpdateMyCraftsMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse>
+    export type UpdateMyCraftsMutationVariables = {data: BodyType<UpdateCrafts>}
+
+    /**
+ * @summary Turn yarn or sewing on or off (at least one stays on)
+ */
+export const useUpdateMyCrafts = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMyCrafts>>, TError,UpdateMyCraftsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateMyCrafts>>,
+        TError,
+        UpdateMyCraftsMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateMyCraftsMutationOptions(options));
+    }
+
+export const getGetStashFabricsUrl = (params?: GetStashFabricsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/fabric-stash?${stringifiedParams}` : `/api/fabric-stash`
+}
+
+/**
+ * @summary List the fabric in the signed-in maker's stash
+ */
+export const getStashFabrics = async (params?: GetStashFabricsParams, options?: Parameters<typeof customFetch>[1]): Promise<StashFabric[]> => {
+
+  return customFetch<StashFabric[]>(getGetStashFabricsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStashFabricsQueryKey = (params?: GetStashFabricsParams,) => {
+    return [
+    `/api/fabric-stash`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetStashFabricsQueryOptions = <TData = Awaited<ReturnType<typeof getStashFabrics>>, TError = ErrorType<UnauthorizedResponse>>(params?: GetStashFabricsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStashFabrics>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStashFabricsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStashFabrics>>> = ({ signal }) => getStashFabrics(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStashFabrics>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStashFabricsQueryResult = NonNullable<Awaited<ReturnType<typeof getStashFabrics>>>
+export type GetStashFabricsQueryError = ErrorType<UnauthorizedResponse>
+
+
+/**
+ * @summary List the fabric in the signed-in maker's stash
+ */
+
+export function useGetStashFabrics<TData = Awaited<ReturnType<typeof getStashFabrics>>, TError = ErrorType<UnauthorizedResponse>>(
+ params?: GetStashFabricsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStashFabrics>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStashFabricsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateStashFabricUrl = () => {
+
+
+
+
+  return `/api/fabric-stash`
+}
+
+/**
+ * @summary Add a fabric to the stash
+ */
+export const createStashFabric = async (createStashFabricBody: CreateStashFabric, options?: Parameters<typeof customFetch>[1]): Promise<StashFabric> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<StashFabric>(getCreateStashFabricUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(createStashFabricBody)
+  }
+);}
+
+
+
+
+
+export const getCreateStashFabricMutationKey = () => ['createStashFabric'] as const;
+
+export const getCreateStashFabricMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStashFabric>>, TError,CreateStashFabricMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createStashFabric>>, TError,CreateStashFabricMutationVariables, TContext> => {
+
+const mutationKey = getCreateStashFabricMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createStashFabric>>, CreateStashFabricMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createStashFabric(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateStashFabricMutationResult = NonNullable<Awaited<ReturnType<typeof createStashFabric>>>
+    export type CreateStashFabricMutationBody = BodyType<CreateStashFabric>
+    export type CreateStashFabricMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse>
+    export type CreateStashFabricMutationVariables = {data: BodyType<CreateStashFabric>}
+
+    /**
+ * @summary Add a fabric to the stash
+ */
+export const useCreateStashFabric = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStashFabric>>, TError,CreateStashFabricMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createStashFabric>>,
+        TError,
+        CreateStashFabricMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateStashFabricMutationOptions(options));
+    }
+
+export const getRequestFabricPhotoUploadUrl = () => {
+
+
+
+
+  return `/api/fabric-stash/photo-upload`
+}
+
+/**
+ * @summary Request a private upload URL for a fabric photo
+ */
+export const requestFabricPhotoUpload = async (progressPhotoUploadRequest: ProgressPhotoUploadRequest, options?: Parameters<typeof customFetch>[1]): Promise<ProgressPhotoUploadResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<ProgressPhotoUploadResponse>(getRequestFabricPhotoUploadUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(progressPhotoUploadRequest)
+  }
+);}
+
+
+
+
+
+export const getRequestFabricPhotoUploadMutationKey = () => ['requestFabricPhotoUpload'] as const;
+
+export const getRequestFabricPhotoUploadMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestFabricPhotoUpload>>, TError,RequestFabricPhotoUploadMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestFabricPhotoUpload>>, TError,RequestFabricPhotoUploadMutationVariables, TContext> => {
+
+const mutationKey = getRequestFabricPhotoUploadMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestFabricPhotoUpload>>, RequestFabricPhotoUploadMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  requestFabricPhotoUpload(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequestFabricPhotoUploadMutationResult = NonNullable<Awaited<ReturnType<typeof requestFabricPhotoUpload>>>
+    export type RequestFabricPhotoUploadMutationBody = BodyType<ProgressPhotoUploadRequest>
+    export type RequestFabricPhotoUploadMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse>
+    export type RequestFabricPhotoUploadMutationVariables = {data: BodyType<ProgressPhotoUploadRequest>}
+
+    /**
+ * @summary Request a private upload URL for a fabric photo
+ */
+export const useRequestFabricPhotoUpload = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestFabricPhotoUpload>>, TError,RequestFabricPhotoUploadMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof requestFabricPhotoUpload>>,
+        TError,
+        RequestFabricPhotoUploadMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRequestFabricPhotoUploadMutationOptions(options));
+    }
+
+export const getGetStashFabricUrl = (fabricId: string,) => {
+
+
+
+
+  return `/api/fabric-stash/${fabricId}`
+}
+
+/**
+ * @summary Get one fabric from the stash
+ */
+export const getStashFabric = async (fabricId: string, options?: Parameters<typeof customFetch>[1]): Promise<StashFabric> => {
+
+  return customFetch<StashFabric>(getGetStashFabricUrl(fabricId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStashFabricQueryKey = (fabricId: string,) => {
+    return [
+    `/api/fabric-stash/${fabricId}`
+    ] as const;
+    }
+
+
+export const getGetStashFabricQueryOptions = <TData = Awaited<ReturnType<typeof getStashFabric>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse>>(fabricId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStashFabric>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStashFabricQueryKey(fabricId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStashFabric>>> = ({ signal }) => getStashFabric(fabricId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: fabricId !== null && fabricId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStashFabric>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStashFabricQueryResult = NonNullable<Awaited<ReturnType<typeof getStashFabric>>>
+export type GetStashFabricQueryError = ErrorType<UnauthorizedResponse | NotFoundResponse>
+
+
+/**
+ * @summary Get one fabric from the stash
+ */
+
+export function useGetStashFabric<TData = Awaited<ReturnType<typeof getStashFabric>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse>>(
+ fabricId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStashFabric>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStashFabricQueryOptions(fabricId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateStashFabricUrl = (fabricId: string,) => {
+
+
+
+
+  return `/api/fabric-stash/${fabricId}`
+}
+
+/**
+ * @summary Change a fabric in the stash
+ */
+export const updateStashFabric = async (fabricId: string,
+    updateStashFabricBody: UpdateStashFabric, options?: Parameters<typeof customFetch>[1]): Promise<StashFabric> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<StashFabric>(getUpdateStashFabricUrl(fabricId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(updateStashFabricBody)
+  }
+);}
+
+
+
+
+
+export const getUpdateStashFabricMutationKey = () => ['updateStashFabric'] as const;
+
+export const getUpdateStashFabricMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateStashFabric>>, TError,UpdateStashFabricMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateStashFabric>>, TError,UpdateStashFabricMutationVariables, TContext> => {
+
+const mutationKey = getUpdateStashFabricMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateStashFabric>>, UpdateStashFabricMutationVariables> = (props) => {
+          const {fabricId,data} = props ?? {};
+
+          return  updateStashFabric(fabricId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateStashFabricMutationResult = NonNullable<Awaited<ReturnType<typeof updateStashFabric>>>
+    export type UpdateStashFabricMutationBody = BodyType<UpdateStashFabric>
+    export type UpdateStashFabricMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse>
+    export type UpdateStashFabricMutationVariables = {fabricId: string;data: BodyType<UpdateStashFabric>}
+
+    /**
+ * @summary Change a fabric in the stash
+ */
+export const useUpdateStashFabric = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateStashFabric>>, TError,UpdateStashFabricMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateStashFabric>>,
+        TError,
+        UpdateStashFabricMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateStashFabricMutationOptions(options));
+    }
+
+export const getDeleteStashFabricUrl = (fabricId: string,) => {
+
+
+
+
+  return `/api/fabric-stash/${fabricId}`
+}
+
+/**
+ * @summary Remove a fabric from the stash
+ */
+export const deleteStashFabric = async (fabricId: string, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getDeleteStashFabricUrl(fabricId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteStashFabricMutationKey = () => ['deleteStashFabric'] as const;
+
+export const getDeleteStashFabricMutationOptions = <TError = ErrorType<UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteStashFabric>>, TError,DeleteStashFabricMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteStashFabric>>, TError,DeleteStashFabricMutationVariables, TContext> => {
+
+const mutationKey = getDeleteStashFabricMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteStashFabric>>, DeleteStashFabricMutationVariables> = (props) => {
+          const {fabricId} = props ?? {};
+
+          return  deleteStashFabric(fabricId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteStashFabricMutationResult = NonNullable<Awaited<ReturnType<typeof deleteStashFabric>>>
+
+    export type DeleteStashFabricMutationError = ErrorType<UnauthorizedResponse | NotFoundResponse>
+    export type DeleteStashFabricMutationVariables = {fabricId: string}
+
+    /**
+ * @summary Remove a fabric from the stash
+ */
+export const useDeleteStashFabric = <TError = ErrorType<UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteStashFabric>>, TError,DeleteStashFabricMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteStashFabric>>,
+        TError,
+        DeleteStashFabricMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeleteStashFabricMutationOptions(options));
+    }
+
+export const getGetStashFabricPhotoUrl = (fabricId: string,
+    photoIndex: number,) => {
+
+
+
+
+  return `/api/fabric-stash/${fabricId}/photos/${photoIndex}`
+}
+
+/**
+ * @summary View one of a fabric's photos
+ */
+export const getStashFabricPhoto = async (fabricId: string,
+    photoIndex: number, options?: Parameters<typeof customFetch>[1]): Promise<unknown> => {
+
+  return customFetch<unknown>(getGetStashFabricPhotoUrl(fabricId,photoIndex),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStashFabricPhotoQueryKey = (fabricId: string,
+    photoIndex: number,) => {
+    return [
+    `/api/fabric-stash/${fabricId}/photos/${photoIndex}`
+    ] as const;
+    }
+
+
+export const getGetStashFabricPhotoQueryOptions = <TData = Awaited<ReturnType<typeof getStashFabricPhoto>>, TError = ErrorType<void | UnauthorizedResponse | NotFoundResponse>>(fabricId: string,
+    photoIndex: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStashFabricPhoto>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStashFabricPhotoQueryKey(fabricId,photoIndex);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStashFabricPhoto>>> = ({ signal }) => getStashFabricPhoto(fabricId,photoIndex, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: fabricId !== null && fabricId !== undefined && photoIndex !== null && photoIndex !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStashFabricPhoto>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStashFabricPhotoQueryResult = NonNullable<Awaited<ReturnType<typeof getStashFabricPhoto>>>
+export type GetStashFabricPhotoQueryError = ErrorType<void | UnauthorizedResponse | NotFoundResponse>
+
+
+/**
+ * @summary View one of a fabric's photos
+ */
+
+export function useGetStashFabricPhoto<TData = Awaited<ReturnType<typeof getStashFabricPhoto>>, TError = ErrorType<void | UnauthorizedResponse | NotFoundResponse>>(
+ fabricId: string,
+    photoIndex: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStashFabricPhoto>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStashFabricPhotoQueryOptions(fabricId,photoIndex,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

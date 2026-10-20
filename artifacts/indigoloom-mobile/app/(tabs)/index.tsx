@@ -1,24 +1,25 @@
 import { useGetDashboard } from '@workspace/api-client-react';
-import { useClerk, useUser } from '@clerk/expo';
+import { useUser } from '@clerk/expo';
 import { Feather } from '@expo/vector-icons';
-import { Link, router } from 'expo-router';
+import { Link, Redirect, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { DashboardCharts } from '@/components/DashboardCharts';
 import { StatDoodle } from '@/components/StatDoodle';
 import { EmptyState, ErrorState, LoadingState, LoomButton, LoomText, PageHeader, ProjectCard, fonts } from '@/components/loom';
 import { useColors } from '@/hooks/useColors';
+import { HomeSwitcher, ProfileMenu, useCrafts } from '@/components/Crafts';
 
 export default function DashboardScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { user } = useUser();
-  const { signOut } = useClerk();
+  const crafts = useCrafts().data;
   const query = useGetDashboard();
   const data = query.data;
   const displayName = user?.firstName || user?.username || 'maker';
-  const [menuOpen, setMenuOpen] = useState(false);
+  // A maker with only sewing on starts in the Sewing room.
+  if (crafts && !crafts.yarn) return <Redirect href="/(tabs)/fabric" />;
   return (
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
@@ -28,20 +29,9 @@ export default function DashboardScreen() {
     >
       <View style={styles.topBar}>
         <LoomText serif style={[styles.greeting, { color: colors.foreground }]}>Hi, {displayName}</LoomText>
-        <View>
-          <Pressable accessibilityRole="button" accessibilityLabel="Account menu" accessibilityState={{ expanded: menuOpen }} onPress={() => setMenuOpen(!menuOpen)} style={[styles.avatar, { backgroundColor: colors.accent }]} testID="button-profile-menu">
-            <LoomText style={{ color: colors.primary, fontFamily: fonts.bold, fontSize: 16 }}>{displayName.slice(0, 1).toUpperCase()}</LoomText>
-          </Pressable>
-          {menuOpen ? (
-            <View style={[styles.menu, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Pressable accessibilityRole="button" onPress={() => { setMenuOpen(false); void signOut(); }} style={styles.menuItem} testID="button-sign-out">
-                <Feather name="log-out" size={16} color={colors.foreground} />
-                <LoomText style={{ color: colors.foreground, fontFamily: fonts.semibold, fontSize: 15 }}>Sign out</LoomText>
-              </Pressable>
-            </View>
-          ) : null}
-        </View>
+        <ProfileMenu />
       </View>
+      <HomeSwitcher />
       {query.isLoading ? <LoadingState /> : query.isError || !data ? <ErrorState onRetry={() => void query.refetch()} /> : (
         <>
           <View style={styles.stats}>
@@ -93,9 +83,6 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: 20, paddingBottom: 32, maxWidth: 780, width: '100%', alignSelf: 'center' },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 21, zIndex: 2 },
   greeting: { fontSize: 30, letterSpacing: -0.4 },
-  avatar: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
-  menu: { position: 'absolute', top: 48, right: 0, minWidth: 150, borderWidth: 1, borderRadius: 10, padding: 6 },
-  menuItem: { flexDirection: 'row', alignItems: 'center', gap: 9, padding: 10 },
   stats: { flexDirection: 'row', gap: 8, marginBottom: 29 },
   stat: { flex: 1, minHeight: 108, justifyContent: 'space-between', borderWidth: 1, borderRadius: 14, padding: 11, overflow: 'hidden' },
   statDoodle: { position: 'absolute', right: 6, bottom: 6 },
