@@ -21,6 +21,9 @@ import type {
 
 import type {
   BadRequestResponse,
+  CatalogReview,
+  CatalogReviewAccess,
+  CreateCatalogReview,
   CreateProgress,
   CreateProject,
   CreateStashYarn,
@@ -29,6 +32,7 @@ import type {
   DesignerWebsiteTitlePreviewResponse,
   Error,
   GetProjectsParams,
+  GetSkeinSuggestionsParams,
   GetStashYarnsParams,
   GetYarnCatalogParams,
   HealthStatus,
@@ -38,6 +42,8 @@ import type {
   ProgressPhotoUploadResponse,
   Project,
   ProjectDetail,
+  ResolveCatalogReview,
+  SkeinSuggestion,
   StashYarn,
   UnauthorizedResponse,
   UpdateProject,
@@ -1383,6 +1389,238 @@ export const useCreateStashYarn = <TError = ErrorType<BadRequestResponse | Unaut
       return useMutation(getCreateStashYarnMutationOptions(options));
     }
 
+export const getGetSkeinSuggestionsUrl = (params?: GetSkeinSuggestionsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/yarn-stash/skein-suggestions?${stringifiedParams}` : `/api/yarn-stash/skein-suggestions`
+}
+
+/**
+ * @summary Skeins-left suggestions waiting for the maker to confirm
+ */
+export const getSkeinSuggestions = async (params?: GetSkeinSuggestionsParams, options?: Parameters<typeof customFetch>[1]): Promise<SkeinSuggestion[]> => {
+
+  return customFetch<SkeinSuggestion[]>(getGetSkeinSuggestionsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSkeinSuggestionsQueryKey = (params?: GetSkeinSuggestionsParams,) => {
+    return [
+    `/api/yarn-stash/skein-suggestions`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetSkeinSuggestionsQueryOptions = <TData = Awaited<ReturnType<typeof getSkeinSuggestions>>, TError = ErrorType<UnauthorizedResponse>>(params?: GetSkeinSuggestionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSkeinSuggestions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSkeinSuggestionsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSkeinSuggestions>>> = ({ signal }) => getSkeinSuggestions(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSkeinSuggestions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSkeinSuggestionsQueryResult = NonNullable<Awaited<ReturnType<typeof getSkeinSuggestions>>>
+export type GetSkeinSuggestionsQueryError = ErrorType<UnauthorizedResponse>
+
+
+/**
+ * @summary Skeins-left suggestions waiting for the maker to confirm
+ */
+
+export function useGetSkeinSuggestions<TData = Awaited<ReturnType<typeof getSkeinSuggestions>>, TError = ErrorType<UnauthorizedResponse>>(
+ params?: GetSkeinSuggestionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSkeinSuggestions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSkeinSuggestionsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAcceptSkeinSuggestionUrl = (suggestionId: string,) => {
+
+
+
+
+  return `/api/yarn-stash/skein-suggestions/${suggestionId}/accept`
+}
+
+/**
+ * @summary Take the project's skeins off what's left of the stash yarn
+ */
+export const acceptSkeinSuggestion = async (suggestionId: string, options?: Parameters<typeof customFetch>[1]): Promise<StashYarn> => {
+
+  return customFetch<StashYarn>(getAcceptSkeinSuggestionUrl(suggestionId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getAcceptSkeinSuggestionMutationKey = () => ['acceptSkeinSuggestion'] as const;
+
+export const getAcceptSkeinSuggestionMutationOptions = <TError = ErrorType<UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptSkeinSuggestion>>, TError,AcceptSkeinSuggestionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof acceptSkeinSuggestion>>, TError,AcceptSkeinSuggestionMutationVariables, TContext> => {
+
+const mutationKey = getAcceptSkeinSuggestionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof acceptSkeinSuggestion>>, AcceptSkeinSuggestionMutationVariables> = (props) => {
+          const {suggestionId} = props ?? {};
+
+          return  acceptSkeinSuggestion(suggestionId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AcceptSkeinSuggestionMutationResult = NonNullable<Awaited<ReturnType<typeof acceptSkeinSuggestion>>>
+
+    export type AcceptSkeinSuggestionMutationError = ErrorType<UnauthorizedResponse | NotFoundResponse>
+    export type AcceptSkeinSuggestionMutationVariables = {suggestionId: string}
+
+    /**
+ * @summary Take the project's skeins off what's left of the stash yarn
+ */
+export const useAcceptSkeinSuggestion = <TError = ErrorType<UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptSkeinSuggestion>>, TError,AcceptSkeinSuggestionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof acceptSkeinSuggestion>>,
+        TError,
+        AcceptSkeinSuggestionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAcceptSkeinSuggestionMutationOptions(options));
+    }
+
+export const getDismissSkeinSuggestionUrl = (suggestionId: string,) => {
+
+
+
+
+  return `/api/yarn-stash/skein-suggestions/${suggestionId}/dismiss`
+}
+
+/**
+ * @summary Leave the stash yarn's skeins as they are
+ */
+export const dismissSkeinSuggestion = async (suggestionId: string, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getDismissSkeinSuggestionUrl(suggestionId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getDismissSkeinSuggestionMutationKey = () => ['dismissSkeinSuggestion'] as const;
+
+export const getDismissSkeinSuggestionMutationOptions = <TError = ErrorType<UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof dismissSkeinSuggestion>>, TError,DismissSkeinSuggestionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof dismissSkeinSuggestion>>, TError,DismissSkeinSuggestionMutationVariables, TContext> => {
+
+const mutationKey = getDismissSkeinSuggestionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof dismissSkeinSuggestion>>, DismissSkeinSuggestionMutationVariables> = (props) => {
+          const {suggestionId} = props ?? {};
+
+          return  dismissSkeinSuggestion(suggestionId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DismissSkeinSuggestionMutationResult = NonNullable<Awaited<ReturnType<typeof dismissSkeinSuggestion>>>
+
+    export type DismissSkeinSuggestionMutationError = ErrorType<UnauthorizedResponse | NotFoundResponse>
+    export type DismissSkeinSuggestionMutationVariables = {suggestionId: string}
+
+    /**
+ * @summary Leave the stash yarn's skeins as they are
+ */
+export const useDismissSkeinSuggestion = <TError = ErrorType<UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof dismissSkeinSuggestion>>, TError,DismissSkeinSuggestionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof dismissSkeinSuggestion>>,
+        TError,
+        DismissSkeinSuggestionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDismissSkeinSuggestionMutationOptions(options));
+    }
+
 export const getRequestStashPhotoUploadUrl = () => {
 
 
@@ -1787,6 +2025,414 @@ export function useGetStashYarnPhoto<TData = Awaited<ReturnType<typeof getStashY
 
 
 
+
+export const getGetStashYarnReviewsUrl = (yarnId: string,) => {
+
+
+
+
+  return `/api/yarn-stash/${yarnId}/reviews`
+}
+
+/**
+ * @summary Name reviews the maker asked for on this yarn
+ */
+export const getStashYarnReviews = async (yarnId: string, options?: Parameters<typeof customFetch>[1]): Promise<CatalogReview[]> => {
+
+  return customFetch<CatalogReview[]>(getGetStashYarnReviewsUrl(yarnId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStashYarnReviewsQueryKey = (yarnId: string,) => {
+    return [
+    `/api/yarn-stash/${yarnId}/reviews`
+    ] as const;
+    }
+
+
+export const getGetStashYarnReviewsQueryOptions = <TData = Awaited<ReturnType<typeof getStashYarnReviews>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse>>(yarnId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStashYarnReviews>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStashYarnReviewsQueryKey(yarnId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStashYarnReviews>>> = ({ signal }) => getStashYarnReviews(yarnId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: yarnId !== null && yarnId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStashYarnReviews>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStashYarnReviewsQueryResult = NonNullable<Awaited<ReturnType<typeof getStashYarnReviews>>>
+export type GetStashYarnReviewsQueryError = ErrorType<UnauthorizedResponse | NotFoundResponse>
+
+
+/**
+ * @summary Name reviews the maker asked for on this yarn
+ */
+
+export function useGetStashYarnReviews<TData = Awaited<ReturnType<typeof getStashYarnReviews>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse>>(
+ yarnId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStashYarnReviews>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStashYarnReviewsQueryOptions(yarnId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetCatalogReviewsUrl = () => {
+
+
+
+
+  return `/api/catalog-reviews`
+}
+
+/**
+ * @summary Name reviews for the catalog reviewer, open ones first
+ */
+export const getCatalogReviews = async ( options?: Parameters<typeof customFetch>[1]): Promise<CatalogReview[]> => {
+
+  return customFetch<CatalogReview[]>(getGetCatalogReviewsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCatalogReviewsQueryKey = () => {
+    return [
+    `/api/catalog-reviews`
+    ] as const;
+    }
+
+
+export const getGetCatalogReviewsQueryOptions = <TData = Awaited<ReturnType<typeof getCatalogReviews>>, TError = ErrorType<UnauthorizedResponse | void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCatalogReviews>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCatalogReviewsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCatalogReviews>>> = ({ signal }) => getCatalogReviews({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCatalogReviews>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCatalogReviewsQueryResult = NonNullable<Awaited<ReturnType<typeof getCatalogReviews>>>
+export type GetCatalogReviewsQueryError = ErrorType<UnauthorizedResponse | void>
+
+
+/**
+ * @summary Name reviews for the catalog reviewer, open ones first
+ */
+
+export function useGetCatalogReviews<TData = Awaited<ReturnType<typeof getCatalogReviews>>, TError = ErrorType<UnauthorizedResponse | void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCatalogReviews>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCatalogReviewsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateCatalogReviewUrl = () => {
+
+
+
+
+  return `/api/catalog-reviews`
+}
+
+/**
+ * @summary Ask for a review of how a yarn name was merged in the catalog
+ */
+export const createCatalogReview = async (createCatalogReviewBody: CreateCatalogReview, options?: Parameters<typeof customFetch>[1]): Promise<CatalogReview> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<CatalogReview>(getCreateCatalogReviewUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(createCatalogReviewBody)
+  }
+);}
+
+
+
+
+
+export const getCreateCatalogReviewMutationKey = () => ['createCatalogReview'] as const;
+
+export const getCreateCatalogReviewMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCatalogReview>>, TError,CreateCatalogReviewMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCatalogReview>>, TError,CreateCatalogReviewMutationVariables, TContext> => {
+
+const mutationKey = getCreateCatalogReviewMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCatalogReview>>, CreateCatalogReviewMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createCatalogReview(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCatalogReviewMutationResult = NonNullable<Awaited<ReturnType<typeof createCatalogReview>>>
+    export type CreateCatalogReviewMutationBody = BodyType<CreateCatalogReview>
+    export type CreateCatalogReviewMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse>
+    export type CreateCatalogReviewMutationVariables = {data: BodyType<CreateCatalogReview>}
+
+    /**
+ * @summary Ask for a review of how a yarn name was merged in the catalog
+ */
+export const useCreateCatalogReview = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCatalogReview>>, TError,CreateCatalogReviewMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createCatalogReview>>,
+        TError,
+        CreateCatalogReviewMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateCatalogReviewMutationOptions(options));
+    }
+
+export const getGetCatalogReviewAccessUrl = () => {
+
+
+
+
+  return `/api/catalog-reviews/access`
+}
+
+/**
+ * @summary Whether the signed-in user reviews catalog names
+ */
+export const getCatalogReviewAccess = async ( options?: Parameters<typeof customFetch>[1]): Promise<CatalogReviewAccess> => {
+
+  return customFetch<CatalogReviewAccess>(getGetCatalogReviewAccessUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCatalogReviewAccessQueryKey = () => {
+    return [
+    `/api/catalog-reviews/access`
+    ] as const;
+    }
+
+
+export const getGetCatalogReviewAccessQueryOptions = <TData = Awaited<ReturnType<typeof getCatalogReviewAccess>>, TError = ErrorType<UnauthorizedResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCatalogReviewAccess>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCatalogReviewAccessQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCatalogReviewAccess>>> = ({ signal }) => getCatalogReviewAccess({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCatalogReviewAccess>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCatalogReviewAccessQueryResult = NonNullable<Awaited<ReturnType<typeof getCatalogReviewAccess>>>
+export type GetCatalogReviewAccessQueryError = ErrorType<UnauthorizedResponse>
+
+
+/**
+ * @summary Whether the signed-in user reviews catalog names
+ */
+
+export function useGetCatalogReviewAccess<TData = Awaited<ReturnType<typeof getCatalogReviewAccess>>, TError = ErrorType<UnauthorizedResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCatalogReviewAccess>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCatalogReviewAccessQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getResolveCatalogReviewUrl = (reviewId: string,) => {
+
+
+
+
+  return `/api/catalog-reviews/${reviewId}/resolve`
+}
+
+/**
+ * @summary Rename the catalog entry or keep it as it is
+ */
+export const resolveCatalogReview = async (reviewId: string,
+    resolveCatalogReviewBody: ResolveCatalogReview, options?: Parameters<typeof customFetch>[1]): Promise<CatalogReview> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<CatalogReview>(getResolveCatalogReviewUrl(reviewId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(resolveCatalogReviewBody)
+  }
+);}
+
+
+
+
+
+export const getResolveCatalogReviewMutationKey = () => ['resolveCatalogReview'] as const;
+
+export const getResolveCatalogReviewMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | void | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resolveCatalogReview>>, TError,ResolveCatalogReviewMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof resolveCatalogReview>>, TError,ResolveCatalogReviewMutationVariables, TContext> => {
+
+const mutationKey = getResolveCatalogReviewMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof resolveCatalogReview>>, ResolveCatalogReviewMutationVariables> = (props) => {
+          const {reviewId,data} = props ?? {};
+
+          return  resolveCatalogReview(reviewId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ResolveCatalogReviewMutationResult = NonNullable<Awaited<ReturnType<typeof resolveCatalogReview>>>
+    export type ResolveCatalogReviewMutationBody = BodyType<ResolveCatalogReview>
+    export type ResolveCatalogReviewMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | void | NotFoundResponse>
+    export type ResolveCatalogReviewMutationVariables = {reviewId: string;data: BodyType<ResolveCatalogReview>}
+
+    /**
+ * @summary Rename the catalog entry or keep it as it is
+ */
+export const useResolveCatalogReview = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | void | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resolveCatalogReview>>, TError,ResolveCatalogReviewMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof resolveCatalogReview>>,
+        TError,
+        ResolveCatalogReviewMutationVariables,
+        TContext
+      > => {
+      return useMutation(getResolveCatalogReviewMutationOptions(options));
+    }
 
 export const getGetYarnCatalogUrl = (params?: GetYarnCatalogParams,) => {
   const normalizedParams = new URLSearchParams();

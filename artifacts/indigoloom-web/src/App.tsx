@@ -11,9 +11,11 @@ import {
   getGetDashboardQueryKey, getGetProjectQueryKey, getGetProjectsQueryKey,
   useCreateStashYarn, useDeleteStashYarn, useGetStashYarn, useGetStashYarns, useGetYarnCatalog, useUpdateStashYarn,
   getGetStashYarnQueryKey, getGetStashYarnsQueryKey, getGetYarnCatalogQueryKey,
+  getGetCatalogReviewsQueryKey, getGetCatalogReviewAccessQueryKey, getGetSkeinSuggestionsQueryKey, getGetStashYarnReviewsQueryKey,
+  useGetCatalogReviewAccess, useGetCatalogReviews, useGetStashYarnReviews, useResolveCatalogReview,
 } from '@workspace/api-client-react';
 import { CrochetHookSize, KnittingNeedleSize, NeedleCableLength } from '@workspace/api-client-react';
-import type { CreateProject, CreateProgress, GeneralColor, Project, ProjectStatus, StashYarn, UpdateProject, YarnWeight } from '@workspace/api-client-react';
+import type { CatalogField, CatalogReview, CreateProject, CreateProgress, GeneralColor, Project, ProjectStatus, StashYarn, UpdateProject, YarnWeight } from '@workspace/api-client-react';
 import { FormProvider as Form, useForm, type UseFormReturn } from 'react-hook-form';
 import {
   ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, Check,
@@ -33,9 +35,14 @@ import {
 } from '@/components/progress-method';
 import { DashboardCharts } from '@/components/dashboard-charts';
 import {
-  BlendFields, ColorDot, GeneralColorPicker, WeightWheelField, blendForApi, generalColors, weightLabel, yarnWeights,
+  BlendFields, ColorDot, DidYouMean, GeneralColorPicker, WeightWheelField, blendForApi, generalColors, useSettledValue, weightLabel, yarnWeights,
   type BlendDraft,
 } from '@/components/yarn-fields';
+import {
+  ProjectYarnsField, describeProjectYarn, yarnDraftsFromProject, yarnsForApi, type YarnDraft,
+} from '@/components/project-yarns';
+import { SkeinSuggestions } from '@/components/skein-suggestions';
+import { NameReviewButton, NameReviewForm, NameReviewList, catalogFieldLabels } from '@/components/name-review';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { trackEvent, trackSuccessfulAction } from '@/lib/analytics';
 import { Toaster } from '@/components/ui/toaster';
@@ -241,7 +248,7 @@ function PrivateRoute({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
-const portalTitles = { dashboard: 'Overview', projects: 'My projects', stash: 'Yarn stash' };
+const portalTitles = { dashboard: 'Overview', projects: 'My projects', stash: 'Yarn stash', reviews: 'Name reviews' };
 
 function PortalLayout({ children, active }: { children: ReactNode; active: keyof typeof portalTitles }) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -249,6 +256,7 @@ function PortalLayout({ children, active }: { children: ReactNode; active: keyof
   const { signOut } = useClerk();
   const displayName = user?.firstName || user?.username || 'Maker';
   const initials = displayName.slice(0, 1).toUpperCase();
+  const reviewAccess = useGetCatalogReviewAccess({ query: { queryKey: getGetCatalogReviewAccessQueryKey(), staleTime: 5 * 60 * 1000 } });
   return <div className="portal-shell">
     <aside className={`side-rail ${mobileOpen ? 'mobile-open' : ''}`}>
       <div className="rail-brand"><Brand light/><button className="rail-close" type="button" onClick={() => setMobileOpen(false)} aria-label="Close navigation" data-testid="button-close-navigation"><X size={19}/></button></div>
@@ -256,6 +264,7 @@ function PortalLayout({ children, active }: { children: ReactNode; active: keyof
         <Link href="/dashboard" className={`rail-link ${active === 'dashboard' ? 'selected' : ''}`} data-testid="link-dashboard"><Layers3 size={18}/><span>Overview</span></Link>
         <Link href="/projects" className={`rail-link ${active === 'projects' ? 'selected' : ''}`} data-testid="link-projects"><BookOpen size={18}/><span>My projects</span></Link>
         <Link href="/stash" className={`rail-link ${active === 'stash' ? 'selected' : ''}`} data-testid="link-stash"><Palette size={18}/><span>Yarn stash</span></Link>
+        {reviewAccess.data?.reviewer && <Link href="/reviews" className={`rail-link ${active === 'reviews' ? 'selected' : ''}`} data-testid="link-reviews"><CircleHelp size={18}/><span>Name reviews</span></Link>}
       </nav>
       <div className="rail-bottom"><ProfileMenu initials={initials} displayName={displayName} onSignOut={() => signOut({ redirectUrl: basePath || '/' })}/></div>
     </aside>
@@ -331,7 +340,7 @@ function StarButton({ project, className = '' }: { project: Project; className?:
 function ProjectCard({ project }: { project: Project }) {
   const craftLabel = project.craft === 'knitting' ? 'Knitting' : 'Crochet';
   return <div className="project-card-wrap"><StarButton project={project} className="card-star"/><Link href={`/projects/${project.id}`} className="project-card loom-card lift" data-testid={`card-project-${project.id}`}>
-    <div className="project-card-body"><div className="project-card-meta"><StatusPill status={project.status}/></div><h3>{project.title}</h3><p>{[craftLabel, project.patternName].filter(Boolean).join(' · ')}</p><div className="card-progress"><ProgressBar value={project.completionPercent}/><span>{project.completionPercent}%</span></div><div className="card-foot">{formatYarnDetails(project) && <span>{formatYarnDetails(project)}</span>}{project.updatedAt && <span className="updated-label">Updated {new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' }).format(new Date(project.updatedAt))}</span>}</div></div>
+    <div className="project-card-body"><div className="project-card-meta"><StatusPill status={project.status}/></div><h3>{project.title}</h3><p>{[craftLabel, project.patternName].filter(Boolean).join(' · ')}</p><div className="card-progress"><ProgressBar value={project.completionPercent}/><span>{project.completionPercent}%</span></div><div className="card-foot">{yarnSummary(project) && <span>{yarnSummary(project)}</span>}{project.updatedAt && <span className="updated-label">Updated {new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' }).format(new Date(project.updatedAt))}</span>}</div></div>
   </Link></div>;
 }
 
@@ -415,10 +424,19 @@ function formatProjectDate(value: string | null | undefined, precision: ProjectD
     : `${month}/${day}/${year.slice(-2)}`;
 }
 
-function formatYarnDetails(project: Pick<Project, 'yarn' | 'yarnBrand' | 'yarnType' | 'yarnColor'>): string {
-  return [project.yarnBrand, project.yarnType, project.yarnColor].filter(Boolean).join(' · ')
-    || project.yarn
-    || '';
+function yarnSummary(project: Project): string {
+  const [first, ...rest] = project.yarns;
+  if (!first) return project.yarn || '';
+  return rest.length ? `${describeProjectYarn(first)} + ${rest.length} more` : describeProjectYarn(first);
+}
+
+function ProjectYarnList({ project }: { project: Project }) {
+  if (!project.yarns.length) return <>{project.yarn || 'Not added yet'}</>;
+  return <ul className="project-yarn-list" data-testid="list-project-yarns">{project.yarns.map((yarn) => <li key={yarn.id}>
+    {yarn.heldTogether && <span className="held-mark">Held with the yarn above</span>}
+    <span className="project-yarn-name"><ColorDot color={yarn.generalColor}/>{yarn.stashYarnId ? <Link href={`/stash/${yarn.stashYarnId}`}>{describeProjectYarn(yarn)}</Link> : describeProjectYarn(yarn)}</span>
+    {yarn.skeinsUsed !== null && <span className="project-yarn-skeins">{yarn.skeinsUsed} {yarn.skeinsUsed === 1 ? 'skein' : 'skeins'} used</span>}
+  </li>)}</ul>;
 }
 
 type DesignerMode = 'name' | 'website';
@@ -484,7 +502,6 @@ type ProjectFormValues = {
   title: string; craft: 'knitting' | 'crochet'; status: ProjectStatus;
   description: string; patternName: string; patternDesigner: string;
   designerWebsite: string; designerPageTitle: string;
-  yarnBrand: string; yarnType: string; yarnColor: string;
   tools: string; hookSize: NonNullable<CreateProject['hookSize']> | '';
   needleSize: NeedleSize | ''; needleType: NeedleType | ''; needleCableLength: CableLength | '';
   hasSecondNeedle: boolean;
@@ -567,8 +584,10 @@ function ProjectFormPage() {
   const [designerPreviewMessage, setDesignerPreviewMessage] = useState('');
   const [progressSettings, setProgressSettings] = useState<ProgressSettingsDraft>(defaultProgressSettings);
   const [showProgressSettingsError, setShowProgressSettingsError] = useState(false);
+  const [yarns, setYarns] = useState<YarnDraft[]>([]);
+  const [yarnsError, setYarnsError] = useState('');
   const form = useForm<ProjectFormValues>({
-    defaultValues: { title: '', craft: 'knitting', status: 'planning', description: '', patternName: '', patternDesigner: '', designerWebsite: '', designerPageTitle: '', yarnBrand: '', yarnType: '', yarnColor: '', tools: '', hookSize: '', ...emptyNeedleValues, startedAt: '', startedAtPrecision: 'day', targetDate: '', targetDatePrecision: 'day', completedAt: '', completedAtPrecision: 'day' },
+    defaultValues: { title: '', craft: 'knitting', status: 'planning', description: '', patternName: '', patternDesigner: '', designerWebsite: '', designerPageTitle: '', tools: '', hookSize: '', ...emptyNeedleValues, startedAt: '', startedAtPrecision: 'day', targetDate: '', targetDatePrecision: 'day', completedAt: '', completedAtPrecision: 'day' },
   });
   const previewDesignerTitle = () => {
     const websiteUrl = form.getValues('designerWebsite').trim();
@@ -593,6 +612,9 @@ function ProjectFormPage() {
       setShowProgressSettingsError(true);
       return;
     }
+    const yarnList = yarnsForApi(yarns);
+    setYarnsError(typeof yarnList === 'string' ? yarnList : '');
+    if (typeof yarnList === 'string') return;
     const payload: CreateProject = {
       title: values.title.trim(), craft: values.craft, status: values.status,
       description: values.description || null, patternName: values.patternName || null,
@@ -600,9 +622,7 @@ function ProjectFormPage() {
       designerWebsite: designerMode === 'website' ? values.designerWebsite.trim() || null : null,
       designerPageTitle: designerMode === 'website' ? values.designerPageTitle.trim() || null : null,
       yarn: null,
-      yarnBrand: values.yarnBrand.trim() || null,
-      yarnType: values.yarnType.trim() || null,
-      yarnColor: values.yarnColor.trim() || null,
+      yarns: yarnList,
       tools: values.tools || null,
       hookSize: values.craft === 'crochet' ? values.hookSize || null : null,
       ...needlesForApi(values),
@@ -616,6 +636,7 @@ function ProjectFormPage() {
       onSuccess: trackSuccessfulAction('project_created', (project: Project) => {
         void client.invalidateQueries({ queryKey: getGetProjectsQueryKey() });
         void client.invalidateQueries({ queryKey: getGetDashboardQueryKey() });
+        void client.invalidateQueries({ queryKey: getGetStashYarnsQueryKey() });
         setLocation(`/projects/${project.id}`);
       }),
     });
@@ -634,14 +655,7 @@ function ProjectFormPage() {
       <div className="form-grid">
         <div className="field-block"><label htmlFor="pattern-name">Pattern name</label><input id="pattern-name" placeholder="Pattern or source" {...form.register('patternName')} data-testid="input-pattern-name"/></div>
         <DesignerEntry form={form} mode={designerMode} onModeChange={(mode) => { setDesignerMode(mode); setDesignerPreviewMessage(''); }} onPreview={previewDesignerTitle} onClearPreview={() => setDesignerPreviewMessage('')} isPreviewing={previewTitle.isPending} message={designerPreviewMessage} prefix="create"/>
-        <div className="yarn-group field-wide">
-          <div className="yarn-group-heading"><b>Yarn</b></div>
-          <div className="yarn-trifold">
-            <div className="field-block"><label htmlFor="project-yarn-brand">Brand</label><input id="project-yarn-brand" placeholder="e.g. Cascade" {...form.register('yarnBrand')} data-testid="input-yarn-brand"/></div>
-            <div className="field-block"><label htmlFor="project-yarn-type">Type</label><input id="project-yarn-type" placeholder="e.g. Merino DK" {...form.register('yarnType')} data-testid="input-yarn-type"/></div>
-            <div className="field-block"><label htmlFor="project-yarn-color">Color</label><input id="project-yarn-color" placeholder="e.g. Oatmeal" {...form.register('yarnColor')} data-testid="input-yarn-color"/></div>
-          </div>
-        </div>
+        <ProjectYarnsField value={yarns} onChange={(value) => { setYarns(value); setYarnsError(''); }} idPrefix="project" error={yarnsError}/>
         {form.watch('craft') === 'crochet' ? (
           <div className="field-block"><label htmlFor="project-hook-size">Hook size</label><select id="project-hook-size" {...form.register('hookSize')} data-testid="select-crochet-hook-size"><option value="">Choose a hook size</option>{crochetHookSizes.map((hookSize) => <option key={hookSize} value={hookSize}>{hookSize}</option>)}</select></div>
         ) : (
@@ -706,10 +720,12 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
   }, [progressPhoto]);
   const [editProgressSettings, setEditProgressSettings] = useState<ProgressSettingsDraft>(defaultProgressSettings);
   const [showEditProgressError, setShowEditProgressError] = useState(false);
+  const [editYarns, setEditYarns] = useState<YarnDraft[]>([]);
+  const [editYarnsError, setEditYarnsError] = useState('');
   const [progressAmount, setProgressAmount] = useState<ProgressAmountDraft>({ percent: '0', value: '', done: [] });
   const [progressAmountError, setProgressAmountError] = useState('');
   const editForm = useForm<ProjectFormValues>({
-    defaultValues: { title: '', craft: 'knitting', status: 'planning', description: '', patternName: '', patternDesigner: '', designerWebsite: '', designerPageTitle: '', yarnBrand: '', yarnType: '', yarnColor: '', tools: '', hookSize: '', ...emptyNeedleValues, startedAt: '', startedAtPrecision: 'day', targetDate: '', targetDatePrecision: 'day', completedAt: '', completedAtPrecision: 'day' },
+    defaultValues: { title: '', craft: 'knitting', status: 'planning', description: '', patternName: '', patternDesigner: '', designerWebsite: '', designerPageTitle: '', tools: '', hookSize: '', ...emptyNeedleValues, startedAt: '', startedAtPrecision: 'day', targetDate: '', targetDatePrecision: 'day', completedAt: '', completedAtPrecision: 'day' },
   });
   useEffect(() => {
     if (!project) return;
@@ -718,7 +734,6 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
       description: project.description || '', patternName: project.patternName || '',
       patternDesigner: project.patternDesigner || '',
       designerWebsite: project.designerWebsite || '', designerPageTitle: project.designerPageTitle || '',
-      yarnBrand: project.yarnBrand || '', yarnType: project.yarnType || '', yarnColor: project.yarnColor || '',
       tools: project.tools || '', hookSize: project.hookSize || '',
       ...needleValuesFromProject(project),
       startedAt: dateForProjectForm(project.startedAt, project.startedAtPrecision),
@@ -732,7 +747,9 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
     setDesignerPreviewMessage('');
     setEditProgressSettings(progressSettingsFromProject(project));
     setShowEditProgressError(false);
-  }, [project?.id, project?.completedAt, project?.progressMethod, editForm.reset]);
+    setEditYarns(yarnDraftsFromProject(project.yarns));
+    setEditYarnsError('');
+  }, [editing, project?.id, project?.completedAt, project?.progressMethod, editForm.reset]);
   const previewEditDesignerTitle = () => {
     const websiteUrl = editForm.getValues('designerWebsite').trim();
     if (!websiteUrl) {
@@ -759,21 +776,24 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
     void client.invalidateQueries({ queryKey: getGetProjectQueryKey(projectId) });
     void client.invalidateQueries({ queryKey: getGetDashboardQueryKey() });
     void client.invalidateQueries({ queryKey: getGetProjectsQueryKey() });
+    void client.invalidateQueries({ queryKey: getGetStashYarnsQueryKey() });
+    void client.invalidateQueries({ queryKey: getGetSkeinSuggestionsQueryKey() });
   };
   const saveEdit = editForm.handleSubmit((values) => {
     if (progressSettingsError(editProgressSettings)) {
       setShowEditProgressError(true);
       return;
     }
+    const yarnList = yarnsForApi(editYarns);
+    setEditYarnsError(typeof yarnList === 'string' ? yarnList : '');
+    if (typeof yarnList === 'string') return;
     const payload: UpdateProject = {
       title: values.title.trim(), craft: values.craft, status: values.status,
       description: values.description || null, patternName: values.patternName || null,
       patternDesigner: values.patternDesigner.trim() || null,
       designerWebsite: designerMode === 'website' ? values.designerWebsite.trim() || null : null,
       designerPageTitle: designerMode === 'website' ? values.designerPageTitle.trim() || null : null,
-      yarnBrand: values.yarnBrand.trim() || null,
-      yarnType: values.yarnType.trim() || null,
-      yarnColor: values.yarnColor.trim() || null,
+      yarns: yarnList,
       tools: values.tools || null,
       hookSize: values.craft === 'crochet' ? values.hookSize || null : null,
       ...needlesForApi(values),
@@ -862,6 +882,7 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
   return <PortalLayout active="projects">
     <Link href="/projects" className="back-link" data-testid="link-back-projects"><ArrowLeft size={16}/> Back to projects</Link>
      <div className="detail-heading"><div><h1 className="serif">{project.title}</h1><div className="detail-status"><StatusPill status={project.status}/><span>{craftLabel}</span>{project.startedAt && <span>Started {formatProjectDate(project.startedAt, project.startedAtPrecision)}</span>}</div></div><div className="detail-actions"><StarButton project={project} className="detail-star"/><button className="button button-outline" onClick={() => setEditing(!editing)} data-testid="button-edit-project">{editing ? <X size={16}/> : <Feather size={16}/>} {editing ? 'Close edit' : 'Edit details'}</button><button className="icon-button danger-icon" aria-label="Delete project" title="Delete project" onClick={() => setConfirmDelete(true)} data-testid="button-delete-project"><Trash2 size={17}/></button></div></div>
+    <SkeinSuggestions projectId={project.id}/>
     {confirmDelete && <div className="confirm-banner"><div><b>Delete this project?</b><span>This will permanently remove the project and its progress notes.</span></div><button className="button button-quiet" onClick={() => setConfirmDelete(false)} data-testid="button-cancel-delete">Cancel</button><button className="button button-danger" onClick={deleteProject} disabled={remove.isPending} data-testid="button-confirm-delete">{remove.isPending ? 'Removing…' : 'Delete project'}</button></div>}
     {editing && <Form {...editForm}><form className="edit-form loom-card" onSubmit={saveEdit} noValidate><div className="form-intro"><h2 className="serif">Edit details</h2></div><div className="form-grid">
       <div className="field-block field-wide"><label htmlFor="edit-title">Project name</label><input id="edit-title" {...editForm.register('title', { required: 'Project name is required.' })} data-testid="input-edit-title"/></div>
@@ -870,15 +891,8 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
       <ProgressMethodFields value={editProgressSettings} onChange={setEditProgressSettings} prefix="edit" error={showEditProgressError ? progressSettingsError(editProgressSettings) : ''}/>
       <div className="field-block"><label htmlFor="edit-pattern">Pattern name</label><input id="edit-pattern" {...editForm.register('patternName')} data-testid="input-edit-pattern"/></div>
        <DesignerEntry form={editForm} mode={designerMode} onModeChange={(mode) => { setDesignerMode(mode); setDesignerPreviewMessage(''); }} onPreview={previewEditDesignerTitle} onClearPreview={() => setDesignerPreviewMessage('')} isPreviewing={previewTitle.isPending} message={designerPreviewMessage} prefix="edit"/>
-      <div className="yarn-group field-wide">
-        <div className="yarn-group-heading"><b>Yarn</b></div>
-        <div className="yarn-trifold">
-          <div className="field-block"><label htmlFor="edit-yarn-brand">Brand</label><input id="edit-yarn-brand" placeholder="e.g. Cascade" {...editForm.register('yarnBrand')} data-testid="input-edit-yarn-brand"/></div>
-          <div className="field-block"><label htmlFor="edit-yarn-type">Type</label><input id="edit-yarn-type" placeholder="e.g. Merino DK" {...editForm.register('yarnType')} data-testid="input-edit-yarn-type"/></div>
-          <div className="field-block"><label htmlFor="edit-yarn-color">Color</label><input id="edit-yarn-color" placeholder="e.g. Oatmeal" {...editForm.register('yarnColor')} data-testid="input-edit-yarn-color"/></div>
-        </div>
-        {project.yarn && <p className="legacy-yarn-note"><b>Saved yarn note:</b> {project.yarn} <span>This earlier entry is being kept unchanged.</span></p>}
-      </div>
+      <ProjectYarnsField value={editYarns} onChange={(value) => { setEditYarns(value); setEditYarnsError(''); }} idPrefix="edit" error={editYarnsError}/>
+      {project.yarn && <p className="legacy-yarn-note field-wide"><b>Saved yarn note:</b> {project.yarn} <span>This earlier entry is being kept unchanged.</span></p>}
       {editForm.watch('craft') === 'crochet' ? (
         <div className="field-block"><label htmlFor="edit-hook-size">Hook size</label><select id="edit-hook-size" {...editForm.register('hookSize')} data-testid="select-edit-crochet-hook-size"><option value="">Choose a hook size</option>{crochetHookSizes.map((hookSize) => <option key={hookSize} value={hookSize}>{hookSize}</option>)}</select>{project.tools && <p className="legacy-yarn-note"><b>Saved tools note:</b> {project.tools}<span>This earlier note is being kept unchanged.</span></p>}</div>
       ) : (
@@ -904,8 +918,8 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
         <div className="aside-card loom-card"><h3 className="serif">Details</h3><dl className="detail-list">
           <div><dt>Pattern</dt><dd>{project.patternName || 'Not added yet'}</dd></div>
           <div><dt>Designer</dt><dd>{project.designerWebsite ? <a href={project.designerWebsite} target="_blank" rel="noopener noreferrer" data-testid="link-designer-website">{designerWebsiteLabel(project.designerWebsite, project.designerPageTitle, project.patternDesigner)}</a> : project.patternDesigner || 'Not added yet'}</dd></div>
-          <div><dt>Yarn</dt><dd>{formatYarnDetails(project) || 'Not added yet'}</dd></div>
-          {project.yarn && (project.yarnBrand || project.yarnType || project.yarnColor) && <div><dt>Previous yarn note</dt><dd>{project.yarn}</dd></div>}
+          <div><dt>{project.yarns.length > 1 ? 'Yarns' : 'Yarn'}</dt><dd><ProjectYarnList project={project}/></dd></div>
+          {project.yarn && project.yarns.length > 0 && <div><dt>Previous yarn note</dt><dd>{project.yarn}</dd></div>}
           {project.craft === 'crochet'
             ? <div><dt>Hook size</dt><dd>{project.hookSize || 'Not added yet'}</dd></div>
             : <div><dt>Needle</dt><dd data-testid="text-needle">{describeNeedle(project.needleSize, project.needleType, project.needleCableLength) || 'Not added yet'}</dd></div>}
@@ -935,7 +949,7 @@ function skeinsLabel(yarn: Pick<StashYarn, 'skeinsPurchased' | 'skeinsLeft'>): s
 
 function StashYarnCard({ yarn }: { yarn: StashYarn }) {
   return <Link href={`/stash/${yarn.id}`} className="stash-card loom-card lift" data-testid={`card-stash-yarn-${yarn.id}`}>
-    <span className="stash-photo"><img src={stashPhotoUrl(yarn)} alt={`${yarnName(yarn)}${yarn.color ? ` in ${yarn.color}` : ''}`} loading="lazy"/><ColorDot color={yarn.generalColor} className="stash-photo-dot"/></span>
+    <span className={`stash-photo${yarn.photoPath ? '' : ' needs-photo'}`}>{yarn.photoPath ? <img src={stashPhotoUrl(yarn)} alt={`${yarnName(yarn)}${yarn.color ? ` in ${yarn.color}` : ''}`} loading="lazy"/> : <span className="needs-photo-mark"><Camera size={20}/>Needs a photo</span>}<ColorDot color={yarn.generalColor} className="stash-photo-dot"/></span>
     <span className="stash-card-body">
       <h3>{yarnName(yarn)}</h3>
       {yarn.color && <p>{yarn.color}</p>}
@@ -959,6 +973,7 @@ function StashPage() {
   const filtered = Boolean(search || weight || color);
   return <PortalLayout active="stash">
     <PageHeading title="Yarn stash" action={<Link href="/stash/new" className="button button-primary" data-testid="link-add-yarn"><Plus size={17}/> Add yarn</Link>}/>
+    <SkeinSuggestions/>
     <div className="catalog-tools">
       <label className="search-box"><Search size={17}/><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search by brand, color or fiber…" aria-label="Search your stash" data-testid="input-search-stash"/>{search && <button type="button" onClick={() => setSearch('')} aria-label="Clear search"><X size={15}/></button>}</label>
       <label className="select-wrap"><Filter size={15}/><select aria-label="Filter by weight" value={weight} onChange={(event) => setWeight(event.target.value)} data-testid="select-weight-filter"><option value="">Every weight</option>{yarnWeights.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select><ChevronDown size={14}/></label>
@@ -972,20 +987,6 @@ function StashPage() {
       : filtered ? <div className="no-results"><Search size={23}/><h3>No yarn matches</h3><p>Try a different search or clear a filter.</p><button className="button button-outline" onClick={clearFilters}>Reset filters</button></div>
       : <div className="empty-projects"><h3>No yarn yet</h3><p>Add your first yarn to start your stash.</p><Link href="/stash/new" className="button button-primary" data-testid="link-add-first-yarn"><Plus size={16}/> Add yarn</Link></div>}
   </PortalLayout>;
-}
-
-function useSettledValue(value: string, delay = 300): string {
-  const [settled, setSettled] = useState(value);
-  useEffect(() => {
-    const timer = window.setTimeout(() => setSettled(value), delay);
-    return () => window.clearTimeout(timer);
-  }, [value, delay]);
-  return settled;
-}
-
-function DidYouMean({ suggestion, onAccept, testId }: { suggestion: string | null | undefined; onAccept: (value: string) => void; testId: string }) {
-  if (!suggestion) return null;
-  return <button type="button" className="did-you-mean" onClick={() => onAccept(suggestion)} data-testid={testId}>Did you mean <b>{suggestion}</b>?</button>;
 }
 
 type StashDraft = {
@@ -1029,6 +1030,8 @@ function StashYarnForm({ yarn }: { yarn?: StashYarn }) {
   const [errors, setErrors] = useState<Partial<Record<'brand' | 'photo' | 'blend' | 'link' | 'skeins' | 'save', string>>>({});
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [reviewing, setReviewing] = useState<CatalogField | null>(null);
+  const reviews = useGetStashYarnReviews(yarn?.id ?? '', { query: { enabled: Boolean(yarn), queryKey: getGetStashYarnReviewsQueryKey(yarn?.id ?? '') } });
   const errorFor: Partial<Record<keyof StashDraft, keyof typeof errors>> = { brand: 'brand', blend: 'blend', brandLink: 'link', skeinsPurchased: 'skeins', skeinsLeft: 'skeins' };
   const set = (change: Partial<StashDraft>) => {
     setDraft((current) => ({ ...current, ...change }));
@@ -1077,7 +1080,7 @@ function StashYarnForm({ yarn }: { yarn?: StashYarn }) {
     event.preventDefault();
     const nextErrors: typeof errors = {};
     if (!draft.brand.trim()) nextErrors.brand = 'Enter the yarn’s brand.';
-    if (!photo && !yarn) nextErrors.photo = 'Add a photo of this yarn.';
+    if (!photo && !yarn?.photoPath) nextErrors.photo = 'Add a photo of this yarn.';
     if (photo && photo.size > 10 * 1024 * 1024) nextErrors.photo = 'Choose a photo smaller than 10 MB.';
     if (photo && !['image/jpeg', 'image/png', 'image/webp'].includes(photo.type)) nextErrors.photo = 'Choose a JPEG, PNG, or WebP photo.';
     const blend = blendForApi(draft.blend);
@@ -1120,7 +1123,15 @@ function StashYarnForm({ yarn }: { yarn?: StashYarn }) {
   };
 
   const deleteYarn = () => yarn && remove.mutate({ yarnId: yarn.id }, { onSuccess: done });
-  const photoShown = photoPreview || (yarn ? stashPhotoUrl(yarn) : '');
+  const photoShown = photoPreview || (yarn?.photoPath ? stashPhotoUrl(yarn) : '');
+  // Only names the catalog saved can be reviewed, so the button appears once
+  // a yarn is in the stash.
+  const reviewButton = (field: CatalogField) => yarn && (field === 'brand' || (field === 'sub_brand' ? yarn.subBrand : yarn.color))
+    ? <NameReviewButton field={field} open={reviewing === field} onToggle={() => setReviewing(reviewing === field ? null : field)}/>
+    : null;
+  const reviewForm = (field: CatalogField, currentName: string | null) => yarn && reviewing === field && currentName
+    ? <NameReviewForm yarnId={yarn.id} field={field} currentName={currentName} onDone={() => setReviewing(null)}/>
+    : null;
 
   return <PortalLayout active="stash">
     <Link href="/stash" className="back-link" data-testid="link-back-stash"><ArrowLeft size={16}/> Back to stash</Link>
@@ -1139,9 +1150,9 @@ function StashYarnForm({ yarn }: { yarn?: StashYarn }) {
           {errors.photo && <span className="field-error">{errors.photo}</span>}
         </div>
         <div className="stash-names">
-          <div className="field-block"><label htmlFor="stash-brand">Brand <b>*</b></label><input id="stash-brand" list="stash-brand-options" maxLength={80} placeholder="e.g. Lion Brand" value={draft.brand} onChange={(event) => set({ brand: event.target.value })} autoComplete="off" data-testid="input-stash-brand"/><datalist id="stash-brand-options">{catalog.data?.brands.map((name) => <option key={name} value={name}/>)}</datalist><DidYouMean suggestion={catalog.data?.suggestions.brand} onAccept={(brand) => set({ brand })} testId="button-did-you-mean-brand"/>{errors.brand && <span className="field-error">{errors.brand}</span>}</div>
-          <div className="field-block"><label htmlFor="stash-sub-brand">Sub brand</label><input id="stash-sub-brand" list="stash-sub-brand-options" maxLength={80} placeholder="e.g. Wool-Ease" value={draft.subBrand} onChange={(event) => set({ subBrand: event.target.value })} autoComplete="off" data-testid="input-stash-sub-brand"/><datalist id="stash-sub-brand-options">{catalog.data?.subBrands.map((line) => <option key={line.name} value={line.name}/>)}</datalist><DidYouMean suggestion={catalog.data?.suggestions.subBrand} onAccept={(subBrand) => set({ subBrand })} testId="button-did-you-mean-sub-brand"/></div>
-          <div className="field-block"><label htmlFor="stash-color">Color</label><input id="stash-color" list="stash-color-options" maxLength={80} placeholder="e.g. Fisherman" value={draft.color} onChange={(event) => set({ color: event.target.value })} autoComplete="off" data-testid="input-stash-color"/><datalist id="stash-color-options">{catalog.data?.colors.map((item) => <option key={item.name} value={item.name}/>)}</datalist><DidYouMean suggestion={catalog.data?.suggestions.color} onAccept={(color) => set({ color })} testId="button-did-you-mean-color"/></div>
+          <div className="field-block"><span className="label-row"><label htmlFor="stash-brand">Brand <b>*</b></label>{reviewButton('brand')}</span>{reviewForm('brand', yarn?.brand ?? null)}<input id="stash-brand" list="stash-brand-options" maxLength={80} placeholder="e.g. Lion Brand" value={draft.brand} onChange={(event) => set({ brand: event.target.value })} autoComplete="off" data-testid="input-stash-brand"/><datalist id="stash-brand-options">{catalog.data?.brands.map((name) => <option key={name} value={name}/>)}</datalist><DidYouMean suggestion={catalog.data?.suggestions.brand} typed={draft.brand} onAccept={(brand) => set({ brand })} testId="button-did-you-mean-brand"/>{errors.brand && <span className="field-error">{errors.brand}</span>}</div>
+          <div className="field-block"><span className="label-row"><label htmlFor="stash-sub-brand">Sub brand</label>{reviewButton('sub_brand')}</span>{reviewForm('sub_brand', yarn?.subBrand ?? null)}<input id="stash-sub-brand" list="stash-sub-brand-options" maxLength={80} placeholder="e.g. Wool-Ease" value={draft.subBrand} onChange={(event) => set({ subBrand: event.target.value })} autoComplete="off" data-testid="input-stash-sub-brand"/><datalist id="stash-sub-brand-options">{catalog.data?.subBrands.map((line) => <option key={line.name} value={line.name}/>)}</datalist><DidYouMean suggestion={catalog.data?.suggestions.subBrand} typed={draft.subBrand} onAccept={(subBrand) => set({ subBrand })} testId="button-did-you-mean-sub-brand"/></div>
+          <div className="field-block"><span className="label-row"><label htmlFor="stash-color">Color</label>{reviewButton('color')}</span>{reviewForm('color', yarn?.color ?? null)}<input id="stash-color" list="stash-color-options" maxLength={80} placeholder="e.g. Fisherman" value={draft.color} onChange={(event) => set({ color: event.target.value })} autoComplete="off" data-testid="input-stash-color"/><datalist id="stash-color-options">{catalog.data?.colors.map((item) => <option key={item.name} value={item.name}/>)}</datalist><DidYouMean suggestion={catalog.data?.suggestions.color} typed={draft.color} onAccept={(color) => set({ color })} testId="button-did-you-mean-color"/></div>
         </div>
       </div>
       <div className="form-grid stash-form-grid">
@@ -1153,9 +1164,54 @@ function StashYarnForm({ yarn }: { yarn?: StashYarn }) {
         <div className="field-block"><label htmlFor="stash-skeins-left">Skeins left</label><input id="stash-skeins-left" inputMode="decimal" placeholder={draft.skeinsPurchased || 'Same as purchased'} value={draft.skeinsLeft} onChange={(event) => set({ skeinsLeft: event.target.value })} data-testid="input-skeins-left"/></div>
         {errors.skeins && <span className="field-error field-wide">{errors.skeins}</span>}
       </div>
+      <NameReviewList reviews={reviews.data ?? []}/>
       {errors.save && <p className="mutation-error" role="alert">{errors.save}</p>}
       <div className="form-actions"><Link href="/stash" className="button button-quiet">Cancel</Link><button type="submit" className="button button-primary" disabled={saving} data-testid="button-save-yarn">{saving ? 'Saving…' : yarn ? 'Save changes' : 'Add to stash'}{!saving && <ArrowRight size={16}/>}</button></div>
     </form>
+  </PortalLayout>;
+}
+
+function ReviewCard({ review }: { review: CatalogReview }) {
+  const client = useQueryClient();
+  const resolve = useResolveCatalogReview();
+  const [name, setName] = useState(review.suggestedName);
+  const [reviewerNote, setReviewerNote] = useState('');
+  const [error, setError] = useState('');
+  const finish = (action: 'rename' | 'keep') => resolve.mutate(
+    { reviewId: review.id, data: { action, ...(action === 'rename' ? { name: name.trim() } : {}), reviewerNote: reviewerNote.trim() || null } },
+    {
+      onSuccess: () => void client.invalidateQueries({ queryKey: getGetCatalogReviewsQueryKey() }),
+      onError: (failure: unknown) => setError((failure as { data?: { error?: string } })?.data?.error ?? 'We couldn’t save that just now. Please try again.'),
+    },
+  );
+  return <article className="review-card loom-card" data-testid={`card-review-${review.id}`}>
+    <div className="review-card-top"><b>{catalogFieldLabels[review.field]}</b><span>{review.requesterName ?? 'A maker'} · {new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' }).format(new Date(review.createdAt))}</span></div>
+    <p className="review-names"><span>{review.currentName}</span> → <span>{review.suggestedName}</span></p>
+    {review.note && <p className="review-note">{review.note}</p>}
+    {review.status === 'open' ? <>
+      <div className="field-block"><label htmlFor={`review-name-${review.id}`}>Catalog name</label><input id={`review-name-${review.id}`} maxLength={80} value={name} onChange={(event) => { setName(event.target.value); setError(''); }} data-testid={`input-catalog-name-${review.id}`}/></div>
+      <div className="field-block"><label htmlFor={`review-reply-${review.id}`}>Reply to the maker (optional)</label><input id={`review-reply-${review.id}`} maxLength={500} value={reviewerNote} onChange={(event) => setReviewerNote(event.target.value)} data-testid={`input-review-reply-${review.id}`}/></div>
+      {error && <span className="field-error">{error}</span>}
+      <div className="review-actions"><button type="button" className="button button-outline button-small" disabled={resolve.isPending} onClick={() => finish('keep')} data-testid={`button-keep-name-${review.id}`}>Keep as is</button><button type="button" className="button button-primary button-small" disabled={resolve.isPending || !name.trim()} onClick={() => finish('rename')} data-testid={`button-rename-${review.id}`}>Rename</button></div>
+    </> : <p className={`review-status ${review.status}`}>{review.status === 'renamed' ? 'Renamed' : 'Kept as is'}{review.reviewerNote ? ` · ${review.reviewerNote}` : ''}</p>}
+  </article>;
+}
+
+function ReviewsPage() {
+  const access = useGetCatalogReviewAccess({ query: { queryKey: getGetCatalogReviewAccessQueryKey() } });
+  const query = useGetCatalogReviews({ query: { queryKey: getGetCatalogReviewsQueryKey(), enabled: Boolean(access.data?.reviewer) } });
+  if (access.isLoading) return <PortalLayout active="reviews"><LoadingScreen label="Checking reviews…"/></PortalLayout>;
+  if (!access.data?.reviewer) return <Redirect to="/stash"/>;
+  const open = query.data?.filter((review) => review.status === 'open') ?? [];
+  const done = query.data?.filter((review) => review.status !== 'open') ?? [];
+  return <PortalLayout active="reviews">
+    <PageHeading title="Name reviews"/>
+    {query.isLoading ? <LoadingScreen label="Gathering reviews…"/>
+      : query.isError ? <QueryProblem retry={() => query.refetch()}/>
+      : <>
+        {open.length ? <div className="review-grid">{open.map((review) => <ReviewCard key={review.id} review={review}/>)}</div> : <div className="empty-projects"><h3>No reviews waiting</h3></div>}
+        {done.length > 0 && <><div className="form-divider"><span>Resolved</span><i/></div><div className="review-grid">{done.map((review) => <ReviewCard key={review.id} review={review}/>)}</div></>}
+      </>}
   </PortalLayout>;
 }
 
@@ -1188,6 +1244,7 @@ function AuthCacheRouter() {
         <Route path="/projects"><PrivateRoute><ProjectsPage/></PrivateRoute></Route>
         <Route path="/projects/new"><PrivateRoute><ProjectFormPage/></PrivateRoute></Route>
         <Route path="/stash"><PrivateRoute><StashPage/></PrivateRoute></Route>
+        <Route path="/reviews"><PrivateRoute><ReviewsPage/></PrivateRoute></Route>
         <Route path="/stash/new"><PrivateRoute><StashYarnFormPage/></PrivateRoute></Route>
         <Route path="/stash/:yarnId">{(params) => <PrivateRoute><StashYarnFormPage yarnId={params.yarnId}/></PrivateRoute>}</Route>
         <Route path="/projects/:projectId">{(params) => <PrivateRoute><ProjectDetailPage projectId={params.projectId}/></PrivateRoute>}</Route>

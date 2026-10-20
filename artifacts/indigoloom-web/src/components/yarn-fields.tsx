@@ -154,3 +154,18 @@ export function BlendFields({ value, onChange, fibers, error }: { value: BlendDr
     {error && <span className="field-error">{error}</span>}
   </div>;
 }
+
+export function useSettledValue(value: string, delay = 300): string {
+  const [settled, setSettled] = useState(value);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setSettled(value), delay);
+    return () => window.clearTimeout(timer);
+  }, [value, delay]);
+  return settled;
+}
+
+// Hidden once the field already holds the suggested name.
+export function DidYouMean({ suggestion, typed, onAccept, testId }: { suggestion: string | null | undefined; typed: string; onAccept: (value: string) => void; testId: string }) {
+  if (!suggestion || suggestion === typed.trim()) return null;
+  return <button type="button" className="did-you-mean" onClick={() => onAccept(suggestion)} data-testid={testId}>Did you mean <b>{suggestion}</b>?</button>;
+}

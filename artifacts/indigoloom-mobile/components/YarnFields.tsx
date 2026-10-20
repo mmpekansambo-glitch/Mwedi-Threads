@@ -226,6 +226,7 @@ export function CatalogChoices({ options, typed, suggestion, onPick, testID }: {
 }) {
   const colors = useColors();
   const lower = typed.trim().toLowerCase();
+  if (suggestion === typed.trim()) suggestion = null;
   const matches = options.filter((option) => option.toLowerCase() !== lower && (!lower || option.toLowerCase().includes(lower))).slice(0, 5);
   if (!suggestion && !matches.length) return null;
   return (

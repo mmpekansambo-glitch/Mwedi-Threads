@@ -14,6 +14,7 @@ import type { ProgressMethod } from './progressMethod';
 import type { ProgressSection } from './progressSection';
 import type { ProjectDatePrecision } from './projectDatePrecision';
 import type { ProjectStatus } from './projectStatus';
+import type { ProjectYarn } from './projectYarn';
 
 export interface Project {
   id: string;
@@ -35,12 +36,7 @@ export interface Project {
   designerPageTitle: string | null;
   /** @nullable */
   yarn: string | null;
-  /** @nullable */
-  yarnBrand: string | null;
-  /** @nullable */
-  yarnType: string | null;
-  /** @nullable */
-  yarnColor: string | null;
+  yarns: ProjectYarn[];
   /** @nullable */
   tools: string | null;
   hookSize: CrochetHookSize | null;

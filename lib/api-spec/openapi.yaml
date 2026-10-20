@@ -363,6 +363,70 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+  /yarn-stash/skein-suggestions:
+    get:
+      operationId: getSkeinSuggestions
+      tags: [stash]
+      summary: Skeins-left suggestions waiting for the maker to confirm
+      parameters:
+        - in: query
+          name: projectId
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Pending suggestions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SkeinSuggestion"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /yarn-stash/skein-suggestions/{suggestionId}/accept:
+    parameters:
+      - in: path
+        name: suggestionId
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      operationId: acceptSkeinSuggestion
+      tags: [stash]
+      summary: Take the project's skeins off what's left of the stash yarn
+      responses:
+        "200":
+          description: Stash yarn updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StashYarn"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /yarn-stash/skein-suggestions/{suggestionId}/dismiss:
+    parameters:
+      - in: path
+        name: suggestionId
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      operationId: dismissSkeinSuggestion
+      tags: [stash]
+      summary: Leave the stash yarn's skeins as they are
+      responses:
+        "204":
+          description: Suggestion dismissed
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /yarn-stash/photo-upload:
     post:
       operationId: requestStashPhotoUpload
@@ -459,6 +523,119 @@ paths:
           description: Redirects to a short-lived private image URL
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /yarn-stash/{yarnId}/reviews:
+    parameters:
+      - in: path
+        name: yarnId
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: getStashYarnReviews
+      tags: [stash]
+      summary: Name reviews the maker asked for on this yarn
+      responses:
+        "200":
+          description: Reviews, newest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CatalogReview"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /catalog-reviews:
+    get:
+      operationId: getCatalogReviews
+      tags: [stash]
+      summary: Name reviews for the catalog reviewer, open ones first
+      responses:
+        "200":
+          description: Reviews
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CatalogReview"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Only the catalog reviewer can see reviews
+    post:
+      operationId: createCatalogReview
+      tags: [stash]
+      summary: Ask for a review of how a yarn name was merged in the catalog
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCatalogReview"
+      responses:
+        "201":
+          description: Review requested
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CatalogReview"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /catalog-reviews/access:
+    get:
+      operationId: getCatalogReviewAccess
+      tags: [stash]
+      summary: Whether the signed-in user reviews catalog names
+      responses:
+        "200":
+          description: Access
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CatalogReviewAccess"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /catalog-reviews/{reviewId}/resolve:
+    parameters:
+      - in: path
+        name: reviewId
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      operationId: resolveCatalogReview
+      tags: [stash]
+      summary: Rename the catalog entry or keep it as it is
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResolveCatalogReview"
+      responses:
+        "200":
+          description: Review resolved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CatalogReview"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Only the catalog reviewer can resolve reviews
         "404":
           $ref: "#/components/responses/NotFound"
   /yarn-catalog:
@@ -664,12 +841,10 @@ components:
           type: [string, "null"]
         yarn:
           type: [string, "null"]
-        yarnBrand:
-          type: [string, "null"]
-        yarnType:
-          type: [string, "null"]
-        yarnColor:
-          type: [string, "null"]
+        yarns:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProjectYarn"
         tools:
           type: [string, "null"]
         hookSize:
@@ -750,9 +925,7 @@ components:
         - designerWebsite
         - designerPageTitle
         - yarn
-        - yarnBrand
-        - yarnType
-        - yarnColor
+        - yarns
         - tools
         - hookSize
         - needleSize
@@ -809,12 +982,11 @@ components:
           type: [string, "null"]
         yarn:
           type: [string, "null"]
-        yarnBrand:
-          type: [string, "null"]
-        yarnType:
-          type: [string, "null"]
-        yarnColor:
-          type: [string, "null"]
+        yarns:
+          type: array
+          maxItems: 12
+          items:
+            $ref: "#/components/schemas/ProjectYarnInput"
         tools:
           type: [string, "null"]
         hookSize:
@@ -893,12 +1065,11 @@ components:
           type: [string, "null"]
         yarn:
           type: [string, "null"]
-        yarnBrand:
-          type: [string, "null"]
-        yarnType:
-          type: [string, "null"]
-        yarnColor:
-          type: [string, "null"]
+        yarns:
+          type: array
+          maxItems: 12
+          items:
+            $ref: "#/components/schemas/ProjectYarnInput"
         tools:
           type: [string, "null"]
         hookSize:
@@ -1159,7 +1330,8 @@ components:
         brandLink:
           type: [string, "null"]
         photoPath:
-          type: string
+          type: [string, "null"]
+          description: Empty for yarn added from a project that still needs a photo.
         skeinsPurchased:
           type: [number, "null"]
         skeinsLeft:
@@ -1250,6 +1422,149 @@ components:
           type: [number, "null"]
           minimum: 0
           maximum: 999
+    ProjectYarn:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        stashYarnId:
+          type: [string, "null"]
+          format: uuid
+        brand:
+          type: [string, "null"]
+        subBrand:
+          type: [string, "null"]
+        color:
+          type: [string, "null"]
+        generalColor:
+          description: The linked stash yarn's color family.
+          oneOf:
+            - $ref: "#/components/schemas/GeneralColor"
+            - type: "null"
+        heldTogether:
+          type: boolean
+          description: Worked as one strand with the yarn listed just above.
+        skeinsUsed:
+          type: [number, "null"]
+      required: [id, stashYarnId, brand, subBrand, color, generalColor, heldTogether, skeinsUsed]
+    ProjectYarnInput:
+      type: object
+      properties:
+        stashYarnId:
+          type: [string, "null"]
+          format: uuid
+        brand:
+          type: [string, "null"]
+          maxLength: 80
+        subBrand:
+          type: [string, "null"]
+          maxLength: 80
+        color:
+          type: [string, "null"]
+          maxLength: 80
+        heldTogether:
+          type: boolean
+        skeinsUsed:
+          type: [number, "null"]
+          minimum: 0
+          maximum: 999
+    SkeinSuggestion:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        stashYarnId:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        projectTitle:
+          type: string
+        yarnName:
+          type: string
+        skeinsUsed:
+          type: number
+        skeinsLeft:
+          type: number
+        suggestedLeft:
+          type: number
+      required: [id, stashYarnId, projectId, projectTitle, yarnName, skeinsUsed, skeinsLeft, suggestedLeft]
+    CatalogField:
+      type: string
+      enum: [brand, sub_brand, color]
+    CatalogReviewStatus:
+      type: string
+      enum: [open, renamed, kept]
+    CatalogReview:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        stashYarnId:
+          type: [string, "null"]
+          format: uuid
+        field:
+          $ref: "#/components/schemas/CatalogField"
+        currentName:
+          type: string
+        suggestedName:
+          type: string
+        note:
+          type: [string, "null"]
+        status:
+          $ref: "#/components/schemas/CatalogReviewStatus"
+        reviewerNote:
+          type: [string, "null"]
+        requesterName:
+          type: [string, "null"]
+        createdAt:
+          type: string
+          format: date-time
+        resolvedAt:
+          type: [string, "null"]
+          format: date-time
+      required: [id, stashYarnId, field, currentName, suggestedName, note, status, reviewerNote, requesterName, createdAt, resolvedAt]
+    CreateCatalogReview:
+      type: object
+      properties:
+        stashYarnId:
+          type: string
+          format: uuid
+        field:
+          $ref: "#/components/schemas/CatalogField"
+        suggestedName:
+          type: string
+          minLength: 1
+          maxLength: 80
+        note:
+          type: [string, "null"]
+          maxLength: 500
+      required: [stashYarnId, field, suggestedName]
+    ResolveCatalogReview:
+      type: object
+      properties:
+        action:
+          type: string
+          enum: [rename, keep]
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+          description: The new catalog name when renaming.
+        reviewerNote:
+          type: [string, "null"]
+          maxLength: 500
+      required: [action]
+    CatalogReviewAccess:
+      type: object
+      properties:
+        reviewer:
+          type: boolean
+      required: [reviewer]
     YarnCatalogSubBrand:
       type: object
       properties:

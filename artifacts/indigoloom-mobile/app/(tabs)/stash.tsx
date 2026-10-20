@@ -7,6 +7,7 @@ import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EmptyState, ErrorState, LoadingState, LoomButton, LoomText, PageHeader, fonts } from '@/components/loom';
 import { ColorDot, StashPhoto, generalColors, weightLabel, yarnWeights } from '@/components/YarnFields';
+import { SkeinSuggestions } from '@/components/SkeinSuggestions';
 import { useColors } from '@/hooks/useColors';
 
 function skeinsLabel(yarn: StashYarn): string {
@@ -24,7 +25,12 @@ function StashCard({ yarn }: { yarn: StashYarn }) {
       testID={`stash-card-${yarn.id}`}
     >
       <View>
-        <StashPhoto yarn={yarn} style={[styles.photo, { backgroundColor: colors.selectedWash }]} />
+        {yarn.photoPath ? <StashPhoto yarn={yarn} style={[styles.photo, { backgroundColor: colors.selectedWash }]} /> : (
+          <View style={[styles.photo, styles.needsPhoto, { backgroundColor: colors.selectedWash }]}>
+            <Feather name="camera" size={20} color={colors.mutedForeground} />
+            <LoomText style={{ color: colors.mutedForeground, fontFamily: fonts.semibold, fontSize: 13 }}>Needs a photo</LoomText>
+          </View>
+        )}
         <ColorDot color={yarn.generalColor} size={20} style={styles.photoDot} />
       </View>
       <View style={styles.cardBody}>
@@ -60,6 +66,7 @@ export default function StashScreen() {
       keyboardShouldPersistTaps="handled"
     >
       <PageHeader title="Yarn stash" action={<Pressable accessibilityRole="button" accessibilityLabel="Add yarn" onPress={() => router.push('/stash/new')} style={[styles.addButton, { backgroundColor: colors.primary }]}><Feather name="plus" color={colors.primaryForeground} size={20} /></Pressable>} />
+      <SkeinSuggestions />
       <View style={[styles.searchWrap, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <Feather name="search" size={16} color={colors.mutedForeground} />
         <TextInput value={search} onChangeText={setSearch} placeholder="Search by brand, color or fiber…" placeholderTextColor={colors.mutedForeground} style={[styles.searchInput, { color: colors.foreground }]} accessibilityLabel="Search your stash" testID="input-stash-search" />
@@ -105,6 +112,7 @@ const styles = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   card: { width: '47.5%', flexGrow: 1, maxWidth: 360, borderWidth: 1, borderRadius: 16, overflow: 'hidden' },
   photo: { width: '100%', aspectRatio: 1 },
+  needsPhoto: { alignItems: 'center', justifyContent: 'center', gap: 6 },
   photoDot: { position: 'absolute', right: 8, bottom: 8, borderWidth: 2, borderColor: '#FFFFFF' },
   cardBody: { padding: 11, gap: 3 },
   cardTitle: { fontSize: 17, lineHeight: 21 },

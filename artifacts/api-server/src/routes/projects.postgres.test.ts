@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import * as schema from "@workspace/db/schema";
 import { progressEntriesTable, projectsTable, usersTable } from "@workspace/db/schema";
+import { stashTablesSql } from "../test/stashTablesSql";
 
 vi.mock("@clerk/express", () => ({
   getAuth: (req: Request) => ({
@@ -138,6 +139,7 @@ describe.skipIf(!databaseUrl)("project authorization against PostgreSQL", () => 
         created_at timestamptz NOT NULL DEFAULT now(),
         PRIMARY KEY (user_id, project_id)
       );
+      ${stashTablesSql(isolatedSchema)}
     `);
 
     testPool = new pg.Pool({
@@ -394,22 +396,39 @@ describe.skipIf(!databaseUrl)("project authorization against PostgreSQL", () => 
     });
   });
 
-  it("finds projects by yarn brand, type and color", async () => {
-    await getTestDb()
-      .update(projectsTable)
-      .set({ yarnBrand: "Malabrigo", yarnType: "Merino worsted", yarnColor: "Teal" })
-      .where(eq(projectsTable.id, projectAId));
+  it("moves an old project's yarn into its yarn list and finds projects by any yarn", async () => {
+    const ownerC = "postgres-test-user-c";
+    await getTestDb().insert(usersTable).values({ id: ownerC, email: "c@example.test" });
+    const [old] = await getTestDb()
+      .insert(projectsTable)
+      .values({ ownerId: ownerC, title: "Old blanket", craft: "crochet", yarnBrand: "Malabrigo", yarnType: "Merino worsted", yarnColor: "Teal" })
+      .returning();
 
-    const search = async (term: string, user = ownerA) => {
+    const search = async (term: string, user = ownerC) => {
       const response = await request(`/projects?search=${encodeURIComponent(term)}`, { user });
       expect(response.status).toBe(200);
       return ((await response.json()) as { id: string }[]).map(({ id }) => id);
     };
 
-    expect(await search("malabrigo")).toEqual([projectAId]);
-    expect(await search("merino")).toEqual([projectAId]);
-    expect(await search("teal")).toEqual([projectAId]);
+    expect(await search("malabrigo")).toEqual([old.id]);
+    expect(await search("merino")).toEqual([old.id]);
+    expect(await search("teal")).toEqual([old.id]);
     expect(await search("cotton")).toEqual([]);
     expect(await search("malabrigo", ownerB)).toEqual([]);
+    const [moved] = await getTestDb().select().from(projectsTable).where(eq(projectsTable.id, old.id));
+    expect(moved).toMatchObject({ yarnBrand: null, yarnType: null, yarnColor: null });
+
+    const detail = await (await request(`/projects/${old.id}`, { user: ownerC })).json() as { yarns: unknown[] };
+    expect(detail.yarns).toMatchObject([
+      { brand: "Malabrigo", subBrand: "Merino worsted", color: "Teal", stashYarnId: null, heldTogether: false },
+    ]);
+
+    const updated = await request(`/projects/${old.id}`, {
+      method: "PATCH",
+      user: ownerC,
+      body: { yarns: [...detail.yarns, { brand: "Knit Picks", subBrand: "Brava", color: "Cotton Candy", heldTogether: true }] },
+    });
+    expect(updated.status).toBe(200);
+    expect(await search("cotton candy")).toEqual([old.id]);
   });
 });

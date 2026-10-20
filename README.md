@@ -44,7 +44,7 @@ Mwedi Threads is a project journal for knitters and crocheters. It keeps a proje
 Mwedi Threads is built and hosted on Replit.
 
 1. Open the Mwedi Threads app in Replit.
-2. Check that the **Secrets** tab has `DATABASE_URL`, `CLERK_SECRET_KEY` and `CLERK_PUBLISHABLE_KEY`. Replit fills in the database URL when the PostgreSQL database is added.
+2. Check that the **Secrets** tab has `DATABASE_URL`, `CLERK_SECRET_KEY` and `CLERK_PUBLISHABLE_KEY`. Replit fills in the database URL when the PostgreSQL database is added. To review yarn name merges, add `CATALOG_REVIEWER_EMAILS` with the reviewer's sign-in email.
 3. Press **Run**. This starts the API server, the web app and the mobile app together.
 4. Open the web app in the Preview tab, or scan the Expo QR code to open the mobile app on a phone.
 

@@ -163,6 +163,43 @@ export const NeedleCableLength = {
   '150_cm_(60_in)': '150 cm (60 in)',
 } as const;
 
+export type GeneralColor = typeof GeneralColor[keyof typeof GeneralColor];
+
+
+export const GeneralColor = {
+  red: 'red',
+  orange: 'orange',
+  yellow: 'yellow',
+  green: 'green',
+  blue: 'blue',
+  purple: 'purple',
+  pink: 'pink',
+  brown: 'brown',
+  black: 'black',
+  gray: 'gray',
+  white: 'white',
+  cream: 'cream',
+  multi: 'multi',
+} as const;
+
+export interface ProjectYarn {
+  id: string;
+  /** @nullable */
+  stashYarnId: string | null;
+  /** @nullable */
+  brand: string | null;
+  /** @nullable */
+  subBrand: string | null;
+  /** @nullable */
+  color: string | null;
+  /** The linked stash yarn's color family. */
+  generalColor: GeneralColor | null;
+  /** Worked as one strand with the yarn listed just above. */
+  heldTogether: boolean;
+  /** @nullable */
+  skeinsUsed: number | null;
+}
+
 export interface Project {
   id: string;
   title: string;
@@ -183,12 +220,7 @@ export interface Project {
   designerPageTitle: string | null;
   /** @nullable */
   yarn: string | null;
-  /** @nullable */
-  yarnBrand: string | null;
-  /** @nullable */
-  yarnType: string | null;
-  /** @nullable */
-  yarnColor: string | null;
+  yarns: ProjectYarn[];
   /** @nullable */
   tools: string | null;
   hookSize: CrochetHookSize | null;
@@ -231,6 +263,33 @@ export type ProjectDetail = Project & {
   progress: ProgressEntry[];
 };
 
+export interface ProjectYarnInput {
+  /** @nullable */
+  stashYarnId?: string | null;
+  /**
+     * @maxLength 80
+     * @nullable
+     */
+  brand?: string | null;
+  /**
+     * @maxLength 80
+     * @nullable
+     */
+  subBrand?: string | null;
+  /**
+     * @maxLength 80
+     * @nullable
+     */
+  color?: string | null;
+  heldTogether?: boolean;
+  /**
+     * @minimum 0
+     * @maximum 999
+     * @nullable
+     */
+  skeinsUsed?: number | null;
+}
+
 export interface CreateProject {
   /**
      * @minLength 1
@@ -254,12 +313,8 @@ export interface CreateProject {
   designerPageTitle?: string | null;
   /** @nullable */
   yarn?: string | null;
-  /** @nullable */
-  yarnBrand?: string | null;
-  /** @nullable */
-  yarnType?: string | null;
-  /** @nullable */
-  yarnColor?: string | null;
+  /** @maxItems 12 */
+  yarns?: ProjectYarnInput[];
   /** @nullable */
   tools?: string | null;
   hookSize?: CrochetHookSize | null;
@@ -310,12 +365,8 @@ export interface UpdateProject {
   designerPageTitle?: string | null;
   /** @nullable */
   yarn?: string | null;
-  /** @nullable */
-  yarnBrand?: string | null;
-  /** @nullable */
-  yarnType?: string | null;
-  /** @nullable */
-  yarnColor?: string | null;
+  /** @maxItems 12 */
+  yarns?: ProjectYarnInput[];
   /** @nullable */
   tools?: string | null;
   hookSize?: CrochetHookSize | null;
@@ -478,25 +529,6 @@ export const YarnWeight = {
   jumbo: 'jumbo',
 } as const;
 
-export type GeneralColor = typeof GeneralColor[keyof typeof GeneralColor];
-
-
-export const GeneralColor = {
-  red: 'red',
-  orange: 'orange',
-  yellow: 'yellow',
-  green: 'green',
-  blue: 'blue',
-  purple: 'purple',
-  pink: 'pink',
-  brown: 'brown',
-  black: 'black',
-  gray: 'gray',
-  white: 'white',
-  cream: 'cream',
-  multi: 'multi',
-} as const;
-
 export interface YarnBlendPart {
   /**
      * @minLength 1
@@ -522,7 +554,11 @@ export interface StashYarn {
   blend: YarnBlendPart[];
   /** @nullable */
   brandLink: string | null;
-  photoPath: string;
+  /**
+     * Empty for yarn added from a project that still needs a photo.
+     * @nullable
+     */
+  photoPath: string | null;
   /** @nullable */
   skeinsPurchased: number | null;
   /** @nullable */
@@ -611,6 +647,96 @@ export interface UpdateStashYarn {
   skeinsLeft?: number | null;
 }
 
+export interface SkeinSuggestion {
+  id: string;
+  stashYarnId: string;
+  projectId: string;
+  projectTitle: string;
+  yarnName: string;
+  skeinsUsed: number;
+  skeinsLeft: number;
+  suggestedLeft: number;
+}
+
+export type CatalogField = typeof CatalogField[keyof typeof CatalogField];
+
+
+export const CatalogField = {
+  brand: 'brand',
+  sub_brand: 'sub_brand',
+  color: 'color',
+} as const;
+
+export type CatalogReviewStatus = typeof CatalogReviewStatus[keyof typeof CatalogReviewStatus];
+
+
+export const CatalogReviewStatus = {
+  open: 'open',
+  renamed: 'renamed',
+  kept: 'kept',
+} as const;
+
+export interface CatalogReview {
+  id: string;
+  /** @nullable */
+  stashYarnId: string | null;
+  field: CatalogField;
+  currentName: string;
+  suggestedName: string;
+  /** @nullable */
+  note: string | null;
+  status: CatalogReviewStatus;
+  /** @nullable */
+  reviewerNote: string | null;
+  /** @nullable */
+  requesterName: string | null;
+  createdAt: string;
+  /** @nullable */
+  resolvedAt: string | null;
+}
+
+export interface CreateCatalogReview {
+  stashYarnId: string;
+  field: CatalogField;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  suggestedName: string;
+  /**
+     * @maxLength 500
+     * @nullable
+     */
+  note?: string | null;
+}
+
+export type ResolveCatalogReviewAction = typeof ResolveCatalogReviewAction[keyof typeof ResolveCatalogReviewAction];
+
+
+export const ResolveCatalogReviewAction = {
+  rename: 'rename',
+  keep: 'keep',
+} as const;
+
+export interface ResolveCatalogReview {
+  action: ResolveCatalogReviewAction;
+  /**
+     * The new catalog name when renaming.
+     * @minLength 1
+     * @maxLength 80
+     */
+  name?: string;
+  /**
+     * @maxLength 500
+     * @nullable
+     */
+  reviewerNote?: string | null;
+}
+
+export interface CatalogReviewAccess {
+  reviewer: boolean;
+}
+
 export interface YarnCatalogSubBrand {
   name: string;
   blend: YarnBlendPart[];
@@ -676,6 +802,10 @@ export type GetStashYarnsParams = {
 search?: string;
 weight?: YarnWeight;
 generalColor?: GeneralColor;
+};
+
+export type GetSkeinSuggestionsParams = {
+projectId?: string;
 };
 
 export type GetYarnCatalogParams = {

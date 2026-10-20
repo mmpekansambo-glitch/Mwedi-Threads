@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, ilike, or } from "drizzle-orm";
+import { and, desc, eq, gte, ilike, or, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { Router, type IRouter, type Response } from "express";
 import {
@@ -30,6 +30,7 @@ import {
 import {
   db,
   progressEntriesTable,
+  projectYarnsTable,
   projectsTable,
   starsTable,
   type Project,
@@ -39,6 +40,17 @@ import { deleteStoredObject, signedObjectUrl, storageLocation } from "../lib/obj
 import { buildDashboardCharts, progressChartStart } from "../lib/dashboardCharts";
 import { checkProgressSettings, workOutProgress } from "../lib/progressMethods";
 import {
+  checkProjectYarns,
+  moveOldProjectYarns,
+  projectYarnsFor,
+  saveProjectYarns,
+  StashYarnNotFound,
+  suggestSkeinsLeft,
+  withdrawSkeinSuggestions,
+  type CheckedProjectYarn,
+  type ProjectYarnView,
+} from "../lib/projectYarns";
+import {
   normalizeDesignerPageTitle,
   previewWebsitePageTitle,
   WebsiteTitlePreviewError,
@@ -46,6 +58,14 @@ import {
 
 const router: IRouter = Router();
 router.use(requireAuth);
+router.use(async (_req, res, next) => {
+  try {
+    await moveOldProjectYarns(getOwnerId(res));
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
 const allowedPhotoTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
 const maxPhotoSize = 10 * 1024 * 1024;
 
@@ -75,8 +95,8 @@ function completedDateChanges(
   return {};
 }
 
-function serializeProject(project: Project, starred: boolean) {
-  const validated = GetProjectsResponseItem.parse({ ...project, starred });
+function serializeProject(project: Project, starred: boolean, yarns: ProjectYarnView[]) {
+  const validated = GetProjectsResponseItem.parse({ ...project, starred, yarns });
   return {
     ...validated,
     designerPageTitle: project.designerPageTitle
@@ -114,6 +134,31 @@ async function findOwnedProjectId(ownerId: string, projectId: string): Promise<s
     .from(projectsTable)
     .where(and(eq(projectsTable.id, projectId), eq(projectsTable.ownerId, ownerId)));
   return project?.id ?? null;
+}
+
+type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+// Saves the project and its yarn list together. Returns null when the
+// response has already been sent (a stash yarn that isn't the maker's).
+async function saveWithYarns(
+  res: Response,
+  ownerId: string,
+  yarns: CheckedProjectYarn[] | undefined,
+  save: (tx: Transaction) => Promise<{ project: Project; finished: boolean } | undefined>,
+): Promise<Project | undefined | null> {
+  try {
+    return await db.transaction(async (tx) => {
+      const saved = await save(tx);
+      if (!saved) return undefined;
+      if (yarns) await saveProjectYarns(tx, ownerId, saved.project.id, yarns);
+      if (saved.finished) await suggestSkeinsLeft(tx, ownerId, saved.project.id);
+      return saved.project;
+    });
+  } catch (error) {
+    if (!(error instanceof StashYarnNotFound)) throw error;
+    res.status(400).json({ error: "That yarn isn't in your stash any more. Choose it again." });
+    return null;
+  }
 }
 
 router.post("/projects/designer-website-title-preview", async (req, res): Promise<void> => {
@@ -183,9 +228,12 @@ router.get("/dashboard", async (req, res): Promise<void> => {
         ),
       ),
   ]);
-  const starredIds = await starredProjectIds(ownerId);
+  const [starredIds, recentYarns] = await Promise.all([
+    starredProjectIds(ownerId),
+    projectYarnsFor(recentProjects.map((project) => project.id)),
+  ]);
   const serializedRecent = recentProjects.map((project) =>
-    serializeProject(project, starredIds.has(project.id)),
+    serializeProject(project, starredIds.has(project.id), recentYarns.get(project.id) ?? []),
   );
 
   const dashboard = GetDashboardResponse.parse({
@@ -225,9 +273,7 @@ router.get("/projects", async (req, res): Promise<void> => {
         ilike(projectsTable.patternName, `%${search}%`),
         ilike(projectsTable.patternDesigner, `%${search}%`),
         ilike(projectsTable.yarn, `%${search}%`),
-        ilike(projectsTable.yarnBrand, `%${search}%`),
-        ilike(projectsTable.yarnType, `%${search}%`),
-        ilike(projectsTable.yarnColor, `%${search}%`),
+        sql`exists (select 1 from ${projectYarnsTable} where ${projectYarnsTable.projectId} = ${projectsTable.id} and concat_ws(' ', ${projectYarnsTable.brand}, ${projectYarnsTable.subBrand}, ${projectYarnsTable.color}) ilike ${`%${search}%`})`,
       )!,
     );
   }
@@ -249,10 +295,10 @@ router.get("/projects", async (req, res): Promise<void> => {
   // The generated query schema turns any value into true, so only the exact
   // text "true" turns the Starred filter on.
   const onlyStarred = req.query.starred === "true";
+  const shown = rows.filter((project) => !onlyStarred || starredIds.has(project.id));
+  const yarns = await projectYarnsFor(shown.map((project) => project.id));
   res.json(
-    rows
-      .filter((project) => !onlyStarred || starredIds.has(project.id))
-      .map((project) => serializeProject(project, starredIds.has(project.id))),
+    shown.map((project) => serializeProject(project, starredIds.has(project.id), yarns.get(project.id) ?? [])),
   );
 });
 
@@ -264,7 +310,12 @@ router.post("/projects", async (req, res): Promise<void> => {
   }
 
   const ownerId = getOwnerId(res);
-  const { startedAt, targetDate, progressMethod, progressTotal, progressSections, ...fields } = parsed.data;
+  const { startedAt, targetDate, progressMethod, progressTotal, progressSections, yarns: yarnInputs, ...fields } = parsed.data;
+  const yarnsCheck = checkProjectYarns(yarnInputs ?? []);
+  if (!yarnsCheck.ok) {
+    res.status(400).json({ error: yarnsCheck.error });
+    return;
+  }
   const progressSettings = checkProgressSettings({
     progressMethod: progressMethod ?? "estimate",
     progressTotal: progressTotal ?? null,
@@ -274,7 +325,8 @@ router.post("/projects", async (req, res): Promise<void> => {
     res.status(400).json({ error: progressSettings.error });
     return;
   }
-  const [created] = await db
+  const created = await saveWithYarns(res, ownerId, yarnsCheck.yarns, async (tx) => {
+    const [row] = await tx
     .insert(projectsTable)
     .values({
       description: null,
@@ -283,9 +335,6 @@ router.post("/projects", async (req, res): Promise<void> => {
       designerWebsite: null,
       designerPageTitle: null,
       yarn: null,
-      yarnBrand: null,
-      yarnType: null,
-      yarnColor: null,
       tools: null,
       hookSize: null,
       needleSize: null,
@@ -311,7 +360,11 @@ router.post("/projects", async (req, res): Promise<void> => {
       ),
     })
     .returning();
-  res.status(201).json(serializeProject(created, false));
+    return { project: row, finished: row.status === "completed" };
+  });
+  if (!created) return;
+  const yarns = await projectYarnsFor([created.id]);
+  res.status(201).json(serializeProject(created, false, yarns.get(created.id) ?? []));
 });
 
 router.get("/projects/:projectId", async (req, res): Promise<void> => {
@@ -341,8 +394,9 @@ router.get("/projects/:projectId", async (req, res): Promise<void> => {
     .from(progressEntriesTable)
     .where(eq(progressEntriesTable.projectId, project.id))
     .orderBy(desc(progressEntriesTable.createdAt));
+  const [starred, yarns] = await Promise.all([isStarred(ownerId, project.id), projectYarnsFor([project.id])]);
   res.json({
-    ...serializeProject(project, await isStarred(ownerId, project.id)),
+    ...serializeProject(project, starred, yarns.get(project.id) ?? []),
     progress,
   });
 });
@@ -358,9 +412,14 @@ router.patch("/projects/:projectId", async (req, res): Promise<void> => {
   const ownerId = getOwnerId(res);
   const {
     startedAt, targetDate, completedAt, title,
-    progressMethod, progressTotal, progressSections,
+    progressMethod, progressTotal, progressSections, yarns: yarnInputs,
     ...otherChanges
   } = parsed.data;
+  const yarnsCheck = yarnInputs !== undefined ? checkProjectYarns(yarnInputs) : undefined;
+  if (yarnsCheck && !yarnsCheck.ok) {
+    res.status(400).json({ error: yarnsCheck.error });
+    return;
+  }
   const changes: Partial<Project> & typeof otherChanges = {
     ...otherChanges,
     ...(title !== undefined ? { title: title.trim() } : {}),
@@ -371,12 +430,15 @@ router.patch("/projects/:projectId", async (req, res): Promise<void> => {
   const changesStatus = changes.status !== undefined && completedAt === undefined;
   const changesProgress =
     progressMethod !== undefined || progressTotal !== undefined || progressSections !== undefined;
-  if (Object.keys(changes).length === 0 && !changesProgress) {
+  if (Object.keys(changes).length === 0 && !changesProgress && !yarnsCheck) {
     res.status(400).json({ error: "Check the project details and try again." });
     return;
   }
 
-  if (changesStatus || changesProgress) {
+  let previousStatus: ProjectStatus;
+  // Checking the project first means another maker's project is never
+  // written to.
+  {
     const [current] = await db
       .select({
         status: projectsTable.status,
@@ -396,6 +458,7 @@ router.patch("/projects/:projectId", async (req, res): Promise<void> => {
       res.status(404).json({ error: "Project not found." });
       return;
     }
+    previousStatus = current.status;
     // A completed date sent with the change wins over the automatic one.
     if (changesStatus && changes.status) {
       Object.assign(changes, completedDateChanges(current, changes.status));
@@ -415,21 +478,40 @@ router.patch("/projects/:projectId", async (req, res): Promise<void> => {
     }
   }
 
-  const [updated] = await db
-    .update(projectsTable)
-    .set(changes)
-    .where(
-      and(
-        eq(projectsTable.id, params.data.projectId),
-        eq(projectsTable.ownerId, ownerId),
-      ),
-    )
-    .returning();
+  const updated = await saveWithYarns(res, ownerId, yarnsCheck?.yarns, async (tx) => {
+    const [row] = Object.keys(changes).length
+      ? await tx
+        .update(projectsTable)
+        .set(changes)
+        .where(
+          and(
+            eq(projectsTable.id, params.data.projectId),
+            eq(projectsTable.ownerId, ownerId),
+          ),
+        )
+        .returning()
+      : await tx
+        .select()
+        .from(projectsTable)
+        .where(
+          and(
+            eq(projectsTable.id, params.data.projectId),
+            eq(projectsTable.ownerId, ownerId),
+          ),
+        );
+    if (!row) return undefined;
+    if (previousStatus === "completed" && row.status !== "completed") {
+      await withdrawSkeinSuggestions(tx, row.id);
+    }
+    return { project: row, finished: previousStatus !== "completed" && row.status === "completed" };
+  });
+  if (updated === null) return;
   if (!updated) {
     res.status(404).json({ error: "Project not found." });
     return;
   }
-  res.json(serializeProject(updated, await isStarred(ownerId, updated.id)));
+  const [starred, yarns] = await Promise.all([isStarred(ownerId, updated.id), projectYarnsFor([updated.id])]);
+  res.json(serializeProject(updated, starred, yarns.get(updated.id) ?? []));
 });
 
 router.delete("/projects/:projectId", async (req, res): Promise<void> => {
@@ -741,6 +823,11 @@ router.post(
           ...completedDateChanges(project, nextStatus),
         })
         .where(eq(projectsTable.id, project.id));
+      if (nextStatus === "completed" && project.status !== "completed") {
+        await suggestSkeinsLeft(tx, ownerId, project.id);
+      } else if (nextStatus !== "completed" && project.status === "completed") {
+        await withdrawSkeinSuggestions(tx, project.id);
+      }
       return [created];
     });
 
