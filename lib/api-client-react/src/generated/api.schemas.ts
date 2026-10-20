@@ -542,6 +542,160 @@ export interface YarnBlendPart {
   percent: number;
 }
 
+export interface Crafts {
+  yarn: boolean;
+  sewing: boolean;
+  /** True for a new maker who hasn't picked their crafts yet */
+  needsChoice: boolean;
+}
+
+export interface UpdateCrafts {
+  yarn: boolean;
+  sewing: boolean;
+}
+
+export type FabricType = typeof FabricType[keyof typeof FabricType];
+
+
+export const FabricType = {
+  cotton: 'cotton',
+  linen: 'linen',
+  jersey: 'jersey',
+  denim: 'denim',
+  silk: 'silk',
+  wool: 'wool',
+  polyester: 'polyester',
+  blend: 'blend',
+  other: 'other',
+} as const;
+
+export type FabricConstruction = typeof FabricConstruction[keyof typeof FabricConstruction];
+
+
+export const FabricConstruction = {
+  woven: 'woven',
+  knit: 'knit',
+} as const;
+
+export type FabricPrint = typeof FabricPrint[keyof typeof FabricPrint];
+
+
+export const FabricPrint = {
+  solid: 'solid',
+  floral: 'floral',
+  stripe: 'stripe',
+  check: 'check',
+  dots: 'dots',
+  geometric: 'geometric',
+  abstract: 'abstract',
+  animal: 'animal',
+  novelty: 'novelty',
+} as const;
+
+/**
+ * Meters go with centimetre widths, yards with inch widths
+ */
+export type FabricUnit = typeof FabricUnit[keyof typeof FabricUnit];
+
+
+export const FabricUnit = {
+  meters: 'meters',
+  yards: 'yards',
+} as const;
+
+export interface StashFabric {
+  id: string;
+  fabricType: FabricType;
+  construction: FabricConstruction | null;
+  print: FabricPrint | null;
+  generalColor: GeneralColor | null;
+  unit: FabricUnit;
+  /** @nullable */
+  amount: number | null;
+  /** @nullable */
+  width: number | null;
+  /** @nullable */
+  brand: string | null;
+  /** @nullable */
+  notes: string | null;
+  /** The first photo is the print close-up */
+  photoCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateStashFabric {
+  fabricType: FabricType;
+  construction?: FabricConstruction | null;
+  print?: FabricPrint | null;
+  generalColor?: GeneralColor | null;
+  unit: FabricUnit;
+  /**
+     * @minimum 0
+     * @maximum 999
+     * @nullable
+     */
+  amount?: number | null;
+  /**
+     * @minimum 0
+     * @maximum 999
+     * @nullable
+     */
+  width?: number | null;
+  /**
+     * @maxLength 80
+     * @nullable
+     */
+  brand?: string | null;
+  /**
+     * @maxLength 1000
+     * @nullable
+     */
+  notes?: string | null;
+  /**
+     * The print close-up first, then up to three more
+     * @minItems 1
+     * @maxItems 4
+     */
+  photoPaths: string[];
+}
+
+export interface UpdateStashFabric {
+  fabricType?: FabricType;
+  construction?: FabricConstruction | null;
+  print?: FabricPrint | null;
+  generalColor?: GeneralColor | null;
+  unit?: FabricUnit;
+  /**
+     * @minimum 0
+     * @maximum 999
+     * @nullable
+     */
+  amount?: number | null;
+  /**
+     * @minimum 0
+     * @maximum 999
+     * @nullable
+     */
+  width?: number | null;
+  /**
+     * @maxLength 80
+     * @nullable
+     */
+  brand?: string | null;
+  /**
+     * @maxLength 1000
+     * @nullable
+     */
+  notes?: string | null;
+  /**
+     * The full photo list in order. Keep an existing photo by sending "keep:<index>"; new photos are paths from the upload URL.
+     * @minItems 1
+     * @maxItems 4
+     */
+  photoPaths?: string[];
+}
+
 export interface StashYarn {
   id: string;
   brand: string;
@@ -812,5 +966,15 @@ export type GetYarnCatalogParams = {
 brand?: string;
 subBrand?: string;
 color?: string;
+};
+
+export type GetStashFabricsParams = {
+/**
+ * Matches fabric type, brand or notes
+ */
+search?: string;
+fabricType?: FabricType;
+print?: FabricPrint;
+generalColor?: GeneralColor;
 };
 

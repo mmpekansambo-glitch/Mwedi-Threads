@@ -1,4 +1,4 @@
-// The yarn catalog, stash and project yarn tables for the PostgreSQL route
+// The yarn catalog, stash, project yarn and fabric stash tables for the PostgreSQL route
 // tests, matching lib/db/src/schema. The users and projects tables must
 // already exist in the schema.
 export function stashTablesSql(isolatedSchema: string): string {
@@ -87,6 +87,26 @@ export function stashTablesSql(isolatedSchema: string): string {
       reviewer_note text,
       created_at timestamptz NOT NULL DEFAULT now(),
       resolved_at timestamptz
+    );
+    CREATE TYPE ${isolatedSchema}.fabric_type AS ENUM ('cotton', 'linen', 'jersey', 'denim', 'silk', 'wool', 'polyester', 'blend', 'other');
+    CREATE TYPE ${isolatedSchema}.fabric_construction AS ENUM ('woven', 'knit');
+    CREATE TYPE ${isolatedSchema}.fabric_print AS ENUM ('solid', 'floral', 'stripe', 'check', 'dots', 'geometric', 'abstract', 'animal', 'novelty');
+    CREATE TYPE ${isolatedSchema}.fabric_unit AS ENUM ('meters', 'yards');
+    CREATE TABLE ${isolatedSchema}.stash_fabrics (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL REFERENCES ${isolatedSchema}.users(id) ON DELETE CASCADE,
+      fabric_type ${isolatedSchema}.fabric_type NOT NULL,
+      construction ${isolatedSchema}.fabric_construction,
+      print ${isolatedSchema}.fabric_print,
+      general_color ${isolatedSchema}.general_color,
+      unit ${isolatedSchema}.fabric_unit NOT NULL DEFAULT 'meters',
+      amount double precision,
+      width double precision,
+      brand text,
+      notes text,
+      photo_paths text[] NOT NULL DEFAULT '{}'::text[],
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now()
     );
   `;
 }

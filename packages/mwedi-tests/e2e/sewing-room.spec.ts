@@ -1,0 +1,161 @@
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { expect, test, type Page } from "@playwright/test";
+
+const photo = readFileSync(fileURLToPath(new URL("../fixtures/yarn-photo.png", import.meta.url)));
+const shots = process.env.SEWING_SCREENSHOTS;
+
+// Simple drawn prints stand in for fabric photos.
+const prints: Record<string, string> = {
+  floral: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 90"><rect width="120" height="90" fill="#2F4F8F"/>${[[20, 20], [60, 15], [100, 25], [35, 55], [80, 60], [15, 80], [110, 78]].map(([x, y]) => `<g transform="translate(${x} ${y})"><circle r="4" fill="#F1E6CF"/>${[0, 72, 144, 216, 288].map((a) => `<ellipse rx="3" ry="6" cy="-7" fill="#E58FB0" transform="rotate(${a})"/>`).join("")}</g>`).join("")}</svg>`,
+  stripe: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 90"><rect width="120" height="90" fill="#F1E6CF"/>${[0, 1, 2, 3, 4, 5, 6, 7].map((i) => `<rect x="0" y="${i * 12}" width="120" height="5" fill="#1F2F16"/>`).join("")}</svg>`,
+  check: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 90"><rect width="120" height="90" fill="#C0392B"/>${[0, 1, 2, 3, 4, 5].map((i) => `<rect x="${i * 24}" width="12" height="90" fill="#222" opacity=".45"/><rect y="${i * 18}" width="120" height="9" fill="#222" opacity=".45"/>`).join("")}</svg>`,
+};
+
+function fabric(id: string, overrides: Record<string, unknown> = {}) {
+  return {
+    id, fabricType: "cotton", construction: "woven", print: "floral", generalColor: "blue", unit: "meters",
+    amount: 2.5, width: 145, brand: "Liberty", notes: "Lawn for a summer dress", photoCount: 2,
+    createdAt: "2026-10-20T12:00:00.000Z", updatedAt: "2026-10-20T12:00:00.000Z",
+    ...overrides,
+  };
+}
+
+const stash = [
+  fabric("bbbbbbbb-0000-4000-8000-000000000001"),
+  fabric("bbbbbbbb-0000-4000-8000-000000000002", { fabricType: "jersey", construction: "knit", print: "stripe", generalColor: "black", unit: "yards", amount: 1.5, width: 60, brand: null, photoCount: 1 }),
+  fabric("bbbbbbbb-0000-4000-8000-000000000003", { fabricType: "wool", print: "check", generalColor: "red", amount: 3, width: 150, brand: null, photoCount: 1 }),
+];
+
+type Sent = { crafts: unknown[]; create?: unknown; uploads: number };
+
+async function mockApi(page: Page, crafts: { yarn: boolean; sewing: boolean; needsChoice: boolean }, sent: Sent) {
+  let current = crafts;
+  await page.route("**/storage.test/**", (route) => route.fulfill({ status: 200, body: "" }));
+  await page.route("**/api/**", async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    const { pathname } = url;
+    if (pathname === "/api/me/crafts") {
+      if (request.method() === "PUT") {
+        const body = request.postDataJSON() as { yarn: boolean; sewing: boolean };
+        sent.crafts.push(body);
+        current = { ...body, needsChoice: false };
+      }
+      return route.fulfill({ json: current });
+    }
+    if (pathname === "/api/fabric-stash/photo-upload") {
+      sent.uploads += 1;
+      return route.fulfill({ json: { uploadURL: "https://storage.test/upload", photoPath: `/objects/fabric/user/bbbbbbbb-0000-4000-8000-0000000000f${sent.uploads}` } });
+    }
+    if (pathname === "/api/fabric-stash" && request.method() === "POST") {
+      sent.create = request.postDataJSON();
+      return route.fulfill({ status: 201, json: fabric("bbbbbbbb-0000-4000-8000-000000000009", sent.create as object) });
+    }
+    const photoMatch = pathname.match(/^\/api\/fabric-stash\/([^/]+)\/photos\/\d$/);
+    if (photoMatch) {
+      const item = stash.find((entry) => entry.id === photoMatch[1]);
+      return route.fulfill({ contentType: "image/svg+xml", body: prints[String(item?.print ?? "floral")] });
+    }
+    if (pathname === "/api/fabric-stash") {
+      const print = url.searchParams.get("print");
+      return route.fulfill({ json: stash.filter((item) => !print || item.print === print) });
+    }
+    const itemMatch = pathname.match(/^\/api\/fabric-stash\/([^/]+)$/);
+    if (itemMatch) return route.fulfill({ json: stash.find((entry) => entry.id === itemMatch[1]) });
+    if (pathname === "/api/dashboard") {
+      return route.fulfill({ json: { totalProjects: 0, activeProjects: 0, completedProjects: 0, recentProjects: [], recentProgress: [], charts: { projectsByStatus: [], completedPerMonth: [], completedWithoutDate: 0, progressPerWeek: [] } } });
+    }
+    return route.fulfill({ json: [] });
+  });
+}
+
+test("shows the Sewing room with its own look, switcher and fabric swatches", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 860 });
+  await mockApi(page, { yarn: true, sewing: true, needsChoice: false }, { crafts: [], uploads: 0 });
+  await page.goto("/sewing/fabric");
+  await expect(page.getByTestId("link-fabric")).toHaveClass(/selected/);
+  await expect(page.locator(".portal-shell")).toHaveClass(/home-sewing/);
+  await expect(page.getByTestId("link-home-sewing")).toHaveClass(/selected/);
+  await expect(page.getByText("3 fabrics")).toBeVisible();
+  const card = page.getByTestId("card-fabric-bbbbbbbb-0000-4000-8000-000000000001");
+  await expect(card).toContainText("Cotton, floral");
+  await expect(card).toContainText("Woven · Liberty");
+  await expect(card).toContainText("2.5 m · 145 cm wide");
+  await expect(page.getByTestId("card-fabric-bbbbbbbb-0000-4000-8000-000000000002")).toContainText("1.5 yd · 60 in wide");
+  if (shots) await page.screenshot({ path: `${shots}/fabric-stash-web.png` });
+
+  await page.getByTestId("select-fabric-print-filter").selectOption("stripe");
+  await expect(page.getByText("1 fabric", { exact: true })).toBeVisible();
+
+  await page.getByTestId("link-home-yarn").click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page.locator(".portal-shell")).toHaveClass(/home-yarn/);
+  await expect(page.getByTestId("link-fabric")).toHaveCount(0);
+});
+
+test("adds a fabric with a print close-up and an extra photo", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 1320 });
+  const sent: Sent = { crafts: [], uploads: 0 };
+  await mockApi(page, { yarn: false, sewing: true, needsChoice: false }, sent);
+  await page.goto("/sewing/fabric/new");
+  await expect(page.getByTestId("link-home-yarn")).toHaveCount(0);
+  await page.getByTestId("button-save-fabric").click();
+  await expect(page.getByText("Add a photo of the print.")).toBeVisible();
+  await expect(page.getByText("Choose the fabric type.")).toBeVisible();
+
+  await page.getByTestId("input-fabric-photo-main").setInputFiles({ name: "print.png", mimeType: "image/png", buffer: photo });
+  await page.getByTestId("input-fabric-photo-more").setInputFiles({ name: "drape.png", mimeType: "image/png", buffer: photo });
+  await page.getByTestId("select-fabric-type").selectOption("linen");
+  await page.getByTestId("button-construction-woven").click();
+  await page.getByTestId("select-fabric-print").selectOption("check");
+  await page.getByTestId("button-unit-yards").click();
+  await expect(page.locator(".input-with-unit i").first()).toHaveText("yd");
+  await page.getByTestId("input-fabric-amount").fill("2.75");
+  await page.getByTestId("input-fabric-width").fill("54");
+  await page.getByTestId("button-general-color-green").click();
+  await page.getByTestId("input-fabric-notes").fill("For a shirt");
+  if (shots) await page.screenshot({ path: `${shots}/fabric-form-web.png` });
+  await page.getByTestId("button-save-fabric").click();
+
+  await expect(page).toHaveURL(/\/sewing\/fabric$/);
+  expect(sent.uploads).toBe(2);
+  expect(sent.create).toMatchObject({
+    fabricType: "linen", construction: "woven", print: "check", generalColor: "green", unit: "yards",
+    amount: 2.75, width: 54, brand: null, notes: "For a shirt",
+    photoPaths: ["/objects/fabric/user/bbbbbbbb-0000-4000-8000-0000000000f1", "/objects/fabric/user/bbbbbbbb-0000-4000-8000-0000000000f2"],
+  });
+});
+
+test("turns sewing on from Settings in the profile menu, keeping one craft on", async ({ page }) => {
+  const sent: Sent = { crafts: [], uploads: 0 };
+  await mockApi(page, { yarn: true, sewing: false, needsChoice: false }, sent);
+  await page.goto("/dashboard");
+  await expect(page.getByTestId("link-home-sewing")).toHaveCount(0);
+  await page.getByTestId("button-profile-menu").click();
+  await expect(page.getByText("My crafts")).toBeVisible();
+  await expect(page.getByTestId("switch-craft-yarn")).toBeDisabled();
+  if (shots) await page.screenshot({ path: `${shots}/settings-menu-web.png`, clip: { x: 0, y: 400, width: 260, height: 320 } });
+  await page.getByTestId("switch-craft-sewing").click();
+  await expect(page.getByTestId("switch-craft-sewing")).toHaveAttribute("aria-checked", "true");
+  expect(sent.crafts).toEqual([{ yarn: true, sewing: true }]);
+  await expect(page.getByTestId("link-home-sewing")).toBeVisible();
+  await expect(page.getByTestId("switch-craft-yarn")).toBeEnabled();
+});
+
+test("sends a yarn page to the Sewing room when yarn is off", async ({ page }) => {
+  await mockApi(page, { yarn: false, sewing: true, needsChoice: false }, { crafts: [], uploads: 0 });
+  await page.goto("/stash");
+  await expect(page).toHaveURL(/\/sewing\/fabric$/);
+});
+
+test("asks a new maker what they make", async ({ page }) => {
+  const sent: Sent = { crafts: [], uploads: 0 };
+  await mockApi(page, { yarn: true, sewing: false, needsChoice: true }, sent);
+  await page.goto("/dashboard");
+  await expect(page.getByRole("heading", { name: "What do you make?" })).toBeVisible();
+  if (shots) await page.screenshot({ path: `${shots}/craft-choice-web.png` });
+  await page.getByTestId("button-craft-choice-sewing").click();
+  await expect(page).toHaveURL(/\/sewing\/fabric$/);
+  expect(sent.crafts).toEqual([{ yarn: false, sewing: true }]);
+});

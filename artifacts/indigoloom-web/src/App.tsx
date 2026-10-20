@@ -13,14 +13,16 @@ import {
   getGetStashYarnQueryKey, getGetStashYarnsQueryKey, getGetYarnCatalogQueryKey,
   getGetCatalogReviewsQueryKey, getGetCatalogReviewAccessQueryKey, getGetSkeinSuggestionsQueryKey, getGetStashYarnReviewsQueryKey,
   useGetCatalogReviewAccess, useGetCatalogReviews, useGetStashYarnReviews, useResolveCatalogReview,
+  requestFabricPhotoUpload, useCreateStashFabric, useDeleteStashFabric, useGetMyCrafts, useGetStashFabric, useGetStashFabrics, useUpdateMyCrafts, useUpdateStashFabric,
+  getGetMyCraftsQueryKey, getGetStashFabricQueryKey, getGetStashFabricsQueryKey,
 } from '@workspace/api-client-react';
 import { CrochetHookSize, KnittingNeedleSize, NeedleCableLength } from '@workspace/api-client-react';
-import type { CatalogField, CatalogReview, CreateProject, CreateProgress, GeneralColor, Project, ProjectStatus, StashYarn, UpdateProject, YarnWeight } from '@workspace/api-client-react';
+import type { CatalogField, CatalogReview, CreateProject, CreateProgress, Crafts, FabricConstruction, FabricPrint, FabricType, FabricUnit, GeneralColor, Project, ProjectStatus, StashFabric, StashYarn, UpdateProject, YarnWeight } from '@workspace/api-client-react';
 import { FormProvider as Form, useForm, type UseFormReturn } from 'react-hook-form';
 import {
   ArrowLeft, ArrowRight, ArrowUpDown, ArrowUpRight, BookOpen, Check,
   Camera, ChevronDown, ChevronUp, CircleHelp, Feather, Filter, Flower2,
-  Layers3, LogOut, Menu, Palette, Plus, Search, Sparkles, Star, Trash2,
+  Layers3, LogOut, Menu, Palette, Plus, Scissors, Search, Sparkles, Star, Trash2,
   X,
 } from 'lucide-react';
 import { projectSorts, sortProjects, sortStash, stashSorts, useSavedSort } from './lib/sorting';
@@ -45,6 +47,9 @@ import {
 import { SkeinSuggestions } from '@/components/skein-suggestions';
 import { NameReviewButton, NameReviewForm, NameReviewList, catalogFieldLabels } from '@/components/name-review';
 import { ErrorBoundary } from '@/components/error-boundary';
+import {
+  fabricConstructions, fabricName, fabricPhotoUrl, fabricPrints, fabricSize, fabricTypes, fabricUnits, labelFor, maxFabricPhotos, sizeForApi,
+} from '@/components/fabric-fields';
 import { trackEvent, trackSuccessfulAction } from '@/lib/analytics';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -242,14 +247,73 @@ function LoadingScreen({ label = 'Gathering your projects…' }: { label?: strin
   return <div className="loading-screen"><div className="loading-spool"><span/></div><p>{label}</p><div className="skeleton-line"/></div>;
 }
 
-function PrivateRoute({ children }: { children: ReactNode }) {
+type Craft = 'yarn' | 'sewing';
+const homePaths: Record<Craft, string> = { yarn: '/dashboard', sewing: '/sewing/fabric' };
+
+// If the craft switches can't be read, every page opens as it did before the
+// Sewing room, with yarn on, instead of waiting or locking the maker out.
+function useCrafts() {
+  return useGetMyCrafts({ query: {
+    queryKey: getGetMyCraftsQueryKey(),
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+    // Pages mount under the craft gate, so a refetch on mount after a failed
+    // read would put the gate back into loading and mount them again.
+    refetchOnMount: false,
+    retryOnMount: false,
+    select: (crafts): Crafts | undefined => (typeof crafts?.yarn === 'boolean' ? crafts : undefined),
+  } });
+}
+
+function PrivateRoute({ children, craft = 'yarn' }: { children: ReactNode; craft?: Craft }) {
   const { isLoaded, isSignedIn } = useAuth();
   if (!isLoaded) return <LoadingScreen label="Opening your workspace…"/>;
   if (!isSignedIn) return <Redirect to="/"/>;
+  return <CraftGate craft={craft}>{children}</CraftGate>;
+}
+
+// Each page belongs to one craft. A page for a craft the maker has turned
+// off sends them to the home they do use.
+function CraftGate({ children, craft }: { children: ReactNode; craft: Craft }) {
+  const crafts = useCrafts();
+  if (crafts.isLoading) return <LoadingScreen label="Opening your workspace…"/>;
+  if (!crafts.data) return <>{children}</>;
+  if (crafts.data.needsChoice) return <CraftChoicePage/>;
+  if (!crafts.data[craft]) return <Redirect to={homePaths[craft === 'yarn' ? 'sewing' : 'yarn']}/>;
   return <>{children}</>;
 }
 
-const portalTitles = { dashboard: 'Overview', projects: 'My projects', stash: 'Yarn stash', reviews: 'Name reviews' };
+function CraftChoicePage() {
+  const client = useQueryClient();
+  const [, setLocation] = useLocation();
+  const save = useUpdateMyCrafts();
+  const choose = (choice: { yarn: boolean; sewing: boolean }) => save.mutate({ data: choice }, {
+    onSuccess: (crafts) => {
+      client.setQueryData(getGetMyCraftsQueryKey(), crafts);
+      setLocation(homePaths[crafts.yarn ? 'yarn' : 'sewing']);
+    },
+  });
+  const options = [
+    { key: 'yarn', title: 'Yarn crafts', detail: 'Crochet and knitting', icon: <Palette size={22}/>, choice: { yarn: true, sewing: false } },
+    { key: 'sewing', title: 'Sewing', detail: 'Fabric and garments', icon: <Scissors size={22}/>, choice: { yarn: false, sewing: true } },
+    { key: 'both', title: 'Both', detail: 'Switch between them any time', icon: <Layers3 size={22}/>, choice: { yarn: true, sewing: true } },
+  ];
+  return <div className="auth-screen craft-choice-screen"><div className="auth-ornament"><Brand/></div>
+    <div className="craft-choice loom-card">
+      <h1 className="serif">What do you make?</h1>
+      <div className="craft-choice-options">
+        {options.map((option) => <button key={option.key} type="button" className="craft-choice-option" onClick={() => choose(option.choice)} disabled={save.isPending} data-testid={`button-craft-choice-${option.key}`}>
+          {option.icon}<span><b>{option.title}</b><small>{option.detail}</small></span><ArrowRight size={17}/>
+        </button>)}
+      </div>
+      <p className="craft-choice-note">You can turn crafts on or off later in Settings.</p>
+      {save.isError && <p className="mutation-error" role="alert">We couldn’t save that just now. Please try again.</p>}
+    </div>
+  </div>;
+}
+
+const portalTitles = { dashboard: 'Overview', projects: 'My projects', stash: 'Yarn stash', reviews: 'Name reviews', fabric: 'Fabric stash' };
+const homeNames: Record<Craft, string> = { yarn: 'Yarn studio', sewing: 'Sewing room' };
 
 function PortalLayout({ children, active }: { children: ReactNode; active: keyof typeof portalTitles }) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -258,16 +322,25 @@ function PortalLayout({ children, active }: { children: ReactNode; active: keyof
   const displayName = user?.firstName || user?.username || 'Maker';
   const initials = displayName.slice(0, 1).toUpperCase();
   const reviewAccess = useGetCatalogReviewAccess({ query: { queryKey: getGetCatalogReviewAccessQueryKey(), staleTime: 5 * 60 * 1000 } });
-  return <div className="portal-shell">
+  const crafts = useCrafts().data;
+  const home: Craft = active === 'fabric' ? 'sewing' : 'yarn';
+  return <div className={`portal-shell home-${home}`}>
     <aside className={`side-rail ${mobileOpen ? 'mobile-open' : ''}`}>
       <div className="rail-brand"><Brand light/><button className="rail-close" type="button" onClick={() => setMobileOpen(false)} aria-label="Close navigation" data-testid="button-close-navigation"><X size={19}/></button></div>
+      {crafts?.yarn && crafts.sewing && <nav className="home-switcher" aria-label="Choose a home">
+        {(['yarn', 'sewing'] as const).map((craft) => <Link key={craft} href={homePaths[craft]} className={home === craft ? 'selected' : ''} aria-current={home === craft ? 'page' : undefined} data-testid={`link-home-${craft}`}>{homeNames[craft]}</Link>)}
+      </nav>}
       <nav className="rail-nav">
-        <Link href="/dashboard" className={`rail-link ${active === 'dashboard' ? 'selected' : ''}`} data-testid="link-dashboard"><Layers3 size={18}/><span>Overview</span></Link>
-        <Link href="/projects" className={`rail-link ${active === 'projects' ? 'selected' : ''}`} data-testid="link-projects"><BookOpen size={18}/><span>My projects</span></Link>
-        <Link href="/stash" className={`rail-link ${active === 'stash' ? 'selected' : ''}`} data-testid="link-stash"><Palette size={18}/><span>Yarn stash</span></Link>
-        {reviewAccess.data?.reviewer && <Link href="/reviews" className={`rail-link ${active === 'reviews' ? 'selected' : ''}`} data-testid="link-reviews"><CircleHelp size={18}/><span>Name reviews</span></Link>}
+        {home === 'yarn' ? <>
+          <Link href="/dashboard" className={`rail-link ${active === 'dashboard' ? 'selected' : ''}`} data-testid="link-dashboard"><Layers3 size={18}/><span>Overview</span></Link>
+          <Link href="/projects" className={`rail-link ${active === 'projects' ? 'selected' : ''}`} data-testid="link-projects"><BookOpen size={18}/><span>My projects</span></Link>
+          <Link href="/stash" className={`rail-link ${active === 'stash' ? 'selected' : ''}`} data-testid="link-stash"><Palette size={18}/><span>Yarn stash</span></Link>
+          {reviewAccess.data?.reviewer && <Link href="/reviews" className={`rail-link ${active === 'reviews' ? 'selected' : ''}`} data-testid="link-reviews"><CircleHelp size={18}/><span>Name reviews</span></Link>}
+        </> : <>
+          <Link href="/sewing/fabric" className={`rail-link ${active === 'fabric' ? 'selected' : ''}`} data-testid="link-fabric"><Scissors size={18}/><span>Fabric stash</span></Link>
+        </>}
       </nav>
-      <div className="rail-bottom"><ProfileMenu initials={initials} displayName={displayName} onSignOut={() => signOut({ redirectUrl: basePath || '/' })}/></div>
+      <div className="rail-bottom"><ProfileMenu initials={initials} displayName={displayName} crafts={crafts} onSignOut={() => signOut({ redirectUrl: basePath || '/' })}/></div>
     </aside>
     {mobileOpen && <button className="mobile-scrim" onClick={() => setMobileOpen(false)} aria-label="Close navigation" data-testid="button-dismiss-navigation"/>}
     <main className="portal-main">
@@ -277,8 +350,17 @@ function PortalLayout({ children, active }: { children: ReactNode; active: keyof
   </div>;
 }
 
-function ProfileMenu({ initials, displayName, onSignOut }: { initials: string; displayName: string; onSignOut: () => void }) {
+function ProfileMenu({ initials, displayName, crafts, onSignOut }: { initials: string; displayName: string; crafts: Crafts | undefined; onSignOut: () => void }) {
   const [open, setOpen] = useState(false);
+  const client = useQueryClient();
+  const save = useUpdateMyCrafts();
+  // The last craft that's on can't be turned off, so there is always a home.
+  const toggle = (craft: Craft) => {
+    if (!crafts) return;
+    const next = { yarn: crafts.yarn, sewing: crafts.sewing, [craft]: !crafts[craft] };
+    if (!next.yarn && !next.sewing) return;
+    save.mutate({ data: next }, { onSuccess: (saved) => client.setQueryData(getGetMyCraftsQueryKey(), saved) });
+  };
   const menuRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
@@ -290,7 +372,20 @@ function ProfileMenu({ initials, displayName, onSignOut }: { initials: string; d
     return () => { document.removeEventListener('mousedown', close); document.removeEventListener('keydown', close); };
   }, [open]);
   return <div className="profile-menu" ref={menuRef}>
-    {open && <div className="profile-menu-list" role="menu"><button type="button" role="menuitem" onClick={onSignOut} data-testid="button-sign-out"><LogOut size={16}/> Sign out</button></div>}
+    {open && <div className="profile-menu-list" role="menu">
+      {crafts && <div className="menu-settings" role="group" aria-labelledby="menu-crafts-label">
+        <div className="menu-settings-heading">Settings</div>
+        <div className="menu-settings-label" id="menu-crafts-label">My crafts</div>
+        {(['yarn', 'sewing'] as const).map((craft) => {
+          const on = crafts[craft];
+          const locked = on && !(craft === 'yarn' ? crafts.sewing : crafts.yarn);
+          return <button key={craft} type="button" role="menuitemcheckbox" aria-checked={on} className="menu-switch" onClick={() => toggle(craft)} disabled={locked || save.isPending} title={locked ? 'Keep at least one craft on' : undefined} data-testid={`switch-craft-${craft}`}>
+            <span>{craft === 'yarn' ? 'Yarn' : 'Sewing'}</span><span className={`switch-track${on ? ' on' : ''}`} aria-hidden="true"><i/></span>
+          </button>;
+        })}
+      </div>}
+      <button type="button" role="menuitem" onClick={onSignOut} data-testid="button-sign-out"><LogOut size={16}/> Sign out</button>
+    </div>}
     <button type="button" className="profile-chip" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)} data-testid="button-profile-menu"><span className="profile-initial">{initials}</span><span className="profile-name">{displayName}</span><ChevronUp size={16}/></button>
   </div>;
 }
@@ -1176,6 +1271,206 @@ function StashYarnForm({ yarn }: { yarn?: StashYarn }) {
   </PortalLayout>;
 }
 
+function FabricCard({ fabric }: { fabric: StashFabric }) {
+  return <Link href={`/sewing/fabric/${fabric.id}`} className="fabric-card lift" data-testid={`card-fabric-${fabric.id}`}>
+    <span className="fabric-swatch"><img src={fabricPhotoUrl(fabric, 0)} alt={`${fabricName(fabric)} print`} loading="lazy"/><ColorDot color={fabric.generalColor} noun="fabric" className="stash-photo-dot"/></span>
+    <span className="fabric-card-body">
+      <h3>{fabricName(fabric)}</h3>
+      <span className="fabric-card-meta">{[labelFor(fabricConstructions, fabric.construction), fabric.brand].filter(Boolean).join(' · ')}</span>
+      {fabricSize(fabric) && <span className="fabric-card-size">{fabricSize(fabric)}</span>}
+    </span>
+  </Link>;
+}
+
+function FabricStashPage() {
+  const [search, setSearch] = useState('');
+  const [fabricType, setFabricType] = useState('');
+  const [print, setPrint] = useState('');
+  const [color, setColor] = useState('');
+  const params = {
+    ...(search.trim() ? { search: search.trim() } : {}),
+    ...(fabricType ? { fabricType: fabricType as FabricType } : {}),
+    ...(print ? { print: print as FabricPrint } : {}),
+    ...(color ? { generalColor: color as GeneralColor } : {}),
+  };
+  const clearFilters = () => { setSearch(''); setFabricType(''); setPrint(''); setColor(''); };
+  const query = useGetStashFabrics(params, { query: { queryKey: getGetStashFabricsQueryKey(params) } });
+  const filtered = Boolean(search || fabricType || print || color);
+  return <PortalLayout active="fabric">
+    <PageHeading title="Fabric stash" action={<Link href="/sewing/fabric/new" className="button button-primary" data-testid="link-add-fabric"><Plus size={17}/> Add fabric</Link>}/>
+    <div className="catalog-tools">
+      <label className="search-box"><Search size={17}/><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search by type, brand or notes…" aria-label="Search your fabric" data-testid="input-search-fabric"/>{search && <button type="button" onClick={() => setSearch('')} aria-label="Clear search"><X size={15}/></button>}</label>
+      <label className="select-wrap"><Filter size={15}/><select aria-label="Filter by fabric type" value={fabricType} onChange={(event) => setFabricType(event.target.value)} data-testid="select-fabric-type-filter"><option value="">Every type</option>{fabricTypes.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select><ChevronDown size={14}/></label>
+      <label className="select-wrap"><Sparkles size={15}/><select aria-label="Filter by print" value={print} onChange={(event) => setPrint(event.target.value)} data-testid="select-fabric-print-filter"><option value="">Every print</option>{fabricPrints.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select><ChevronDown size={14}/></label>
+      <label className="select-wrap">{color ? <ColorDot color={color as GeneralColor} noun="fabric"/> : <Palette size={15}/>}<select aria-label="Filter by color" value={color} onChange={(event) => setColor(event.target.value)} data-testid="select-fabric-color-filter"><option value="">Every color</option>{generalColors.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select><ChevronDown size={14}/></label>
+      {filtered && <button className="clear-filters" onClick={clearFilters} data-testid="button-clear-fabric-filters">Clear filters</button>}
+    </div>
+    <div className="catalog-result-caption">{query.data ? <><b>{query.data.length}</b> {query.data.length === 1 ? 'fabric' : 'fabrics'}</> : null}</div>
+    {query.isLoading ? <div className="fabric-grid">{[0, 1, 2].map((item) => <div className="card-skeleton" key={item}/>)}</div>
+      : query.isError ? <QueryProblem retry={() => query.refetch()}/>
+      : query.data?.length ? <div className="fabric-grid">{query.data.map((fabric) => <FabricCard key={fabric.id} fabric={fabric}/>)}</div>
+      : filtered ? <div className="no-results"><Search size={23}/><h3>No fabric matches</h3><p>Try a different search or clear a filter.</p><button className="button button-outline" onClick={clearFilters}>Reset filters</button></div>
+      : <div className="empty-projects"><h3>No fabric yet</h3><p>Add your first fabric to start your stash.</p><Link href="/sewing/fabric/new" className="button button-primary" data-testid="link-add-first-fabric"><Plus size={16}/> Add fabric</Link></div>}
+  </PortalLayout>;
+}
+
+// A photo already saved on the fabric, by its place in the list, or a new
+// file waiting to upload.
+type FabricPhotoSlot = { kind: 'kept'; index: number } | { kind: 'new'; file: File; preview: string };
+
+type FabricDraft = {
+  fabricType: FabricType | ''; construction: FabricConstruction | null; print: FabricPrint | ''; generalColor: GeneralColor | null;
+  unit: FabricUnit; amount: string; width: string; brand: string; notes: string;
+};
+
+function draftFromFabric(fabric?: StashFabric): FabricDraft {
+  return {
+    fabricType: fabric?.fabricType ?? '', construction: fabric?.construction ?? null, print: fabric?.print ?? '', generalColor: fabric?.generalColor ?? null,
+    unit: fabric?.unit ?? 'meters', amount: fabric?.amount === null || !fabric ? '' : String(fabric.amount),
+    width: fabric?.width === null || !fabric ? '' : String(fabric.width), brand: fabric?.brand ?? '', notes: fabric?.notes ?? '',
+  };
+}
+
+function FabricFormPage({ fabricId }: { fabricId?: string }) {
+  const existing = useGetStashFabric(fabricId ?? '', { query: { enabled: Boolean(fabricId), queryKey: getGetStashFabricQueryKey(fabricId ?? '') } });
+  if (fabricId && existing.isLoading) return <PortalLayout active="fabric"><LoadingScreen label="Finding this fabric…"/></PortalLayout>;
+  if (fabricId && (existing.isError || !existing.data)) return <PortalLayout active="fabric"><QueryProblem retry={() => existing.refetch()} message="We couldn’t find this fabric."/></PortalLayout>;
+  return <FabricForm fabric={existing.data} key={existing.data?.id ?? 'new'}/>;
+}
+
+function FabricForm({ fabric }: { fabric?: StashFabric }) {
+  const [, setLocation] = useLocation();
+  const client = useQueryClient();
+  const create = useCreateStashFabric();
+  const update = useUpdateStashFabric();
+  const remove = useDeleteStashFabric();
+  const [draft, setDraft] = useState<FabricDraft>(() => draftFromFabric(fabric));
+  const [photos, setPhotos] = useState<FabricPhotoSlot[]>(() => Array.from({ length: fabric?.photoCount ?? 0 }, (_, index) => ({ kind: 'kept', index })));
+  const [errors, setErrors] = useState<Partial<Record<'photo' | 'type' | 'size' | 'save', string>>>({});
+  const [saving, setSaving] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const set = (change: Partial<FabricDraft>) => setDraft((current) => ({ ...current, ...change }));
+  const unit = fabricUnits.find((item) => item.value === draft.unit) ?? fabricUnits[0];
+
+  useEffect(() => () => photos.forEach((slot) => { if (slot.kind === 'new') URL.revokeObjectURL(slot.preview); }), []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const addPhotos = (files: FileList | null, replace?: number) => {
+    const chosen = [...(files ?? [])];
+    const bad = chosen.find((file) => !['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 10 * 1024 * 1024);
+    if (bad) { setErrors((current) => ({ ...current, photo: 'Choose JPEG, PNG, or WebP photos up to 10 MB.' })); return; }
+    setErrors(({ photo: _photo, ...rest }) => rest);
+    setPhotos((current) => {
+      const slots = chosen.map((file): FabricPhotoSlot => ({ kind: 'new', file, preview: URL.createObjectURL(file) }));
+      if (replace !== undefined) {
+        const next = [...current];
+        const old = next[replace];
+        if (old?.kind === 'new') URL.revokeObjectURL(old.preview);
+        next[replace] = slots[0]!;
+        return next;
+      }
+      return [...current, ...slots].slice(0, maxFabricPhotos);
+    });
+  };
+  const removePhoto = (index: number) => setPhotos((current) => {
+    const old = current[index];
+    if (old?.kind === 'new') URL.revokeObjectURL(old.preview);
+    return current.filter((_, place) => place !== index);
+  });
+  const photoSrc = (slot: FabricPhotoSlot) => slot.kind === 'new' ? slot.preview : fabric ? fabricPhotoUrl(fabric, slot.index) : '';
+
+  const done = () => {
+    void client.invalidateQueries({ queryKey: getGetStashFabricsQueryKey() });
+    void client.invalidateQueries({ queryKey: getGetMyCraftsQueryKey() });
+    if (fabric) void client.invalidateQueries({ queryKey: getGetStashFabricQueryKey(fabric.id) });
+    setLocation('/sewing/fabric');
+  };
+
+  const save = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const nextErrors: typeof errors = {};
+    if (!photos.length) nextErrors.photo = 'Add a photo of the print.';
+    if (!draft.fabricType) nextErrors.type = 'Choose the fabric type.';
+    const amount = sizeForApi(draft.amount);
+    const width = sizeForApi(draft.width);
+    if (amount === 'invalid' || width === 'invalid') nextErrors.size = 'Enter amounts between 0 and 999, like 2.5.';
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length || !draft.fabricType || amount === 'invalid' || width === 'invalid') return;
+
+    setSaving(true);
+    let photoPaths: string[];
+    try {
+      photoPaths = await Promise.all(photos.map(async (slot) => {
+        if (slot.kind === 'kept') return `keep:${slot.index}`;
+        const contentType = slot.file.type as 'image/jpeg' | 'image/png' | 'image/webp';
+        const upload = await requestFabricPhotoUpload({ name: slot.file.name || 'fabric-photo', size: slot.file.size, contentType });
+        const uploaded = await fetch(upload.uploadURL, { method: 'PUT', headers: { 'Content-Type': contentType }, body: slot.file });
+        if (!uploaded.ok) throw new Error('The photo upload did not finish.');
+        return upload.photoPath;
+      }));
+    } catch {
+      setErrors({ photo: 'We couldn’t upload those photos. Please try again.' });
+      setSaving(false);
+      return;
+    }
+    const data = {
+      fabricType: draft.fabricType, construction: draft.construction, print: draft.print || null, generalColor: draft.generalColor,
+      unit: draft.unit, amount, width, brand: draft.brand.trim() || null, notes: draft.notes.trim() || null, photoPaths,
+    };
+    const options = {
+      onSuccess: done,
+      onError: (error: unknown) => setErrors({ save: (error as { data?: { error?: string } })?.data?.error ?? 'We couldn’t save this fabric just now. Please try again.' }),
+      onSettled: () => setSaving(false),
+    };
+    if (fabric) update.mutate({ fabricId: fabric.id, data }, options);
+    else create.mutate({ data }, options);
+  };
+
+  const deleteFabric = () => fabric && remove.mutate({ fabricId: fabric.id }, { onSuccess: done });
+  const [main, ...extras] = photos;
+
+  return <PortalLayout active="fabric">
+    <Link href="/sewing/fabric" className="back-link" data-testid="link-back-fabric"><ArrowLeft size={16}/> Back to fabric</Link>
+    <PageHeading title={fabric ? fabricName(fabric) : 'Add fabric'} action={fabric ? <button className="icon-button danger-icon" aria-label="Delete fabric" title="Delete fabric" onClick={() => setConfirmDelete(true)} data-testid="button-delete-fabric"><Trash2 size={17}/></button> : undefined}/>
+    {confirmDelete && <div className="confirm-banner"><div><b>Remove this fabric from your stash?</b><span>Its photos will be deleted too.</span></div><button className="button button-quiet" onClick={() => setConfirmDelete(false)}>Cancel</button><button className="button button-danger" onClick={deleteFabric} disabled={remove.isPending} data-testid="button-confirm-delete-fabric">{remove.isPending ? 'Removing…' : 'Remove fabric'}</button></div>}
+    <form className="project-form loom-card fabric-form" onSubmit={save} noValidate>
+      <div className="fabric-photos">
+        <div className="field-block">
+          <label htmlFor="fabric-photo-main">Print close-up <b>*</b></label>
+          <label className={`fabric-photo-main${main ? ' has-photo' : ''}`} htmlFor="fabric-photo-main">
+            {main ? <img src={photoSrc(main)} alt="Print close-up"/> : <span><Camera size={24}/>Add a close-up of the print</span>}
+          </label>
+          <input id="fabric-photo-main" className="visually-hidden" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { addPhotos(event.target.files, main ? 0 : undefined); event.target.value = ''; }} data-testid="input-fabric-photo-main"/>
+          {main && <label htmlFor="fabric-photo-main" className="stash-photo-change">Change photo</label>}
+        </div>
+        <div className="field-block">
+          <label htmlFor="fabric-photo-more">More photos</label>
+          <div className="fabric-photo-extras">
+            {extras.map((slot, place) => <span key={place} className="fabric-photo-extra"><img src={photoSrc(slot)} alt={`Fabric photo ${place + 2}`}/><button type="button" aria-label={`Remove photo ${place + 2}`} onClick={() => removePhoto(place + 1)} data-testid={`button-remove-fabric-photo-${place + 2}`}><X size={14}/></button></span>)}
+            {main && photos.length < maxFabricPhotos && <label className="fabric-photo-extra fabric-photo-add" htmlFor="fabric-photo-more"><Plus size={18}/><span>Add</span></label>}
+          </div>
+          <input id="fabric-photo-more" className="visually-hidden" type="file" multiple accept="image/jpeg,image/png,image/webp" disabled={!main || photos.length >= maxFabricPhotos} onChange={(event) => { addPhotos(event.target.files); event.target.value = ''; }} data-testid="input-fabric-photo-more"/>
+          <span className="field-hint">Up to three more, like the full piece or the drape.</span>
+        </div>
+        {errors.photo && <span className="field-error field-wide">{errors.photo}</span>}
+      </div>
+      <div className="form-grid">
+        <div className="field-block"><label htmlFor="fabric-type">Fabric type <b>*</b></label><select id="fabric-type" value={draft.fabricType} onChange={(event) => { set({ fabricType: event.target.value as FabricType }); setErrors(({ type: _type, ...rest }) => rest); }} data-testid="select-fabric-type"><option value="">Choose a type</option>{fabricTypes.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select>{errors.type && <span className="field-error">{errors.type}</span>}</div>
+        <div className="field-block"><label id="fabric-construction-label">Woven or knit</label><div className="segmented" role="radiogroup" aria-labelledby="fabric-construction-label">{fabricConstructions.map((item) => <button key={item.value} type="button" role="radio" aria-checked={draft.construction === item.value} className={draft.construction === item.value ? 'selected' : ''} onClick={() => set({ construction: draft.construction === item.value ? null : item.value })} data-testid={`button-construction-${item.value}`}>{item.label}</button>)}</div></div>
+        <div className="field-block"><label htmlFor="fabric-print">Print</label><select id="fabric-print" value={draft.print} onChange={(event) => set({ print: event.target.value as FabricPrint | '' })} data-testid="select-fabric-print"><option value="">Choose a print</option>{fabricPrints.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></div>
+        <div className="field-block"><label id="fabric-unit-label">Measured in</label><div className="segmented" role="radiogroup" aria-labelledby="fabric-unit-label">{fabricUnits.map((item) => <button key={item.value} type="button" role="radio" aria-checked={draft.unit === item.value} className={draft.unit === item.value ? 'selected' : ''} onClick={() => set({ unit: item.value })} data-testid={`button-unit-${item.value}`}>{item.label}</button>)}</div></div>
+        <GeneralColorPicker value={draft.generalColor} onChange={(generalColor) => set({ generalColor })}/>
+        <div className="field-block"><label htmlFor="fabric-amount">Amount</label><span className="input-with-unit"><input id="fabric-amount" inputMode="decimal" placeholder="e.g. 2.5" value={draft.amount} onChange={(event) => { set({ amount: event.target.value }); setErrors(({ size: _size, ...rest }) => rest); }} data-testid="input-fabric-amount"/><i>{unit.amount}</i></span></div>
+        <div className="field-block"><label htmlFor="fabric-width">Width</label><span className="input-with-unit"><input id="fabric-width" inputMode="decimal" placeholder={draft.unit === 'meters' ? 'e.g. 145' : 'e.g. 58'} value={draft.width} onChange={(event) => { set({ width: event.target.value }); setErrors(({ size: _size, ...rest }) => rest); }} data-testid="input-fabric-width"/><i>{unit.width}</i></span></div>
+        {errors.size && <span className="field-error field-wide">{errors.size}</span>}
+        <div className="field-block"><label htmlFor="fabric-brand">Brand</label><input id="fabric-brand" maxLength={80} placeholder="Optional" value={draft.brand} onChange={(event) => set({ brand: event.target.value })} data-testid="input-fabric-brand"/></div>
+        <div className="field-block field-wide"><label htmlFor="fabric-notes">Notes</label><textarea id="fabric-notes" rows={3} maxLength={1000} placeholder="Where it's from, what it's for…" value={draft.notes} onChange={(event) => set({ notes: event.target.value })} data-testid="input-fabric-notes"/></div>
+      </div>
+      {errors.save && <p className="mutation-error" role="alert">{errors.save}</p>}
+      <div className="form-actions"><Link href="/sewing/fabric" className="button button-quiet">Cancel</Link><button type="submit" className="button button-primary" disabled={saving} data-testid="button-save-fabric">{saving ? 'Saving…' : fabric ? 'Save changes' : 'Add to stash'}{!saving && <ArrowRight size={16}/>}</button></div>
+    </form>
+  </PortalLayout>;
+}
+
 function ReviewCard({ review }: { review: CatalogReview }) {
   const client = useQueryClient();
   const resolve = useResolveCatalogReview();
@@ -1253,6 +1548,10 @@ function AuthCacheRouter() {
         <Route path="/stash/new"><PrivateRoute><StashYarnFormPage/></PrivateRoute></Route>
         <Route path="/stash/:yarnId">{(params) => <PrivateRoute><StashYarnFormPage yarnId={params.yarnId}/></PrivateRoute>}</Route>
         <Route path="/projects/:projectId">{(params) => <PrivateRoute><ProjectDetailPage projectId={params.projectId}/></PrivateRoute>}</Route>
+        <Route path="/sewing"><Redirect to="/sewing/fabric"/></Route>
+        <Route path="/sewing/fabric"><PrivateRoute craft="sewing"><FabricStashPage/></PrivateRoute></Route>
+        <Route path="/sewing/fabric/new"><PrivateRoute craft="sewing"><FabricFormPage/></PrivateRoute></Route>
+        <Route path="/sewing/fabric/:fabricId">{(params) => <PrivateRoute craft="sewing"><FabricFormPage fabricId={params.fabricId}/></PrivateRoute>}</Route>
         <Route component={NotFound}/>
       </Switch>
       <Toaster/>

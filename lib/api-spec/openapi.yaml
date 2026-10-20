@@ -16,6 +16,10 @@ tags:
     description: Project overview and recent progress
   - name: stash
     description: A maker's yarn stash and the shared yarn catalog
+  - name: crafts
+    description: Which crafts (yarn, sewing) a maker has turned on
+  - name: sewing
+    description: A maker's Sewing room and fabric stash
 paths:
   /healthz:
     get:
@@ -669,6 +673,202 @@ paths:
                 $ref: "#/components/schemas/YarnCatalog"
         "401":
           $ref: "#/components/responses/Unauthorized"
+  /me/crafts:
+    get:
+      operationId: getMyCrafts
+      tags: [crafts]
+      summary: Which crafts the signed-in maker has turned on
+      responses:
+        "200":
+          description: The maker's crafts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Crafts"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    put:
+      operationId: updateMyCrafts
+      tags: [crafts]
+      summary: Turn yarn or sewing on or off (at least one stays on)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCrafts"
+      responses:
+        "200":
+          description: Crafts saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Crafts"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /fabric-stash:
+    get:
+      operationId: getStashFabrics
+      tags: [sewing]
+      summary: List the fabric in the signed-in maker's stash
+      parameters:
+        - in: query
+          name: search
+          description: Matches fabric type, brand or notes
+          schema:
+            type: string
+        - in: query
+          name: fabricType
+          schema:
+            $ref: "#/components/schemas/FabricType"
+        - in: query
+          name: print
+          schema:
+            $ref: "#/components/schemas/FabricPrint"
+        - in: query
+          name: generalColor
+          schema:
+            $ref: "#/components/schemas/GeneralColor"
+      responses:
+        "200":
+          description: Matching stash fabric
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StashFabric"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      operationId: createStashFabric
+      tags: [sewing]
+      summary: Add a fabric to the stash
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateStashFabric"
+      responses:
+        "201":
+          description: Fabric added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StashFabric"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /fabric-stash/photo-upload:
+    post:
+      operationId: requestFabricPhotoUpload
+      tags: [sewing]
+      summary: Request a private upload URL for a fabric photo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProgressPhotoUploadRequest"
+      responses:
+        "200":
+          description: Private upload URL generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProgressPhotoUploadResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /fabric-stash/{fabricId}:
+    parameters:
+      - in: path
+        name: fabricId
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: getStashFabric
+      tags: [sewing]
+      summary: Get one fabric from the stash
+      responses:
+        "200":
+          description: Stash fabric
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StashFabric"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updateStashFabric
+      tags: [sewing]
+      summary: Change a fabric in the stash
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateStashFabric"
+      responses:
+        "200":
+          description: Fabric updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StashFabric"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteStashFabric
+      tags: [sewing]
+      summary: Remove a fabric from the stash
+      responses:
+        "204":
+          description: Fabric removed
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /fabric-stash/{fabricId}/photos/{photoIndex}:
+    parameters:
+      - in: path
+        name: fabricId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - in: path
+        name: photoIndex
+        required: true
+        description: 0 is the print close-up, 1 to 3 are the extra photos
+        schema:
+          type: integer
+          minimum: 0
+          maximum: 3
+    get:
+      operationId: getStashFabricPhoto
+      tags: [sewing]
+      summary: View one of a fabric's photos
+      responses:
+        "302":
+          description: Redirects to a short-lived private image URL
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
 components:
   responses:
     Unauthorized:
@@ -1303,6 +1503,161 @@ components:
           minimum: 1
           maximum: 100
       required: [fiber, percent]
+    Crafts:
+      type: object
+      properties:
+        yarn:
+          type: boolean
+        sewing:
+          type: boolean
+        needsChoice:
+          type: boolean
+          description: True for a new maker who hasn't picked their crafts yet
+      required: [yarn, sewing, needsChoice]
+    UpdateCrafts:
+      type: object
+      properties:
+        yarn:
+          type: boolean
+        sewing:
+          type: boolean
+      required: [yarn, sewing]
+    FabricType:
+      type: string
+      enum: [cotton, linen, jersey, denim, silk, wool, polyester, blend, other]
+    FabricConstruction:
+      type: string
+      enum: [woven, knit]
+    FabricPrint:
+      type: string
+      enum: [solid, floral, stripe, check, dots, geometric, abstract, animal, novelty]
+    FabricUnit:
+      type: string
+      description: Meters go with centimetre widths, yards with inch widths
+      enum: [meters, yards]
+    StashFabric:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        fabricType:
+          $ref: "#/components/schemas/FabricType"
+        construction:
+          oneOf:
+            - $ref: "#/components/schemas/FabricConstruction"
+            - type: "null"
+        print:
+          oneOf:
+            - $ref: "#/components/schemas/FabricPrint"
+            - type: "null"
+        generalColor:
+          oneOf:
+            - $ref: "#/components/schemas/GeneralColor"
+            - type: "null"
+        unit:
+          $ref: "#/components/schemas/FabricUnit"
+        amount:
+          type: [number, "null"]
+        width:
+          type: [number, "null"]
+        brand:
+          type: [string, "null"]
+        notes:
+          type: [string, "null"]
+        photoCount:
+          type: integer
+          description: The first photo is the print close-up
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, fabricType, construction, print, generalColor, unit, amount, width, brand, notes, photoCount, createdAt, updatedAt]
+    CreateStashFabric:
+      type: object
+      properties:
+        fabricType:
+          $ref: "#/components/schemas/FabricType"
+        construction:
+          oneOf:
+            - $ref: "#/components/schemas/FabricConstruction"
+            - type: "null"
+        print:
+          oneOf:
+            - $ref: "#/components/schemas/FabricPrint"
+            - type: "null"
+        generalColor:
+          oneOf:
+            - $ref: "#/components/schemas/GeneralColor"
+            - type: "null"
+        unit:
+          $ref: "#/components/schemas/FabricUnit"
+        amount:
+          type: [number, "null"]
+          minimum: 0
+          maximum: 999
+        width:
+          type: [number, "null"]
+          minimum: 0
+          maximum: 999
+        brand:
+          type: [string, "null"]
+          maxLength: 80
+        notes:
+          type: [string, "null"]
+          maxLength: 1000
+        photoPaths:
+          type: array
+          description: The print close-up first, then up to three more
+          minItems: 1
+          maxItems: 4
+          items:
+            type: string
+      required: [fabricType, unit, photoPaths]
+    UpdateStashFabric:
+      type: object
+      properties:
+        fabricType:
+          $ref: "#/components/schemas/FabricType"
+        construction:
+          oneOf:
+            - $ref: "#/components/schemas/FabricConstruction"
+            - type: "null"
+        print:
+          oneOf:
+            - $ref: "#/components/schemas/FabricPrint"
+            - type: "null"
+        generalColor:
+          oneOf:
+            - $ref: "#/components/schemas/GeneralColor"
+            - type: "null"
+        unit:
+          $ref: "#/components/schemas/FabricUnit"
+        amount:
+          type: [number, "null"]
+          minimum: 0
+          maximum: 999
+        width:
+          type: [number, "null"]
+          minimum: 0
+          maximum: 999
+        brand:
+          type: [string, "null"]
+          maxLength: 80
+        notes:
+          type: [string, "null"]
+          maxLength: 1000
+        photoPaths:
+          type: array
+          description: >-
+            The full photo list in order. Keep an existing photo by sending
+            "keep:<index>"; new photos are paths from the upload URL.
+          minItems: 1
+          maxItems: 4
+          items:
+            type: string
     StashYarn:
       type: object
       properties:

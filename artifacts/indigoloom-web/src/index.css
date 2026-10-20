@@ -660,3 +660,72 @@ a { color: inherit; text-decoration: none; }
   .skein-suggestion { flex-direction: column; align-items: stretch; }
   .review-grid { grid-template-columns: 1fr; }
 }
+
+/* Sewing room: its own home with a Granite sidebar, a cooler wash behind the
+   pages and photo-first fabric swatches. */
+.home-switcher { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin: -22px 4px 22px; padding: 4px; border-radius: 10px; background: rgba(255,255,255,.08); }
+.home-switcher a { display: grid; place-items: center; min-height: 34px; border-radius: 7px; color: var(--lavender-deep); font-size: 13px; font-weight: 700; }
+.home-switcher a:hover { color: var(--lavender-wash); }
+.home-switcher a.selected { background: var(--lavender-wash); color: var(--evergreen); }
+.portal-shell.home-sewing { background: #E1EAE5; }
+.home-sewing .side-rail { background: var(--granite); }
+.home-sewing .rail-bottom { border-top-color: rgba(255,255,255,.16); }
+.home-sewing .profile-chip:hover,.home-sewing .profile-chip[aria-expanded="true"] { background: var(--granite-deep); }
+.home-sewing .portal-topbar { background: rgba(225,234,229,.88); border-bottom-color: #CFDCD5; }
+.home-sewing .rail-link.selected { background: rgba(255,255,255,.12); box-shadow: inset 3px 0 var(--lavender); }
+.home-sewing .rail-link.selected svg { color: var(--lavender); }
+.home-sewing .home-switcher a.selected { color: var(--granite); }
+
+.menu-settings { padding: 4px 4px 8px; margin-bottom: 6px; border-bottom: 1px solid var(--lavender-soft); }
+.menu-settings-heading { padding: 6px 6px 2px; color: var(--slate); font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.menu-settings-label { padding: 4px 6px 6px; color: var(--evergreen); font-size: 14px; font-weight: 700; }
+.profile-menu-list button.menu-switch { justify-content: space-between; padding: 8px 6px; font-weight: 500; }
+.profile-menu-list button.menu-switch:disabled { cursor: default; }
+.switch-track { position: relative; width: 36px; height: 21px; border-radius: 99px; background: var(--lavender-soft); transition: background .16s ease; }
+.switch-track i { position: absolute; top: 3px; left: 3px; width: 15px; height: 15px; border-radius: 50%; background: var(--white); box-shadow: 0 1px 3px rgba(31,47,22,.3); transition: transform .16s ease; }
+.switch-track.on { background: var(--granite); }
+.switch-track.on i { transform: translateX(15px); }
+.menu-switch:disabled .switch-track.on { opacity: .6; }
+
+.craft-choice { width: min(460px, 100%); padding: 32px; display: grid; gap: 18px; }
+.craft-choice h1 { margin: 0; font-size: 30px; color: var(--evergreen); }
+.craft-choice-options { display: grid; gap: 10px; }
+.craft-choice-option { display: flex; align-items: center; gap: 14px; padding: 15px 16px; border: 1px solid var(--lavender-soft); border-radius: 10px; background: var(--lavender-wash); color: var(--granite); font: inherit; text-align: left; cursor: pointer; transition: border-color .16s ease, background .16s ease; }
+.craft-choice-option:hover,.craft-choice-option:focus-visible { border-color: var(--granite); background: var(--white); }
+.craft-choice-option span { flex: 1; display: grid; gap: 2px; }
+.craft-choice-option b { color: var(--evergreen); font-size: 16px; }
+.craft-choice-option small { color: var(--slate); font-size: 14px; }
+.craft-choice-note { margin: 0; color: var(--slate); font-size: 14px; }
+
+.fabric-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.fabric-card { display: block; min-width: 0; overflow: hidden; border-radius: 14px; background: var(--white); border: 1px solid #CFDCD5; color: var(--evergreen); }
+.fabric-swatch { position: relative; display: block; aspect-ratio: 4 / 3; background: #EEF3F0; }
+.fabric-swatch img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.fabric-card-body { display: grid; gap: 3px; padding: 13px 15px 15px; }
+.fabric-card-body h3 { font: 500 19px/1.2 var(--app-font-serif); margin: 0; }
+.fabric-card-meta { color: var(--slate-deep); font-size: 14px; min-height: 1em; }
+.fabric-card-size { color: var(--granite); font-size: 13px; font-weight: 700; }
+.fabric-photos { display: grid; grid-template-columns: 260px 1fr; gap: 22px; margin-bottom: 20px; }
+.fabric-photo-main { position: relative; display: grid; place-items: center; aspect-ratio: 1; border: 1px dashed #A9BFB4; border-radius: 12px; background: #EEF3F0; overflow: hidden; cursor: pointer; color: var(--granite); }
+.fabric-photo-main.has-photo { border-style: solid; border-color: #CFDCD5; }
+.fabric-photo-main img { width: 100%; height: 100%; object-fit: cover; }
+.fabric-photo-main > span { display: grid; justify-items: center; gap: 8px; padding: 0 20px; text-align: center; font-size: 14px; font-weight: 600; }
+.fabric-photo-extras { display: flex; flex-wrap: wrap; gap: 10px; }
+.fabric-photo-extra { position: relative; width: 104px; height: 104px; border-radius: 10px; overflow: hidden; background: #EEF3F0; border: 1px solid #CFDCD5; }
+.fabric-photo-extra img { width: 100%; height: 100%; object-fit: cover; }
+.fabric-photo-extra button { position: absolute; top: 5px; right: 5px; display: grid; place-items: center; width: 24px; height: 24px; border: 0; border-radius: 50%; background: rgba(31,47,22,.7); color: var(--white); cursor: pointer; }
+.fabric-photo-add { display: grid; place-content: center; justify-items: center; gap: 4px; border-style: dashed; color: var(--granite); font-size: 13px; font-weight: 700; cursor: pointer; }
+.field-hint { color: var(--slate); font-size: 13px; }
+.segmented { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px; padding: 4px; border-radius: 8px; background: var(--lavender-wash); border: 1px solid var(--lavender-soft); }
+.segmented button { min-height: 35px; border: 0; border-radius: 6px; background: transparent; color: var(--slate); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+.segmented button.selected { background: var(--white); color: var(--granite); box-shadow: 0 1px 3px rgba(31,47,22,.14); }
+.input-with-unit { position: relative; display: block; }
+.input-with-unit input { padding-right: 42px; }
+.input-with-unit i { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--slate); font-style: normal; font-size: 14px; font-weight: 600; }
+@media (max-width: 1080px) { .fabric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 700px) {
+  .fabric-grid { gap: 11px; }
+  .fabric-photos { grid-template-columns: 1fr; }
+  .fabric-photo-main { max-width: 260px; }
+  .fabric-photo-extra { width: 84px; height: 84px; }
+}

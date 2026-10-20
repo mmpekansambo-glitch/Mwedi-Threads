@@ -1123,3 +1123,225 @@ export const GetYarnCatalogResponse = zod.object({
 })
 
 
+/**
+ * @summary Which crafts the signed-in maker has turned on
+ */
+export const GetMyCraftsResponse = zod.object({
+  "yarn": zod.boolean(),
+  "sewing": zod.boolean(),
+  "needsChoice": zod.boolean().describe('True for a new maker who hasn\'t picked their crafts yet')
+})
+
+
+/**
+ * @summary Turn yarn or sewing on or off (at least one stays on)
+ */
+export const UpdateMyCraftsBody = zod.object({
+  "yarn": zod.boolean(),
+  "sewing": zod.boolean()
+})
+
+export const UpdateMyCraftsResponse = zod.object({
+  "yarn": zod.boolean(),
+  "sewing": zod.boolean(),
+  "needsChoice": zod.boolean().describe('True for a new maker who hasn\'t picked their crafts yet')
+})
+
+
+/**
+ * @summary List the fabric in the signed-in maker's stash
+ */
+export const GetStashFabricsQueryParams = zod.object({
+  "search": zod.coerce.string().optional().describe('Matches fabric type, brand or notes'),
+  "fabricType": zod.enum(['cotton', 'linen', 'jersey', 'denim', 'silk', 'wool', 'polyester', 'blend', 'other']).optional(),
+  "print": zod.enum(['solid', 'floral', 'stripe', 'check', 'dots', 'geometric', 'abstract', 'animal', 'novelty']).optional(),
+  "generalColor": zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']).optional()
+})
+
+export const GetStashFabricsResponseItem = zod.object({
+  "id": zod.string().uuid(),
+  "fabricType": zod.enum(['cotton', 'linen', 'jersey', 'denim', 'silk', 'wool', 'polyester', 'blend', 'other']),
+  "construction": zod.union([zod.enum(['woven', 'knit']),zod.null()]),
+  "print": zod.union([zod.enum(['solid', 'floral', 'stripe', 'check', 'dots', 'geometric', 'abstract', 'animal', 'novelty']),zod.null()]),
+  "generalColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]),
+  "unit": zod.enum(['meters', 'yards']).describe('Meters go with centimetre widths, yards with inch widths'),
+  "amount": zod.number().nullable(),
+  "width": zod.number().nullable(),
+  "brand": zod.string().nullable(),
+  "notes": zod.string().nullable(),
+  "photoCount": zod.number().int().describe('The first photo is the print close-up'),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const GetStashFabricsResponse = zod.array(GetStashFabricsResponseItem)
+
+
+/**
+ * @summary Add a fabric to the stash
+ */
+export const createStashFabricBodyAmountMin = 0;
+export const createStashFabricBodyAmountMax = 999;
+
+export const createStashFabricBodyWidthMin = 0;
+export const createStashFabricBodyWidthMax = 999;
+
+export const createStashFabricBodyBrandMax = 80;
+
+export const createStashFabricBodyNotesMax = 1000;
+
+export const createStashFabricBodyPhotoPathsMax = 4;
+
+
+
+export const CreateStashFabricBody = zod.object({
+  "fabricType": zod.enum(['cotton', 'linen', 'jersey', 'denim', 'silk', 'wool', 'polyester', 'blend', 'other']),
+  "construction": zod.union([zod.enum(['woven', 'knit']),zod.null()]).optional(),
+  "print": zod.union([zod.enum(['solid', 'floral', 'stripe', 'check', 'dots', 'geometric', 'abstract', 'animal', 'novelty']),zod.null()]).optional(),
+  "generalColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]).optional(),
+  "unit": zod.enum(['meters', 'yards']).describe('Meters go with centimetre widths, yards with inch widths'),
+  "amount": zod.number().min(createStashFabricBodyAmountMin).max(createStashFabricBodyAmountMax).nullish(),
+  "width": zod.number().min(createStashFabricBodyWidthMin).max(createStashFabricBodyWidthMax).nullish(),
+  "brand": zod.string().max(createStashFabricBodyBrandMax).nullish(),
+  "notes": zod.string().max(createStashFabricBodyNotesMax).nullish(),
+  "photoPaths": zod.array(zod.string()).min(1).max(createStashFabricBodyPhotoPathsMax).describe('The print close-up first, then up to three more')
+})
+
+export const CreateStashFabricResponse = zod.object({
+  "id": zod.string().uuid(),
+  "fabricType": zod.enum(['cotton', 'linen', 'jersey', 'denim', 'silk', 'wool', 'polyester', 'blend', 'other']),
+  "construction": zod.union([zod.enum(['woven', 'knit']),zod.null()]),
+  "print": zod.union([zod.enum(['solid', 'floral', 'stripe', 'check', 'dots', 'geometric', 'abstract', 'animal', 'novelty']),zod.null()]),
+  "generalColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]),
+  "unit": zod.enum(['meters', 'yards']).describe('Meters go with centimetre widths, yards with inch widths'),
+  "amount": zod.number().nullable(),
+  "width": zod.number().nullable(),
+  "brand": zod.string().nullable(),
+  "notes": zod.string().nullable(),
+  "photoCount": zod.number().int().describe('The first photo is the print close-up'),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Request a private upload URL for a fabric photo
+ */
+export const requestFabricPhotoUploadBodyNameMax = 255;
+
+export const requestFabricPhotoUploadBodySizeMax = 10485760;
+
+
+
+export const RequestFabricPhotoUploadBody = zod.object({
+  "name": zod.string().min(1).max(requestFabricPhotoUploadBodyNameMax),
+  "size": zod.number().int().min(1).max(requestFabricPhotoUploadBodySizeMax),
+  "contentType": zod.enum(['image/jpeg', 'image/png', 'image/webp'])
+})
+
+export const RequestFabricPhotoUploadResponse = zod.object({
+  "uploadURL": zod.string().url(),
+  "photoPath": zod.string()
+})
+
+
+/**
+ * @summary Get one fabric from the stash
+ */
+export const GetStashFabricParams = zod.object({
+  "fabricId": zod.coerce.string().uuid()
+})
+
+export const GetStashFabricResponse = zod.object({
+  "id": zod.string().uuid(),
+  "fabricType": zod.enum(['cotton', 'linen', 'jersey', 'denim', 'silk', 'wool', 'polyester', 'blend', 'other']),
+  "construction": zod.union([zod.enum(['woven', 'knit']),zod.null()]),
+  "print": zod.union([zod.enum(['solid', 'floral', 'stripe', 'check', 'dots', 'geometric', 'abstract', 'animal', 'novelty']),zod.null()]),
+  "generalColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]),
+  "unit": zod.enum(['meters', 'yards']).describe('Meters go with centimetre widths, yards with inch widths'),
+  "amount": zod.number().nullable(),
+  "width": zod.number().nullable(),
+  "brand": zod.string().nullable(),
+  "notes": zod.string().nullable(),
+  "photoCount": zod.number().int().describe('The first photo is the print close-up'),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Change a fabric in the stash
+ */
+export const UpdateStashFabricParams = zod.object({
+  "fabricId": zod.coerce.string().uuid()
+})
+
+export const updateStashFabricBodyAmountMin = 0;
+export const updateStashFabricBodyAmountMax = 999;
+
+export const updateStashFabricBodyWidthMin = 0;
+export const updateStashFabricBodyWidthMax = 999;
+
+export const updateStashFabricBodyBrandMax = 80;
+
+export const updateStashFabricBodyNotesMax = 1000;
+
+export const updateStashFabricBodyPhotoPathsMax = 4;
+
+
+
+export const UpdateStashFabricBody = zod.object({
+  "fabricType": zod.enum(['cotton', 'linen', 'jersey', 'denim', 'silk', 'wool', 'polyester', 'blend', 'other']).optional(),
+  "construction": zod.union([zod.enum(['woven', 'knit']),zod.null()]).optional(),
+  "print": zod.union([zod.enum(['solid', 'floral', 'stripe', 'check', 'dots', 'geometric', 'abstract', 'animal', 'novelty']),zod.null()]).optional(),
+  "generalColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]).optional(),
+  "unit": zod.enum(['meters', 'yards']).optional().describe('Meters go with centimetre widths, yards with inch widths'),
+  "amount": zod.number().min(updateStashFabricBodyAmountMin).max(updateStashFabricBodyAmountMax).nullish(),
+  "width": zod.number().min(updateStashFabricBodyWidthMin).max(updateStashFabricBodyWidthMax).nullish(),
+  "brand": zod.string().max(updateStashFabricBodyBrandMax).nullish(),
+  "notes": zod.string().max(updateStashFabricBodyNotesMax).nullish(),
+  "photoPaths": zod.array(zod.string()).min(1).max(updateStashFabricBodyPhotoPathsMax).optional().describe('The full photo list in order. Keep an existing photo by sending "keep:<index>"; new photos are paths from the upload URL.')
+})
+
+export const UpdateStashFabricResponse = zod.object({
+  "id": zod.string().uuid(),
+  "fabricType": zod.enum(['cotton', 'linen', 'jersey', 'denim', 'silk', 'wool', 'polyester', 'blend', 'other']),
+  "construction": zod.union([zod.enum(['woven', 'knit']),zod.null()]),
+  "print": zod.union([zod.enum(['solid', 'floral', 'stripe', 'check', 'dots', 'geometric', 'abstract', 'animal', 'novelty']),zod.null()]),
+  "generalColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]),
+  "unit": zod.enum(['meters', 'yards']).describe('Meters go with centimetre widths, yards with inch widths'),
+  "amount": zod.number().nullable(),
+  "width": zod.number().nullable(),
+  "brand": zod.string().nullable(),
+  "notes": zod.string().nullable(),
+  "photoCount": zod.number().int().describe('The first photo is the print close-up'),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Remove a fabric from the stash
+ */
+export const DeleteStashFabricParams = zod.object({
+  "fabricId": zod.coerce.string().uuid()
+})
+
+export const DeleteStashFabricResponse = zod.void()
+
+
+/**
+ * @summary View one of a fabric's photos
+ */
+export const getStashFabricPhotoPathPhotoIndexMin = 0;
+export const getStashFabricPhotoPathPhotoIndexMax = 3;
+
+
+
+export const GetStashFabricPhotoParams = zod.object({
+  "fabricId": zod.coerce.string().uuid(),
+  "photoIndex": zod.coerce.number().int().min(getStashFabricPhotoPathPhotoIndexMin).max(getStashFabricPhotoPathPhotoIndexMax).describe('0 is the print close-up, 1 to 3 are the extra photos')
+})
+
+export const GetStashFabricPhotoResponse = zod.void()
+
+
