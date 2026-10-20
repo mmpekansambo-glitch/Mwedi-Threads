@@ -57,6 +57,9 @@ export function checkProjectYarns(inputs: ProjectYarnInput[]): YarnsCheck {
   if (yarns.some((yarn) => yarn.skeinsUsed !== null && (yarn.skeinsUsed < 0 || yarn.skeinsUsed > 999 || !Number.isInteger(yarn.skeinsUsed * 2)))) {
     return { ok: false, error: "Enter skeins used in whole or half skeins." };
   }
+  if (yarns.some((yarn) => !yarn.stashYarnId && !yarn.brand)) {
+    return { ok: false, error: "Add a brand for each yarn so it goes in your stash." };
+  }
   if (yarns[0]) yarns[0].heldTogether = false;
   return { ok: true, yarns };
 }
@@ -167,6 +170,47 @@ export async function projectYarnsFor(projectIds: string[]): Promise<Map<string,
 }
 
 const cleanOwners = new Set<string>();
+const linkedOwners = new Set<string>();
+
+// Project yarn saved before the stash existed (or moved from an old
+// project) has a brand but no stash yarn. The first time a maker's
+// projects are loaded, each one is matched to the stash or added to it.
+export async function linkProjectYarnsToStash(ownerId: string): Promise<void> {
+  if (linkedOwners.has(ownerId)) return;
+  const unlinked = and(
+    eq(projectsTable.ownerId, ownerId),
+    isNull(projectYarnsTable.stashYarnId),
+    sql`nullif(trim(${projectYarnsTable.brand}), '') is not null`,
+  );
+  const [waiting] = await db
+    .select({ id: projectYarnsTable.id })
+    .from(projectYarnsTable)
+    .innerJoin(projectsTable, eq(projectYarnsTable.projectId, projectsTable.id))
+    .where(unlinked)
+    .limit(1);
+  if (waiting) {
+    await db.transaction(async (tx) => {
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`project-yarns:${ownerId}`}))`);
+      const rows = await tx
+        .select({ id: projectYarnsTable.id, brand: projectYarnsTable.brand, subBrand: projectYarnsTable.subBrand, color: projectYarnsTable.color })
+        .from(projectYarnsTable)
+        .innerJoin(projectsTable, eq(projectYarnsTable.projectId, projectsTable.id))
+        .where(unlinked);
+      for (const row of rows) {
+        const brand = cleanName(row.brand);
+        if (!brand) continue;
+        const stash = await stashYarnFor(tx, ownerId, {
+          stashYarnId: null, brand, subBrand: cleanName(row.subBrand), color: cleanName(row.color), heldTogether: false, skeinsUsed: null,
+        });
+        await tx
+          .update(projectYarnsTable)
+          .set({ stashYarnId: stash.id, brand: stash.brand, subBrand: stash.subBrand, color: stash.color })
+          .where(eq(projectYarnsTable.id, row.id));
+      }
+    });
+  }
+  linkedOwners.add(ownerId);
+}
 
 // Projects made before a project could list several yarns kept one brand,
 // type and color on the project itself. The first time a maker's projects

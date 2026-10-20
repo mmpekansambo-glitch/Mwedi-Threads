@@ -32,6 +32,7 @@ const savedYarns = new Map<string, unknown[]>();
 vi.mock("../lib/projectYarns", async (importOriginal) => ({
   ...await importOriginal<typeof import("../lib/projectYarns")>(),
   moveOldProjectYarns: async () => undefined,
+  linkProjectYarnsToStash: async () => undefined,
   saveProjectYarns: async (_tx: unknown, _ownerId: string, projectId: string, yarns: object[]) => {
     savedYarns.set(projectId, yarns.map((yarn, index) => ({ id: `0000000${index}-0000-4000-8000-000000000000`, generalColor: null, ...yarn })));
   },

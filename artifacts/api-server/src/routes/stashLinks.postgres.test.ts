@@ -18,6 +18,7 @@ const databaseUrl = process.env.PROJECTS_AUTH_TEST_DATABASE_URL;
 const maker = "links-test-maker";
 const otherMaker = "links-test-other";
 const reviewer = "links-test-reviewer";
+const earlyMaker = "links-test-early";
 
 let schemaName: string | undefined;
 let schemaCreated = false;
@@ -185,6 +186,7 @@ describe.skipIf(!databaseUrl)("project yarn, stash links and catalog reviews aga
       { id: maker, email: "maker@example.test", displayName: "Maker" },
       { id: otherMaker, email: "other@example.test" },
       { id: reviewer, email: "reviewer@example.test" },
+      { id: earlyMaker, email: "early@example.test" },
     ]);
   });
 
@@ -203,15 +205,13 @@ describe.skipIf(!databaseUrl)("project yarn, stash links and catalog reviews aga
       yarns: [
         { brand: "Lion Brand", subBrand: "Wool-Ease", color: "Fisherman" },
         { brand: "Lion Brand", subBrand: "Wool-Ease", color: "Cranberry", heldTogether: true },
-        { color: "Leftover pink" },
         { brand: "", subBrand: " ", color: null },
       ],
     });
     expect(first.status).toBe(201);
-    expect(first.body.yarns).toHaveLength(3);
+    expect(first.body.yarns).toHaveLength(2);
     expect(first.body.yarns[0]).toMatchObject({ brand: "Lion Brand", color: "Fisherman", heldTogether: false });
     expect(first.body.yarns[1]).toMatchObject({ color: "Cranberry", heldTogether: true });
-    expect(first.body.yarns[2]).toMatchObject({ brand: null, color: "Leftover pink", stashYarnId: null });
     expect(first.body.yarns[0].stashYarnId).toBeTruthy();
 
     const stash = await read(await request("/yarn-stash", { user: maker }));
@@ -234,6 +234,37 @@ describe.skipIf(!databaseUrl)("project yarn, stash links and catalog reviews aga
     });
     expect(other.status).toBe(400);
     expect(await read(await request("/yarn-stash", { user: otherMaker }))).toHaveLength(0);
+  });
+
+  it("asks for a brand on yarn that isn't picked from the stash", async () => {
+    const response = await createProject(maker, { yarns: [{ color: "Leftover pink" }] });
+    expect(response.status).toBe(400);
+    expect(response.body.error).toBe("Add a brand for each yarn so it goes in your stash.");
+  });
+
+  it("adds yarn from projects saved before the stash to the stash", async () => {
+    const [saved, moved] = await getTestDb()
+      .insert(schema.projectsTable)
+      .values([
+        { ownerId: earlyMaker, title: "Market bag", craft: "crochet" },
+        { ownerId: earlyMaker, title: "Old scarf", craft: "knitting", yarnBrand: "cascade", yarnType: "220", yarnColor: "oatmeal" },
+      ])
+      .returning();
+    await getTestDb().insert(schema.projectYarnsTable).values([
+      { projectId: saved!.id, position: 0, brand: "Cascade", subBrand: "220", color: "Oatmeal" },
+      { projectId: saved!.id, position: 1, brand: null, subBrand: null, color: "Scrap green" },
+    ]);
+
+    const projects = await read(await request("/projects", { user: earlyMaker }));
+    const bag = projects.find((project: { id: string }) => project.id === saved!.id);
+    const scarf = projects.find((project: { id: string }) => project.id === moved!.id);
+    expect(bag.yarns[0].stashYarnId).toBeTruthy();
+    expect(bag.yarns[1]).toMatchObject({ color: "Scrap green", stashYarnId: null });
+    expect(scarf.yarns[0]).toMatchObject({ stashYarnId: bag.yarns[0].stashYarnId, brand: "Cascade", subBrand: "220", color: "Oatmeal" });
+
+    const stash = await read(await request("/yarn-stash", { user: earlyMaker }));
+    expect(stash).toHaveLength(1);
+    expect(stash[0]).toMatchObject({ brand: "Cascade", subBrand: "220", color: "Oatmeal", photoPath: null });
   });
 
   it("picks yarn from the stash and rejects bad skeins", async () => {
