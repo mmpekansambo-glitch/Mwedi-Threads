@@ -420,7 +420,7 @@ describe.skipIf(!databaseUrl)("project authorization against PostgreSQL", () => 
 
     const detail = await (await request(`/projects/${old.id}`, { user: ownerC })).json() as { yarns: unknown[] };
     expect(detail.yarns).toMatchObject([
-      { brand: "Malabrigo", subBrand: "Merino worsted", color: "Teal", stashYarnId: null, heldTogether: false },
+      { brand: "Malabrigo", subBrand: "Merino worsted", color: "Teal", stashYarnId: expect.any(String), heldTogether: false },
     ]);
 
     const updated = await request(`/projects/${old.id}`, {

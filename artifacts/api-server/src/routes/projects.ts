@@ -41,6 +41,7 @@ import { buildDashboardCharts, progressChartStart } from "../lib/dashboardCharts
 import { checkProgressSettings, workOutProgress } from "../lib/progressMethods";
 import {
   checkProjectYarns,
+  linkProjectYarnsToStash,
   moveOldProjectYarns,
   projectYarnsFor,
   saveProjectYarns,
@@ -61,6 +62,7 @@ router.use(requireAuth);
 router.use(async (_req, res, next) => {
   try {
     await moveOldProjectYarns(getOwnerId(res));
+    await linkProjectYarnsToStash(getOwnerId(res));
     next();
   } catch (error) {
     next(error);

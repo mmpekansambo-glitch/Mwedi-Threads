@@ -184,3 +184,20 @@ test("lets the reviewer rename a catalog entry from the review page", async ({ p
   await page.getByTestId(`button-rename-${reviewId}`).click();
   await expect.poll(() => sent.resolve).toEqual({ action: "rename", name: "Wool-Ease Classic", reviewerNote: "Fixed, thanks." });
 });
+
+test("asks for a brand before saving a typed-in project yarn", async ({ page }) => {
+  const sent: Sent = {};
+  await mockApi(page, sent);
+  await page.goto("/projects/new");
+  await page.getByTestId("input-project-title").fill("Scrap blanket");
+  await page.getByTestId("project-yarn-0-color").fill("Leftover pink");
+  await page.getByTestId("button-save-project").click();
+  await expect(page.getByText("Add a brand for each yarn so it goes in your stash.")).toBeVisible();
+  expect(sent.create).toBeUndefined();
+
+  await page.getByTestId("project-yarn-0-brand").fill("Red Heart");
+  await page.getByTestId("button-save-project").click();
+  await expect.poll(() => sent.create?.yarns).toEqual([
+    { stashYarnId: null, brand: "Red Heart", subBrand: null, color: "Leftover pink", heldTogether: false, skeinsUsed: null },
+  ]);
+});

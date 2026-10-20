@@ -13,6 +13,7 @@ vi.mock("../lib/users", () => ({ ensureUserRow: async () => undefined }));
 vi.mock("../lib/projectYarns", async (importOriginal) => ({
   ...await importOriginal<typeof import("../lib/projectYarns")>(),
   moveOldProjectYarns: async () => undefined,
+  linkProjectYarnsToStash: async () => undefined,
   projectYarnsFor: async (ids: string[]) => new Map(ids.map((id) => [id, []])),
 }));
 

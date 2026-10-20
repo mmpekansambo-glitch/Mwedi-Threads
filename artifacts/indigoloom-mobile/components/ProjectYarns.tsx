@@ -38,6 +38,7 @@ export function yarnsForApi(drafts: YarnDraft[]): ProjectYarnInput[] | string {
   for (const draft of drafts) {
     const brand = draft.brand.trim(); const subBrand = draft.subBrand.trim(); const color = draft.color.trim();
     if (!draft.stashYarnId && !brand && !subBrand && !color) continue;
+    if (!draft.stashYarnId && !brand) return 'Add a brand for each yarn so it goes in your stash.';
     let skeinsUsed: number | null = null;
     if (draft.skeinsUsed.trim()) {
       skeinsUsed = Number(draft.skeinsUsed.replace(',', '.'));
