@@ -14,6 +14,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { useColors } from '@/hooks/useColors';
+import { BrandMark } from '@/components/BrandMark';
 import { StarButton } from '@/components/StarButton';
 
 export const fonts = {
@@ -42,18 +43,15 @@ export function LoomText({
   );
 }
 
-export function Brand({ light = false }: { light?: boolean }) {
+export function Brand() {
   const colors = useColors();
-  const foreground = light ? colors.primaryForeground : colors.foreground;
-  const soft = light ? colors.primaryForeground : colors.mutedForeground;
   return (
-    <View style={styles.brand}>
-      <View style={styles.mark}>
-        <Feather name="git-merge" size={23} color={light ? colors.accent : colors.primary} />
+    <View style={styles.brand} accessibilityLabel="Mwedi Threads">
+      <BrandMark size={40} />
+      <View>
+        <LoomText style={[styles.brandName, { color: colors.foreground }]}>Mwedi</LoomText>
+        <LoomText style={[styles.brandSoft, { color: colors.mutedForeground }]}>THREADS</LoomText>
       </View>
-      <LoomText style={[styles.brandName, { color: foreground }]}>
-        Mwe<LoomText style={{ color: soft, fontFamily: fonts.semibold }}>di</LoomText>
-      </LoomText>
     </View>
   );
 }
@@ -276,9 +274,9 @@ export function AuthLink({ href, children }: { href: '/(auth)/sign-in' | '/(auth
 }
 
 const styles = StyleSheet.create({
-  brand: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  mark: { width: 31, height: 31, alignItems: 'center', justifyContent: 'center' },
-  brandName: { fontSize: 21, letterSpacing: -0.6, fontFamily: fonts.bold },
+  brand: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  brandName: { fontSize: 22, lineHeight: 24, fontFamily: fonts.displayBold },
+  brandSoft: { fontSize: 10, letterSpacing: 2.2, fontFamily: fonts.bold, marginTop: 2 },
   button: { minHeight: 48, paddingHorizontal: 18, borderRadius: 10, borderWidth: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9 },
   buttonText: { fontFamily: fonts.semibold, fontSize: 16 },
   pressed: { opacity: 0.82, transform: [{ scale: 0.985 }] },
