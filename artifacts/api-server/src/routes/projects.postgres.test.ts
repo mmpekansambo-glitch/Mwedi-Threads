@@ -124,6 +124,7 @@ describe.skipIf(!databaseUrl)("project authorization against PostgreSQL", () => 
         progress_total double precision,
         progress_sections jsonb NOT NULL DEFAULT '[]'::jsonb,
         completion_percent integer NOT NULL DEFAULT 0,
+        counter integer NOT NULL DEFAULT 0,
         created_at timestamptz NOT NULL DEFAULT now(),
         updated_at timestamptz NOT NULL DEFAULT now()
       );
@@ -433,5 +434,43 @@ describe.skipIf(!databaseUrl)("project authorization against PostgreSQL", () => 
     });
     expect(updated.status).toBe(200);
     expect(await search("cotton candy")).toEqual([old.id]);
+  });
+
+  it("saves the counter for the owner only and leaves progress alone", async () => {
+    const before = await getTestDb()
+      .select({ percent: projectsTable.completionPercent, updatedAt: projectsTable.updatedAt })
+      .from(projectsTable)
+      .where(eq(projectsTable.id, projectAId));
+
+    const saved = await request(`/projects/${projectAId}/counter`, {
+      method: "PUT",
+      user: ownerA,
+      body: { count: 37 },
+    });
+    expect(saved.status).toBe(200);
+    expect(await saved.json()).toEqual({ count: 37 });
+
+    const detail = await request(`/projects/${projectAId}`, { user: ownerA });
+    expect(((await detail.json()) as { counter: number }).counter).toBe(37);
+
+    const after = await getTestDb()
+      .select({ percent: projectsTable.completionPercent, updatedAt: projectsTable.updatedAt })
+      .from(projectsTable)
+      .where(eq(projectsTable.id, projectAId));
+    expect(after).toEqual(before);
+
+    const otherOwner = await request(`/projects/${projectAId}/counter`, {
+      method: "PUT",
+      user: ownerB,
+      body: { count: 1 },
+    });
+    expect(otherOwner.status).toBe(404);
+
+    const negative = await request(`/projects/${projectAId}/counter`, {
+      method: "PUT",
+      user: ownerA,
+      body: { count: -1 },
+    });
+    expect(negative.status).toBe(400);
   });
 });

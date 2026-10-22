@@ -82,6 +82,8 @@ export const projectsTable = pgTable("projects", {
     .notNull()
     .default([]),
   completionPercent: integer("completion_percent").notNull().default(0),
+  // The project page counter. Separate from progress on purpose.
+  counter: integer("counter").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

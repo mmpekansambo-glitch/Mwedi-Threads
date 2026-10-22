@@ -50,6 +50,7 @@ export * from './progressPhotoUploadRequestContentType';
 export * from './progressPhotoUploadResponse';
 export * from './progressSection';
 export * from './project';
+export * from './projectCounter';
 export * from './projectDatePrecision';
 export * from './projectDetail';
 export * from './projectStatus';

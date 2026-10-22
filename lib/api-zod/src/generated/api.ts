@@ -31,6 +31,8 @@ export const getDashboardResponseRecentProjectsItemProgressSectionsMax = 40;
 export const getDashboardResponseRecentProjectsItemCompletionPercentMin = 0;
 export const getDashboardResponseRecentProjectsItemCompletionPercentMax = 100;
 
+export const getDashboardResponseRecentProjectsItemCounterMin = 0;
+
 
 
 export const GetDashboardResponse = zod.object({
@@ -80,6 +82,7 @@ export const GetDashboardResponse = zod.object({
   "done": zod.boolean()
 })).max(getDashboardResponseRecentProjectsItemProgressSectionsMax),
   "completionPercent": zod.number().int().min(getDashboardResponseRecentProjectsItemCompletionPercentMin).max(getDashboardResponseRecentProjectsItemCompletionPercentMax),
+  "counter": zod.number().int().min(getDashboardResponseRecentProjectsItemCounterMin).describe('The project\'s plain counter (any count the maker likes).'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })),
@@ -129,6 +132,8 @@ export const getProjectsResponseProgressSectionsMax = 40;
 export const getProjectsResponseCompletionPercentMin = 0;
 export const getProjectsResponseCompletionPercentMax = 100;
 
+export const getProjectsResponseCounterMin = 0;
+
 
 
 export const GetProjectsResponseItem = zod.object({
@@ -174,6 +179,7 @@ export const GetProjectsResponseItem = zod.object({
   "done": zod.boolean()
 })).max(getProjectsResponseProgressSectionsMax),
   "completionPercent": zod.number().int().min(getProjectsResponseCompletionPercentMin).max(getProjectsResponseCompletionPercentMax),
+  "counter": zod.number().int().min(getProjectsResponseCounterMin).describe('The project\'s plain counter (any count the maker likes).'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -255,6 +261,8 @@ export const createProjectResponseProgressSectionsMax = 40;
 export const createProjectResponseCompletionPercentMin = 0;
 export const createProjectResponseCompletionPercentMax = 100;
 
+export const createProjectResponseCounterMin = 0;
+
 
 
 export const CreateProjectResponse = zod.object({
@@ -300,6 +308,7 @@ export const CreateProjectResponse = zod.object({
   "done": zod.boolean()
 })).max(createProjectResponseProgressSectionsMax),
   "completionPercent": zod.number().int().min(createProjectResponseCompletionPercentMin).max(createProjectResponseCompletionPercentMax),
+  "counter": zod.number().int().min(createProjectResponseCounterMin).describe('The project\'s plain counter (any count the maker likes).'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -336,6 +345,8 @@ export const getProjectResponseOneProgressSectionsMax = 40;
 
 export const getProjectResponseOneCompletionPercentMin = 0;
 export const getProjectResponseOneCompletionPercentMax = 100;
+
+export const getProjectResponseOneCounterMin = 0;
 
 export const getProjectResponseTwoProgressItemCompletionPercentMin = 0;
 export const getProjectResponseTwoProgressItemCompletionPercentMax = 100;
@@ -385,6 +396,7 @@ export const GetProjectResponse = zod.object({
   "done": zod.boolean()
 })).max(getProjectResponseOneProgressSectionsMax),
   "completionPercent": zod.number().int().min(getProjectResponseOneCompletionPercentMin).max(getProjectResponseOneCompletionPercentMax),
+  "counter": zod.number().int().min(getProjectResponseOneCounterMin).describe('The project\'s plain counter (any count the maker likes).'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 }).and(zod.object({
@@ -485,6 +497,8 @@ export const updateProjectResponseProgressSectionsMax = 40;
 export const updateProjectResponseCompletionPercentMin = 0;
 export const updateProjectResponseCompletionPercentMax = 100;
 
+export const updateProjectResponseCounterMin = 0;
+
 
 
 export const UpdateProjectResponse = zod.object({
@@ -530,6 +544,7 @@ export const UpdateProjectResponse = zod.object({
   "done": zod.boolean()
 })).max(updateProjectResponseProgressSectionsMax),
   "completionPercent": zod.number().int().min(updateProjectResponseCompletionPercentMin).max(updateProjectResponseCompletionPercentMax),
+  "counter": zod.number().int().min(updateProjectResponseCounterMin).describe('The project\'s plain counter (any count the maker likes).'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -563,6 +578,32 @@ export const UnstarProjectParams = zod.object({
 })
 
 export const UnstarProjectResponse = zod.void()
+
+
+/**
+ * @summary Save the project's counter
+ */
+export const SetProjectCounterParams = zod.object({
+  "projectId": zod.coerce.string().uuid()
+})
+
+export const setProjectCounterBodyCountMin = 0;
+export const setProjectCounterBodyCountMax = 1000000;
+
+
+
+export const SetProjectCounterBody = zod.object({
+  "count": zod.number().int().min(setProjectCounterBodyCountMin).max(setProjectCounterBodyCountMax)
+})
+
+export const setProjectCounterResponseCountMin = 0;
+export const setProjectCounterResponseCountMax = 1000000;
+
+
+
+export const SetProjectCounterResponse = zod.object({
+  "count": zod.number().int().min(setProjectCounterResponseCountMin).max(setProjectCounterResponseCountMax)
+})
 
 
 /**

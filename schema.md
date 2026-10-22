@@ -170,8 +170,9 @@ One row per knitting or crochet project.
 | progress_total | double precision | no | | Total rows or rounds, or skeins planned. Halves allowed. |
 | progress_sections | jsonb | yes | `[]` | List of `{ name, done }` for projects tracked by sections. |
 | completion_percent | integer | yes | 0 | |
+| counter | integer | yes | 0 | The plain counter on the project page. Never changes progress. |
 | created_at | timestamp with time zone | yes | now | |
-| updated_at | timestamp with time zone | yes | now | Updated on every change. |
+| updated_at | timestamp with time zone | yes | now | Updated on every change except the counter. |
 
 ## project_progress_entries
 

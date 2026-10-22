@@ -44,6 +44,7 @@ import type {
   ProgressPhotoUploadRequest,
   ProgressPhotoUploadResponse,
   Project,
+  ProjectCounter,
   ProjectDetail,
   ResolveCatalogReview,
   SkeinSuggestion,
@@ -885,6 +886,95 @@ export const useUnstarProject = <TError = ErrorType<UnauthorizedResponse | NotFo
         TContext
       > => {
       return useMutation(getUnstarProjectMutationOptions(options));
+    }
+
+export const getSetProjectCounterUrl = (projectId: string,) => {
+
+
+
+
+  return `/api/projects/${projectId}/counter`
+}
+
+/**
+ * @summary Save the project's counter
+ */
+export const setProjectCounter = async (projectId: string,
+    projectCounter: ProjectCounter, options?: Parameters<typeof customFetch>[1]): Promise<ProjectCounter> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<ProjectCounter>(getSetProjectCounterUrl(projectId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(projectCounter)
+  }
+);}
+
+
+
+
+
+export const getSetProjectCounterMutationKey = () => ['setProjectCounter'] as const;
+
+export const getSetProjectCounterMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setProjectCounter>>, TError,SetProjectCounterMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setProjectCounter>>, TError,SetProjectCounterMutationVariables, TContext> => {
+
+const mutationKey = getSetProjectCounterMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setProjectCounter>>, SetProjectCounterMutationVariables> = (props) => {
+          const {projectId,data} = props ?? {};
+
+          return  setProjectCounter(projectId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetProjectCounterMutationResult = NonNullable<Awaited<ReturnType<typeof setProjectCounter>>>
+    export type SetProjectCounterMutationBody = BodyType<ProjectCounter>
+    export type SetProjectCounterMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse>
+    export type SetProjectCounterMutationVariables = {projectId: string;data: BodyType<ProjectCounter>}
+
+    /**
+ * @summary Save the project's counter
+ */
+export const useSetProjectCounter = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setProjectCounter>>, TError,SetProjectCounterMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setProjectCounter>>,
+        TError,
+        SetProjectCounterMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSetProjectCounterMutationOptions(options));
     }
 
 export const getAddProgressUrl = (projectId: string,) => {
