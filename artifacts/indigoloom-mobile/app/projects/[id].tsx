@@ -17,6 +17,7 @@ import { ProgressAmountInput, amountDraftFor, progressAmountForApi, progressDeta
 import { describeNeedle } from '@/components/NeedleFields';
 import { describeProjectYarn } from '@/components/ProjectYarns';
 import { SkeinSuggestions } from '@/components/SkeinSuggestions';
+import { ProjectCounter } from '@/components/ProjectCounter';
 import { useColors } from '@/hooks/useColors';
 
 export default function ProjectDetailScreen() {
@@ -179,6 +180,7 @@ export default function ProjectDetailScreen() {
               <ProgressBar value={project.completionPercent} />
               {progressDetail(project, latestProgressValue) ? <LoomText style={{ color: colors.primary, fontFamily: fonts.semibold, fontSize: 15, marginTop: 9 }} testID="text-progress-detail">{progressDetail(project, latestProgressValue)}</LoomText> : null}
             </View>
+            <ProjectCounter key={project.id} projectId={project.id} initial={project.counter} />
             <View style={[styles.detailCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <LoomText style={[styles.sectionLabel, { color: colors.primary }]}>Details</LoomText>
               {[

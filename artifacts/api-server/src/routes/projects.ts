@@ -8,6 +8,9 @@ import {
   CreateProjectBody,
   CreateProjectResponse,
   DeleteProjectParams,
+  SetProjectCounterBody,
+  SetProjectCounterParams,
+  SetProjectCounterResponse,
   StarProjectParams,
   UnstarProjectParams,
   DeleteProgressPhotoParams,
@@ -600,6 +603,33 @@ router.put("/projects/:projectId/star", async (req, res): Promise<void> => {
     .values({ userId: ownerId, projectId })
     .onConflictDoNothing();
   res.sendStatus(204);
+});
+
+// Saves the counter on its own, without touching progress or updatedAt, so
+// counting doesn't reorder the projects list.
+router.put("/projects/:projectId/counter", async (req, res): Promise<void> => {
+  const params = SetProjectCounterParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: "Invalid project ID." });
+    return;
+  }
+  const body = SetProjectCounterBody.safeParse(req.body);
+  if (!body.success) {
+    res.status(400).json({ error: "The count must be a whole number from 0 up." });
+    return;
+  }
+
+  const ownerId = getOwnerId(res);
+  const [updated] = await db
+    .update(projectsTable)
+    .set({ counter: body.data.count, updatedAt: sql`${projectsTable.updatedAt}` })
+    .where(and(eq(projectsTable.id, params.data.projectId), eq(projectsTable.ownerId, ownerId)))
+    .returning({ count: projectsTable.counter });
+  if (!updated) {
+    res.status(404).json({ error: "Project not found." });
+    return;
+  }
+  res.json(SetProjectCounterResponse.parse(updated));
 });
 
 router.delete("/projects/:projectId/star", async (req, res): Promise<void> => {
