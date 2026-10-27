@@ -1929,7 +1929,7 @@ components:
       required: [yarn, sewing]
     FabricType:
       type: string
-      enum: [cotton, linen, jersey, denim, silk, wool, polyester, blend, other, canvas, chambray, chiffon, corduroy, crepe, double_gauze, flannel, fleece, french_terry, minky, rib_knit, satin, tulle, velvet, viscose]
+      enum: [cotton, linen, jersey, denim, silk, wool, polyester, blend, other, canvas, chambray, chiffon, corduroy, crepe, flannel, fleece, french_terry, rib_knit, satin, tulle, velvet, viscose]
     FabricConstruction:
       type: string
       enum: [woven, knit]
