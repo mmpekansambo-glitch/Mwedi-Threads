@@ -879,7 +879,7 @@ a.stat-card:active { transform: scale(.98); box-shadow: none; }
 .tool-photo.has-photo { border-style: solid; }
 .tool-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
 @media (max-width: 760px) { .tool-list { grid-template-columns: 1fr; } }
-.tool-type-field { gap: 10px; }
+.tool-type-field { grid-column: 1 / -1; max-width: 520px; gap: 10px; }
 .tool-type-field .field-label { font-size: 13px; color: var(--slate); font-weight: 700; }
 .tool-type-field .field-label b { color: #b86658; }
 .tool-type-row { display: grid; gap: 5px; }
