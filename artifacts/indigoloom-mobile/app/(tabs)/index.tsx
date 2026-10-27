@@ -41,9 +41,9 @@ export default function DashboardScreen() {
         <>
           <View style={styles.stats}>
             {([
-              ['All projects', data.totalProjects, 'yarn', '#EEF2FA', '#92AFD7', ''],
-              ['In progress', data.activeProjects, 'hook', '#DCE6F4', '#5A7684', 'in_progress'],
-              ['Finished', data.completedProjects, 'square', '#E1EAE5', '#395B50', 'completed'],
+              ['All projects', data.totalProjects, 'yarn', colors.statAll, colors.statAllInk, ''],
+              ['In progress', data.activeProjects, 'hook', colors.statActive, colors.statActiveInk, 'in_progress'],
+              ['Finished', data.completedProjects, 'square', colors.statFinished, colors.statFinishedInk, 'completed'],
             ] as const).map(([label, value, doodle, tint, ink, status]) => (
               <Pressable
                 key={label}

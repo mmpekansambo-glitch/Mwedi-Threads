@@ -4,12 +4,6 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { LoomText, fonts } from '@/components/loom';
 import { useColors } from '@/hooks/useColors';
 
-// PLAN.md palette: Granite for the bars, Powder Blue for the tapped bar,
-// Blue Slate for axis text, Lavender for the baseline.
-const barColor = '#395B50';
-const selectedBarColor = '#92AFD7';
-const axisColor = '#5A7684';
-const gridColor = '#C5D1EB';
 const plotHeight = 120;
 
 const statusLabels: Record<ProjectStatus, string> = {
@@ -37,7 +31,7 @@ function BarChartCard({ title, rows, unit, emptyText, note, edgeLabelsOnly = fal
       <LoomText serif style={[styles.title, { color: colors.foreground }]}>{title}</LoomText>
       {max > 0 ? (
         <>
-          <View style={[styles.plot, { borderBottomColor: gridColor }]}>
+          <View style={[styles.plot, { borderBottomColor: colors.chartGrid }]}>
             {rows.map((row, index) => (
               <Pressable
                 key={row.detail}
@@ -51,7 +45,7 @@ function BarChartCard({ title, rows, unit, emptyText, note, edgeLabelsOnly = fal
                     styles.bar,
                     {
                       height: row.count ? Math.max(4, (row.count / max) * plotHeight) : 0,
-                      backgroundColor: selected === index ? selectedBarColor : barColor,
+                      backgroundColor: selected === index ? colors.chartBarSelected : colors.chartBar,
                     },
                   ]}
                 />
@@ -61,22 +55,22 @@ function BarChartCard({ title, rows, unit, emptyText, note, edgeLabelsOnly = fal
           {/* Twelve labels don't fit under narrow bars, so long charts only label the first and last bar. */}
           {edgeLabelsOnly ? (
             <View style={[styles.labels, { justifyContent: 'space-between' }]}>
-              <LoomText style={styles.edgeLabel}>{rows[0]?.label}</LoomText>
-              <LoomText style={styles.edgeLabel}>{rows[rows.length - 1]?.label}</LoomText>
+              <LoomText style={[styles.edgeLabel, { color: colors.chartAxis }]}>{rows[0]?.label}</LoomText>
+              <LoomText style={[styles.edgeLabel, { color: colors.chartAxis }]}>{rows[rows.length - 1]?.label}</LoomText>
             </View>
           ) : (
             <View style={styles.labels}>
-              {rows.map((row) => <LoomText key={row.detail} numberOfLines={1} style={styles.label}>{row.label}</LoomText>)}
+              {rows.map((row) => <LoomText key={row.detail} numberOfLines={1} style={[styles.label, { color: colors.chartAxis }]}>{row.label}</LoomText>)}
             </View>
           )}
-          <LoomText style={[styles.caption, { color: axisColor }]}>
+          <LoomText style={[styles.caption, { color: colors.chartAxis }]}>
             {picked ? describe(picked) : `Tallest bar: ${max} ${max === 1 ? unit[0] : unit[1]}. ${onPick ? 'Tap a bar to see those projects.' : 'Tap a bar for its count.'}`}
           </LoomText>
         </>
       ) : (
-        <LoomText style={[styles.empty, { color: axisColor }]}>{emptyText}</LoomText>
+        <LoomText style={[styles.empty, { color: colors.chartAxis }]}>{emptyText}</LoomText>
       )}
-      {note ? <LoomText style={[styles.caption, { color: axisColor }]}>{note}</LoomText> : null}
+      {note ? <LoomText style={[styles.caption, { color: colors.chartAxis }]}>{note}</LoomText> : null}
     </View>
   );
 }
@@ -116,8 +110,8 @@ const styles = StyleSheet.create({
   barSlot: { flex: 1, height: '100%', justifyContent: 'flex-end', alignItems: 'center' },
   bar: { width: '100%', maxWidth: 34, borderTopLeftRadius: 4, borderTopRightRadius: 4 },
   labels: { flexDirection: 'row', gap: 4, marginTop: 5 },
-  label: { flex: 1, textAlign: 'center', fontSize: 13, color: axisColor },
-  edgeLabel: { fontSize: 13, color: axisColor },
+  label: { flex: 1, textAlign: 'center', fontSize: 13 },
+  edgeLabel: { fontSize: 13 },
   caption: { fontSize: 14, marginTop: 9, lineHeight: 19 },
   empty: { fontSize: 15, lineHeight: 21, textAlign: 'center', paddingVertical: 34, paddingHorizontal: 10 },
 });

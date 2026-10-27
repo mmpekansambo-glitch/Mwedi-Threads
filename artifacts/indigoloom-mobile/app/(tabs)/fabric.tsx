@@ -28,7 +28,7 @@ function FabricCard({ fabric }: { fabric: StashFabric }) {
       <View style={styles.cardBody}>
         <LoomText serif numberOfLines={2} style={[styles.cardTitle, { color: colors.foreground }]}>{fabricName(fabric)}</LoomText>
         {meta ? <LoomText numberOfLines={1} style={{ color: colors.mutedForeground, fontSize: 14 }}>{meta}</LoomText> : null}
-        {fabricSize(fabric) ? <LoomText style={{ color: colors.primary, fontSize: 13, fontFamily: fonts.semibold }}>{fabricSize(fabric)}</LoomText> : null}
+        {fabricSize(fabric) ? <LoomText style={{ color: colors.primaryText, fontSize: 13, fontFamily: fonts.semibold }}>{fabricSize(fabric)}</LoomText> : null}
       </View>
     </Pressable>
   );
