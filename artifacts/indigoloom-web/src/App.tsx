@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 import { projectSorts, sortProjects, sortStash, stashSorts, useSavedSort } from './lib/sorting';
 import {
-  Link, Redirect, Route, Switch, useLocation, Router as WouterRouter,
+  Link, Redirect, Route, Switch, useLocation, useSearch, Router as WouterRouter,
 } from 'wouter';
 import { StatDoodle } from '@/components/stat-doodles';
 import { DateWheelField as ProjectDateField } from '@/components/date-wheel-field';
@@ -450,9 +450,9 @@ function DashboardPage() {
     <PageHeading title={<>Hi, {name}</>} action={<Link href="/projects/new" className="button button-primary" data-testid="link-new-project"><Plus size={17}/> New project</Link>}/>
     {query.isLoading ? <div className="dashboard-loading"><div className="stat-skeleton"/><div className="stat-skeleton"/><div className="stat-skeleton"/></div> : query.isError || !data ? <QueryProblem retry={() => query.refetch()}/> : <>
       <section className="stat-row" aria-label="Project totals">
-        <div className="stat-card stat-card-all"><span className="stat-label">All projects</span><strong>{data.totalProjects}</strong><StatDoodle kind="yarn"/></div>
-        <div className="stat-card stat-card-active"><span className="stat-label">In progress</span><strong>{data.activeProjects}</strong><StatDoodle kind="hook"/></div>
-        <div className="stat-card stat-card-finished"><span className="stat-label">Finished</span><strong>{data.completedProjects}</strong><StatDoodle kind="square"/></div>
+        <Link href="/projects" className="stat-card stat-card-all" data-testid="link-stat-all"><span className="stat-label">All projects</span><strong>{data.totalProjects}</strong><StatDoodle kind="yarn"/></Link>
+        <Link href="/projects?status=in_progress" className="stat-card stat-card-active" data-testid="link-stat-in-progress"><span className="stat-label">In progress</span><strong>{data.activeProjects}</strong><StatDoodle kind="hook"/></Link>
+        <Link href="/projects?status=completed" className="stat-card stat-card-finished" data-testid="link-stat-finished"><span className="stat-label">Finished</span><strong>{data.completedProjects}</strong><StatDoodle kind="square"/></Link>
       </section>
       <DashboardCharts charts={data.charts}/>
       <section className="dashboard-grid">
@@ -473,9 +473,15 @@ function EmptyProjects({ compact = false }: { compact?: boolean }) {
   return <div className={`empty-projects ${compact ? 'empty-compact' : ''}`}><h3>No projects yet</h3><p>Add your first project to start tracking it.</p><Link href="/projects/new" className="button button-primary" data-testid="link-create-first-project"><Plus size={16}/> Start a project</Link></div>;
 }
 
+const projectStatuses: ProjectStatus[] = ['planning', 'in_progress', 'paused', 'completed'];
+
 function ProjectsPage() {
   const [search, setSearch] = useState('');
-  const [status, setStatus] = useState('');
+  // The status filter lives in the URL, so the Overview stat cards and chart bars can link straight to it.
+  const [, setLocation] = useLocation();
+  const urlStatus = new URLSearchParams(useSearch()).get('status') ?? '';
+  const status = projectStatuses.includes(urlStatus as ProjectStatus) ? urlStatus : '';
+  const setStatus = (value: string) => setLocation(value ? `/projects?status=${value}` : '/projects', { replace: true });
   const [craft, setCraft] = useState('');
   const [starredOnly, setStarredOnly] = useState(false);
   const [sort, setSort] = useSavedSort('mwedi:projects-sort', projectSorts);

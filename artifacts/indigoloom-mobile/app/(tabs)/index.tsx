@@ -10,6 +10,11 @@ import { EmptyState, ErrorState, LoadingState, LoomButton, LoomText, PageHeader,
 import { useColors } from '@/hooks/useColors';
 import { HomeSwitcher, ProfileMenu, useCrafts } from '@/components/Crafts';
 
+// Opens My projects filtered to one status; an empty status shows every project.
+function openProjects(status: string) {
+  router.push({ pathname: '/(tabs)/projects', params: { status, at: String(Date.now()) } });
+}
+
 export default function DashboardScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -36,18 +41,25 @@ export default function DashboardScreen() {
         <>
           <View style={styles.stats}>
             {([
-              ['All projects', data.totalProjects, 'yarn', '#EEF2FA', '#92AFD7'],
-              ['In progress', data.activeProjects, 'hook', '#DCE6F4', '#5A7684'],
-              ['Finished', data.completedProjects, 'square', '#E1EAE5', '#395B50'],
-            ] as const).map(([label, value, doodle, tint, ink]) => (
-              <View key={label} style={[styles.stat, { backgroundColor: tint, borderColor: tint }]}>
+              ['All projects', data.totalProjects, 'yarn', '#EEF2FA', '#92AFD7', ''],
+              ['In progress', data.activeProjects, 'hook', '#DCE6F4', '#5A7684', 'in_progress'],
+              ['Finished', data.completedProjects, 'square', '#E1EAE5', '#395B50', 'completed'],
+            ] as const).map(([label, value, doodle, tint, ink, status]) => (
+              <Pressable
+                key={label}
+                accessibilityRole="button"
+                accessibilityLabel={`${label}: ${value}`}
+                onPress={() => openProjects(status)}
+                style={({ pressed }) => [styles.stat, { backgroundColor: tint, borderColor: tint }, pressed && styles.statPressed]}
+                testID={`button-stat-${status || 'all'}`}
+              >
                 <LoomText style={[styles.statLabel, { color: colors.mutedForeground }]}>{label}</LoomText>
                 <LoomText serif style={[styles.statValue, { color: colors.foreground }]}>{value}</LoomText>
                 <View style={styles.statDoodle}><StatDoodle kind={doodle} color={ink} size={40} /></View>
-              </View>
+              </Pressable>
             ))}
           </View>
-          <DashboardCharts charts={data.charts} />
+          <DashboardCharts charts={data.charts} onPickStatus={openProjects} />
           <View style={[styles.sectionHeading, { marginTop: 22 }]}>
             <LoomText serif style={[styles.sectionTitle, { color: colors.foreground }]}>Recent projects</LoomText>
             <Link href="/(tabs)/projects" style={{ color: colors.primary, fontFamily: fonts.semibold, fontSize: 15 }}>All projects</Link>
@@ -85,6 +97,7 @@ const styles = StyleSheet.create({
   greeting: { fontSize: 30, letterSpacing: -0.4 },
   stats: { flexDirection: 'row', gap: 8, marginBottom: 29 },
   stat: { flex: 1, minHeight: 108, justifyContent: 'space-between', borderWidth: 1, borderRadius: 14, padding: 11, overflow: 'hidden' },
+  statPressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
   statDoodle: { position: 'absolute', right: 6, bottom: 6 },
   statLabel: { fontFamily: fonts.semibold, fontSize: 14 },
   statValue: { fontSize: 34, lineHeight: 39 },

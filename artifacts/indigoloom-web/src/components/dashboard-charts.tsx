@@ -1,4 +1,5 @@
 import type { DashboardCharts as Charts, ProjectStatus } from '@workspace/api-client-react';
+import { useLocation } from 'wouter';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 // PLAN.md palette: Granite for the bars, Blue Slate for axis text, Lavender for the grid.
@@ -15,7 +16,7 @@ const monthFormat = new Intl.DateTimeFormat('en', { month: 'short', timeZone: 'U
 const monthYearFormat = new Intl.DateTimeFormat('en', { month: 'long', year: 'numeric', timeZone: 'UTC' });
 const weekFormat = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', timeZone: 'UTC' });
 
-type Row = { label: string; detail: string; count: number };
+type Row = { label: string; detail: string; count: number; status?: ProjectStatus };
 
 // Few bars (the status chart): show every label and put two-word labels on two lines so they fit at 13px.
 function WrappedTick({ x, y, payload }: { x?: number; y?: number; payload?: { value: string } }) {
@@ -25,15 +26,16 @@ function WrappedTick({ x, y, payload }: { x?: number; y?: number; payload?: { va
   </text>;
 }
 
-function ChartCard({ title, rows, emptyText, unit, note, testId }: {
-  title: string; rows: Row[]; emptyText: string; unit: [string, string]; note?: string; testId: string;
+function ChartCard({ title, rows, emptyText, unit, note, testId, onPick }: {
+  title: string; rows: Row[]; emptyText: string; unit: [string, string]; note?: string; testId: string; onPick?: (row: Row) => void;
 }) {
   const hasData = rows.some((row) => row.count > 0);
   return <figure className="chart-card loom-card" data-testid={testId}>
     <figcaption><h2 className="serif">{title}</h2></figcaption>
-    {hasData ? <div className="chart-plot">
+    {hasData ? <div className={onPick ? 'chart-plot chart-plot-clickable' : 'chart-plot'}>
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={rows} margin={{ top: 8, right: 4, bottom: 0, left: -24 }} barCategoryGap="22%">
+        <BarChart data={rows} margin={{ top: 8, right: 4, bottom: 0, left: -24 }} barCategoryGap="22%"
+          onClick={onPick ? (state) => { const row = state?.activePayload?.[0]?.payload as Row | undefined; if (row) onPick(row); } : undefined}>
           <CartesianGrid vertical={false} stroke={gridColor} strokeDasharray="3 4"/>
           {rows.length <= 4
             ? <XAxis dataKey="label" tickLine={false} axisLine={false} interval={0} height={40} tick={<WrappedTick/>}/>
@@ -57,8 +59,9 @@ function ChartCard({ title, rows, emptyText, unit, note, testId }: {
 }
 
 export function DashboardCharts({ charts }: { charts: Charts }) {
+  const [, setLocation] = useLocation();
   const statusRows = charts.projectsByStatus.map(({ status, count }) => ({
-    label: statusLabels[status], detail: statusLabels[status], count,
+    label: statusLabels[status], detail: statusLabels[status], count, status,
   }));
   const monthRows = charts.completedPerMonth.map(({ month, count }) => {
     const date = new Date(`${month}-01T00:00:00Z`);
@@ -72,6 +75,7 @@ export function DashboardCharts({ charts }: { charts: Charts }) {
 
   return <section className="chart-row" aria-label="Your making habits">
     <ChartCard testId="chart-projects-by-status" title="Projects by status" rows={statusRows} unit={['project', 'projects']}
+      onPick={(row) => setLocation(`/projects?status=${row.status}`)}
       emptyText="Add your first project and it will show up here."/>
     <ChartCard testId="chart-completed-per-month" title="Finished, last 12 months" rows={monthRows} unit={['project', 'projects']}
       emptyText="Nothing finished in the last year yet. Your first finish will land here."
