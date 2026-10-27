@@ -1260,14 +1260,14 @@ export const UpdateMyCraftsResponse = zod.object({
  */
 export const GetStashFabricsQueryParams = zod.object({
   "search": zod.coerce.string().optional().describe('Matches fabric type, brand or notes'),
-  "fabricType": zod.enum(['cotton', 'linen', 'jersey', 'denim', 'silk', 'wool', 'polyester', 'blend', 'other', 'canvas', 'chambray', 'chiffon', 'corduroy', 'crepe', 'double_gauze', 'flannel', 'fleece', 'french_terry', 'minky', 'rib_knit', 'satin', 'tulle', 'velvet', 'viscose']).optional(),
+  "fabricType": zod.enum(['cotton', 'linen', 'jersey', 'denim', 'silk', 'wool', 'polyester', 'blend', 'other', 'canvas', 'chambray', 'chiffon', 'corduroy', 'crepe', 'flannel', 'fleece', 'french_terry', 'rib_knit', 'satin', 'tulle', 'velvet', 'viscose']).optional(),
   "print": zod.enum(['solid', 'floral', 'stripe', 'check', 'dots', 'geometric', 'abstract', 'animal', 'novelty', 'ankara', 'batik', 'botanical', 'camo', 'chevron', 'damask', 'houndstooth', 'ikat', 'ombre', 'paisley', 'tie_dye', 'toile', 'other']).optional(),
   "generalColor": zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']).optional()
 })
 
 export const GetStashFabricsResponseItem = zod.object({
   "id": zod.string().uuid(),
-  "fabricType": zod.enum(['cotton', 'linen', 'jersey', 'denim', 'silk', 'wool', 'polyester', 'blend', 'other', 'canvas', 'chambray', 'chiffon', 'corduroy', 'crepe', 'double_gauze', 'flannel', 'fleece', 'french_terry', 'minky', 'rib_knit', 'satin', 'tulle', 'velvet', 'viscose']),
+  "fabricType": zod.enum(['cotton', 'linen', 'jersey', 'denim', 'silk', 'wool', 'polyester', 'blend', 'other', 'canvas', 'chambray', 'chiffon', 'corduroy', 'crepe', 'flannel', 'fleece', 'french_terry', 'rib_knit', 'satin', 'tulle', 'velvet', 'viscose']),
   "construction": zod.union([zod.enum(['woven', 'knit']),zod.null()]),
   "print": zod.union([zod.enum(['solid', 'floral', 'stripe', 'check', 'dots', 'geometric', 'abstract', 'animal', 'novelty', 'ankara', 'batik', 'botanical', 'camo', 'chevron', 'damask', 'houndstooth', 'ikat', 'ombre', 'paisley', 'tie_dye', 'toile', 'other']),zod.null()]),
   "generalColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]),
@@ -1301,7 +1301,7 @@ export const createStashFabricBodyPhotoPathsMax = 4;
 
 
 export const CreateStashFabricBody = zod.object({
-  "fabricType": zod.enum(['cotton', 'linen', 'jersey', 'denim', 'silk', 'wool', 'polyester', 'blend', 'other', 'canvas', 'chambray', 'chiffon', 'corduroy', 'crepe', 'double_gauze', 'flannel', 'fleece', 'french_terry', 'minky', 'rib_knit', 'satin', 'tulle', 'velvet', 'viscose']),
+  "fabricType": zod.enum(['cotton', 'linen', 'jersey', 'denim', 'silk', 'wool', 'polyester', 'blend', 'other', 'canvas', 'chambray', 'chiffon', 'corduroy', 'crepe', 'flannel', 'fleece', 'french_terry', 'rib_knit', 'satin', 'tulle', 'velvet', 'viscose']),
   "construction": zod.union([zod.enum(['woven', 'knit']),zod.null()]).optional(),
   "print": zod.union([zod.enum(['solid', 'floral', 'stripe', 'check', 'dots', 'geometric', 'abstract', 'animal', 'novelty', 'ankara', 'batik', 'botanical', 'camo', 'chevron', 'damask', 'houndstooth', 'ikat', 'ombre', 'paisley', 'tie_dye', 'toile', 'other']),zod.null()]).optional(),
   "generalColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]).optional(),
@@ -1315,7 +1315,7 @@ export const CreateStashFabricBody = zod.object({
 
 export const CreateStashFabricResponse = zod.object({
   "id": zod.string().uuid(),
-  "fabricType": zod.enum(['cotton', 'linen', 'jersey', 'denim', 'silk', 'wool', 'polyester', 'blend', 'other', 'canvas', 'chambray', 'chiffon', 'corduroy', 'crepe', 'double_gauze', 'flannel', 'fleece', 'french_terry', 'minky', 'rib_knit', 'satin', 'tulle', 'velvet', 'viscose']),
+  "fabricType": zod.enum(['cotton', 'linen', 'jersey', 'denim', 'silk', 'wool', 'polyester', 'blend', 'other', 'canvas', 'chambray', 'chiffon', 'corduroy', 'crepe', 'flannel', 'fleece', 'french_terry', 'rib_knit', 'satin', 'tulle', 'velvet', 'viscose']),
   "construction": zod.union([zod.enum(['woven', 'knit']),zod.null()]),
   "print": zod.union([zod.enum(['solid', 'floral', 'stripe', 'check', 'dots', 'geometric', 'abstract', 'animal', 'novelty', 'ankara', 'batik', 'botanical', 'camo', 'chevron', 'damask', 'houndstooth', 'ikat', 'ombre', 'paisley', 'tie_dye', 'toile', 'other']),zod.null()]),
   "generalColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]),
@@ -1360,7 +1360,7 @@ export const GetStashFabricParams = zod.object({
 
 export const GetStashFabricResponse = zod.object({
   "id": zod.string().uuid(),
-  "fabricType": zod.enum(['cotton', 'linen', 'jersey', 'denim', 'silk', 'wool', 'polyester', 'blend', 'other', 'canvas', 'chambray', 'chiffon', 'corduroy', 'crepe', 'double_gauze', 'flannel', 'fleece', 'french_terry', 'minky', 'rib_knit', 'satin', 'tulle', 'velvet', 'viscose']),
+  "fabricType": zod.enum(['cotton', 'linen', 'jersey', 'denim', 'silk', 'wool', 'polyester', 'blend', 'other', 'canvas', 'chambray', 'chiffon', 'corduroy', 'crepe', 'flannel', 'fleece', 'french_terry', 'rib_knit', 'satin', 'tulle', 'velvet', 'viscose']),
   "construction": zod.union([zod.enum(['woven', 'knit']),zod.null()]),
   "print": zod.union([zod.enum(['solid', 'floral', 'stripe', 'check', 'dots', 'geometric', 'abstract', 'animal', 'novelty', 'ankara', 'batik', 'botanical', 'camo', 'chevron', 'damask', 'houndstooth', 'ikat', 'ombre', 'paisley', 'tie_dye', 'toile', 'other']),zod.null()]),
   "generalColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]),
@@ -1397,7 +1397,7 @@ export const updateStashFabricBodyPhotoPathsMax = 4;
 
 
 export const UpdateStashFabricBody = zod.object({
-  "fabricType": zod.enum(['cotton', 'linen', 'jersey', 'denim', 'silk', 'wool', 'polyester', 'blend', 'other', 'canvas', 'chambray', 'chiffon', 'corduroy', 'crepe', 'double_gauze', 'flannel', 'fleece', 'french_terry', 'minky', 'rib_knit', 'satin', 'tulle', 'velvet', 'viscose']).optional(),
+  "fabricType": zod.enum(['cotton', 'linen', 'jersey', 'denim', 'silk', 'wool', 'polyester', 'blend', 'other', 'canvas', 'chambray', 'chiffon', 'corduroy', 'crepe', 'flannel', 'fleece', 'french_terry', 'rib_knit', 'satin', 'tulle', 'velvet', 'viscose']).optional(),
   "construction": zod.union([zod.enum(['woven', 'knit']),zod.null()]).optional(),
   "print": zod.union([zod.enum(['solid', 'floral', 'stripe', 'check', 'dots', 'geometric', 'abstract', 'animal', 'novelty', 'ankara', 'batik', 'botanical', 'camo', 'chevron', 'damask', 'houndstooth', 'ikat', 'ombre', 'paisley', 'tie_dye', 'toile', 'other']),zod.null()]).optional(),
   "generalColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]).optional(),
@@ -1411,7 +1411,7 @@ export const UpdateStashFabricBody = zod.object({
 
 export const UpdateStashFabricResponse = zod.object({
   "id": zod.string().uuid(),
-  "fabricType": zod.enum(['cotton', 'linen', 'jersey', 'denim', 'silk', 'wool', 'polyester', 'blend', 'other', 'canvas', 'chambray', 'chiffon', 'corduroy', 'crepe', 'double_gauze', 'flannel', 'fleece', 'french_terry', 'minky', 'rib_knit', 'satin', 'tulle', 'velvet', 'viscose']),
+  "fabricType": zod.enum(['cotton', 'linen', 'jersey', 'denim', 'silk', 'wool', 'polyester', 'blend', 'other', 'canvas', 'chambray', 'chiffon', 'corduroy', 'crepe', 'flannel', 'fleece', 'french_terry', 'rib_knit', 'satin', 'tulle', 'velvet', 'viscose']),
   "construction": zod.union([zod.enum(['woven', 'knit']),zod.null()]),
   "print": zod.union([zod.enum(['solid', 'floral', 'stripe', 'check', 'dots', 'geometric', 'abstract', 'animal', 'novelty', 'ankara', 'batik', 'botanical', 'camo', 'chevron', 'damask', 'houndstooth', 'ikat', 'ombre', 'paisley', 'tie_dye', 'toile', 'other']),zod.null()]),
   "generalColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]),
@@ -1476,7 +1476,7 @@ export const GetSewingProjectsResponseItem = zod.object({
   "amountUsed": zod.number().nullable().describe('In the fabric\'s own unit'),
   "fabric": zod.object({
   "id": zod.string().uuid(),
-  "fabricType": zod.enum(['cotton', 'linen', 'jersey', 'denim', 'silk', 'wool', 'polyester', 'blend', 'other', 'canvas', 'chambray', 'chiffon', 'corduroy', 'crepe', 'double_gauze', 'flannel', 'fleece', 'french_terry', 'minky', 'rib_knit', 'satin', 'tulle', 'velvet', 'viscose']),
+  "fabricType": zod.enum(['cotton', 'linen', 'jersey', 'denim', 'silk', 'wool', 'polyester', 'blend', 'other', 'canvas', 'chambray', 'chiffon', 'corduroy', 'crepe', 'flannel', 'fleece', 'french_terry', 'rib_knit', 'satin', 'tulle', 'velvet', 'viscose']),
   "construction": zod.union([zod.enum(['woven', 'knit']),zod.null()]),
   "print": zod.union([zod.enum(['solid', 'floral', 'stripe', 'check', 'dots', 'geometric', 'abstract', 'animal', 'novelty', 'ankara', 'batik', 'botanical', 'camo', 'chevron', 'damask', 'houndstooth', 'ikat', 'ombre', 'paisley', 'tie_dye', 'toile', 'other']),zod.null()]),
   "generalColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]),
@@ -1549,7 +1549,7 @@ export const CreateSewingProjectResponse = zod.object({
   "amountUsed": zod.number().nullable().describe('In the fabric\'s own unit'),
   "fabric": zod.object({
   "id": zod.string().uuid(),
-  "fabricType": zod.enum(['cotton', 'linen', 'jersey', 'denim', 'silk', 'wool', 'polyester', 'blend', 'other', 'canvas', 'chambray', 'chiffon', 'corduroy', 'crepe', 'double_gauze', 'flannel', 'fleece', 'french_terry', 'minky', 'rib_knit', 'satin', 'tulle', 'velvet', 'viscose']),
+  "fabricType": zod.enum(['cotton', 'linen', 'jersey', 'denim', 'silk', 'wool', 'polyester', 'blend', 'other', 'canvas', 'chambray', 'chiffon', 'corduroy', 'crepe', 'flannel', 'fleece', 'french_terry', 'rib_knit', 'satin', 'tulle', 'velvet', 'viscose']),
   "construction": zod.union([zod.enum(['woven', 'knit']),zod.null()]),
   "print": zod.union([zod.enum(['solid', 'floral', 'stripe', 'check', 'dots', 'geometric', 'abstract', 'animal', 'novelty', 'ankara', 'batik', 'botanical', 'camo', 'chevron', 'damask', 'houndstooth', 'ikat', 'ombre', 'paisley', 'tie_dye', 'toile', 'other']),zod.null()]),
   "generalColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]),
@@ -1591,7 +1591,7 @@ export const GetSewingProjectResponse = zod.object({
   "amountUsed": zod.number().nullable().describe('In the fabric\'s own unit'),
   "fabric": zod.object({
   "id": zod.string().uuid(),
-  "fabricType": zod.enum(['cotton', 'linen', 'jersey', 'denim', 'silk', 'wool', 'polyester', 'blend', 'other', 'canvas', 'chambray', 'chiffon', 'corduroy', 'crepe', 'double_gauze', 'flannel', 'fleece', 'french_terry', 'minky', 'rib_knit', 'satin', 'tulle', 'velvet', 'viscose']),
+  "fabricType": zod.enum(['cotton', 'linen', 'jersey', 'denim', 'silk', 'wool', 'polyester', 'blend', 'other', 'canvas', 'chambray', 'chiffon', 'corduroy', 'crepe', 'flannel', 'fleece', 'french_terry', 'rib_knit', 'satin', 'tulle', 'velvet', 'viscose']),
   "construction": zod.union([zod.enum(['woven', 'knit']),zod.null()]),
   "print": zod.union([zod.enum(['solid', 'floral', 'stripe', 'check', 'dots', 'geometric', 'abstract', 'animal', 'novelty', 'ankara', 'batik', 'botanical', 'camo', 'chevron', 'damask', 'houndstooth', 'ikat', 'ombre', 'paisley', 'tie_dye', 'toile', 'other']),zod.null()]),
   "generalColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]),
@@ -1667,7 +1667,7 @@ export const UpdateSewingProjectResponse = zod.object({
   "amountUsed": zod.number().nullable().describe('In the fabric\'s own unit'),
   "fabric": zod.object({
   "id": zod.string().uuid(),
-  "fabricType": zod.enum(['cotton', 'linen', 'jersey', 'denim', 'silk', 'wool', 'polyester', 'blend', 'other', 'canvas', 'chambray', 'chiffon', 'corduroy', 'crepe', 'double_gauze', 'flannel', 'fleece', 'french_terry', 'minky', 'rib_knit', 'satin', 'tulle', 'velvet', 'viscose']),
+  "fabricType": zod.enum(['cotton', 'linen', 'jersey', 'denim', 'silk', 'wool', 'polyester', 'blend', 'other', 'canvas', 'chambray', 'chiffon', 'corduroy', 'crepe', 'flannel', 'fleece', 'french_terry', 'rib_knit', 'satin', 'tulle', 'velvet', 'viscose']),
   "construction": zod.union([zod.enum(['woven', 'knit']),zod.null()]),
   "print": zod.union([zod.enum(['solid', 'floral', 'stripe', 'check', 'dots', 'geometric', 'abstract', 'animal', 'novelty', 'ankara', 'batik', 'botanical', 'camo', 'chevron', 'damask', 'houndstooth', 'ikat', 'ombre', 'paisley', 'tie_dye', 'toile', 'other']),zod.null()]),
   "generalColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]),
@@ -1725,7 +1725,7 @@ export const GetSewingOverviewResponse = zod.object({
   "amountUsed": zod.number().nullable().describe('In the fabric\'s own unit'),
   "fabric": zod.object({
   "id": zod.string().uuid(),
-  "fabricType": zod.enum(['cotton', 'linen', 'jersey', 'denim', 'silk', 'wool', 'polyester', 'blend', 'other', 'canvas', 'chambray', 'chiffon', 'corduroy', 'crepe', 'double_gauze', 'flannel', 'fleece', 'french_terry', 'minky', 'rib_knit', 'satin', 'tulle', 'velvet', 'viscose']),
+  "fabricType": zod.enum(['cotton', 'linen', 'jersey', 'denim', 'silk', 'wool', 'polyester', 'blend', 'other', 'canvas', 'chambray', 'chiffon', 'corduroy', 'crepe', 'flannel', 'fleece', 'french_terry', 'rib_knit', 'satin', 'tulle', 'velvet', 'viscose']),
   "construction": zod.union([zod.enum(['woven', 'knit']),zod.null()]),
   "print": zod.union([zod.enum(['solid', 'floral', 'stripe', 'check', 'dots', 'geometric', 'abstract', 'animal', 'novelty', 'ankara', 'batik', 'botanical', 'camo', 'chevron', 'damask', 'houndstooth', 'ikat', 'ombre', 'paisley', 'tie_dye', 'toile', 'other']),zod.null()]),
   "generalColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]),
