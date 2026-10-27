@@ -6,7 +6,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
-import { Alert, Linking, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Alert, Linking, Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   getGetMyCraftsQueryKey, getGetStashFabricQueryKey, getGetStashFabricsQueryKey,
@@ -16,8 +16,9 @@ import type { FabricConstruction, FabricPrint, FabricType, FabricUnit, GeneralCo
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import { FormFieldLabel, LoomButton, LoomText, fonts } from '@/components/loom';
 import { GeneralColorPicker } from '@/components/YarnFields';
+import { ITEM_HEIGHT, Wheel } from '@/components/ProjectDateField';
 import {
-  FabricPhoto, fabricConstructions, fabricName, fabricPrints, fabricTypes, fabricUnits, maxFabricPhotos, sizeForApi,
+  FabricPhoto, fabricConstructions, fabricName, fabricPrints, fabricTypes, fabricUnits, labelFor, maxFabricPhotos, sizeForApi,
 } from '@/components/FabricFields';
 import { useSewingColors } from '@/hooks/useColors';
 
@@ -38,6 +39,53 @@ function Choices<T extends string>({ options, value, onChange, testID }: { optio
         );
       })}
     </ScrollView>
+  );
+}
+
+// Print picker as a scroll wheel like the date picker.
+function PrintWheelField({ value, onChange }: { value: FabricPrint | null; onChange: (value: FabricPrint | null) => void }) {
+  const colors = useSewingColors();
+  const [isOpen, setIsOpen] = useState(false);
+  const [draft, setDraft] = useState(0);
+  const label = labelFor(fabricPrints, value);
+  const openPicker = () => {
+    setDraft(Math.max(0, fabricPrints.findIndex((item) => item.value === value)));
+    setIsOpen(true);
+  };
+  return (
+    <View style={styles.wheelField}>
+      <FormFieldLabel>Print</FormFieldLabel>
+      <Pressable accessibilityRole="button" accessibilityLabel={`Print: ${label || 'Choose a print'}`} onPress={openPicker} style={[styles.trigger, { backgroundColor: colors.card, borderColor: colors.input }]} testID="button-fabric-print">
+        <Feather name="star" size={16} color={colors.primary} />
+        <LoomText style={{ flex: 1, color: label ? colors.foreground : colors.mutedForeground, fontSize: 16 }}>{label || 'Choose a print'}</LoomText>
+        <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
+      </Pressable>
+      <Modal visible={isOpen} transparent animationType="slide" onRequestClose={() => setIsOpen(false)}>
+        <View style={styles.modalBackdrop}>
+          <Pressable accessibilityLabel="Close print picker" onPress={() => setIsOpen(false)} style={StyleSheet.absoluteFill} />
+          <View style={[styles.sheet, { backgroundColor: colors.card }]}>
+            <View style={styles.sheetHeading}>
+              <Pressable accessibilityRole="button" onPress={() => setIsOpen(false)} style={styles.headingButton}>
+                <LoomText style={{ color: colors.mutedForeground, fontSize: 16 }}>Cancel</LoomText>
+              </Pressable>
+              <LoomText serif style={{ color: colors.foreground, fontSize: 20 }}>Print</LoomText>
+              <Pressable accessibilityRole="button" onPress={() => { onChange(fabricPrints[draft]!.value); setIsOpen(false); }} style={styles.headingButton} testID="button-fabric-print-done">
+                <LoomText style={{ color: colors.primary, fontFamily: fonts.semibold, fontSize: 16, textAlign: 'right' }}>Done</LoomText>
+              </Pressable>
+            </View>
+            <View style={[styles.wheels, { backgroundColor: colors.selectedWash }]}>
+              <View pointerEvents="none" style={[styles.wheelBand, { borderColor: colors.accent }]} />
+              <Wheel label="Print" items={fabricPrints.map((item) => item.label)} index={draft} onChange={setDraft} flex={1} testID="wheel-fabric-print" />
+            </View>
+            {value ? (
+              <Pressable accessibilityRole="button" onPress={() => { onChange(null); setIsOpen(false); }} style={styles.clearButton}>
+                <LoomText style={{ color: colors.destructive, fontFamily: fonts.semibold, fontSize: 15 }}>Clear print</LoomText>
+              </Pressable>
+            ) : null}
+          </View>
+        </View>
+      </Modal>
+    </View>
   );
 }
 
@@ -196,8 +244,7 @@ export function FabricForm({ fabric }: { fabric?: StashFabric }) {
           <Choices options={fabricTypes} value={fabricType} onChange={setFabricType} testID="button-fabric-type" />
           <FormFieldLabel>Woven or knit</FormFieldLabel>
           <Choices options={fabricConstructions} value={construction} onChange={(next) => setConstruction(construction === next ? null : next)} testID="button-construction" />
-          <FormFieldLabel>Print</FormFieldLabel>
-          <Choices options={fabricPrints} value={print} onChange={(next) => setPrint(print === next ? null : next)} testID="button-fabric-print" />
+          <PrintWheelField value={print} onChange={setPrint} />
           <GeneralColorPicker value={generalColor} onChange={setGeneralColor} />
           <FormFieldLabel>Measured in</FormFieldLabel>
           <Choices options={fabricUnits} value={unit} onChange={setUnit} testID="button-unit" />
@@ -243,6 +290,15 @@ const styles = StyleSheet.create({
   choices: { gap: 7, paddingBottom: 14 },
   choice: { borderWidth: 1, borderRadius: 99, paddingHorizontal: 14, minHeight: 36, justifyContent: 'center' },
   sizeRow: { flexDirection: 'row', gap: 10 },
+  wheelField: { marginBottom: 14 },
+  trigger: { minHeight: 46, borderRadius: 9, borderWidth: 1, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  modalBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(31, 47, 22, 0.42)' },
+  sheet: { borderTopLeftRadius: 22, borderTopRightRadius: 22, paddingHorizontal: 16, paddingTop: 10, paddingBottom: 34 },
+  sheetHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 10 },
+  headingButton: { minWidth: 64, paddingVertical: 10 },
+  wheels: { flexDirection: 'row', borderRadius: 12, overflow: 'hidden', paddingHorizontal: 6 },
+  wheelBand: { position: 'absolute', left: 8, right: 8, top: ITEM_HEIGHT * 2, height: ITEM_HEIGHT, borderTopWidth: 1.5, borderBottomWidth: 1.5 },
+  clearButton: { alignSelf: 'center', paddingVertical: 12, marginTop: 6 },
   error: { fontSize: 15, lineHeight: 22, marginBottom: 12 },
   confirm: { borderWidth: 1, borderRadius: 14, padding: 14, marginBottom: 14 },
   confirmActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 10 },

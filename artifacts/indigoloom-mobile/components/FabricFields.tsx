@@ -21,16 +21,17 @@ export const fabricConstructions: Array<{ value: FabricConstruction; label: stri
   { value: 'knit', label: 'Knit' },
 ];
 
+// A to Z, so the print wheel and filters are easy to scan.
 export const fabricPrints: Array<{ value: FabricPrint; label: string }> = [
-  { value: 'solid', label: 'Solid' },
-  { value: 'floral', label: 'Floral' },
-  { value: 'stripe', label: 'Stripe' },
-  { value: 'check', label: 'Check or plaid' },
-  { value: 'dots', label: 'Dots' },
-  { value: 'geometric', label: 'Geometric' },
   { value: 'abstract', label: 'Abstract' },
   { value: 'animal', label: 'Animal' },
+  { value: 'check', label: 'Check or plaid' },
+  { value: 'dots', label: 'Dots' },
+  { value: 'floral', label: 'Floral' },
+  { value: 'geometric', label: 'Geometric' },
   { value: 'novelty', label: 'Novelty' },
+  { value: 'solid', label: 'Solid' },
+  { value: 'stripe', label: 'Stripe' },
 ];
 
 // Meters go with centimeter widths, yards with inch widths.
