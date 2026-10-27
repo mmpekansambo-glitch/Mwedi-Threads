@@ -2069,8 +2069,8 @@ components:
       enum: [notions, kit]
     SewingToolCategory:
       type: string
-      description: zip, button, elastic, thread and interfacing are notions; machine, presser_foot, needle, scissors and ruler are kit; other fits either
-      enum: [zip, button, elastic, thread, interfacing, machine, presser_foot, needle, scissors, ruler, other]
+      description: Notions are closures, trims and tapes, hardware, shaping and backing, thread and labels; machine, presser_foot, needle, scissors and ruler are kit; other fits either
+      enum: [zip, button, snap, hook_and_eye, hook_and_loop, magnetic_clasp, toggle, elastic, bias_tape, ribbon, lace, piping, cord, twill_tape, buckle, d_ring, eyelet, rivet, interfacing, boning, batting, stabilizer, fusible_web, thread, label, machine, presser_foot, needle, scissors, ruler, other]
     SewingTool:
       type: object
       properties:

@@ -7,7 +7,7 @@
  */
 
 /**
- * zip, button, elastic, thread and interfacing are notions; machine, presser_foot, needle, scissors and ruler are kit; other fits either
+ * Notions are closures, trims and tapes, hardware, shaping and backing, thread and labels; machine, presser_foot, needle, scissors and ruler are kit; other fits either
  */
 export type SewingToolCategory = typeof SewingToolCategory[keyof typeof SewingToolCategory];
 
@@ -15,9 +15,29 @@ export type SewingToolCategory = typeof SewingToolCategory[keyof typeof SewingTo
 export const SewingToolCategory = {
   zip: 'zip',
   button: 'button',
+  snap: 'snap',
+  hook_and_eye: 'hook_and_eye',
+  hook_and_loop: 'hook_and_loop',
+  magnetic_clasp: 'magnetic_clasp',
+  toggle: 'toggle',
   elastic: 'elastic',
-  thread: 'thread',
+  bias_tape: 'bias_tape',
+  ribbon: 'ribbon',
+  lace: 'lace',
+  piping: 'piping',
+  cord: 'cord',
+  twill_tape: 'twill_tape',
+  buckle: 'buckle',
+  d_ring: 'd_ring',
+  eyelet: 'eyelet',
+  rivet: 'rivet',
   interfacing: 'interfacing',
+  boning: 'boning',
+  batting: 'batting',
+  stabilizer: 'stabilizer',
+  fusible_web: 'fusible_web',
+  thread: 'thread',
+  label: 'label',
   machine: 'machine',
   presser_foot: 'presser_foot',
   needle: 'needle',

@@ -97,6 +97,8 @@ test("adds a notion with a photo", async ({ page }) => {
   await expect(page.getByText("Choose what kind of tool this is.")).toBeVisible();
   await expect(page.getByText("Give it a name.")).toBeVisible();
 
+  await expect(page.locator('#tool-category optgroup[label="Closures"] option')).toContainText(["Zip", "Buttons", "Snaps", "Hooks and eyes"]);
+  await expect(page.locator('#tool-category optgroup[label="Hardware"] option')).toHaveCount(4);
   await page.getByTestId("select-tool-category").selectOption("button");
   await page.getByTestId("input-tool-name").fill("Shell buttons");
   await page.getByTestId("input-tool-quantity").fill("6");

@@ -1,4 +1,6 @@
-export const notionCategories = ["zip", "button", "elastic", "thread", "interfacing"] as const;
+export const notionCategories = [
+  "zip", "button", "snap", "hook_and_eye", "hook_and_loop", "magnetic_clasp", "toggle", "elastic", "bias_tape", "ribbon", "lace", "piping", "cord", "twill_tape", "buckle", "d_ring", "eyelet", "rivet", "interfacing", "boning", "batting", "stabilizer", "fusible_web", "thread", "label",
+] as const;
 export const kitCategories = ["machine", "presser_foot", "needle", "scissors", "ruler"] as const;
 
 type Section = "notions" | "kit";

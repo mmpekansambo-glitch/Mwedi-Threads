@@ -7,6 +7,8 @@ describe("sewing tools", () => {
     expect(categoryFits("kit", "zip")).toBe(false);
     expect(categoryFits("kit", "presser_foot")).toBe(true);
     expect(categoryFits("notions", "machine")).toBe(false);
+    expect(categoryFits("notions", "boning")).toBe(true);
+    expect(categoryFits("kit", "rivet")).toBe(false);
     expect(categoryFits("notions", "other")).toBe(true);
     expect(categoryFits("kit", "other")).toBe(true);
   });

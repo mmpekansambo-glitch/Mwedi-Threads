@@ -57,7 +57,7 @@ import {
   fabricConstructions, fabricName, fabricPhotoUrl, fabricPrints, fabricSize, fabricTypes, fabricUnits, labelFor, maxFabricPhotos, sizeForApi,
 } from '@/components/fabric-fields';
 import { StageTrack, amountLeft, fabricAmount, sewingStages, stageIndex } from '@/components/sewing-fields';
-import { ToolThumb, categoriesFor, categoryFor, quantityForApi, toolDetails, toolPhotoUrl, toolSections } from '@/components/sewing-tools';
+import { ToolThumb, categoryFor, categoryGroupsFor, quantityForApi, toolDetails, toolPhotoUrl, toolSections } from '@/components/sewing-tools';
 import { trackEvent, trackSuccessfulAction } from '@/lib/analytics';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -1845,7 +1845,6 @@ function SewingToolForm({ tool }: { tool?: SewingTool }) {
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const set = (change: Partial<ToolDraft>) => setDraft((current) => ({ ...current, ...change }));
-  const categories = categoriesFor(draft.section);
   const example = draft.category ? categoryFor(draft.category).example : draft.section === 'kit' ? 'Overlocker' : 'Invisible zip';
 
   useEffect(() => () => { if (photo?.kind === 'new') URL.revokeObjectURL(photo.preview); }, [photo]);
@@ -1918,7 +1917,7 @@ function SewingToolForm({ tool }: { tool?: SewingTool }) {
     <form className="project-form loom-card tool-form" onSubmit={save} noValidate>
       <div className="form-grid">
         <div className="field-block"><label id="tool-section-label">Section</label><div className="segmented" role="radiogroup" aria-labelledby="tool-section-label">{toolSections.map((item) => <button key={item.value} type="button" role="radio" aria-checked={draft.section === item.value} className={draft.section === item.value ? 'selected' : ''} onClick={() => set({ section: item.value, category: draft.category === 'other' ? 'other' : '' })} data-testid={`button-tool-form-section-${item.value}`}>{item.label}</button>)}</div></div>
-        <div className="field-block"><label htmlFor="tool-category">Type <b>*</b></label><select id="tool-category" value={draft.category} onChange={(event) => { set({ category: event.target.value as SewingToolCategory }); setErrors(({ category: _category, ...rest }) => rest); }} data-testid="select-tool-category"><option value="">Choose a type</option>{categories.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select>{errors.category && <span className="field-error">{errors.category}</span>}</div>
+        <div className="field-block"><label htmlFor="tool-category">Type <b>*</b></label><select id="tool-category" value={draft.category} onChange={(event) => { set({ category: event.target.value as SewingToolCategory }); setErrors(({ category: _category, ...rest }) => rest); }} data-testid="select-tool-category"><option value="">Choose a type</option>{categoryGroupsFor(draft.section).map(({ group, options }) => draft.section === 'notions' && group !== 'Other' ? <optgroup key={group} label={group}>{options.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</optgroup> : options.map((item) => <option key={item.value} value={item.value}>{item.label}</option>))}</select>{errors.category && <span className="field-error">{errors.category}</span>}</div>
         <div className="field-block field-wide"><label htmlFor="tool-name">Name <b>*</b></label><input id="tool-name" maxLength={80} placeholder={`e.g. ${example}`} value={draft.name} onChange={(event) => { set({ name: event.target.value }); setErrors(({ name: _name, ...rest }) => rest); }} data-testid="input-tool-name"/>{errors.name && <span className="field-error">{errors.name}</span>}</div>
         <div className="field-block"><label htmlFor="tool-quantity">How many</label><input id="tool-quantity" inputMode="numeric" placeholder="Optional" value={draft.quantity} onChange={(event) => { set({ quantity: event.target.value }); setErrors(({ quantity: _quantity, ...rest }) => rest); }} data-testid="input-tool-quantity"/>{errors.quantity && <span className="field-error">{errors.quantity}</span>}</div>
         <div className="field-block"><label htmlFor="tool-size">Size</label><input id="tool-size" maxLength={40} placeholder={draft.section === 'kit' ? 'e.g. 90/14 or 45 mm' : 'e.g. 22 cm or 15 mm'} value={draft.size} onChange={(event) => set({ size: event.target.value })} data-testid="input-tool-size"/></div>

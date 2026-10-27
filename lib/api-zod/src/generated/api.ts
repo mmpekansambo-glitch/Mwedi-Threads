@@ -1751,13 +1751,13 @@ export const GetSewingOverviewResponse = zod.object({
 export const GetSewingToolsQueryParams = zod.object({
   "search": zod.coerce.string().optional().describe('Matches name, brand, size, color or notes'),
   "section": zod.enum(['notions', 'kit']).optional(),
-  "category": zod.enum(['zip', 'button', 'elastic', 'thread', 'interfacing', 'machine', 'presser_foot', 'needle', 'scissors', 'ruler', 'other']).optional()
+  "category": zod.enum(['zip', 'button', 'snap', 'hook_and_eye', 'hook_and_loop', 'magnetic_clasp', 'toggle', 'elastic', 'bias_tape', 'ribbon', 'lace', 'piping', 'cord', 'twill_tape', 'buckle', 'd_ring', 'eyelet', 'rivet', 'interfacing', 'boning', 'batting', 'stabilizer', 'fusible_web', 'thread', 'label', 'machine', 'presser_foot', 'needle', 'scissors', 'ruler', 'other']).optional()
 })
 
 export const GetSewingToolsResponseItem = zod.object({
   "id": zod.string().uuid(),
   "section": zod.enum(['notions', 'kit']).describe('Notions get used up; kit stays'),
-  "category": zod.enum(['zip', 'button', 'elastic', 'thread', 'interfacing', 'machine', 'presser_foot', 'needle', 'scissors', 'ruler', 'other']).describe('zip, button, elastic, thread and interfacing are notions; machine, presser_foot, needle, scissors and ruler are kit; other fits either'),
+  "category": zod.enum(['zip', 'button', 'snap', 'hook_and_eye', 'hook_and_loop', 'magnetic_clasp', 'toggle', 'elastic', 'bias_tape', 'ribbon', 'lace', 'piping', 'cord', 'twill_tape', 'buckle', 'd_ring', 'eyelet', 'rivet', 'interfacing', 'boning', 'batting', 'stabilizer', 'fusible_web', 'thread', 'label', 'machine', 'presser_foot', 'needle', 'scissors', 'ruler', 'other']).describe('Notions are closures, trims and tapes, hardware, shaping and backing, thread and labels; machine, presser_foot, needle, scissors and ruler are kit; other fits either'),
   "name": zod.string(),
   "quantity": zod.number().int().nullable(),
   "size": zod.string().nullable(),
@@ -1791,7 +1791,7 @@ export const createSewingToolBodyNotesMax = 1000;
 
 export const CreateSewingToolBody = zod.object({
   "section": zod.enum(['notions', 'kit']).describe('Notions get used up; kit stays'),
-  "category": zod.enum(['zip', 'button', 'elastic', 'thread', 'interfacing', 'machine', 'presser_foot', 'needle', 'scissors', 'ruler', 'other']).describe('zip, button, elastic, thread and interfacing are notions; machine, presser_foot, needle, scissors and ruler are kit; other fits either'),
+  "category": zod.enum(['zip', 'button', 'snap', 'hook_and_eye', 'hook_and_loop', 'magnetic_clasp', 'toggle', 'elastic', 'bias_tape', 'ribbon', 'lace', 'piping', 'cord', 'twill_tape', 'buckle', 'd_ring', 'eyelet', 'rivet', 'interfacing', 'boning', 'batting', 'stabilizer', 'fusible_web', 'thread', 'label', 'machine', 'presser_foot', 'needle', 'scissors', 'ruler', 'other']).describe('Notions are closures, trims and tapes, hardware, shaping and backing, thread and labels; machine, presser_foot, needle, scissors and ruler are kit; other fits either'),
   "name": zod.string().min(1).max(createSewingToolBodyNameMax),
   "quantity": zod.number().int().min(createSewingToolBodyQuantityMin).max(createSewingToolBodyQuantityMax).nullish(),
   "size": zod.string().max(createSewingToolBodySizeMax).nullish(),
@@ -1804,7 +1804,7 @@ export const CreateSewingToolBody = zod.object({
 export const CreateSewingToolResponse = zod.object({
   "id": zod.string().uuid(),
   "section": zod.enum(['notions', 'kit']).describe('Notions get used up; kit stays'),
-  "category": zod.enum(['zip', 'button', 'elastic', 'thread', 'interfacing', 'machine', 'presser_foot', 'needle', 'scissors', 'ruler', 'other']).describe('zip, button, elastic, thread and interfacing are notions; machine, presser_foot, needle, scissors and ruler are kit; other fits either'),
+  "category": zod.enum(['zip', 'button', 'snap', 'hook_and_eye', 'hook_and_loop', 'magnetic_clasp', 'toggle', 'elastic', 'bias_tape', 'ribbon', 'lace', 'piping', 'cord', 'twill_tape', 'buckle', 'd_ring', 'eyelet', 'rivet', 'interfacing', 'boning', 'batting', 'stabilizer', 'fusible_web', 'thread', 'label', 'machine', 'presser_foot', 'needle', 'scissors', 'ruler', 'other']).describe('Notions are closures, trims and tapes, hardware, shaping and backing, thread and labels; machine, presser_foot, needle, scissors and ruler are kit; other fits either'),
   "name": zod.string(),
   "quantity": zod.number().int().nullable(),
   "size": zod.string().nullable(),
@@ -1848,7 +1848,7 @@ export const GetSewingToolParams = zod.object({
 export const GetSewingToolResponse = zod.object({
   "id": zod.string().uuid(),
   "section": zod.enum(['notions', 'kit']).describe('Notions get used up; kit stays'),
-  "category": zod.enum(['zip', 'button', 'elastic', 'thread', 'interfacing', 'machine', 'presser_foot', 'needle', 'scissors', 'ruler', 'other']).describe('zip, button, elastic, thread and interfacing are notions; machine, presser_foot, needle, scissors and ruler are kit; other fits either'),
+  "category": zod.enum(['zip', 'button', 'snap', 'hook_and_eye', 'hook_and_loop', 'magnetic_clasp', 'toggle', 'elastic', 'bias_tape', 'ribbon', 'lace', 'piping', 'cord', 'twill_tape', 'buckle', 'd_ring', 'eyelet', 'rivet', 'interfacing', 'boning', 'batting', 'stabilizer', 'fusible_web', 'thread', 'label', 'machine', 'presser_foot', 'needle', 'scissors', 'ruler', 'other']).describe('Notions are closures, trims and tapes, hardware, shaping and backing, thread and labels; machine, presser_foot, needle, scissors and ruler are kit; other fits either'),
   "name": zod.string(),
   "quantity": zod.number().int().nullable(),
   "size": zod.string().nullable(),
@@ -1885,7 +1885,7 @@ export const updateSewingToolBodyNotesMax = 1000;
 
 export const UpdateSewingToolBody = zod.object({
   "section": zod.enum(['notions', 'kit']).optional().describe('Notions get used up; kit stays'),
-  "category": zod.enum(['zip', 'button', 'elastic', 'thread', 'interfacing', 'machine', 'presser_foot', 'needle', 'scissors', 'ruler', 'other']).optional().describe('zip, button, elastic, thread and interfacing are notions; machine, presser_foot, needle, scissors and ruler are kit; other fits either'),
+  "category": zod.enum(['zip', 'button', 'snap', 'hook_and_eye', 'hook_and_loop', 'magnetic_clasp', 'toggle', 'elastic', 'bias_tape', 'ribbon', 'lace', 'piping', 'cord', 'twill_tape', 'buckle', 'd_ring', 'eyelet', 'rivet', 'interfacing', 'boning', 'batting', 'stabilizer', 'fusible_web', 'thread', 'label', 'machine', 'presser_foot', 'needle', 'scissors', 'ruler', 'other']).optional().describe('Notions are closures, trims and tapes, hardware, shaping and backing, thread and labels; machine, presser_foot, needle, scissors and ruler are kit; other fits either'),
   "name": zod.string().min(1).max(updateSewingToolBodyNameMax).optional(),
   "quantity": zod.number().int().min(updateSewingToolBodyQuantityMin).max(updateSewingToolBodyQuantityMax).nullish(),
   "size": zod.string().max(updateSewingToolBodySizeMax).nullish(),
@@ -1898,7 +1898,7 @@ export const UpdateSewingToolBody = zod.object({
 export const UpdateSewingToolResponse = zod.object({
   "id": zod.string().uuid(),
   "section": zod.enum(['notions', 'kit']).describe('Notions get used up; kit stays'),
-  "category": zod.enum(['zip', 'button', 'elastic', 'thread', 'interfacing', 'machine', 'presser_foot', 'needle', 'scissors', 'ruler', 'other']).describe('zip, button, elastic, thread and interfacing are notions; machine, presser_foot, needle, scissors and ruler are kit; other fits either'),
+  "category": zod.enum(['zip', 'button', 'snap', 'hook_and_eye', 'hook_and_loop', 'magnetic_clasp', 'toggle', 'elastic', 'bias_tape', 'ribbon', 'lace', 'piping', 'cord', 'twill_tape', 'buckle', 'd_ring', 'eyelet', 'rivet', 'interfacing', 'boning', 'batting', 'stabilizer', 'fusible_web', 'thread', 'label', 'machine', 'presser_foot', 'needle', 'scissors', 'ruler', 'other']).describe('Notions are closures, trims and tapes, hardware, shaping and backing, thread and labels; machine, presser_foot, needle, scissors and ruler are kit; other fits either'),
   "name": zod.string(),
   "quantity": zod.number().int().nullable(),
   "size": zod.string().nullable(),

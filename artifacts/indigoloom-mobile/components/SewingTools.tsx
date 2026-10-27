@@ -25,24 +25,56 @@ export const toolSections: Array<{ value: SewingToolSection; label: string }> = 
   { value: 'kit', label: 'Kit' },
 ];
 
-type CategoryOption = { value: SewingToolCategory; label: string; section: SewingToolSection | 'both'; icon: FeatherName; example: string };
+type CategoryOption = { value: SewingToolCategory; label: string; section: SewingToolSection | 'both'; group: string; icon: FeatherName; example: string };
 
+// Notions are grouped so the long list stays easy to scan.
 export const toolCategories: CategoryOption[] = [
-  { value: 'zip', label: 'Zip', section: 'notions', icon: 'zap', example: 'Invisible zip' },
-  { value: 'button', label: 'Buttons', section: 'notions', icon: 'circle', example: 'Shell buttons' },
-  { value: 'elastic', label: 'Elastic', section: 'notions', icon: 'activity', example: 'Waistband elastic' },
-  { value: 'thread', label: 'Thread', section: 'notions', icon: 'disc', example: 'All-purpose thread' },
-  { value: 'interfacing', label: 'Interfacing', section: 'notions', icon: 'layers', example: 'Fusible interfacing' },
-  { value: 'machine', label: 'Machine', section: 'kit', icon: 'settings', example: 'Overlocker' },
-  { value: 'presser_foot', label: 'Presser foot', section: 'kit', icon: 'chevrons-down', example: 'Walking foot' },
-  { value: 'needle', label: 'Needles', section: 'kit', icon: 'edit-2', example: 'Jersey needles' },
-  { value: 'scissors', label: 'Scissors', section: 'kit', icon: 'scissors', example: 'Fabric shears' },
-  { value: 'ruler', label: 'Ruler', section: 'kit', icon: 'maximize-2', example: 'Quilting ruler' },
-  { value: 'other', label: 'Other', section: 'both', icon: 'box', example: 'Tailor’s ham' },
+  { value: 'zip', label: 'Zip', section: 'notions', group: 'Closures', icon: 'zap', example: 'Invisible zip' },
+  { value: 'button', label: 'Buttons', section: 'notions', group: 'Closures', icon: 'circle', example: 'Shell buttons' },
+  { value: 'snap', label: 'Snaps', section: 'notions', group: 'Closures', icon: 'target', example: 'Press studs' },
+  { value: 'hook_and_eye', label: 'Hooks and eyes', section: 'notions', group: 'Closures', icon: 'link', example: 'Skirt hooks' },
+  { value: 'hook_and_loop', label: 'Hook and loop (Velcro)', section: 'notions', group: 'Closures', icon: 'grid', example: 'Sew-on hook and loop' },
+  { value: 'magnetic_clasp', label: 'Magnetic clasps', section: 'notions', group: 'Closures', icon: 'paperclip', example: 'Bag magnetic snaps' },
+  { value: 'toggle', label: 'Toggles', section: 'notions', group: 'Closures', icon: 'feather', example: 'Wooden toggles' },
+  { value: 'elastic', label: 'Elastic', section: 'notions', group: 'Trims and tapes', icon: 'activity', example: 'Waistband elastic' },
+  { value: 'bias_tape', label: 'Bias tape', section: 'notions', group: 'Trims and tapes', icon: 'bookmark', example: 'Double-fold bias tape' },
+  { value: 'ribbon', label: 'Ribbon', section: 'notions', group: 'Trims and tapes', icon: 'bookmark', example: 'Grosgrain ribbon' },
+  { value: 'lace', label: 'Lace', section: 'notions', group: 'Trims and tapes', icon: 'bookmark', example: 'Cotton lace trim' },
+  { value: 'piping', label: 'Piping', section: 'notions', group: 'Trims and tapes', icon: 'activity', example: 'Satin piping' },
+  { value: 'cord', label: 'Cord or drawstring', section: 'notions', group: 'Trims and tapes', icon: 'activity', example: 'Cotton drawstring' },
+  { value: 'twill_tape', label: 'Twill or hem tape', section: 'notions', group: 'Trims and tapes', icon: 'bookmark', example: 'Twill tape' },
+  { value: 'buckle', label: 'Buckles and sliders', section: 'notions', group: 'Hardware', icon: 'hexagon', example: 'Strap sliders' },
+  { value: 'd_ring', label: 'D-rings', section: 'notions', group: 'Hardware', icon: 'link-2', example: 'Brass D-rings' },
+  { value: 'eyelet', label: 'Eyelets and grommets', section: 'notions', group: 'Hardware', icon: 'target', example: 'Silver eyelets' },
+  { value: 'rivet', label: 'Rivets', section: 'notions', group: 'Hardware', icon: 'anchor', example: 'Jeans rivets' },
+  { value: 'interfacing', label: 'Interfacing', section: 'notions', group: 'Shaping and backing', icon: 'layers', example: 'Fusible interfacing' },
+  { value: 'boning', label: 'Boning', section: 'notions', group: 'Shaping and backing', icon: 'minus', example: 'Spiral steel boning' },
+  { value: 'batting', label: 'Batting (wadding)', section: 'notions', group: 'Shaping and backing', icon: 'cloud', example: 'Cotton batting' },
+  { value: 'stabilizer', label: 'Stabilizer', section: 'notions', group: 'Shaping and backing', icon: 'layers', example: 'Tear-away stabilizer' },
+  { value: 'fusible_web', label: 'Fusible web', section: 'notions', group: 'Shaping and backing', icon: 'layers', example: 'Hemming web' },
+  { value: 'thread', label: 'Thread', section: 'notions', group: 'Thread and labels', icon: 'disc', example: 'All-purpose thread' },
+  { value: 'label', label: 'Labels', section: 'notions', group: 'Thread and labels', icon: 'tag', example: 'Handmade labels' },
+  { value: 'machine', label: 'Machine', section: 'kit', group: 'Kit', icon: 'settings', example: 'Overlocker' },
+  { value: 'presser_foot', label: 'Presser foot', section: 'kit', group: 'Kit', icon: 'chevrons-down', example: 'Walking foot' },
+  { value: 'needle', label: 'Needles', section: 'kit', group: 'Kit', icon: 'edit-2', example: 'Jersey needles' },
+  { value: 'scissors', label: 'Scissors', section: 'kit', group: 'Kit', icon: 'scissors', example: 'Fabric shears' },
+  { value: 'ruler', label: 'Ruler', section: 'kit', group: 'Kit', icon: 'maximize-2', example: 'Quilting ruler' },
+  { value: 'other', label: 'Other', section: 'both', group: 'Other', icon: 'box', example: 'Tailor’s ham' },
 ];
 
 export function categoriesFor(section: SewingToolSection): CategoryOption[] {
   return toolCategories.filter((item) => item.section === section || item.section === 'both');
+}
+
+// A section's types under their group headings, in list order.
+export function categoryGroupsFor(section: SewingToolSection): Array<{ group: string; options: CategoryOption[] }> {
+  const groups: Array<{ group: string; options: CategoryOption[] }> = [];
+  for (const option of categoriesFor(section)) {
+    const last = groups[groups.length - 1];
+    if (last?.group === option.group) last.options.push(option);
+    else groups.push({ group: option.group, options: [option] });
+  }
+  return groups;
 }
 
 export function categoryFor(category: SewingToolCategory): CategoryOption {
@@ -85,10 +117,11 @@ export function ToolThumb({ tool, size = 56 }: { tool: SewingTool; size?: number
   return <View style={[box, styles.thumbIcon]}><Feather name={categoryFor(tool.category).icon} size={Math.round(size * 0.4)} color={colors.primary} /></View>;
 }
 
-function Choices<T extends string>({ options, value, onChange, testID }: { options: Array<{ value: T; label: string }>; value: T | ''; onChange: (value: T) => void; testID: string }) {
+function Choices<T extends string>({ options, value, onChange, testID, wrap = false }: { options: Array<{ value: T; label: string }>; value: T | ''; onChange: (value: T) => void; testID: string; wrap?: boolean }) {
   const colors = useSewingColors();
+  const Row = wrap ? View : ScrollView;
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.choices} accessibilityRole="radiogroup">
+    <Row {...(wrap ? { style: styles.wrapChoices } : { horizontal: true, showsHorizontalScrollIndicator: false, contentContainerStyle: styles.choices })} accessibilityRole="radiogroup">
       {options.map((item) => {
         const selected = value === item.value;
         return (
@@ -97,7 +130,7 @@ function Choices<T extends string>({ options, value, onChange, testID }: { optio
           </Pressable>
         );
       })}
-    </ScrollView>
+    </Row>
   );
 }
 
@@ -227,7 +260,12 @@ export function SewingToolForm({ tool, section: startSection }: { tool?: SewingT
           <FormFieldLabel>Section</FormFieldLabel>
           <Choices options={toolSections} value={section} onChange={chooseSection} testID="button-tool-section" />
           <FormFieldLabel>Type *</FormFieldLabel>
-          <Choices options={categoriesFor(section)} value={category} onChange={setCategory} testID="button-tool-category" />
+          {section === 'notions' ? categoryGroupsFor(section).map(({ group, options }) => (
+            <View key={group}>
+              <LoomText style={[styles.groupLabel, { color: colors.mutedForeground }]}>{group}</LoomText>
+              <Choices options={options} value={category} onChange={setCategory} testID="button-tool-category" wrap />
+            </View>
+          )) : <Choices options={categoriesFor(section)} value={category} onChange={setCategory} testID="button-tool-category" />}
           <FormFieldLabel>Name *</FormFieldLabel>
           <TextInput {...inputProps} value={name} onChangeText={setName} maxLength={80} placeholder={`e.g. ${example}`} style={inputStyle} testID="input-tool-name" />
           <View style={styles.row}>
@@ -280,6 +318,8 @@ const styles = StyleSheet.create({
   notes: { minHeight: 90, textAlignVertical: 'top' },
   row: { flexDirection: 'row', gap: 10 },
   choices: { gap: 7, paddingBottom: 14 },
+  wrapChoices: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, paddingBottom: 12 },
+  groupLabel: { fontSize: 12, fontFamily: fonts.semibold, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 6 },
   choice: { borderWidth: 1, borderRadius: 99, paddingHorizontal: 14, minHeight: 36, justifyContent: 'center' },
   photoRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
   photo: { width: 112, height: 112, borderRadius: 12, borderWidth: 1, overflow: 'hidden' },

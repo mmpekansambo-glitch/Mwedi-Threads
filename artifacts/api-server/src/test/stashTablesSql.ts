@@ -144,8 +144,7 @@ export function sewingToolsSql(isolatedSchema: string): string {
   return `
     CREATE TYPE ${isolatedSchema}.sewing_tool_section AS ENUM ('notions', 'kit');
     CREATE TYPE ${isolatedSchema}.sewing_tool_category AS ENUM (
-      'zip', 'button', 'elastic', 'thread', 'interfacing',
-      'machine', 'presser_foot', 'needle', 'scissors', 'ruler', 'other'
+      'zip', 'button', 'snap', 'hook_and_eye', 'hook_and_loop', 'magnetic_clasp', 'toggle', 'elastic', 'bias_tape', 'ribbon', 'lace', 'piping', 'cord', 'twill_tape', 'buckle', 'd_ring', 'eyelet', 'rivet', 'interfacing', 'boning', 'batting', 'stabilizer', 'fusible_web', 'thread', 'label', 'machine', 'presser_foot', 'needle', 'scissors', 'ruler', 'other'
     );
     CREATE TABLE ${isolatedSchema}.sewing_tools (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
