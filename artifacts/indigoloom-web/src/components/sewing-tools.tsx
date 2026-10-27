@@ -1,7 +1,9 @@
+import { useEffect, useRef, useState } from 'react';
 import type { SewingTool, SewingToolCategory, SewingToolSection } from '@workspace/api-client-react';
+import { Wheel } from '@/components/date-wheel-field';
 import {
   Anchor, Box, Cable, Circle, CircleDot, Cog, Feather, Footprints, Grip, Hexagon, Layers, Link2, Magnet, Pin, Ribbon, Ruler, Scissors, Spool, Tag, Zap,
-  type LucideIcon,
+  Shapes, type LucideIcon,
 } from 'lucide-react';
 
 export const toolSections: Array<{ value: SewingToolSection; label: string; one: string }> = [
@@ -61,6 +63,15 @@ export function categoryGroupsFor(section: SewingToolSection): Array<{ group: st
   return groups;
 }
 
+// The wheel shows each group's types A to Z, with Other as its own last group.
+export function wheelGroupsFor(section: SewingToolSection): Array<{ group: string; options: CategoryOption[] }> {
+  const groups = categoryGroupsFor(section).map(({ group, options }) => ({
+    group: section === 'kit' && group !== 'Other' ? 'Kit' : group,
+    options: [...options].sort((a, b) => a.label.localeCompare(b.label)),
+  }));
+  return [...groups.filter((item) => item.group !== 'Other'), ...groups.filter((item) => item.group === 'Other')];
+}
+
 export function categoryFor(category: SewingToolCategory): CategoryOption {
   return toolCategories.find((item) => item.value === category) ?? toolCategories[toolCategories.length - 1]!;
 }
@@ -83,4 +94,72 @@ export function quantityForApi(value: string): number | null | 'invalid' {
 export function ToolThumb({ tool }: { tool: SewingTool }) {
   const Icon = categoryFor(tool.category).icon;
   return <span className="tool-thumb">{tool.hasPhoto ? <img src={toolPhotoUrl(tool)} alt="" loading="lazy"/> : <Icon size={22} aria-hidden="true"/>}</span>;
+}
+
+// Type picker as scroll wheels like the date picker: group on the left and
+// its types A to Z on the right. Kit has one short list, so it gets one wheel
+// with Other at the end.
+export function ToolTypeWheelField({ section, value, onChange, error }: {
+  section: SewingToolSection;
+  value: SewingToolCategory | '';
+  onChange: (value: SewingToolCategory) => void;
+  error?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState({ group: 0, item: 0 });
+  const fieldRef = useRef<HTMLDivElement>(null);
+  const groups = wheelGroupsFor(section);
+  const kitItems = groups.flatMap(({ options }) => options);
+  const twoWheels = section === 'notions';
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (event: MouseEvent | KeyboardEvent) => {
+      if (event instanceof KeyboardEvent ? event.key === 'Escape' : !fieldRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', close);
+    document.addEventListener('keydown', close);
+    return () => {
+      document.removeEventListener('mousedown', close);
+      document.removeEventListener('keydown', close);
+    };
+  }, [open]);
+
+  const openPicker = () => {
+    if (twoWheels) {
+      const group = Math.max(0, groups.findIndex(({ options }) => options.some((item) => item.value === value)));
+      setDraft({ group, item: Math.max(0, groups[group]!.options.findIndex((item) => item.value === value)) });
+    } else {
+      setDraft({ group: 0, item: Math.max(0, kitItems.findIndex((item) => item.value === value)) });
+    }
+    setOpen(!open);
+  };
+  const chosen = twoWheels ? groups[draft.group]?.options[draft.item] : kitItems[draft.item];
+  const label = value ? categoryFor(value).label : '';
+
+  return <div className="field-block date-wheel-field" ref={fieldRef}>
+    <label htmlFor="tool-category">Type <b>*</b></label>
+    <button type="button" id="tool-category" className={`date-wheel-trigger${label ? '' : ' empty'}`} aria-haspopup="dialog" aria-expanded={open} onClick={openPicker} data-testid="select-tool-category">
+      <Shapes size={17}/><span>{label ? (twoWheels ? `${categoryFor(value as SewingToolCategory).group} · ${label}` : label) : 'Choose a type'}</span>
+    </button>
+    {error && <span className="field-error">{error}</span>}
+    {open && <div className="date-wheel-panel tool-type-panel" role="dialog" aria-label="Type">
+      <div className={`date-wheels tool-type-wheels${twoWheels ? '' : ' single'}`}>
+        <div className="date-wheel-band" aria-hidden="true"/>
+        {twoWheels && <Wheel label="Group" items={groups.map(({ group }) => group)} index={draft.group} onChange={(group) => setDraft({ group, item: 0 })} testId="select-tool-group-wheel"/>}
+        <Wheel
+          label="Type"
+          items={(twoWheels ? groups[draft.group]?.options ?? [] : kitItems).map((item) => item.label)}
+          index={draft.item}
+          onChange={(item) => setDraft((current) => ({ ...current, item }))}
+          testId="select-tool-type-wheel"
+          key={twoWheels ? draft.group : 'kit'}
+        />
+      </div>
+      <div className="date-wheel-actions">
+        <button type="button" className="button button-outline" onClick={() => setOpen(false)}>Cancel</button>
+        <button type="button" className="button button-primary" onClick={() => { if (chosen) onChange(chosen.value); setOpen(false); }} data-testid="select-tool-category-done">Done</button>
+      </div>
+    </div>}
+  </div>;
 }

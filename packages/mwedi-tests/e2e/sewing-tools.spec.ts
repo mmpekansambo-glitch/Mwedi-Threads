@@ -97,9 +97,17 @@ test("adds a notion with a photo", async ({ page }) => {
   await expect(page.getByText("Choose what kind of tool this is.")).toBeVisible();
   await expect(page.getByText("Give it a name.")).toBeVisible();
 
-  await expect(page.locator('#tool-category optgroup[label="Closures"] option')).toContainText(["Zip", "Buttons", "Snaps", "Hooks and eyes"]);
-  await expect(page.locator('#tool-category optgroup[label="Hardware"] option')).toHaveCount(4);
-  await page.getByTestId("select-tool-category").selectOption("button");
+  await page.getByTestId("select-tool-category").click();
+  const groupWheel = page.getByTestId("select-tool-group-wheel");
+  const typeWheel = page.getByTestId("select-tool-type-wheel");
+  await expect(typeWheel.getByRole("option")).toHaveText(["Buttons", "Hook and loop (Velcro)", "Hooks and eyes", "Magnetic clasps", "Snaps", "Toggles", "Zip"]);
+  await groupWheel.getByRole("option", { name: "Hardware" }).click();
+  await expect(typeWheel.getByRole("option")).toHaveText(["Buckles and sliders", "D-rings", "Eyelets and grommets", "Rivets"]);
+  await groupWheel.getByRole("option", { name: "Closures" }).click();
+  await typeWheel.getByRole("option", { name: "Buttons" }).click();
+  if (shots) await page.screenshot({ path: `${shots}/sewing-tool-type-wheel-web.png` });
+  await page.getByTestId("select-tool-category-done").click();
+  await expect(page.getByTestId("select-tool-category")).toHaveText("Closures · Buttons");
   await page.getByTestId("input-tool-name").fill("Shell buttons");
   await page.getByTestId("input-tool-quantity").fill("6");
   await page.getByTestId("input-tool-size").fill("15 mm");
