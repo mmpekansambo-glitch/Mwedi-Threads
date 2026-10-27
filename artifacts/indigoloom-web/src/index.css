@@ -819,7 +819,12 @@ a.stat-card:active { transform: scale(.98); box-shadow: none; }
   --destructive-foreground: 201 23% 12%;
   --ring: 215 48% 71%;
 }
-.dark .home-sewing { --granite: #B7A3D9; --granite-deep: #C9BAE3; --sewing-wash: #26343B; --sewing-line: #33424A; --sewing-dash: #4A5A63; }
+.dark .home-sewing { --granite: #A595C2; --granite-deep: #B4A6CD; --sewing-wash: #26343B; --sewing-line: #33424A; --sewing-dash: #4A5A63; }
+/* Dusky mauve fills with light text in the dark Sewing room; the paler mauve
+   looked too bright at night. --granite above stays the lighter shade for words. */
+.dark .home-sewing .button-primary,.dark .home-sewing .counter-plus,.dark .home-sewing .note-menu-bubble.open,.dark .home-sewing .profile-menu-list .appearance-choice button.selected { background: #7A6898; color: #F1EDF7; }
+.dark .home-sewing .button-primary:hover,.dark .home-sewing .profile-menu-list .appearance-choice button.selected:hover { background: #6E5D8B; }
+.dark .home-sewing .switch-track.on,.dark .home-sewing .progress-track > span { background: #7A6898; }
 .dark .portal-shell, .dark .portal-shell.home-sewing { background: #182126; }
 
 /* The sidebar keeps its light-mode colors on a deeper slate. Its menu pops
@@ -836,7 +841,7 @@ a.stat-card:active { transform: scale(.98); box-shadow: none; }
 .dark .profile-menu-list {
   --lavender-wash: #26343B; --lavender-soft: #33424A; --slate: #A6B5BE; --evergreen: #E4EAF5; --white: #212C32; --granite: #92AFD7;
 }
-.dark .home-sewing .profile-menu-list { --granite: #B7A3D9; }
+.dark .home-sewing .profile-menu-list { --granite: #A595C2; }
 .dark .switch-track i { background: #FFFFFF; }
 
 .dark .portal-topbar { background: rgba(24,33,38,.88); }
@@ -862,3 +867,5 @@ a.stat-card:active { transform: scale(.98); box-shadow: none; }
 .dark .color-dot,.dark .color-choice span { border-color: rgba(228,234,245,.4); }
 .dark .chart-tooltip { border-color: var(--lavender-soft); box-shadow: 0 3px 10px rgba(0,0,0,.3); }
 .dark .counter-minus { background: var(--lavender-soft); }
+.dark .home-sewing .rail-link.selected { box-shadow: inset 3px 0 #A595C2; }
+.dark .home-sewing .rail-link.selected svg { color: #A595C2; }
