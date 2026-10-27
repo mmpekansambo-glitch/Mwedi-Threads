@@ -37,7 +37,7 @@ export default function SewingOverviewScreen() {
           <View style={styles.stats}>
             {([
               ['In progress', data.inProgress, 'spool', '#DCE6F4', '#5A7684', () => openProjects('in_progress'), 'in-progress'],
-              ['Finished', data.finished, 'scissors', colors.selectedWash, colors.primary, () => openProjects('completed'), 'finished'],
+              ['Finished', data.finished, 'scissors', colors.selectedWash, colors.primaryText, () => openProjects('completed'), 'finished'],
               ['Fabric', data.fabricPieces, 'swatch', '#EEF2FA', '#92AFD7', () => router.navigate('/(tabs)/fabric'), 'fabric'],
             ] as const).map(([label, value, doodle, tint, ink, onPress, id]) => (
               <Pressable key={label} accessibilityRole="button" accessibilityLabel={`${label}: ${value}`} onPress={onPress} style={({ pressed }) => [styles.stat, { backgroundColor: tint, borderColor: tint }, pressed && styles.statPressed]} testID={`button-sewing-stat-${id}`}>
@@ -53,7 +53,7 @@ export default function SewingOverviewScreen() {
             <View style={styles.stageRow}>
               {data.stages.map((entry) => (
                 <View key={entry.stage} style={[styles.stage, { backgroundColor: colors.selectedWash, borderColor: colors.border }]} testID={`stage-count-${entry.stage}`}>
-                  <LoomText serif style={{ fontSize: 24, color: entry.count ? colors.primary : colors.mutedForeground }}>{entry.count}</LoomText>
+                  <LoomText serif style={{ fontSize: 24, color: entry.count ? colors.primaryText : colors.mutedForeground }}>{entry.count}</LoomText>
                   <LoomText style={{ fontSize: 12, fontFamily: fonts.bold, color: colors.mutedForeground }}>{sewingStages.find((item) => item.value === entry.stage)?.label}</LoomText>
                 </View>
               ))}
@@ -61,7 +61,7 @@ export default function SewingOverviewScreen() {
           </View>
           <View style={styles.sectionHeading}>
             <LoomText serif style={[styles.sectionTitle, { color: colors.foreground }]}>Recent projects</LoomText>
-            <Link href="/(tabs)/sewing-projects" style={{ color: colors.primary, fontFamily: fonts.semibold, fontSize: 15 }}>All projects</Link>
+            <Link href="/(tabs)/sewing-projects" style={{ color: colors.primaryText, fontFamily: fonts.semibold, fontSize: 15 }}>All projects</Link>
           </View>
           {data.recentProjects.length ? data.recentProjects.slice(0, 3).map((project) => <SewingProjectCard key={project.id} project={project} />) : (
             <EmptyState title="No sewing projects yet" body="Start a project to track it from prep to finish." actionTitle="Start a project" onAction={() => router.push('/sewing/new')} />

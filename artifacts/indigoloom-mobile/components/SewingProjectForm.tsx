@@ -74,7 +74,7 @@ export function SewingProjectForm({ project }: { project?: SewingProject }) {
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <View style={[styles.nav, { paddingTop: insets.top + 9, borderBottomColor: colors.border }]}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={() => router.back()} style={styles.navButton}><Feather name="arrow-left" size={19} color={colors.primary} /></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={() => router.back()} style={styles.navButton}><Feather name="arrow-left" size={19} color={colors.primaryText} /></Pressable>
         <LoomText numberOfLines={1} style={[styles.navTitle, { color: colors.foreground }]}>{project ? 'Edit project' : 'New project'}</LoomText>
         <View style={styles.navButton} />
       </View>

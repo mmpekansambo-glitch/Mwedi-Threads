@@ -55,7 +55,7 @@ export function SewingProjectCard({ project }: { project: SewingProject }) {
       testID={`sewing-card-${project.id}`}
     >
       {first ? <FabricPhoto fabric={first} index={0} style={[styles.photo, { backgroundColor: colors.selectedWash }]} /> : (
-        <View style={[styles.photo, styles.noPhoto, { backgroundColor: colors.selectedWash }]}><Feather name="scissors" size={24} color={colors.primary} /></View>
+        <View style={[styles.photo, styles.noPhoto, { backgroundColor: colors.selectedWash }]}><Feather name="scissors" size={24} color={colors.primaryText} /></View>
       )}
       <View style={styles.body}>
         <View style={{ flexDirection: 'row' }}><StatusChip status={project.status} /></View>

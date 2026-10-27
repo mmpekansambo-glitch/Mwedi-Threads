@@ -64,7 +64,7 @@ export function ProjectCounter({ projectId, initial }: { projectId: string; init
       <LoomText serif style={[styles.title, { color: colors.foreground }]}>Counter</LoomText>
       <LoomText serif accessibilityLiveRegion="polite" style={[styles.count, { color: colors.foreground }]} testID="text-counter">{count}</LoomText>
       <View style={styles.buttons}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Take one off" disabled={count === 0} onPress={() => change(count - 1)} style={({ pressed }) => [styles.minus, { backgroundColor: colors.background }, count === 0 && styles.disabled, pressed && styles.pressed]} testID="button-counter-minus">
+        <Pressable accessibilityRole="button" accessibilityLabel="Take one off" disabled={count === 0} onPress={() => change(count - 1)} style={({ pressed }) => [styles.minus, { backgroundColor: colors.quietButton }, count === 0 && styles.disabled, pressed && styles.pressed]} testID="button-counter-minus">
           <Feather name="minus" size={24} color={colors.foreground} />
         </Pressable>
         <Pressable accessibilityRole="button" accessibilityLabel="Add one" onPress={() => change(count + 1)} style={({ pressed }) => [styles.plus, { backgroundColor: colors.primary }, pressed && styles.pressed]} testID="button-counter-plus">

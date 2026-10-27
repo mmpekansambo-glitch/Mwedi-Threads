@@ -49,6 +49,7 @@
   --granite-deep: #2C4740;
   --evergreen-soft: #2A3D20;
   --evergreen-line: #384D2D;
+  --chart-grid: #C5D1EB;
   --background: 221 51% 85%;
   --foreground: 100 36% 14%;
   --card: 0 0% 100%;
@@ -666,19 +667,21 @@ a.stat-card:active { transform: scale(.98); box-shadow: none; }
   .review-grid { grid-template-columns: 1fr; }
 }
 
-/* Sewing room: its own home with a Granite sidebar, a cooler wash behind the
-   pages and photo-first fabric swatches. */
+/* Sewing room: its own home with a mauve sidebar, a mauve wash behind the
+   pages and photo-first fabric swatches. Inside it, Granite becomes mauve, so
+   buttons, links and switches take the Sewing room's color. */
+.home-sewing { --granite: #6B5791; --granite-deep: #57467A; --sewing-wash: #F1EDF7; --sewing-line: #DDD5EA; --sewing-dash: #C3B6DB; }
 .home-switcher { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin: -22px 4px 22px; padding: 4px; border-radius: 10px; background: rgba(255,255,255,.08); }
 .home-switcher a { display: grid; place-items: center; min-height: 34px; border-radius: 7px; color: var(--lavender-deep); font-size: 13px; font-weight: 700; }
 .home-switcher a:hover { color: var(--lavender-wash); }
 .home-switcher a.selected { background: var(--lavender-wash); color: var(--evergreen); }
-.portal-shell.home-sewing { background: #E1EAE5; }
-.home-sewing .side-rail { background: var(--granite); }
+.portal-shell.home-sewing { background: #E4DEEF; }
+.home-sewing .side-rail { background: #4A3C66; }
 .home-sewing .rail-bottom { border-top-color: rgba(255,255,255,.16); }
-.home-sewing .profile-chip:hover,.home-sewing .profile-chip[aria-expanded="true"] { background: var(--granite-deep); }
-.home-sewing .portal-topbar { background: rgba(225,234,229,.88); border-bottom-color: #CFDCD5; }
-.home-sewing .rail-link.selected { background: rgba(255,255,255,.12); box-shadow: inset 3px 0 var(--lavender); }
-.home-sewing .rail-link.selected svg { color: var(--lavender); }
+.home-sewing .profile-chip:hover,.home-sewing .profile-chip[aria-expanded="true"] { background: #3C3054; }
+.home-sewing .portal-topbar { background: rgba(228,222,239,.88); border-bottom-color: var(--sewing-line); }
+.home-sewing .rail-link.selected { background: rgba(255,255,255,.12); box-shadow: inset 3px 0 #B7A3D9; }
+.home-sewing .rail-link.selected svg { color: #B7A3D9; }
 .home-sewing .home-switcher a.selected { color: var(--granite); }
 
 .menu-settings { padding: 4px 4px 8px; margin-bottom: 6px; border-bottom: 1px solid var(--lavender-soft); }
@@ -691,6 +694,10 @@ a.stat-card:active { transform: scale(.98); box-shadow: none; }
 .switch-track.on { background: var(--granite); }
 .switch-track.on i { transform: translateX(15px); }
 .menu-switch:disabled .switch-track.on { opacity: .6; }
+.appearance-choice { display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 3px; margin: 0 6px 4px; padding: 3px; border-radius: 9px; background: var(--lavender-wash); }
+.profile-menu-list .appearance-choice button { width: auto; min-width: 0; justify-content: center; padding: 6px 4px; border-radius: 7px; color: var(--slate); font-size: 13px; font-weight: 600; line-height: 1.2; text-align: center; }
+.profile-menu-list .appearance-choice button.selected { background: var(--granite); color: var(--white); }
+.profile-menu-list .appearance-choice button.selected:hover { background: var(--granite-deep); }
 
 .craft-choice { width: min(460px, 100%); padding: 32px; display: grid; gap: 18px; }
 .craft-choice h1 { margin: 0; font-size: 30px; color: var(--evergreen); }
@@ -703,20 +710,20 @@ a.stat-card:active { transform: scale(.98); box-shadow: none; }
 .craft-choice-note { margin: 0; color: var(--slate); font-size: 14px; }
 
 .fabric-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
-.fabric-card { display: block; min-width: 0; overflow: hidden; border-radius: 14px; background: var(--white); border: 1px solid #CFDCD5; color: var(--evergreen); }
-.fabric-swatch { position: relative; display: block; aspect-ratio: 4 / 3; background: #EEF3F0; }
+.fabric-card { display: block; min-width: 0; overflow: hidden; border-radius: 14px; background: var(--white); border: 1px solid var(--sewing-line); color: var(--evergreen); }
+.fabric-swatch { position: relative; display: block; aspect-ratio: 4 / 3; background: var(--sewing-wash); }
 .fabric-swatch img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .fabric-card-body { display: grid; gap: 3px; padding: 13px 15px 15px; }
 .fabric-card-body h3 { font: 500 19px/1.2 var(--app-font-serif); margin: 0; }
 .fabric-card-meta { color: var(--slate-deep); font-size: 14px; min-height: 1em; }
 .fabric-card-size { color: var(--granite); font-size: 13px; font-weight: 700; }
 .fabric-photos { display: grid; grid-template-columns: 260px 1fr; gap: 22px; margin-bottom: 20px; }
-.fabric-photo-main { position: relative; display: grid; place-items: center; aspect-ratio: 1; border: 1px dashed #A9BFB4; border-radius: 12px; background: #EEF3F0; overflow: hidden; cursor: pointer; color: var(--granite); }
-.fabric-photo-main.has-photo { border-style: solid; border-color: #CFDCD5; }
+.fabric-photo-main { position: relative; display: grid; place-items: center; aspect-ratio: 1; border: 1px dashed var(--sewing-dash); border-radius: 12px; background: var(--sewing-wash); overflow: hidden; cursor: pointer; color: var(--granite); }
+.fabric-photo-main.has-photo { border-style: solid; border-color: var(--sewing-line); }
 .fabric-photo-main img { width: 100%; height: 100%; object-fit: cover; }
 .fabric-photo-main > span { display: grid; justify-items: center; gap: 8px; padding: 0 20px; text-align: center; font-size: 14px; font-weight: 600; }
 .fabric-photo-extras { display: flex; flex-wrap: wrap; gap: 10px; }
-.fabric-photo-extra { position: relative; width: 104px; height: 104px; border-radius: 10px; overflow: hidden; background: #EEF3F0; border: 1px solid #CFDCD5; }
+.fabric-photo-extra { position: relative; width: 104px; height: 104px; border-radius: 10px; overflow: hidden; background: var(--sewing-wash); border: 1px solid var(--sewing-line); }
 .fabric-photo-extra img { width: 100%; height: 100%; object-fit: cover; }
 .fabric-photo-extra button { position: absolute; top: 5px; right: 5px; display: grid; place-items: center; width: 24px; height: 24px; border: 0; border-radius: 50%; background: rgba(31,47,22,.7); color: var(--white); cursor: pointer; }
 .fabric-photo-add { display: grid; place-content: center; justify-items: center; gap: 4px; border-style: dashed; color: var(--granite); font-size: 13px; font-weight: 700; cursor: pointer; }
@@ -737,7 +744,7 @@ a.stat-card:active { transform: scale(.98); box-shadow: none; }
 
 /* Sewing room Overview and Projects. Colors come from the --sew-* tokens so
    the Sewing room accent can change in one place. */
-.home-sewing { --sew-accent: var(--granite); --sew-line: #CFDCD5; --sew-soft: #EEF3F0; }
+.home-sewing { --sew-accent: var(--granite); --sew-line: var(--sewing-line); --sew-soft: var(--sewing-wash); }
 .stat-detail { display: block; margin-top: 6px; color: var(--slate-deep); font-size: 13px; font-weight: 600; position: relative; z-index: 1; }
 .stage-board { margin: 18px 0 26px; padding: 20px 23px; }
 .stage-board h2 { margin: 0 0 14px; font-size: 20px; color: var(--evergreen); }
@@ -849,3 +856,94 @@ a.stat-card:active { transform: scale(.98); box-shadow: none; }
 .note-confirm { margin: 12px 0 0; }
 .note-edit-form { margin-bottom: 0; }
 .note-edit-form .date-wheel-field { margin-top: 12px; }
+
+/* Dark mode: Slate night. The signed-in app adds .dark to <html> when the
+   maker's Appearance choice (or their computer, on Match computer) is dark.
+   Most of this stylesheet paints with the palette variables directly, so
+   dark mode swaps what they mean: --lavender is the page, --white the cards,
+   --evergreen the text and --granite the buttons (Powder Blue, since Granite
+   is too dark on a dark page). Pages before sign-in stay light. */
+.dark {
+  color-scheme: dark;
+  --lavender: #182126;
+  --lavender-wash: #26343B;
+  --lavender-soft: #33424A;
+  --lavender-deep: #3D4E57;
+  --powder-wash: #2B3A42;
+  --slate: #A6B5BE;
+  --slate-deep: #B9C5CC;
+  --slate-wash: #33424A;
+  --slate-light: #7E909A;
+  --granite: #92AFD7;
+  --granite-deep: #A9BFDF;
+  --evergreen: #E4EAF5;
+  --white: #212C32;
+  --chart-grid: #33424A;
+  --background: 201 23% 12%;
+  --foreground: 219 47% 93%;
+  --card: 201 21% 16%;
+  --card-foreground: 219 47% 93%;
+  --border: 201 18% 25%;
+  --input: 201 18% 25%;
+  --primary: 215 48% 71%;
+  --primary-foreground: 201 23% 12%;
+  --secondary: 200 21% 19%;
+  --secondary-foreground: 219 47% 93%;
+  --muted: 200 21% 19%;
+  --muted-foreground: 202 13% 70%;
+  --accent: 215 48% 71%;
+  --accent-foreground: 201 23% 12%;
+  --destructive: 2 68% 73%;
+  --destructive-foreground: 201 23% 12%;
+  --ring: 215 48% 71%;
+}
+.dark .home-sewing { --granite: #A595C2; --granite-deep: #B4A6CD; --sewing-wash: #26343B; --sewing-line: #33424A; --sewing-dash: #4A5A63; }
+/* Dusky mauve fills with light text in the dark Sewing room; the paler mauve
+   looked too bright at night. --granite above stays the lighter shade for words. */
+.dark .home-sewing .button-primary,.dark .home-sewing .counter-plus,.dark .home-sewing .note-menu-bubble.open,.dark .home-sewing .profile-menu-list .appearance-choice button.selected { background: #7A6898; color: #F1EDF7; }
+.dark .home-sewing .button-primary:hover,.dark .home-sewing .profile-menu-list .appearance-choice button.selected:hover { background: #6E5D8B; }
+.dark .home-sewing .switch-track.on,.dark .home-sewing .progress-track > span { background: #7A6898; }
+.dark .portal-shell, .dark .portal-shell.home-sewing { background: #182126; }
+
+/* The sidebar keeps its light-mode colors on a deeper slate. Its menu pops
+   up over the page, so it goes back to the dark ones. */
+.dark .side-rail {
+  --lavender: #C5D1EB; --lavender-wash: #EEF2F9; --lavender-soft: #DDE5F3; --lavender-deep: #A9B9DC;
+  --slate: #5A7684; --slate-deep: #425863; --granite: #395B50; --evergreen: #1F2F16; --white: #FFFFFF;
+  --evergreen-soft: #1C262B; --evergreen-line: #26343B;
+  background: #10171B;
+  border-right: 1px solid #26343B;
+}
+.dark .home-sewing .side-rail { --granite: #6B5791; background: #10171B; }
+.dark .home-sewing .profile-chip:hover,.dark .home-sewing .profile-chip[aria-expanded="true"] { background: #1C262B; }
+.dark .profile-menu-list {
+  --lavender-wash: #26343B; --lavender-soft: #33424A; --slate: #A6B5BE; --evergreen: #E4EAF5; --white: #212C32; --granite: #92AFD7;
+}
+.dark .home-sewing .profile-menu-list { --granite: #A595C2; }
+.dark .switch-track i { background: #FFFFFF; }
+
+.dark .portal-topbar { background: rgba(24,33,38,.88); }
+.dark .home-sewing .portal-topbar { background: rgba(24,33,38,.88); }
+.dark .top-avatar { background: var(--lavender-soft); color: var(--evergreen); }
+.dark .stat-card-all { background: #26343B; border-color: #26343B; }
+.dark .stat-card-active { background: #2B3A42; border-color: #2B3A42; }
+.dark .stat-card-finished { background: #26343B; border-color: #26343B; }
+.dark .stat-doodle-hook { stroke: #A6B5BE; }
+.dark .stat-doodle-square { stroke: #C5D1EB; }
+.dark .star-button { background: var(--white); }
+.dark .empty-projects { background: rgba(33,44,50,.6); }
+.dark .status-completed { color: #FFFFFF; background: #395B50; }
+.dark .button-quiet:hover { background: rgba(146,175,215,.1); }
+.dark .button-danger { background: #E8908C; color: #182126; }
+.dark .field-error,.dark .mutation-error,.dark .blend-remove:hover,.dark .blend-total.off { color: #E8908C; }
+.dark .field-block label b { color: #E8A89A; }
+.dark .danger-icon { color: #E0A196; }
+.dark .danger-icon:hover { color: #E8908C; background: #3A2C2C; }
+.dark .confirm-banner { background: #3A2C2C; border-color: #5C4444; }
+.dark .confirm-banner b { color: #F0CBC4; }
+.dark .confirm-banner span { color: #D2ABA5; }
+.dark .color-dot,.dark .color-choice span { border-color: rgba(228,234,245,.4); }
+.dark .chart-tooltip { border-color: var(--lavender-soft); box-shadow: 0 3px 10px rgba(0,0,0,.3); }
+.dark .counter-minus { background: var(--lavender-soft); }
+.dark .home-sewing .rail-link.selected { box-shadow: inset 3px 0 #A595C2; }
+.dark .home-sewing .rail-link.selected svg { color: #A595C2; }

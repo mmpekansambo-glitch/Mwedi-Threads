@@ -1,6 +1,7 @@
 import React from 'react';
-import { Platform, StyleSheet, useColorScheme, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import { useColors, useSewingColors } from '@/hooks/useColors';
+import { useScheme } from '@/hooks/useAppearance';
 import { Feather } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { isLiquidGlassAvailable } from 'expo-glass-effect';
@@ -59,7 +60,7 @@ function ClassicTabLayout() {
   const { home } = useHome();
   const yarnHidden = home !== 'yarn';
   const colors = yarnHidden ? sewingColors : yarnColors;
-  const colorScheme = useColorScheme();
+  const colorScheme = useScheme();
   const isDark = colorScheme === 'dark';
   const isIOS = Platform.OS === 'ios';
   const isWeb = Platform.OS === 'web';
@@ -67,9 +68,12 @@ function ClassicTabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: colors.primary,
+        tabBarActiveTintColor: colors.primaryText,
         tabBarInactiveTintColor: colors.mutedForeground,
         headerShown: true,
+        headerStyle: { backgroundColor: colors.card },
+        headerTitleStyle: { color: colors.foreground },
+        headerShadowVisible: !isDark,
         tabBarStyle: {
           position: 'absolute',
           backgroundColor: isIOS ? 'transparent' : colors.background,

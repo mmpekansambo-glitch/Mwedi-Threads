@@ -92,10 +92,10 @@ function SewingProjectView({ project }: { project: SewingProject }) {
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <View style={[styles.nav, { paddingTop: insets.top + 9, borderBottomColor: colors.border }]}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={() => router.back()} style={styles.navButton}><Feather name="arrow-left" size={19} color={colors.primary} /></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={() => router.back()} style={styles.navButton}><Feather name="arrow-left" size={19} color={colors.primaryText} /></Pressable>
         <LoomText numberOfLines={1} style={[styles.navTitle, { color: colors.foreground }]}>{project.title}</LoomText>
         <View style={{ flexDirection: 'row' }}>
-          <Pressable accessibilityRole="button" accessibilityLabel="Edit project" onPress={() => router.push({ pathname: '/sewing/new', params: { id: project.id } })} style={styles.navButton} testID="button-edit-sewing-project"><Feather name="edit-2" size={17} color={colors.primary} /></Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel="Edit project" onPress={() => router.push({ pathname: '/sewing/new', params: { id: project.id } })} style={styles.navButton} testID="button-edit-sewing-project"><Feather name="edit-2" size={17} color={colors.primaryText} /></Pressable>
           <Pressable accessibilityRole="button" accessibilityLabel="Delete project" onPress={() => setConfirmDelete(true)} style={styles.navButton} testID="button-delete-sewing-project"><Feather name="trash-2" size={18} color={colors.destructive} /></Pressable>
         </View>
       </View>
@@ -124,7 +124,7 @@ function SewingProjectView({ project }: { project: SewingProject }) {
               return (
                 <Pressable key={item.value} accessibilityRole="radio" accessibilityState={{ checked: isCurrent, disabled: project.status === 'completed' }} disabled={update.isPending || project.status === 'completed'} onPress={() => pickStage(item.value)} style={[styles.stage, { borderColor: isCurrent ? colors.primary : colors.border, backgroundColor: isCurrent ? colors.selectedWash : colors.card }]} testID={`button-stage-${item.value}`}>
                   <View style={[styles.stageDot, { backgroundColor: done ? colors.primary : colors.selectedWash, borderColor: isCurrent ? colors.primary : 'transparent' }]}>
-                    {done ? <Feather name="check" size={12} color={colors.primaryForeground} /> : <LoomText style={{ fontSize: 12, color: isCurrent ? colors.primary : colors.mutedForeground, fontFamily: fonts.bold }}>{index + 1}</LoomText>}
+                    {done ? <Feather name="check" size={12} color={colors.primaryForeground} /> : <LoomText style={{ fontSize: 12, color: isCurrent ? colors.primaryText : colors.mutedForeground, fontFamily: fonts.bold }}>{index + 1}</LoomText>}
                   </View>
                   <LoomText style={{ fontSize: 13, fontFamily: fonts.bold, color: isCurrent ? colors.foreground : colors.mutedForeground }}>{item.label}</LoomText>
                 </Pressable>
@@ -158,7 +158,7 @@ function SewingProjectView({ project }: { project: SewingProject }) {
             <FabricPhoto fabric={item.fabric} index={0} style={[styles.fabricPhoto, { backgroundColor: colors.selectedWash }]} />
             <View style={{ flex: 1 }}>
               <LoomText style={{ color: colors.foreground, fontFamily: fonts.semibold, fontSize: 16 }}>{fabricName(item.fabric)}</LoomText>
-              {item.amountUsed !== null ? <LoomText style={{ color: colors.primary, fontSize: 14, fontFamily: fonts.semibold }}>Uses {fabricAmount(item.amountUsed, item.fabric.unit)}</LoomText> : null}
+              {item.amountUsed !== null ? <LoomText style={{ color: colors.primaryText, fontSize: 14, fontFamily: fonts.semibold }}>Uses {fabricAmount(item.amountUsed, item.fabric.unit)}</LoomText> : null}
             </View>
             <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
           </Pressable>
