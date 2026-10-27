@@ -28,7 +28,7 @@ function getOwnerId(res: Response): string {
 
 // Stored photo paths stay on the server; the app only learns how many there
 // are and asks for each one by its place in the list.
-function serializeFabric(fabric: StashFabric) {
+export function serializeFabric(fabric: StashFabric) {
   const { photoPaths, ownerId: _ownerId, ...rest } = fabric;
   return GetStashFabricResponse.parse({ ...rest, photoCount: photoPaths.length });
 }

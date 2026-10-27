@@ -110,3 +110,32 @@ export function stashTablesSql(isolatedSchema: string): string {
     );
   `;
 }
+
+// The Sewing room project tables. Needs stash_fabrics and the project_status type.
+export function sewingTablesSql(isolatedSchema: string): string {
+  return `
+    CREATE TYPE ${isolatedSchema}.sewing_stage AS ENUM ('prep', 'cut', 'sew', 'fit', 'finish');
+    CREATE TABLE ${isolatedSchema}.sewing_projects (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL REFERENCES ${isolatedSchema}.users(id) ON DELETE CASCADE,
+      title text NOT NULL,
+      status ${isolatedSchema}.project_status NOT NULL DEFAULT 'planning',
+      stage ${isolatedSchema}.sewing_stage NOT NULL DEFAULT 'prep',
+      pattern_name text,
+      pattern_designer text,
+      size_made text,
+      fit_changes text,
+      notes text,
+      completed_at date,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now()
+    );
+    CREATE TABLE ${isolatedSchema}.sewing_project_fabrics (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      project_id uuid NOT NULL REFERENCES ${isolatedSchema}.sewing_projects(id) ON DELETE CASCADE,
+      stash_fabric_id uuid NOT NULL REFERENCES ${isolatedSchema}.stash_fabrics(id) ON DELETE CASCADE,
+      amount_used double precision,
+      position integer NOT NULL DEFAULT 0
+    );
+  `;
+}

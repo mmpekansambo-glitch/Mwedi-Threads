@@ -746,6 +746,157 @@ export interface UpdateStashFabric {
   photoPaths?: string[];
 }
 
+/**
+ * Prep, Cut, Sew, Fit, Finish, in that order
+ */
+export type SewingStage = typeof SewingStage[keyof typeof SewingStage];
+
+
+export const SewingStage = {
+  prep: 'prep',
+  cut: 'cut',
+  sew: 'sew',
+  fit: 'fit',
+  finish: 'finish',
+} as const;
+
+export interface SewingProjectFabric {
+  stashFabricId: string;
+  /**
+     * In the fabric's own unit
+     * @nullable
+     */
+  amountUsed: number | null;
+  fabric: StashFabric;
+}
+
+export interface SewingProjectFabricInput {
+  stashFabricId: string;
+  /**
+     * @minimum 0
+     * @maximum 999
+     * @nullable
+     */
+  amountUsed?: number | null;
+}
+
+export interface SewingProject {
+  id: string;
+  title: string;
+  status: ProjectStatus;
+  stage: SewingStage;
+  /** @nullable */
+  patternName: string | null;
+  /** @nullable */
+  patternDesigner: string | null;
+  /** @nullable */
+  sizeMade: string | null;
+  /** @nullable */
+  fitChanges: string | null;
+  /** @nullable */
+  notes: string | null;
+  /** @nullable */
+  completedAt: string | null;
+  fabrics: SewingProjectFabric[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateSewingProject {
+  /**
+     * @minLength 1
+     * @maxLength 160
+     */
+  title: string;
+  status?: ProjectStatus;
+  stage?: SewingStage;
+  /**
+     * @maxLength 160
+     * @nullable
+     */
+  patternName?: string | null;
+  /**
+     * @maxLength 160
+     * @nullable
+     */
+  patternDesigner?: string | null;
+  /**
+     * @maxLength 60
+     * @nullable
+     */
+  sizeMade?: string | null;
+  /**
+     * @maxLength 2000
+     * @nullable
+     */
+  fitChanges?: string | null;
+  /**
+     * @maxLength 2000
+     * @nullable
+     */
+  notes?: string | null;
+  /** @maxItems 12 */
+  fabrics?: SewingProjectFabricInput[];
+}
+
+export interface UpdateSewingProject {
+  /**
+     * @minLength 1
+     * @maxLength 160
+     */
+  title?: string;
+  status?: ProjectStatus;
+  stage?: SewingStage;
+  /**
+     * @maxLength 160
+     * @nullable
+     */
+  patternName?: string | null;
+  /**
+     * @maxLength 160
+     * @nullable
+     */
+  patternDesigner?: string | null;
+  /**
+     * @maxLength 60
+     * @nullable
+     */
+  sizeMade?: string | null;
+  /**
+     * @maxLength 2000
+     * @nullable
+     */
+  fitChanges?: string | null;
+  /**
+     * @maxLength 2000
+     * @nullable
+     */
+  notes?: string | null;
+  /**
+     * The full list of fabric on the project, replacing what was there
+     * @maxItems 12
+     */
+  fabrics?: SewingProjectFabricInput[];
+}
+
+export interface SewingStageCount {
+  stage: SewingStage;
+  count: number;
+}
+
+export interface SewingOverview {
+  /** Projects being sewn (not planning, paused or finished) */
+  inProgress: number;
+  finished: number;
+  fabricPieces: number;
+  /** Total fabric in the stash, in fabricUnit */
+  fabricLength: number;
+  fabricUnit: FabricUnit;
+  /** Projects in progress at each stage, Prep to Finish */
+  stages: SewingStageCount[];
+  recentProjects: SewingProject[];
+}
+
 export interface StashYarn {
   id: string;
   brand: string;
@@ -1026,5 +1177,13 @@ search?: string;
 fabricType?: FabricType;
 print?: FabricPrint;
 generalColor?: GeneralColor;
+};
+
+export type GetSewingProjectsParams = {
+/**
+ * Matches title, pattern, designer or size made
+ */
+search?: string;
+status?: ProjectStatus;
 };
 

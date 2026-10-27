@@ -948,6 +948,126 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+  /sewing-projects:
+    get:
+      operationId: getSewingProjects
+      tags: [sewing]
+      summary: List the signed-in maker's sewing projects
+      parameters:
+        - in: query
+          name: search
+          description: Matches title, pattern, designer or size made
+          schema:
+            type: string
+        - in: query
+          name: status
+          schema:
+            $ref: "#/components/schemas/ProjectStatus"
+      responses:
+        "200":
+          description: Sewing projects, most recently changed first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SewingProject"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      operationId: createSewingProject
+      tags: [sewing]
+      summary: Start a sewing project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSewingProject"
+      responses:
+        "201":
+          description: Sewing project created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SewingProject"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /sewing-projects/{sewingProjectId}:
+    parameters:
+      - in: path
+        name: sewingProjectId
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: getSewingProject
+      tags: [sewing]
+      summary: Get one sewing project
+      responses:
+        "200":
+          description: Sewing project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SewingProject"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updateSewingProject
+      tags: [sewing]
+      summary: Change a sewing project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSewingProject"
+      responses:
+        "200":
+          description: Sewing project updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SewingProject"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteSewingProject
+      tags: [sewing]
+      summary: Delete a sewing project
+      responses:
+        "204":
+          description: Sewing project deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /sewing-overview:
+    get:
+      operationId: getSewingOverview
+      tags: [sewing]
+      summary: Counts and recent projects for the Sewing room Overview
+      responses:
+        "200":
+          description: Sewing room overview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SewingOverview"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 components:
   responses:
     Unauthorized:
@@ -1794,6 +1914,166 @@ components:
           maxItems: 4
           items:
             type: string
+    SewingStage:
+      type: string
+      description: Prep, Cut, Sew, Fit, Finish, in that order
+      enum: [prep, cut, sew, fit, finish]
+    SewingProjectFabric:
+      type: object
+      properties:
+        stashFabricId:
+          type: string
+          format: uuid
+        amountUsed:
+          type: [number, "null"]
+          description: In the fabric's own unit
+        fabric:
+          $ref: "#/components/schemas/StashFabric"
+      required: [stashFabricId, amountUsed, fabric]
+    SewingProjectFabricInput:
+      type: object
+      properties:
+        stashFabricId:
+          type: string
+          format: uuid
+        amountUsed:
+          type: [number, "null"]
+          minimum: 0
+          maximum: 999
+      required: [stashFabricId]
+    SewingProject:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        status:
+          $ref: "#/components/schemas/ProjectStatus"
+        stage:
+          $ref: "#/components/schemas/SewingStage"
+        patternName:
+          type: [string, "null"]
+        patternDesigner:
+          type: [string, "null"]
+        sizeMade:
+          type: [string, "null"]
+        fitChanges:
+          type: [string, "null"]
+        notes:
+          type: [string, "null"]
+        completedAt:
+          type: [string, "null"]
+          format: date
+        fabrics:
+          type: array
+          items:
+            $ref: "#/components/schemas/SewingProjectFabric"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, title, status, stage, patternName, patternDesigner, sizeMade, fitChanges, notes, completedAt, fabrics, createdAt, updatedAt]
+    CreateSewingProject:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 160
+        status:
+          $ref: "#/components/schemas/ProjectStatus"
+        stage:
+          $ref: "#/components/schemas/SewingStage"
+        patternName:
+          type: [string, "null"]
+          maxLength: 160
+        patternDesigner:
+          type: [string, "null"]
+          maxLength: 160
+        sizeMade:
+          type: [string, "null"]
+          maxLength: 60
+        fitChanges:
+          type: [string, "null"]
+          maxLength: 2000
+        notes:
+          type: [string, "null"]
+          maxLength: 2000
+        fabrics:
+          type: array
+          maxItems: 12
+          items:
+            $ref: "#/components/schemas/SewingProjectFabricInput"
+      required: [title]
+    UpdateSewingProject:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 160
+        status:
+          $ref: "#/components/schemas/ProjectStatus"
+        stage:
+          $ref: "#/components/schemas/SewingStage"
+        patternName:
+          type: [string, "null"]
+          maxLength: 160
+        patternDesigner:
+          type: [string, "null"]
+          maxLength: 160
+        sizeMade:
+          type: [string, "null"]
+          maxLength: 60
+        fitChanges:
+          type: [string, "null"]
+          maxLength: 2000
+        notes:
+          type: [string, "null"]
+          maxLength: 2000
+        fabrics:
+          type: array
+          description: The full list of fabric on the project, replacing what was there
+          maxItems: 12
+          items:
+            $ref: "#/components/schemas/SewingProjectFabricInput"
+    SewingStageCount:
+      type: object
+      properties:
+        stage:
+          $ref: "#/components/schemas/SewingStage"
+        count:
+          type: integer
+      required: [stage, count]
+    SewingOverview:
+      type: object
+      properties:
+        inProgress:
+          type: integer
+          description: Projects being sewn (not planning, paused or finished)
+        finished:
+          type: integer
+        fabricPieces:
+          type: integer
+        fabricLength:
+          type: number
+          description: Total fabric in the stash, in fabricUnit
+        fabricUnit:
+          $ref: "#/components/schemas/FabricUnit"
+        stages:
+          type: array
+          description: Projects in progress at each stage, Prep to Finish
+          items:
+            $ref: "#/components/schemas/SewingStageCount"
+        recentProjects:
+          type: array
+          items:
+            $ref: "#/components/schemas/SewingProject"
+      required: [inProgress, finished, fabricPieces, fabricLength, fabricUnit, stages, recentProjects]
     StashYarn:
       type: object
       properties:
