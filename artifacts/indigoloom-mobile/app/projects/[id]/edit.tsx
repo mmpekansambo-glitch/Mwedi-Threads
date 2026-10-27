@@ -1,7 +1,7 @@
 import { useGetProject, useUpdateProject, usePreviewDesignerWebsiteTitle, getGetDashboardQueryKey, getGetProjectQueryKey, getGetProjectsQueryKey, getGetStashYarnsQueryKey } from '@workspace/api-client-react';
 import { ProjectYarnsField, yarnDraftsFromProject, yarnsForApi, type YarnDraft } from '@/components/ProjectYarns';
 import type { UpdateProject } from '@workspace/api-client-react';
-import { HookSizePicker, type CrochetHookSizeValue } from '@/components/HookSizePicker';
+import { HookSizePicker, SecondHookField, type CrochetHookSizeValue, type SecondHook } from '@/components/HookSizePicker';
 import { NeedleFields, emptyNeedles, needlesForApi, needlesFromProject, type NeedlesDraft } from '@/components/NeedleFields';
 import { ProjectDateField, projectDateForApi, type ProjectDatePrecision } from '@/components/ProjectDateField';
 import { useLocalSearchParams, router } from 'expo-router';
@@ -36,6 +36,7 @@ export default function EditProjectScreen() {
   const [yarnsError, setYarnsError] = useState('');
   const [tools, setTools] = useState('');
   const [hookSize, setHookSize] = useState<CrochetHookSizeValue | null>(null);
+  const [secondHook, setSecondHook] = useState<SecondHook>(null);
   const [needles, setNeedles] = useState<NeedlesDraft>(emptyNeedles);
   const [description, setDescription] = useState('');
   const [completedAt, setCompletedAt] = useState('');
@@ -56,6 +57,7 @@ export default function EditProjectScreen() {
     setYarns(yarnDraftsFromProject(project.yarns));
     setTools(project.tools || '');
     setHookSize(project.hookSize || null);
+    setSecondHook(project.secondHookSize ? { size: project.secondHookSize } : null);
     setNeedles(needlesFromProject(project));
     setDescription(project.description || '');
     setCompletedAt(project.completedAt || '');
@@ -103,6 +105,7 @@ export default function EditProjectScreen() {
       yarns: yarnList,
       tools: tools.trim() || null,
       hookSize: project.craft === 'crochet' ? hookSize : null,
+      secondHookSize: project.craft === 'crochet' ? secondHook?.size ?? null : null,
       ...needlesForApi(needles, project.craft === 'knitting'),
       description: description.trim() || null,
       ...(project.status === 'completed' && completedAt
@@ -166,6 +169,7 @@ export default function EditProjectScreen() {
                 <>
                   <FormFieldLabel>Hook size</FormFieldLabel>
                   <HookSizePicker value={hookSize} onChange={setHookSize} testID="select-edit-crochet-hook-size" />
+                  <SecondHookField value={secondHook} onChange={setSecondHook} testIDPrefix="select-edit" />
                   {tools ? <LoomText style={{ color: colors.mutedForeground, fontSize: 14, lineHeight: 22, marginBottom: 14 }}>Saved tools note: {tools} (kept unchanged from the earlier form)</LoomText> : null}
                 </>
               ) : (

@@ -601,7 +601,7 @@ type ProjectFormValues = {
   title: string; craft: 'knitting' | 'crochet'; status: ProjectStatus;
   description: string; patternName: string; patternDesigner: string;
   designerWebsite: string; designerPageTitle: string;
-  tools: string; hookSize: NonNullable<CreateProject['hookSize']> | '';
+  tools: string; hookSize: HookSize | ''; hasSecondHook: boolean; secondHookSize: HookSize | '';
   needleSize: NeedleSize | ''; needleType: NeedleType | ''; needleCableLength: CableLength | '';
   hasSecondNeedle: boolean;
   secondNeedleSize: NeedleSize | ''; secondNeedleType: NeedleType | ''; secondNeedleCableLength: CableLength | '';
@@ -610,7 +610,27 @@ type ProjectFormValues = {
   completedAt: string; completedAtPrecision: ProjectDatePrecision;
 };
 
-const crochetHookSizes = Object.values(CrochetHookSize) as NonNullable<CreateProject['hookSize']>[];
+type HookSize = NonNullable<CreateProject['hookSize']>;
+const crochetHookSizes = Object.values(CrochetHookSize) as HookSize[];
+
+function hooksForApi(values: ProjectFormValues) {
+  const crochet = values.craft === 'crochet';
+  return {
+    hookSize: crochet ? values.hookSize || null : null,
+    secondHookSize: crochet && values.hasSecondHook ? values.secondHookSize || null : null,
+  };
+}
+
+function HookFields({ form, idPrefix, children }: { form: UseFormReturn<ProjectFormValues>; idPrefix: 'project' | 'edit'; children?: ReactNode }) {
+  const testId = (name: string) => `select-${idPrefix === 'edit' ? 'edit-' : ''}${name}`;
+  const sizeOptions = <><option value="">Choose a hook size</option>{crochetHookSizes.map((hookSize) => <option key={hookSize} value={hookSize}>{hookSize}</option>)}</>;
+  return <>
+    <div className="field-block"><label htmlFor={`${idPrefix}-hook-size`}>Hook size</label><select id={`${idPrefix}-hook-size`} {...form.register('hookSize')} data-testid={testId('crochet-hook-size')}>{sizeOptions}</select>{children}</div>
+    {form.watch('hasSecondHook')
+      ? <div className="field-block"><div className="hook-label-row"><label htmlFor={`${idPrefix}-second-hook-size`}>Second hook</label><button type="button" className="needle-remove" onClick={() => form.setValue('hasSecondHook', false)} data-testid={`button-${idPrefix}-remove-second-hook`}>Remove</button></div><select id={`${idPrefix}-second-hook-size`} {...form.register('secondHookSize')} data-testid={testId('second-hook-size')}>{sizeOptions}</select></div>
+      : <button type="button" className="button button-quiet needle-add field-wide" onClick={() => form.setValue('hasSecondHook', true)} data-testid={`button-${idPrefix}-add-second-hook`}><Plus size={15}/> Add a second hook</button>}
+  </>;
+}
 
 type NeedleSize = NonNullable<CreateProject['needleSize']>;
 type NeedleType = NonNullable<CreateProject['needleType']>;
@@ -686,7 +706,7 @@ function ProjectFormPage() {
   const [yarns, setYarns] = useState<YarnDraft[]>([]);
   const [yarnsError, setYarnsError] = useState('');
   const form = useForm<ProjectFormValues>({
-    defaultValues: { title: '', craft: 'knitting', status: 'planning', description: '', patternName: '', patternDesigner: '', designerWebsite: '', designerPageTitle: '', tools: '', hookSize: '', ...emptyNeedleValues, startedAt: '', startedAtPrecision: 'day', targetDate: '', targetDatePrecision: 'day', completedAt: '', completedAtPrecision: 'day' },
+    defaultValues: { title: '', craft: 'knitting', status: 'planning', description: '', patternName: '', patternDesigner: '', designerWebsite: '', designerPageTitle: '', tools: '', hookSize: '', hasSecondHook: false, secondHookSize: '', ...emptyNeedleValues, startedAt: '', startedAtPrecision: 'day', targetDate: '', targetDatePrecision: 'day', completedAt: '', completedAtPrecision: 'day' },
   });
   const previewDesignerTitle = () => {
     const websiteUrl = form.getValues('designerWebsite').trim();
@@ -723,7 +743,7 @@ function ProjectFormPage() {
       yarn: null,
       yarns: yarnList,
       tools: values.tools || null,
-      hookSize: values.craft === 'crochet' ? values.hookSize || null : null,
+      ...hooksForApi(values),
       ...needlesForApi(values),
       startedAt: dateForProjectApi(values.startedAt, values.startedAtPrecision),
       startedAtPrecision: values.startedAtPrecision,
@@ -756,7 +776,7 @@ function ProjectFormPage() {
         <DesignerEntry form={form} mode={designerMode} onModeChange={(mode) => { setDesignerMode(mode); setDesignerPreviewMessage(''); }} onPreview={previewDesignerTitle} onClearPreview={() => setDesignerPreviewMessage('')} isPreviewing={previewTitle.isPending} message={designerPreviewMessage} prefix="create"/>
         <ProjectYarnsField value={yarns} onChange={(value) => { setYarns(value); setYarnsError(''); }} idPrefix="project" error={yarnsError}/>
         {form.watch('craft') === 'crochet' ? (
-          <div className="field-block"><label htmlFor="project-hook-size">Hook size</label><select id="project-hook-size" {...form.register('hookSize')} data-testid="select-crochet-hook-size"><option value="">Choose a hook size</option>{crochetHookSizes.map((hookSize) => <option key={hookSize} value={hookSize}>{hookSize}</option>)}</select></div>
+          <HookFields form={form} idPrefix="project"/>
         ) : (
           <NeedleFields form={form} idPrefix="project"/>
         )}
@@ -824,7 +844,7 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
   const [progressAmount, setProgressAmount] = useState<ProgressAmountDraft>({ percent: '0', value: '', done: [] });
   const [progressAmountError, setProgressAmountError] = useState('');
   const editForm = useForm<ProjectFormValues>({
-    defaultValues: { title: '', craft: 'knitting', status: 'planning', description: '', patternName: '', patternDesigner: '', designerWebsite: '', designerPageTitle: '', tools: '', hookSize: '', ...emptyNeedleValues, startedAt: '', startedAtPrecision: 'day', targetDate: '', targetDatePrecision: 'day', completedAt: '', completedAtPrecision: 'day' },
+    defaultValues: { title: '', craft: 'knitting', status: 'planning', description: '', patternName: '', patternDesigner: '', designerWebsite: '', designerPageTitle: '', tools: '', hookSize: '', hasSecondHook: false, secondHookSize: '', ...emptyNeedleValues, startedAt: '', startedAtPrecision: 'day', targetDate: '', targetDatePrecision: 'day', completedAt: '', completedAtPrecision: 'day' },
   });
   useEffect(() => {
     if (!project) return;
@@ -834,6 +854,7 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
       patternDesigner: project.patternDesigner || '',
       designerWebsite: project.designerWebsite || '', designerPageTitle: project.designerPageTitle || '',
       tools: project.tools || '', hookSize: project.hookSize || '',
+      hasSecondHook: Boolean(project.secondHookSize), secondHookSize: project.secondHookSize || '',
       ...needleValuesFromProject(project),
       startedAt: dateForProjectForm(project.startedAt, project.startedAtPrecision),
       startedAtPrecision: project.startedAtPrecision,
@@ -894,7 +915,7 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
       designerPageTitle: designerMode === 'website' ? values.designerPageTitle.trim() || null : null,
       yarns: yarnList,
       tools: values.tools || null,
-      hookSize: values.craft === 'crochet' ? values.hookSize || null : null,
+      ...hooksForApi(values),
       ...needlesForApi(values),
       startedAt: dateForProjectApi(values.startedAt, values.startedAtPrecision),
       startedAtPrecision: values.startedAtPrecision,
@@ -993,7 +1014,7 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
       <ProjectYarnsField value={editYarns} onChange={(value) => { setEditYarns(value); setEditYarnsError(''); }} idPrefix="edit" error={editYarnsError}/>
       {project.yarn && <p className="legacy-yarn-note field-wide"><b>Saved yarn note:</b> {project.yarn} <span>This earlier entry is being kept unchanged.</span></p>}
       {editForm.watch('craft') === 'crochet' ? (
-        <div className="field-block"><label htmlFor="edit-hook-size">Hook size</label><select id="edit-hook-size" {...editForm.register('hookSize')} data-testid="select-edit-crochet-hook-size"><option value="">Choose a hook size</option>{crochetHookSizes.map((hookSize) => <option key={hookSize} value={hookSize}>{hookSize}</option>)}</select>{project.tools && <p className="legacy-yarn-note"><b>Saved tools note:</b> {project.tools}<span>This earlier note is being kept unchanged.</span></p>}</div>
+        <HookFields form={editForm} idPrefix="edit">{project.tools && <p className="legacy-yarn-note"><b>Saved tools note:</b> {project.tools}<span>This earlier note is being kept unchanged.</span></p>}</HookFields>
       ) : (
         <>
           <NeedleFields form={editForm} idPrefix="edit"/>
@@ -1023,6 +1044,7 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
           {project.craft === 'crochet'
             ? <div><dt>Hook size</dt><dd>{project.hookSize || 'Not added yet'}</dd></div>
             : <div><dt>Needle</dt><dd data-testid="text-needle">{describeNeedle(project.needleSize, project.needleType, project.needleCableLength) || 'Not added yet'}</dd></div>}
+          {project.craft === 'crochet' && project.secondHookSize && <div><dt>Second hook</dt><dd data-testid="text-second-hook">{project.secondHookSize}</dd></div>}
           {project.craft === 'knitting' && describeNeedle(project.secondNeedleSize, project.secondNeedleType, project.secondNeedleCableLength) && <div><dt>Second needle</dt><dd data-testid="text-second-needle">{describeNeedle(project.secondNeedleSize, project.secondNeedleType, project.secondNeedleCableLength)}</dd></div>}
           {project.tools && <div><dt>Saved tools note</dt><dd>{project.tools}</dd></div>}
           <div><dt>Target date</dt><dd>{formatProjectDate(project.targetDate, project.targetDatePrecision) || 'No date in mind'}</dd></div>

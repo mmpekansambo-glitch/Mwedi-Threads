@@ -1082,6 +1082,10 @@ components:
           anyOf:
             - $ref: "#/components/schemas/CrochetHookSize"
             - type: "null"
+        secondHookSize:
+          anyOf:
+            - $ref: "#/components/schemas/CrochetHookSize"
+            - type: "null"
         needleSize:
           anyOf:
             - $ref: "#/components/schemas/KnittingNeedleSize"
@@ -1164,6 +1168,7 @@ components:
         - yarns
         - tools
         - hookSize
+        - secondHookSize
         - needleSize
         - needleType
         - needleCableLength
@@ -1234,6 +1239,10 @@ components:
         tools:
           type: [string, "null"]
         hookSize:
+          anyOf:
+            - $ref: "#/components/schemas/CrochetHookSize"
+            - type: "null"
+        secondHookSize:
           anyOf:
             - $ref: "#/components/schemas/CrochetHookSize"
             - type: "null"
@@ -1317,6 +1326,10 @@ components:
         tools:
           type: [string, "null"]
         hookSize:
+          anyOf:
+            - $ref: "#/components/schemas/CrochetHookSize"
+            - type: "null"
+        secondHookSize:
           anyOf:
             - $ref: "#/components/schemas/CrochetHookSize"
             - type: "null"

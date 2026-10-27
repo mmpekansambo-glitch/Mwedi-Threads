@@ -360,6 +360,7 @@ a { color: inherit; text-decoration: none; }
 .yarn-trifold { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 14px; }
 .needle-add { justify-self: start; }
 .needle-remove { margin-left: auto; padding: 0; border: 0; background: none; color: var(--slate); font: inherit; font-size: 13px; text-decoration: underline; cursor: pointer; }
+.hook-label-row { display: flex; align-items: baseline; gap: 10px; }
 .legacy-yarn-note { margin: 0; padding: 10px 12px; border: 1px solid var(--lavender-soft); border-radius: 8px; color: var(--slate-deep); background: var(--lavender-wash); font-size: 14px; line-height: 1.55; }
 .legacy-yarn-note span { display: block; margin-top: 3px; color: var(--slate); font-size: 13px; }
 .designer-row { display: flex; flex-wrap: wrap; gap: 8px; }

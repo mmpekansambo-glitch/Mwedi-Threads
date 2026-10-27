@@ -342,6 +342,7 @@ router.post("/projects", async (req, res): Promise<void> => {
       yarn: null,
       tools: null,
       hookSize: null,
+      secondHookSize: null,
       needleSize: null,
       needleType: null,
       needleCableLength: null,

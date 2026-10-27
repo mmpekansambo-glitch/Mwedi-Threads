@@ -195,7 +195,10 @@ export default function ProjectDetailScreen() {
                   : project.yarn],
                 ['Previous yarn note', project.yarns.length ? project.yarn : null],
                 ...(project.craft === 'crochet'
-                  ? [['Hook size', project.hookSize || 'Not added yet']]
+                  ? [
+                      ['Hook size', project.hookSize || 'Not added yet'],
+                      ['Second hook', project.secondHookSize],
+                    ]
                   : [
                       ['Needle', describeNeedle(project.needleSize, project.needleType, project.needleCableLength) || 'Not added yet'],
                       ['Second needle', describeNeedle(project.secondNeedleSize, project.secondNeedleType, project.secondNeedleCableLength) || null],

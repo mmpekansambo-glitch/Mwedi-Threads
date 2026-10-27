@@ -32,6 +32,12 @@ describe("Mwedi Threads project contracts", () => {
     expect(result.success).toBe(false);
   });
 
+  it("accepts a crochet project with a second hook and rejects sizes outside the list", () => {
+    const base = { title: "Granny square blanket", craft: "crochet", hookSize: "5.0 mm (US H-8, UK/Canada 6)" };
+    expect(CreateProjectBody.safeParse({ ...base, secondHookSize: "4.0 mm (US G-6, UK/Canada 8)" }).success).toBe(true);
+    expect(CreateProjectBody.safeParse({ ...base, secondHookSize: "4 mm" }).success).toBe(false);
+  });
+
   it("accepts a knitting project with a main and second needle", () => {
     const result = CreateProjectBody.safeParse({
       title: "Ribbed hat",

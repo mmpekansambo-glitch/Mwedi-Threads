@@ -15,6 +15,7 @@ type ProjectResponse = {
   yarns: Array<Record<string, unknown>>;
   tools: string | null;
   hookSize: string | null;
+  secondHookSize: string | null;
   needleSize: string | null;
   needleType: string | null;
   needleCableLength: string | null;
@@ -48,6 +49,7 @@ const projectFixture = (overrides: Partial<ProjectResponse> = {}): ProjectRespon
   yarns: [],
   tools: null,
   hookSize: null,
+  secondHookSize: null,
   needleSize: null,
   needleType: null,
   needleCableLength: null,

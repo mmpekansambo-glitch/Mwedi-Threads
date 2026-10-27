@@ -154,6 +154,7 @@ One row per knitting or crochet project.
 | yarn_color | text | no | | No longer used. Moved into `project_yarns`. |
 | tools | text | no | | Older free-text tools note, shown as "Saved tools note". |
 | hook_size | text | no | | Crochet hook size. |
+| second_hook_size | text | no | | Optional second crochet hook, for projects that use two sizes. |
 | needle_size | text | no | | Main knitting needle size. |
 | needle_type | text | no | | Main needle type, such as circular. |
 | needle_cable_length | text | no | | For circular or interchangeable needles. |

@@ -1,7 +1,7 @@
 import { useCreateProject, usePreviewDesignerWebsiteTitle, getGetDashboardQueryKey, getGetProjectsQueryKey, getGetStashYarnsQueryKey } from '@workspace/api-client-react';
 import { ProjectYarnsField, yarnsForApi, type YarnDraft } from '@/components/ProjectYarns';
 import type { CreateProject } from '@workspace/api-client-react';
-import { HookSizePicker, type CrochetHookSizeValue } from '@/components/HookSizePicker';
+import { HookSizePicker, SecondHookField, type CrochetHookSizeValue, type SecondHook } from '@/components/HookSizePicker';
 import { NeedleFields, emptyNeedles, needlesForApi, type NeedlesDraft } from '@/components/NeedleFields';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -33,6 +33,7 @@ export default function NewProjectScreen() {
   const [yarns, setYarns] = useState<YarnDraft[]>([]);
   const [yarnsError, setYarnsError] = useState('');
   const [hookSize, setHookSize] = useState<CrochetHookSizeValue | null>(null);
+  const [secondHook, setSecondHook] = useState<SecondHook>(null);
   const [needles, setNeedles] = useState<NeedlesDraft>(emptyNeedles);
   const [startedAt, setStartedAt] = useState('');
   const [startedAtPrecision, setStartedAtPrecision] = useState<ProjectDatePrecision>('day');
@@ -89,6 +90,7 @@ export default function NewProjectScreen() {
       yarns: yarnList,
       tools: null,
       hookSize: craft === 'crochet' ? hookSize : null,
+      secondHookSize: craft === 'crochet' ? secondHook?.size ?? null : null,
       ...needlesForApi(needles, craft === 'knitting'),
       startedAt: projectDateForApi(startedAt, startedAtPrecision),
       startedAtPrecision,
@@ -158,6 +160,7 @@ export default function NewProjectScreen() {
               <>
                 <FormFieldLabel>Hook size</FormFieldLabel>
                 <HookSizePicker value={hookSize} onChange={setHookSize} testID="select-crochet-hook-size" />
+                <SecondHookField value={secondHook} onChange={setSecondHook} testIDPrefix="select" />
               </>
             ) : (
               <NeedleFields value={needles} onChange={setNeedles} testIDPrefix="select" />
