@@ -52,6 +52,7 @@ import type {
   StashYarn,
   UnauthorizedResponse,
   UpdateCrafts,
+  UpdateProgress,
   UpdateProject,
   UpdateStashFabric,
   UpdateStashYarn,
@@ -1153,6 +1154,173 @@ export const useRequestProgressPhotoUpload = <TError = ErrorType<BadRequestRespo
         TContext
       > => {
       return useMutation(getRequestProgressPhotoUploadMutationOptions(options));
+    }
+
+export const getUpdateProgressUrl = (projectId: string,
+    entryId: string,) => {
+
+
+
+
+  return `/api/projects/${projectId}/progress/${entryId}`
+}
+
+/**
+ * @summary Edit a project progress entry
+ */
+export const updateProgress = async (projectId: string,
+    entryId: string,
+    updateProgressBody: UpdateProgress, options?: Parameters<typeof customFetch>[1]): Promise<ProgressEntry> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<ProgressEntry>(getUpdateProgressUrl(projectId,entryId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(updateProgressBody)
+  }
+);}
+
+
+
+
+
+export const getUpdateProgressMutationKey = () => ['updateProgress'] as const;
+
+export const getUpdateProgressMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateProgress>>, TError,UpdateProgressMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateProgress>>, TError,UpdateProgressMutationVariables, TContext> => {
+
+const mutationKey = getUpdateProgressMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateProgress>>, UpdateProgressMutationVariables> = (props) => {
+          const {projectId,entryId,data} = props ?? {};
+
+          return  updateProgress(projectId,entryId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateProgressMutationResult = NonNullable<Awaited<ReturnType<typeof updateProgress>>>
+    export type UpdateProgressMutationBody = BodyType<UpdateProgress>
+    export type UpdateProgressMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse>
+    export type UpdateProgressMutationVariables = {projectId: string;entryId: string;data: BodyType<UpdateProgress>}
+
+    /**
+ * @summary Edit a project progress entry
+ */
+export const useUpdateProgress = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateProgress>>, TError,UpdateProgressMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateProgress>>,
+        TError,
+        UpdateProgressMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateProgressMutationOptions(options));
+    }
+
+export const getDeleteProgressUrl = (projectId: string,
+    entryId: string,) => {
+
+
+
+
+  return `/api/projects/${projectId}/progress/${entryId}`
+}
+
+/**
+ * @summary Delete a project progress entry
+ */
+export const deleteProgress = async (projectId: string,
+    entryId: string, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getDeleteProgressUrl(projectId,entryId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteProgressMutationKey = () => ['deleteProgress'] as const;
+
+export const getDeleteProgressMutationOptions = <TError = ErrorType<UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteProgress>>, TError,DeleteProgressMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteProgress>>, TError,DeleteProgressMutationVariables, TContext> => {
+
+const mutationKey = getDeleteProgressMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteProgress>>, DeleteProgressMutationVariables> = (props) => {
+          const {projectId,entryId} = props ?? {};
+
+          return  deleteProgress(projectId,entryId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteProgressMutationResult = NonNullable<Awaited<ReturnType<typeof deleteProgress>>>
+
+    export type DeleteProgressMutationError = ErrorType<UnauthorizedResponse | NotFoundResponse>
+    export type DeleteProgressMutationVariables = {projectId: string;entryId: string}
+
+    /**
+ * @summary Delete a project progress entry
+ */
+export const useDeleteProgress = <TError = ErrorType<UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteProgress>>, TError,DeleteProgressMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteProgress>>,
+        TError,
+        DeleteProgressMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeleteProgressMutationOptions(options));
     }
 
 export const getGetProgressPhotoUrl = (projectId: string,
