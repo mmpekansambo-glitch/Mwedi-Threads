@@ -773,6 +773,159 @@ export interface UpdateStashFabric {
 }
 
 /**
+ * Notions get used up; kit stays
+ */
+export type SewingToolSection = typeof SewingToolSection[keyof typeof SewingToolSection];
+
+
+export const SewingToolSection = {
+  notions: 'notions',
+  kit: 'kit',
+} as const;
+
+/**
+ * Notions are closures, trims and tapes, hardware, shaping and backing, thread and labels; machine, presser_foot, needle, scissors and ruler are kit; other fits either
+ */
+export type SewingToolCategory = typeof SewingToolCategory[keyof typeof SewingToolCategory];
+
+
+export const SewingToolCategory = {
+  zip: 'zip',
+  button: 'button',
+  snap: 'snap',
+  hook_and_eye: 'hook_and_eye',
+  hook_and_loop: 'hook_and_loop',
+  magnetic_clasp: 'magnetic_clasp',
+  toggle: 'toggle',
+  elastic: 'elastic',
+  bias_tape: 'bias_tape',
+  ribbon: 'ribbon',
+  lace: 'lace',
+  piping: 'piping',
+  cord: 'cord',
+  twill_tape: 'twill_tape',
+  buckle: 'buckle',
+  d_ring: 'd_ring',
+  eyelet: 'eyelet',
+  rivet: 'rivet',
+  interfacing: 'interfacing',
+  boning: 'boning',
+  batting: 'batting',
+  stabilizer: 'stabilizer',
+  fusible_web: 'fusible_web',
+  thread: 'thread',
+  label: 'label',
+  machine: 'machine',
+  presser_foot: 'presser_foot',
+  needle: 'needle',
+  scissors: 'scissors',
+  ruler: 'ruler',
+  other: 'other',
+} as const;
+
+export interface SewingTool {
+  id: string;
+  section: SewingToolSection;
+  category: SewingToolCategory;
+  name: string;
+  /** @nullable */
+  quantity: number | null;
+  /** @nullable */
+  size: string | null;
+  /** @nullable */
+  color: string | null;
+  /** @nullable */
+  brand: string | null;
+  /** @nullable */
+  notes: string | null;
+  hasPhoto: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateSewingTool {
+  section: SewingToolSection;
+  category: SewingToolCategory;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  name: string;
+  /**
+     * @minimum 0
+     * @maximum 9999
+     * @nullable
+     */
+  quantity?: number | null;
+  /**
+     * @maxLength 40
+     * @nullable
+     */
+  size?: string | null;
+  /**
+     * @maxLength 40
+     * @nullable
+     */
+  color?: string | null;
+  /**
+     * @maxLength 80
+     * @nullable
+     */
+  brand?: string | null;
+  /**
+     * @maxLength 1000
+     * @nullable
+     */
+  notes?: string | null;
+  /**
+     * A path from the tool photo upload URL
+     * @nullable
+     */
+  photoPath?: string | null;
+}
+
+export interface UpdateSewingTool {
+  section?: SewingToolSection;
+  category?: SewingToolCategory;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  name?: string;
+  /**
+     * @minimum 0
+     * @maximum 9999
+     * @nullable
+     */
+  quantity?: number | null;
+  /**
+     * @maxLength 40
+     * @nullable
+     */
+  size?: string | null;
+  /**
+     * @maxLength 40
+     * @nullable
+     */
+  color?: string | null;
+  /**
+     * @maxLength 80
+     * @nullable
+     */
+  brand?: string | null;
+  /**
+     * @maxLength 1000
+     * @nullable
+     */
+  notes?: string | null;
+  /**
+     * A new path from the upload URL, or null to remove the photo. Leave it out to keep the photo.
+     * @nullable
+     */
+  photoPath?: string | null;
+}
+
+/**
  * Prep, Cut, Sew, Fit, Finish, in that order
  */
 export type SewingStage = typeof SewingStage[keyof typeof SewingStage];
@@ -1211,5 +1364,14 @@ export type GetSewingProjectsParams = {
  */
 search?: string;
 status?: ProjectStatus;
+};
+
+export type GetSewingToolsParams = {
+/**
+ * Matches name, brand, size, color or notes
+ */
+search?: string;
+section?: SewingToolSection;
+category?: SewingToolCategory;
 };
 

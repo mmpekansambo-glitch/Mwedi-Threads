@@ -5,7 +5,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import * as schema from "@workspace/db/schema";
 import { usersTable } from "@workspace/db/schema";
-import { sewingTablesSql, stashTablesSql } from "../test/stashTablesSql";
+import { sewingTablesSql, sewingToolsSql, stashTablesSql } from "../test/stashTablesSql";
 
 vi.mock("@clerk/express", () => ({
   getAuth: (req: Request) => ({
@@ -95,6 +95,7 @@ describe.skipIf(!databaseUrl)("crafts and fabric stash against PostgreSQL", () =
       CREATE TYPE ${isolatedSchema}.project_status AS ENUM ('planning', 'in_progress', 'paused', 'completed');
       ${stashTablesSql(isolatedSchema)}
       ${sewingTablesSql(isolatedSchema)}
+      ${sewingToolsSql(isolatedSchema)}
     `);
 
     testPool = new pg.Pool({

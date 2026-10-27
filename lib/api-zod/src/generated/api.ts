@@ -1745,3 +1745,189 @@ export const GetSewingOverviewResponse = zod.object({
 })
 
 
+/**
+ * @summary List the signed-in maker's notions and kit
+ */
+export const GetSewingToolsQueryParams = zod.object({
+  "search": zod.coerce.string().optional().describe('Matches name, brand, size, color or notes'),
+  "section": zod.enum(['notions', 'kit']).optional(),
+  "category": zod.enum(['zip', 'button', 'snap', 'hook_and_eye', 'hook_and_loop', 'magnetic_clasp', 'toggle', 'elastic', 'bias_tape', 'ribbon', 'lace', 'piping', 'cord', 'twill_tape', 'buckle', 'd_ring', 'eyelet', 'rivet', 'interfacing', 'boning', 'batting', 'stabilizer', 'fusible_web', 'thread', 'label', 'machine', 'presser_foot', 'needle', 'scissors', 'ruler', 'other']).optional()
+})
+
+export const GetSewingToolsResponseItem = zod.object({
+  "id": zod.string().uuid(),
+  "section": zod.enum(['notions', 'kit']).describe('Notions get used up; kit stays'),
+  "category": zod.enum(['zip', 'button', 'snap', 'hook_and_eye', 'hook_and_loop', 'magnetic_clasp', 'toggle', 'elastic', 'bias_tape', 'ribbon', 'lace', 'piping', 'cord', 'twill_tape', 'buckle', 'd_ring', 'eyelet', 'rivet', 'interfacing', 'boning', 'batting', 'stabilizer', 'fusible_web', 'thread', 'label', 'machine', 'presser_foot', 'needle', 'scissors', 'ruler', 'other']).describe('Notions are closures, trims and tapes, hardware, shaping and backing, thread and labels; machine, presser_foot, needle, scissors and ruler are kit; other fits either'),
+  "name": zod.string(),
+  "quantity": zod.number().int().nullable(),
+  "size": zod.string().nullable(),
+  "color": zod.string().nullable(),
+  "brand": zod.string().nullable(),
+  "notes": zod.string().nullable(),
+  "hasPhoto": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const GetSewingToolsResponse = zod.array(GetSewingToolsResponseItem)
+
+
+/**
+ * @summary Add a notion or piece of kit
+ */
+export const createSewingToolBodyNameMax = 80;
+
+export const createSewingToolBodyQuantityMin = 0;
+export const createSewingToolBodyQuantityMax = 9999;
+
+export const createSewingToolBodySizeMax = 40;
+
+export const createSewingToolBodyColorMax = 40;
+
+export const createSewingToolBodyBrandMax = 80;
+
+export const createSewingToolBodyNotesMax = 1000;
+
+
+
+export const CreateSewingToolBody = zod.object({
+  "section": zod.enum(['notions', 'kit']).describe('Notions get used up; kit stays'),
+  "category": zod.enum(['zip', 'button', 'snap', 'hook_and_eye', 'hook_and_loop', 'magnetic_clasp', 'toggle', 'elastic', 'bias_tape', 'ribbon', 'lace', 'piping', 'cord', 'twill_tape', 'buckle', 'd_ring', 'eyelet', 'rivet', 'interfacing', 'boning', 'batting', 'stabilizer', 'fusible_web', 'thread', 'label', 'machine', 'presser_foot', 'needle', 'scissors', 'ruler', 'other']).describe('Notions are closures, trims and tapes, hardware, shaping and backing, thread and labels; machine, presser_foot, needle, scissors and ruler are kit; other fits either'),
+  "name": zod.string().min(1).max(createSewingToolBodyNameMax),
+  "quantity": zod.number().int().min(createSewingToolBodyQuantityMin).max(createSewingToolBodyQuantityMax).nullish(),
+  "size": zod.string().max(createSewingToolBodySizeMax).nullish(),
+  "color": zod.string().max(createSewingToolBodyColorMax).nullish(),
+  "brand": zod.string().max(createSewingToolBodyBrandMax).nullish(),
+  "notes": zod.string().max(createSewingToolBodyNotesMax).nullish(),
+  "photoPath": zod.string().nullish().describe('A path from the tool photo upload URL')
+})
+
+export const CreateSewingToolResponse = zod.object({
+  "id": zod.string().uuid(),
+  "section": zod.enum(['notions', 'kit']).describe('Notions get used up; kit stays'),
+  "category": zod.enum(['zip', 'button', 'snap', 'hook_and_eye', 'hook_and_loop', 'magnetic_clasp', 'toggle', 'elastic', 'bias_tape', 'ribbon', 'lace', 'piping', 'cord', 'twill_tape', 'buckle', 'd_ring', 'eyelet', 'rivet', 'interfacing', 'boning', 'batting', 'stabilizer', 'fusible_web', 'thread', 'label', 'machine', 'presser_foot', 'needle', 'scissors', 'ruler', 'other']).describe('Notions are closures, trims and tapes, hardware, shaping and backing, thread and labels; machine, presser_foot, needle, scissors and ruler are kit; other fits either'),
+  "name": zod.string(),
+  "quantity": zod.number().int().nullable(),
+  "size": zod.string().nullable(),
+  "color": zod.string().nullable(),
+  "brand": zod.string().nullable(),
+  "notes": zod.string().nullable(),
+  "hasPhoto": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Request a private upload URL for a tool photo
+ */
+export const requestSewingToolPhotoUploadBodyNameMax = 255;
+
+export const requestSewingToolPhotoUploadBodySizeMax = 10485760;
+
+
+
+export const RequestSewingToolPhotoUploadBody = zod.object({
+  "name": zod.string().min(1).max(requestSewingToolPhotoUploadBodyNameMax),
+  "size": zod.number().int().min(1).max(requestSewingToolPhotoUploadBodySizeMax),
+  "contentType": zod.enum(['image/jpeg', 'image/png', 'image/webp'])
+})
+
+export const RequestSewingToolPhotoUploadResponse = zod.object({
+  "uploadURL": zod.string().url(),
+  "photoPath": zod.string()
+})
+
+
+/**
+ * @summary Get one notion or piece of kit
+ */
+export const GetSewingToolParams = zod.object({
+  "sewingToolId": zod.coerce.string().uuid()
+})
+
+export const GetSewingToolResponse = zod.object({
+  "id": zod.string().uuid(),
+  "section": zod.enum(['notions', 'kit']).describe('Notions get used up; kit stays'),
+  "category": zod.enum(['zip', 'button', 'snap', 'hook_and_eye', 'hook_and_loop', 'magnetic_clasp', 'toggle', 'elastic', 'bias_tape', 'ribbon', 'lace', 'piping', 'cord', 'twill_tape', 'buckle', 'd_ring', 'eyelet', 'rivet', 'interfacing', 'boning', 'batting', 'stabilizer', 'fusible_web', 'thread', 'label', 'machine', 'presser_foot', 'needle', 'scissors', 'ruler', 'other']).describe('Notions are closures, trims and tapes, hardware, shaping and backing, thread and labels; machine, presser_foot, needle, scissors and ruler are kit; other fits either'),
+  "name": zod.string(),
+  "quantity": zod.number().int().nullable(),
+  "size": zod.string().nullable(),
+  "color": zod.string().nullable(),
+  "brand": zod.string().nullable(),
+  "notes": zod.string().nullable(),
+  "hasPhoto": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Change a notion or piece of kit
+ */
+export const UpdateSewingToolParams = zod.object({
+  "sewingToolId": zod.coerce.string().uuid()
+})
+
+export const updateSewingToolBodyNameMax = 80;
+
+export const updateSewingToolBodyQuantityMin = 0;
+export const updateSewingToolBodyQuantityMax = 9999;
+
+export const updateSewingToolBodySizeMax = 40;
+
+export const updateSewingToolBodyColorMax = 40;
+
+export const updateSewingToolBodyBrandMax = 80;
+
+export const updateSewingToolBodyNotesMax = 1000;
+
+
+
+export const UpdateSewingToolBody = zod.object({
+  "section": zod.enum(['notions', 'kit']).optional().describe('Notions get used up; kit stays'),
+  "category": zod.enum(['zip', 'button', 'snap', 'hook_and_eye', 'hook_and_loop', 'magnetic_clasp', 'toggle', 'elastic', 'bias_tape', 'ribbon', 'lace', 'piping', 'cord', 'twill_tape', 'buckle', 'd_ring', 'eyelet', 'rivet', 'interfacing', 'boning', 'batting', 'stabilizer', 'fusible_web', 'thread', 'label', 'machine', 'presser_foot', 'needle', 'scissors', 'ruler', 'other']).optional().describe('Notions are closures, trims and tapes, hardware, shaping and backing, thread and labels; machine, presser_foot, needle, scissors and ruler are kit; other fits either'),
+  "name": zod.string().min(1).max(updateSewingToolBodyNameMax).optional(),
+  "quantity": zod.number().int().min(updateSewingToolBodyQuantityMin).max(updateSewingToolBodyQuantityMax).nullish(),
+  "size": zod.string().max(updateSewingToolBodySizeMax).nullish(),
+  "color": zod.string().max(updateSewingToolBodyColorMax).nullish(),
+  "brand": zod.string().max(updateSewingToolBodyBrandMax).nullish(),
+  "notes": zod.string().max(updateSewingToolBodyNotesMax).nullish(),
+  "photoPath": zod.string().nullish().describe('A new path from the upload URL, or null to remove the photo. Leave it out to keep the photo.')
+})
+
+export const UpdateSewingToolResponse = zod.object({
+  "id": zod.string().uuid(),
+  "section": zod.enum(['notions', 'kit']).describe('Notions get used up; kit stays'),
+  "category": zod.enum(['zip', 'button', 'snap', 'hook_and_eye', 'hook_and_loop', 'magnetic_clasp', 'toggle', 'elastic', 'bias_tape', 'ribbon', 'lace', 'piping', 'cord', 'twill_tape', 'buckle', 'd_ring', 'eyelet', 'rivet', 'interfacing', 'boning', 'batting', 'stabilizer', 'fusible_web', 'thread', 'label', 'machine', 'presser_foot', 'needle', 'scissors', 'ruler', 'other']).describe('Notions are closures, trims and tapes, hardware, shaping and backing, thread and labels; machine, presser_foot, needle, scissors and ruler are kit; other fits either'),
+  "name": zod.string(),
+  "quantity": zod.number().int().nullable(),
+  "size": zod.string().nullable(),
+  "color": zod.string().nullable(),
+  "brand": zod.string().nullable(),
+  "notes": zod.string().nullable(),
+  "hasPhoto": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Remove a notion or piece of kit
+ */
+export const DeleteSewingToolParams = zod.object({
+  "sewingToolId": zod.coerce.string().uuid()
+})
+
+export const DeleteSewingToolResponse = zod.void()
+
+
+/**
+ * @summary View a tool's photo
+ */
+export const GetSewingToolPhotoParams = zod.object({
+  "sewingToolId": zod.coerce.string().uuid()
+})
+
+export const GetSewingToolPhotoResponse = zod.void()
+
+

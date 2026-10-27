@@ -1068,6 +1068,155 @@ paths:
                 $ref: "#/components/schemas/SewingOverview"
         "401":
           $ref: "#/components/responses/Unauthorized"
+  /sewing-tools:
+    get:
+      operationId: getSewingTools
+      tags: [sewing]
+      summary: List the signed-in maker's notions and kit
+      parameters:
+        - in: query
+          name: search
+          description: Matches name, brand, size, color or notes
+          schema:
+            type: string
+        - in: query
+          name: section
+          schema:
+            $ref: "#/components/schemas/SewingToolSection"
+        - in: query
+          name: category
+          schema:
+            $ref: "#/components/schemas/SewingToolCategory"
+      responses:
+        "200":
+          description: Matching tools
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SewingTool"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      operationId: createSewingTool
+      tags: [sewing]
+      summary: Add a notion or piece of kit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSewingTool"
+      responses:
+        "201":
+          description: Tool added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SewingTool"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /sewing-tools/photo-upload:
+    post:
+      operationId: requestSewingToolPhotoUpload
+      tags: [sewing]
+      summary: Request a private upload URL for a tool photo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProgressPhotoUploadRequest"
+      responses:
+        "200":
+          description: Private upload URL generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProgressPhotoUploadResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /sewing-tools/{sewingToolId}:
+    parameters:
+      - in: path
+        name: sewingToolId
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: getSewingTool
+      tags: [sewing]
+      summary: Get one notion or piece of kit
+      responses:
+        "200":
+          description: Tool
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SewingTool"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updateSewingTool
+      tags: [sewing]
+      summary: Change a notion or piece of kit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSewingTool"
+      responses:
+        "200":
+          description: Tool updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SewingTool"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteSewingTool
+      tags: [sewing]
+      summary: Remove a notion or piece of kit
+      responses:
+        "204":
+          description: Tool removed
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /sewing-tools/{sewingToolId}/photo:
+    parameters:
+      - in: path
+        name: sewingToolId
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: getSewingToolPhoto
+      tags: [sewing]
+      summary: View a tool's photo
+      responses:
+        "302":
+          description: Redirects to a short-lived private image URL
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
 components:
   responses:
     Unauthorized:
@@ -1914,6 +2063,106 @@ components:
           maxItems: 4
           items:
             type: string
+    SewingToolSection:
+      type: string
+      description: Notions get used up; kit stays
+      enum: [notions, kit]
+    SewingToolCategory:
+      type: string
+      description: Notions are closures, trims and tapes, hardware, shaping and backing, thread and labels; machine, presser_foot, needle, scissors and ruler are kit; other fits either
+      enum: [zip, button, snap, hook_and_eye, hook_and_loop, magnetic_clasp, toggle, elastic, bias_tape, ribbon, lace, piping, cord, twill_tape, buckle, d_ring, eyelet, rivet, interfacing, boning, batting, stabilizer, fusible_web, thread, label, machine, presser_foot, needle, scissors, ruler, other]
+    SewingTool:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        section:
+          $ref: "#/components/schemas/SewingToolSection"
+        category:
+          $ref: "#/components/schemas/SewingToolCategory"
+        name:
+          type: string
+        quantity:
+          type: [integer, "null"]
+        size:
+          type: [string, "null"]
+        color:
+          type: [string, "null"]
+        brand:
+          type: [string, "null"]
+        notes:
+          type: [string, "null"]
+        hasPhoto:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, section, category, name, quantity, size, color, brand, notes, hasPhoto, createdAt, updatedAt]
+    CreateSewingTool:
+      type: object
+      properties:
+        section:
+          $ref: "#/components/schemas/SewingToolSection"
+        category:
+          $ref: "#/components/schemas/SewingToolCategory"
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        quantity:
+          type: [integer, "null"]
+          minimum: 0
+          maximum: 9999
+        size:
+          type: [string, "null"]
+          maxLength: 40
+        color:
+          type: [string, "null"]
+          maxLength: 40
+        brand:
+          type: [string, "null"]
+          maxLength: 80
+        notes:
+          type: [string, "null"]
+          maxLength: 1000
+        photoPath:
+          type: [string, "null"]
+          description: A path from the tool photo upload URL
+      required: [section, category, name]
+    UpdateSewingTool:
+      type: object
+      properties:
+        section:
+          $ref: "#/components/schemas/SewingToolSection"
+        category:
+          $ref: "#/components/schemas/SewingToolCategory"
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        quantity:
+          type: [integer, "null"]
+          minimum: 0
+          maximum: 9999
+        size:
+          type: [string, "null"]
+          maxLength: 40
+        color:
+          type: [string, "null"]
+          maxLength: 40
+        brand:
+          type: [string, "null"]
+          maxLength: 80
+        notes:
+          type: [string, "null"]
+          maxLength: 1000
+        photoPath:
+          type: [string, "null"]
+          description: A new path from the upload URL, or null to remove the photo. Leave it out to keep the photo.
     SewingStage:
       type: string
       description: Prep, Cut, Sew, Fit, Finish, in that order

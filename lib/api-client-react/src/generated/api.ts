@@ -28,6 +28,7 @@ import type {
   CreateProgress,
   CreateProject,
   CreateSewingProject,
+  CreateSewingTool,
   CreateStashFabric,
   CreateStashYarn,
   Dashboard,
@@ -36,6 +37,7 @@ import type {
   Error,
   GetProjectsParams,
   GetSewingProjectsParams,
+  GetSewingToolsParams,
   GetSkeinSuggestionsParams,
   GetStashFabricsParams,
   GetStashYarnsParams,
@@ -51,6 +53,7 @@ import type {
   ResolveCatalogReview,
   SewingOverview,
   SewingProject,
+  SewingTool,
   SkeinSuggestion,
   StashFabric,
   StashYarn,
@@ -59,6 +62,7 @@ import type {
   UpdateProgress,
   UpdateProject,
   UpdateSewingProject,
+  UpdateSewingTool,
   UpdateStashFabric,
   UpdateStashYarn,
   YarnCatalog
@@ -4012,6 +4016,583 @@ export function useGetSewingOverview<TData = Awaited<ReturnType<typeof getSewing
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetSewingOverviewQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetSewingToolsUrl = (params?: GetSewingToolsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/sewing-tools?${stringifiedParams}` : `/api/sewing-tools`
+}
+
+/**
+ * @summary List the signed-in maker's notions and kit
+ */
+export const getSewingTools = async (params?: GetSewingToolsParams, options?: Parameters<typeof customFetch>[1]): Promise<SewingTool[]> => {
+
+  return customFetch<SewingTool[]>(getGetSewingToolsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSewingToolsQueryKey = (params?: GetSewingToolsParams,) => {
+    return [
+    `/api/sewing-tools`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetSewingToolsQueryOptions = <TData = Awaited<ReturnType<typeof getSewingTools>>, TError = ErrorType<UnauthorizedResponse>>(params?: GetSewingToolsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSewingTools>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSewingToolsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSewingTools>>> = ({ signal }) => getSewingTools(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSewingTools>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSewingToolsQueryResult = NonNullable<Awaited<ReturnType<typeof getSewingTools>>>
+export type GetSewingToolsQueryError = ErrorType<UnauthorizedResponse>
+
+
+/**
+ * @summary List the signed-in maker's notions and kit
+ */
+
+export function useGetSewingTools<TData = Awaited<ReturnType<typeof getSewingTools>>, TError = ErrorType<UnauthorizedResponse>>(
+ params?: GetSewingToolsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSewingTools>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSewingToolsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateSewingToolUrl = () => {
+
+
+
+
+  return `/api/sewing-tools`
+}
+
+/**
+ * @summary Add a notion or piece of kit
+ */
+export const createSewingTool = async (createSewingToolBody: CreateSewingTool, options?: Parameters<typeof customFetch>[1]): Promise<SewingTool> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<SewingTool>(getCreateSewingToolUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(createSewingToolBody)
+  }
+);}
+
+
+
+
+
+export const getCreateSewingToolMutationKey = () => ['createSewingTool'] as const;
+
+export const getCreateSewingToolMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSewingTool>>, TError,CreateSewingToolMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createSewingTool>>, TError,CreateSewingToolMutationVariables, TContext> => {
+
+const mutationKey = getCreateSewingToolMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createSewingTool>>, CreateSewingToolMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createSewingTool(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateSewingToolMutationResult = NonNullable<Awaited<ReturnType<typeof createSewingTool>>>
+    export type CreateSewingToolMutationBody = BodyType<CreateSewingTool>
+    export type CreateSewingToolMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse>
+    export type CreateSewingToolMutationVariables = {data: BodyType<CreateSewingTool>}
+
+    /**
+ * @summary Add a notion or piece of kit
+ */
+export const useCreateSewingTool = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSewingTool>>, TError,CreateSewingToolMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createSewingTool>>,
+        TError,
+        CreateSewingToolMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateSewingToolMutationOptions(options));
+    }
+
+export const getRequestSewingToolPhotoUploadUrl = () => {
+
+
+
+
+  return `/api/sewing-tools/photo-upload`
+}
+
+/**
+ * @summary Request a private upload URL for a tool photo
+ */
+export const requestSewingToolPhotoUpload = async (progressPhotoUploadRequest: ProgressPhotoUploadRequest, options?: Parameters<typeof customFetch>[1]): Promise<ProgressPhotoUploadResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<ProgressPhotoUploadResponse>(getRequestSewingToolPhotoUploadUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(progressPhotoUploadRequest)
+  }
+);}
+
+
+
+
+
+export const getRequestSewingToolPhotoUploadMutationKey = () => ['requestSewingToolPhotoUpload'] as const;
+
+export const getRequestSewingToolPhotoUploadMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestSewingToolPhotoUpload>>, TError,RequestSewingToolPhotoUploadMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestSewingToolPhotoUpload>>, TError,RequestSewingToolPhotoUploadMutationVariables, TContext> => {
+
+const mutationKey = getRequestSewingToolPhotoUploadMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestSewingToolPhotoUpload>>, RequestSewingToolPhotoUploadMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  requestSewingToolPhotoUpload(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequestSewingToolPhotoUploadMutationResult = NonNullable<Awaited<ReturnType<typeof requestSewingToolPhotoUpload>>>
+    export type RequestSewingToolPhotoUploadMutationBody = BodyType<ProgressPhotoUploadRequest>
+    export type RequestSewingToolPhotoUploadMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse>
+    export type RequestSewingToolPhotoUploadMutationVariables = {data: BodyType<ProgressPhotoUploadRequest>}
+
+    /**
+ * @summary Request a private upload URL for a tool photo
+ */
+export const useRequestSewingToolPhotoUpload = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestSewingToolPhotoUpload>>, TError,RequestSewingToolPhotoUploadMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof requestSewingToolPhotoUpload>>,
+        TError,
+        RequestSewingToolPhotoUploadMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRequestSewingToolPhotoUploadMutationOptions(options));
+    }
+
+export const getGetSewingToolUrl = (sewingToolId: string,) => {
+
+
+
+
+  return `/api/sewing-tools/${sewingToolId}`
+}
+
+/**
+ * @summary Get one notion or piece of kit
+ */
+export const getSewingTool = async (sewingToolId: string, options?: Parameters<typeof customFetch>[1]): Promise<SewingTool> => {
+
+  return customFetch<SewingTool>(getGetSewingToolUrl(sewingToolId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSewingToolQueryKey = (sewingToolId: string,) => {
+    return [
+    `/api/sewing-tools/${sewingToolId}`
+    ] as const;
+    }
+
+
+export const getGetSewingToolQueryOptions = <TData = Awaited<ReturnType<typeof getSewingTool>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse>>(sewingToolId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSewingTool>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSewingToolQueryKey(sewingToolId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSewingTool>>> = ({ signal }) => getSewingTool(sewingToolId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: sewingToolId !== null && sewingToolId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSewingTool>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSewingToolQueryResult = NonNullable<Awaited<ReturnType<typeof getSewingTool>>>
+export type GetSewingToolQueryError = ErrorType<UnauthorizedResponse | NotFoundResponse>
+
+
+/**
+ * @summary Get one notion or piece of kit
+ */
+
+export function useGetSewingTool<TData = Awaited<ReturnType<typeof getSewingTool>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse>>(
+ sewingToolId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSewingTool>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSewingToolQueryOptions(sewingToolId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateSewingToolUrl = (sewingToolId: string,) => {
+
+
+
+
+  return `/api/sewing-tools/${sewingToolId}`
+}
+
+/**
+ * @summary Change a notion or piece of kit
+ */
+export const updateSewingTool = async (sewingToolId: string,
+    updateSewingToolBody: UpdateSewingTool, options?: Parameters<typeof customFetch>[1]): Promise<SewingTool> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<SewingTool>(getUpdateSewingToolUrl(sewingToolId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(updateSewingToolBody)
+  }
+);}
+
+
+
+
+
+export const getUpdateSewingToolMutationKey = () => ['updateSewingTool'] as const;
+
+export const getUpdateSewingToolMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSewingTool>>, TError,UpdateSewingToolMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateSewingTool>>, TError,UpdateSewingToolMutationVariables, TContext> => {
+
+const mutationKey = getUpdateSewingToolMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateSewingTool>>, UpdateSewingToolMutationVariables> = (props) => {
+          const {sewingToolId,data} = props ?? {};
+
+          return  updateSewingTool(sewingToolId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateSewingToolMutationResult = NonNullable<Awaited<ReturnType<typeof updateSewingTool>>>
+    export type UpdateSewingToolMutationBody = BodyType<UpdateSewingTool>
+    export type UpdateSewingToolMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse>
+    export type UpdateSewingToolMutationVariables = {sewingToolId: string;data: BodyType<UpdateSewingTool>}
+
+    /**
+ * @summary Change a notion or piece of kit
+ */
+export const useUpdateSewingTool = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSewingTool>>, TError,UpdateSewingToolMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateSewingTool>>,
+        TError,
+        UpdateSewingToolMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateSewingToolMutationOptions(options));
+    }
+
+export const getDeleteSewingToolUrl = (sewingToolId: string,) => {
+
+
+
+
+  return `/api/sewing-tools/${sewingToolId}`
+}
+
+/**
+ * @summary Remove a notion or piece of kit
+ */
+export const deleteSewingTool = async (sewingToolId: string, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getDeleteSewingToolUrl(sewingToolId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteSewingToolMutationKey = () => ['deleteSewingTool'] as const;
+
+export const getDeleteSewingToolMutationOptions = <TError = ErrorType<UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteSewingTool>>, TError,DeleteSewingToolMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteSewingTool>>, TError,DeleteSewingToolMutationVariables, TContext> => {
+
+const mutationKey = getDeleteSewingToolMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteSewingTool>>, DeleteSewingToolMutationVariables> = (props) => {
+          const {sewingToolId} = props ?? {};
+
+          return  deleteSewingTool(sewingToolId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteSewingToolMutationResult = NonNullable<Awaited<ReturnType<typeof deleteSewingTool>>>
+
+    export type DeleteSewingToolMutationError = ErrorType<UnauthorizedResponse | NotFoundResponse>
+    export type DeleteSewingToolMutationVariables = {sewingToolId: string}
+
+    /**
+ * @summary Remove a notion or piece of kit
+ */
+export const useDeleteSewingTool = <TError = ErrorType<UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteSewingTool>>, TError,DeleteSewingToolMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteSewingTool>>,
+        TError,
+        DeleteSewingToolMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeleteSewingToolMutationOptions(options));
+    }
+
+export const getGetSewingToolPhotoUrl = (sewingToolId: string,) => {
+
+
+
+
+  return `/api/sewing-tools/${sewingToolId}/photo`
+}
+
+/**
+ * @summary View a tool's photo
+ */
+export const getSewingToolPhoto = async (sewingToolId: string, options?: Parameters<typeof customFetch>[1]): Promise<unknown> => {
+
+  return customFetch<unknown>(getGetSewingToolPhotoUrl(sewingToolId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSewingToolPhotoQueryKey = (sewingToolId: string,) => {
+    return [
+    `/api/sewing-tools/${sewingToolId}/photo`
+    ] as const;
+    }
+
+
+export const getGetSewingToolPhotoQueryOptions = <TData = Awaited<ReturnType<typeof getSewingToolPhoto>>, TError = ErrorType<void | UnauthorizedResponse | NotFoundResponse>>(sewingToolId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSewingToolPhoto>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSewingToolPhotoQueryKey(sewingToolId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSewingToolPhoto>>> = ({ signal }) => getSewingToolPhoto(sewingToolId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: sewingToolId !== null && sewingToolId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSewingToolPhoto>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSewingToolPhotoQueryResult = NonNullable<Awaited<ReturnType<typeof getSewingToolPhoto>>>
+export type GetSewingToolPhotoQueryError = ErrorType<void | UnauthorizedResponse | NotFoundResponse>
+
+
+/**
+ * @summary View a tool's photo
+ */
+
+export function useGetSewingToolPhoto<TData = Awaited<ReturnType<typeof getSewingToolPhoto>>, TError = ErrorType<void | UnauthorizedResponse | NotFoundResponse>>(
+ sewingToolId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSewingToolPhoto>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSewingToolPhotoQueryOptions(sewingToolId,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

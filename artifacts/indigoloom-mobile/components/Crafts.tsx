@@ -16,7 +16,7 @@ import type { AppearanceChoice } from '@/hooks/useAppearance';
 export type Craft = 'yarn' | 'sewing';
 export const homeNames: Record<Craft, string> = { yarn: 'Yarn studio', sewing: 'Sewing room' };
 const homeRoutes = { yarn: '/(tabs)', sewing: '/(tabs)/sewing' } as const;
-const sewingTabs = ['sewing', 'sewing-projects', 'fabric'];
+const sewingTabs = ['sewing', 'sewing-projects', 'fabric', 'tools'];
 
 // If the craft switches can't be read, the app opens as it did before the
 // Sewing room, with yarn on, instead of waiting or locking the maker out.
