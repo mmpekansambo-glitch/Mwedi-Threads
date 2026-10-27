@@ -872,8 +872,13 @@ a.stat-card:active { transform: scale(.98); box-shadow: none; }
 .tool-photo.has-photo { border-style: solid; }
 .tool-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
 @media (max-width: 760px) { .tool-list { grid-template-columns: 1fr; } }
-.tool-type-panel { width: min(440px, calc(100vw - 40px)); }
-.tool-type-wheels { grid-template-columns: 1fr 1.25fr; }
-.tool-type-wheels.single { grid-template-columns: 1fr; }
+.tool-type-field { gap: 10px; }
+.tool-type-field .field-label { font-size: 13px; color: var(--slate); font-weight: 700; }
+.tool-type-field .field-label b { color: #b86658; }
+.tool-type-row { display: grid; gap: 5px; }
+.tool-type-group { font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--slate-light); }
+.tool-type-row .date-wheel-trigger.chosen { border-color: var(--granite); box-shadow: inset 0 0 0 1px var(--granite); }
+.tool-type-panel { width: min(340px, calc(100vw - 40px)); }
+.tool-type-wheels { grid-template-columns: 1fr; }
 .tool-type-wheels .date-wheel [role="option"] { overflow: hidden; text-overflow: ellipsis; padding: 0 6px; font-size: 15px; }
 .tool-type-wheels .date-wheel [role="option"].selected { font-size: 17px; }

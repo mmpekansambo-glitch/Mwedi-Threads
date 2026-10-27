@@ -63,14 +63,19 @@ export function categoryGroupsFor(section: SewingToolSection): Array<{ group: st
   return groups;
 }
 
-// The wheel shows each group's types A to Z, with Other as its own last group.
-export function wheelGroupsFor(section: SewingToolSection): Array<{ group: string; options: CategoryOption[] }> {
-  const groups = categoryGroupsFor(section).map(({ group, options }) => ({
-    group: section === 'kit' && group !== 'Other' ? 'Kit' : group,
-    options: [...options].sort((a, b) => a.label.localeCompare(b.label)),
-  }));
-  return [...groups.filter((item) => item.group !== 'Other'), ...groups.filter((item) => item.group === 'Other')];
+// One row per group, each with its types A to Z. Notions keep Other as a
+// last row of its own; Kit is one list with Other at the end.
+export function typeRowsFor(section: SewingToolSection): Array<{ group: string; options: CategoryOption[] }> {
+  const byLabel = (a: CategoryOption, b: CategoryOption) => a.label.localeCompare(b.label);
+  const other = categoryFor('other');
+  if (section === 'kit') return [{ group: 'Kit', options: [...toolCategories.filter((item) => item.section === 'kit').sort(byLabel), other] }];
+  return [
+    ...categoryGroupsFor(section).filter(({ group }) => group !== 'Other').map(({ group, options }) => ({ group, options: [...options].sort(byLabel) })),
+    { group: 'Other', options: [other] },
+  ];
 }
+
+const slug = (group: string) => group.toLowerCase().replace(/[^a-z]+/g, '-');
 
 export function categoryFor(category: SewingToolCategory): CategoryOption {
   return toolCategories.find((item) => item.value === category) ?? toolCategories[toolCategories.length - 1]!;
@@ -96,21 +101,43 @@ export function ToolThumb({ tool }: { tool: SewingTool }) {
   return <span className="tool-thumb">{tool.hasPhoto ? <img src={toolPhotoUrl(tool)} alt="" loading="lazy"/> : <Icon size={22} aria-hidden="true"/>}</span>;
 }
 
-// Type picker as scroll wheels like the date picker: group on the left and
-// its types A to Z on the right. Kit has one short list, so it gets one wheel
-// with Other at the end.
+// Each group keeps its heading with its own scroll wheel under it, like the
+// date picker. A tool has one type, so choosing in one group replaces the rest.
 export function ToolTypeWheelField({ section, value, onChange, error }: {
   section: SewingToolSection;
   value: SewingToolCategory | '';
   onChange: (value: SewingToolCategory) => void;
   error?: string;
 }) {
+  return <div className="field-block tool-type-field">
+    <span className="field-label">Type <b>*</b></span>
+    {typeRowsFor(section).map(({ group, options }) => options.length === 1
+      ? <OtherTypeButton key={group} option={options[0]!} selected={value === options[0]!.value} onChange={onChange}/>
+      : <GroupWheelField key={group} group={group} options={options} value={value} onChange={onChange}/>)}
+    {error && <span className="field-error">{error}</span>}
+  </div>;
+}
+
+function OtherTypeButton({ option, selected, onChange }: { option: CategoryOption; selected: boolean; onChange: (value: SewingToolCategory) => void }) {
+  return <div className="tool-type-row">
+    <span className="tool-type-group">Other</span>
+    <button type="button" className={`date-wheel-trigger${selected ? ' chosen' : ' empty'}`} aria-pressed={selected} onClick={() => onChange(option.value)} data-testid="select-tool-type-other">
+      <Box size={17}/><span>{selected ? 'Other' : 'Not in the lists above'}</span>
+    </button>
+  </div>;
+}
+
+function GroupWheelField({ group, options, value, onChange }: {
+  group: string;
+  options: CategoryOption[];
+  value: SewingToolCategory | '';
+  onChange: (value: SewingToolCategory) => void;
+}) {
   const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState({ group: 0, item: 0 });
+  const [draft, setDraft] = useState(0);
   const fieldRef = useRef<HTMLDivElement>(null);
-  const groups = wheelGroupsFor(section);
-  const kitItems = groups.flatMap(({ options }) => options);
-  const twoWheels = section === 'notions';
+  const chosenHere = options.find((item) => item.value === value);
+  const testId = `select-tool-type-${slug(group)}`;
 
   useEffect(() => {
     if (!open) return;
@@ -126,39 +153,24 @@ export function ToolTypeWheelField({ section, value, onChange, error }: {
   }, [open]);
 
   const openPicker = () => {
-    if (twoWheels) {
-      const group = Math.max(0, groups.findIndex(({ options }) => options.some((item) => item.value === value)));
-      setDraft({ group, item: Math.max(0, groups[group]!.options.findIndex((item) => item.value === value)) });
-    } else {
-      setDraft({ group: 0, item: Math.max(0, kitItems.findIndex((item) => item.value === value)) });
-    }
+    setDraft(Math.max(0, options.findIndex((item) => item.value === value)));
     setOpen(!open);
   };
-  const chosen = twoWheels ? groups[draft.group]?.options[draft.item] : kitItems[draft.item];
-  const label = value ? categoryFor(value).label : '';
+  const Icon = chosenHere?.icon ?? Shapes;
 
-  return <div className="field-block date-wheel-field" ref={fieldRef}>
-    <label htmlFor="tool-category">Type <b>*</b></label>
-    <button type="button" id="tool-category" className={`date-wheel-trigger${label ? '' : ' empty'}`} aria-haspopup="dialog" aria-expanded={open} onClick={openPicker} data-testid="select-tool-category">
-      <Shapes size={17}/><span>{label ? (twoWheels ? `${categoryFor(value as SewingToolCategory).group} · ${label}` : label) : 'Choose a type'}</span>
+  return <div className="tool-type-row date-wheel-field" ref={fieldRef}>
+    <span className="tool-type-group" id={`${testId}-label`}>{group}</span>
+    <button type="button" className={`date-wheel-trigger${chosenHere ? ' chosen' : ' empty'}`} aria-labelledby={`${testId}-label`} aria-haspopup="dialog" aria-expanded={open} onClick={openPicker} data-testid={testId}>
+      <Icon size={17}/><span>{chosenHere?.label ?? 'Choose'}</span>
     </button>
-    {error && <span className="field-error">{error}</span>}
-    {open && <div className="date-wheel-panel tool-type-panel" role="dialog" aria-label="Type">
-      <div className={`date-wheels tool-type-wheels${twoWheels ? '' : ' single'}`}>
+    {open && <div className="date-wheel-panel tool-type-panel" role="dialog" aria-label={group}>
+      <div className="date-wheels tool-type-wheels">
         <div className="date-wheel-band" aria-hidden="true"/>
-        {twoWheels && <Wheel label="Group" items={groups.map(({ group }) => group)} index={draft.group} onChange={(group) => setDraft({ group, item: 0 })} testId="select-tool-group-wheel"/>}
-        <Wheel
-          label="Type"
-          items={(twoWheels ? groups[draft.group]?.options ?? [] : kitItems).map((item) => item.label)}
-          index={draft.item}
-          onChange={(item) => setDraft((current) => ({ ...current, item }))}
-          testId="select-tool-type-wheel"
-          key={twoWheels ? draft.group : 'kit'}
-        />
+        <Wheel label={group} items={options.map((item) => item.label)} index={draft} onChange={setDraft} testId={`${testId}-wheel`}/>
       </div>
       <div className="date-wheel-actions">
         <button type="button" className="button button-outline" onClick={() => setOpen(false)}>Cancel</button>
-        <button type="button" className="button button-primary" onClick={() => { if (chosen) onChange(chosen.value); setOpen(false); }} data-testid="select-tool-category-done">Done</button>
+        <button type="button" className="button button-primary" onClick={() => { onChange(options[draft]!.value); setOpen(false); }} data-testid={`${testId}-done`}>Done</button>
       </div>
     </div>}
   </div>;

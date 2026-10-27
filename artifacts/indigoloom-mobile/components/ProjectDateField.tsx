@@ -48,15 +48,13 @@ export function formatProjectDate(
     : `${month}/${day}/${year.slice(-2)}`;
 }
 
-export function Wheel({ label, items, index, onChange, flex, testID, compact = false }: {
+export function Wheel({ label, items, index, onChange, flex, testID }: {
   label: string;
   items: string[];
   index: number;
   onChange: (index: number) => void;
   flex: number;
   testID: string;
-  // Smaller text for wheels with long names.
-  compact?: boolean;
 }) {
   const colors = useColors();
   const ref = useRef<ScrollView>(null);
@@ -103,7 +101,7 @@ export function Wheel({ label, items, index, onChange, flex, testID, compact = f
               <LoomText
                 serif={selected}
                 numberOfLines={1}
-                style={{ color: selected ? colors.foreground : colors.mutedForeground, fontSize: compact ? (selected ? 17 : 15) : (selected ? 21 : 17), opacity: selected ? 1 : Math.max(0.35, 1 - Math.abs(itemIndex - index) * 0.3) }}
+                style={{ color: selected ? colors.foreground : colors.mutedForeground, fontSize: selected ? 21 : 17, opacity: selected ? 1 : Math.max(0.35, 1 - Math.abs(itemIndex - index) * 0.3) }}
               >{item}</LoomText>
             </Pressable>
           );

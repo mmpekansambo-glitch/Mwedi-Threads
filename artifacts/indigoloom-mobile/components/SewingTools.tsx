@@ -78,14 +78,19 @@ export function categoryGroupsFor(section: SewingToolSection): Array<{ group: st
   return groups;
 }
 
-// The wheel shows each group's types A to Z, with Other as its own last group.
-export function wheelGroupsFor(section: SewingToolSection): Array<{ group: string; options: CategoryOption[] }> {
-  const groups = categoryGroupsFor(section).map(({ group, options }) => ({
-    group: section === 'kit' && group !== 'Other' ? 'Kit' : group,
-    options: [...options].sort((a, b) => a.label.localeCompare(b.label)),
-  }));
-  return [...groups.filter((item) => item.group !== 'Other'), ...groups.filter((item) => item.group === 'Other')];
+// One row per group, each with its types A to Z. Notions keep Other as a
+// last row of its own; Kit is one list with Other at the end.
+export function typeRowsFor(section: SewingToolSection): Array<{ group: string; options: CategoryOption[] }> {
+  const byLabel = (a: CategoryOption, b: CategoryOption) => a.label.localeCompare(b.label);
+  const other = categoryFor('other');
+  if (section === 'kit') return [{ group: 'Kit', options: [...toolCategories.filter((item) => item.section === 'kit').sort(byLabel), other] }];
+  return [
+    ...categoryGroupsFor(section).filter(({ group }) => group !== 'Other').map(({ group, options }) => ({ group, options: [...options].sort(byLabel) })),
+    { group: 'Other', options: [other] },
+  ];
 }
+
+const slug = (group: string) => group.toLowerCase().replace(/[^a-z]+/g, '-');
 
 export function categoryFor(category: SewingToolCategory): CategoryOption {
   return toolCategories.find((item) => item.value === category) ?? toolCategories[toolCategories.length - 1]!;
@@ -143,61 +148,68 @@ function Choices<T extends string>({ options, value, onChange, testID }: { optio
   );
 }
 
-// Type picker as scroll wheels like the date picker: group on the left and
-// its types A to Z on the right. Kit has one short list, so it gets one wheel
-// with Other at the end.
+// Each group keeps its heading with its own scroll wheel under it, like the
+// date picker. A tool has one type, so choosing in one group replaces the rest.
 function ToolTypeWheelField({ section, value, onChange }: { section: SewingToolSection; value: SewingToolCategory | ''; onChange: (value: SewingToolCategory) => void }) {
   const colors = useSewingColors();
-  const [isOpen, setIsOpen] = useState(false);
-  const [draft, setDraft] = useState({ group: 0, item: 0 });
-  const groups = wheelGroupsFor(section);
-  const kitItems = groups.flatMap(({ options }) => options);
-  const twoWheels = section === 'notions';
-  const openPicker = () => {
-    if (twoWheels) {
-      const group = Math.max(0, groups.findIndex(({ options }) => options.some((item) => item.value === value)));
-      setDraft({ group, item: Math.max(0, groups[group]!.options.findIndex((item) => item.value === value)) });
-    } else {
-      setDraft({ group: 0, item: Math.max(0, kitItems.findIndex((item) => item.value === value)) });
-    }
-    setIsOpen(true);
+  const [openRow, setOpenRow] = useState<{ group: string; options: CategoryOption[] } | null>(null);
+  const [draft, setDraft] = useState(0);
+  const rows = typeRowsFor(section);
+  const openPicker = (row: { group: string; options: CategoryOption[] }) => {
+    setDraft(Math.max(0, row.options.findIndex((item) => item.value === value)));
+    setOpenRow(row);
   };
-  const chosen = twoWheels ? groups[draft.group]?.options[draft.item] : kitItems[draft.item];
-  const shown = value ? (twoWheels ? `${categoryFor(value).group} · ${categoryFor(value).label}` : categoryFor(value).label) : '';
   return (
     <View style={styles.typeField}>
       <FormFieldLabel>Type *</FormFieldLabel>
-      <Pressable accessibilityRole="button" accessibilityLabel={`Type: ${shown || 'Choose a type'}`} onPress={openPicker} style={[styles.trigger, { backgroundColor: colors.card, borderColor: colors.input }]} testID="button-tool-category">
-        <Feather name={value ? categoryFor(value).icon : 'grid'} size={16} color={colors.primary} />
-        <LoomText numberOfLines={1} style={{ flex: 1, color: value ? colors.foreground : colors.mutedForeground, fontSize: 16 }}>{shown || 'Choose a type'}</LoomText>
-        <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
-      </Pressable>
-      <Modal visible={isOpen} transparent animationType="slide" onRequestClose={() => setIsOpen(false)}>
+      {rows.map((row) => {
+        const single = row.options.length === 1;
+        const chosenHere = row.options.find((item) => item.value === value);
+        const shown = single ? (chosenHere ? 'Other' : 'Not in the lists above') : chosenHere?.label ?? 'Choose';
+        return (
+          <View key={row.group} style={styles.typeRow}>
+            <LoomText style={[styles.typeGroup, { color: colors.mutedForeground }]}>{row.group}</LoomText>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${row.group}: ${shown}`}
+              accessibilityState={{ selected: Boolean(chosenHere) }}
+              onPress={() => (single ? onChange(row.options[0]!.value) : openPicker(row))}
+              style={[styles.trigger, { backgroundColor: colors.card, borderColor: chosenHere ? colors.primary : colors.input, borderWidth: chosenHere ? 2 : 1 }]}
+              testID={`button-tool-type-${slug(row.group)}`}
+            >
+              <Feather name={chosenHere ? chosenHere.icon : single ? 'box' : 'grid'} size={16} color={colors.primary} />
+              <LoomText numberOfLines={1} style={{ flex: 1, color: chosenHere ? colors.foreground : colors.mutedForeground, fontSize: 16 }}>{shown}</LoomText>
+              {single ? null : <Feather name="chevron-down" size={16} color={colors.mutedForeground} />}
+            </Pressable>
+          </View>
+        );
+      })}
+      <Modal visible={openRow !== null} transparent animationType="slide" onRequestClose={() => setOpenRow(null)}>
         <View style={styles.modalBackdrop}>
-          <Pressable accessibilityLabel="Close type picker" onPress={() => setIsOpen(false)} style={StyleSheet.absoluteFill} />
+          <Pressable accessibilityLabel="Close type picker" onPress={() => setOpenRow(null)} style={StyleSheet.absoluteFill} />
           <View style={[styles.sheet, { backgroundColor: colors.card }]}>
             <View style={styles.sheetHeading}>
-              <Pressable accessibilityRole="button" onPress={() => setIsOpen(false)} style={styles.headingButton}>
+              <Pressable accessibilityRole="button" onPress={() => setOpenRow(null)} style={styles.headingButton}>
                 <LoomText style={{ color: colors.mutedForeground, fontSize: 16 }}>Cancel</LoomText>
               </Pressable>
-              <LoomText serif style={{ color: colors.foreground, fontSize: 20 }}>Type</LoomText>
-              <Pressable accessibilityRole="button" onPress={() => { if (chosen) onChange(chosen.value); setIsOpen(false); }} style={styles.headingButton} testID="button-tool-category-done">
+              <LoomText serif style={{ color: colors.foreground, fontSize: 20 }}>{openRow?.group ?? ''}</LoomText>
+              <Pressable accessibilityRole="button" onPress={() => { const chosen = openRow?.options[draft]; if (chosen) onChange(chosen.value); setOpenRow(null); }} style={styles.headingButton} testID="button-tool-type-done">
                 <LoomText style={{ color: colors.primary, fontFamily: fonts.semibold, fontSize: 16, textAlign: 'right' }}>Done</LoomText>
               </Pressable>
             </View>
             <View style={[styles.wheels, { backgroundColor: colors.selectedWash }]}>
               <View pointerEvents="none" style={[styles.wheelBand, { borderColor: colors.accent }]} />
-              {twoWheels ? <Wheel label="Group" items={groups.map(({ group }) => group)} index={draft.group} onChange={(group) => setDraft({ group, item: 0 })} flex={1} compact testID="wheel-tool-group" /> : null}
-              <Wheel
-                key={twoWheels ? draft.group : 'kit'}
-                label="Type"
-                items={(twoWheels ? groups[draft.group]?.options ?? [] : kitItems).map((item) => item.label)}
-                index={draft.item}
-                onChange={(item) => setDraft((current) => ({ ...current, item }))}
-                flex={1.25}
-                compact
-                testID="wheel-tool-type"
-              />
+              {openRow ? (
+                <Wheel
+                  key={openRow.group}
+                  label={openRow.group}
+                  items={openRow.options.map((item) => item.label)}
+                  index={draft}
+                  onChange={setDraft}
+                  flex={1}
+                  testID="wheel-tool-type"
+                />
+              ) : null}
             </View>
           </View>
         </View>
@@ -384,6 +396,8 @@ const styles = StyleSheet.create({
   notes: { minHeight: 90, textAlignVertical: 'top' },
   row: { flexDirection: 'row', gap: 10 },
   choices: { gap: 7, paddingBottom: 14 },
+  typeRow: { marginTop: 8 },
+  typeGroup: { fontSize: 12, fontFamily: fonts.semibold, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 4 },
   typeField: { marginBottom: 14 },
   trigger: { minHeight: 46, borderRadius: 9, borderWidth: 1, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 10 },
   modalBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(31, 47, 22, 0.42)' },
