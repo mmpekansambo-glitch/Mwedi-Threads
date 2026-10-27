@@ -3,9 +3,10 @@ import { useLocation } from 'wouter';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 // PLAN.md palette: Granite for the bars, Blue Slate for axis text, Lavender for the grid.
-const barColor = '#395B50';
-const axisColor = '#5A7684';
-const gridColor = '#C5D1EB';
+// They're CSS variables so dark mode can swap them (see index.css).
+const barColor = 'var(--granite)';
+const axisColor = 'var(--slate)';
+const gridColor = 'var(--chart-grid)';
 
 const statusLabels: Record<ProjectStatus, string> = {
   planning: 'Planning', in_progress: 'In progress', paused: 'On pause', completed: 'Finished',
