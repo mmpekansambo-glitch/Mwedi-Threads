@@ -60,7 +60,7 @@ function ClassicTabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: colors.primary,
+        tabBarActiveTintColor: colors.primaryText,
         tabBarInactiveTintColor: colors.mutedForeground,
         headerShown: true,
         headerStyle: { backgroundColor: colors.card },

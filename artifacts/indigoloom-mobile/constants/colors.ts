@@ -39,6 +39,7 @@ const colors = {
     warningText: '#694b4b',
     accentIcon: '#395B50',
     quietButton: '#C5D1EB',
+    primaryText: '#395B50',
     swatchRing: 'rgba(31,47,22,0.18)',
     chartBar: '#395B50',
     chartBarSelected: '#92AFD7',
@@ -89,6 +90,7 @@ const colors = {
     warningText: '#F0CBC4',
     accentIcon: '#182126',
     quietButton: '#33424A',
+    primaryText: '#92AFD7',
     swatchRing: 'rgba(228,234,245,0.4)',
     chartBar: '#92AFD7',
     chartBarSelected: '#C5D1EB',
@@ -102,7 +104,8 @@ const colors = {
     statFinishedInk: '#C5D1EB',
   },
 
-  // The Sewing room's own look: mauve, in both light and dark.
+  // The Sewing room's own look: mauve, in both light and dark. Fills use
+  // primary and accent; mauve words and icons use primaryText.
   sewing: {
     light: {
       background: '#E4DEEF',
@@ -114,12 +117,17 @@ const colors = {
       accent: '#B7A3D9',
       accentForeground: '#1F2F16',
       accentIcon: '#6B5791',
+      primaryText: '#6B5791',
     },
+    // Dusky mauve: the paler #B7A3D9 looked too bright at night.
     dark: {
-      primary: '#B7A3D9',
-      tint: '#B7A3D9',
-      accent: '#B7A3D9',
-      accentForeground: '#182126',
+      primary: '#7A6898',
+      primaryForeground: '#F1EDF7',
+      primaryText: '#A595C2',
+      tint: '#A595C2',
+      accent: '#7A6898',
+      accentForeground: '#F1EDF7',
+      accentIcon: '#F1EDF7',
     },
   },
 

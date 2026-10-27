@@ -151,7 +151,7 @@ export function FabricForm({ fabric }: { fabric?: StashFabric }) {
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <View style={[styles.nav, { paddingTop: insets.top + 9, borderBottomColor: colors.border }]}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={() => router.back()} style={styles.navButton}><Feather name="arrow-left" size={19} color={colors.primary} /></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={() => router.back()} style={styles.navButton}><Feather name="arrow-left" size={19} color={colors.primaryText} /></Pressable>
         <LoomText numberOfLines={1} style={[styles.navTitle, { color: colors.foreground }]}>{fabric ? fabricName(fabric) : 'Add fabric'}</LoomText>
         {fabric ? <Pressable accessibilityRole="button" accessibilityLabel="Delete fabric" onPress={() => setConfirmDelete(true)} style={styles.navButton} testID="button-delete-fabric"><Feather name="trash-2" size={18} color={colors.destructive} /></Pressable> : <View style={styles.navButton} />}
       </View>
@@ -169,7 +169,7 @@ export function FabricForm({ fabric }: { fabric?: StashFabric }) {
         <View style={[styles.formCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <FormFieldLabel>Print close-up *</FormFieldLabel>
           <Pressable accessibilityRole="button" accessibilityLabel={main ? 'Change the print close-up' : 'Add a close-up of the print'} onPress={() => { void pickPhotos(Boolean(main)); }} style={[styles.mainPhoto, { borderColor: colors.input, backgroundColor: colors.selectedWash }]} testID="button-fabric-photo-main">
-            {main ? photoView(main, styles.photo) : <View style={styles.photoEmpty}><Feather name="camera" size={24} color={colors.primary} /><LoomText style={{ color: colors.primary, fontFamily: fonts.semibold, textAlign: 'center' }}>Add a close-up of the print</LoomText></View>}
+            {main ? photoView(main, styles.photo) : <View style={styles.photoEmpty}><Feather name="camera" size={24} color={colors.primaryText} /><LoomText style={{ color: colors.primaryText, fontFamily: fonts.semibold, textAlign: 'center' }}>Add a close-up of the print</LoomText></View>}
           </Pressable>
           {main ? (
             <>
@@ -183,8 +183,8 @@ export function FabricForm({ fabric }: { fabric?: StashFabric }) {
                 ))}
                 {photos.length < maxFabricPhotos ? (
                   <Pressable accessibilityRole="button" accessibilityLabel="Add more photos" onPress={() => { void pickPhotos(false); }} style={[styles.extra, styles.addExtra, { borderColor: colors.input, backgroundColor: colors.selectedWash }]} testID="button-fabric-photo-more">
-                    <Feather name="plus" size={18} color={colors.primary} />
-                    <LoomText style={{ color: colors.primary, fontFamily: fonts.semibold, fontSize: 13 }}>Add</LoomText>
+                    <Feather name="plus" size={18} color={colors.primaryText} />
+                    <LoomText style={{ color: colors.primaryText, fontFamily: fonts.semibold, fontSize: 13 }}>Add</LoomText>
                   </Pressable>
                 ) : null}
               </View>
