@@ -88,9 +88,9 @@ export function stashTablesSql(isolatedSchema: string): string {
       created_at timestamptz NOT NULL DEFAULT now(),
       resolved_at timestamptz
     );
-    CREATE TYPE ${isolatedSchema}.fabric_type AS ENUM ('cotton', 'linen', 'jersey', 'denim', 'silk', 'wool', 'polyester', 'blend', 'other');
+    CREATE TYPE ${isolatedSchema}.fabric_type AS ENUM ('cotton', 'linen', 'jersey', 'denim', 'silk', 'wool', 'polyester', 'blend', 'other', 'canvas', 'chambray', 'chiffon', 'corduroy', 'crepe', 'flannel', 'fleece', 'french_terry', 'rib_knit', 'satin', 'tulle', 'velvet', 'viscose');
     CREATE TYPE ${isolatedSchema}.fabric_construction AS ENUM ('woven', 'knit');
-    CREATE TYPE ${isolatedSchema}.fabric_print AS ENUM ('solid', 'floral', 'stripe', 'check', 'dots', 'geometric', 'abstract', 'animal', 'novelty');
+    CREATE TYPE ${isolatedSchema}.fabric_print AS ENUM ('solid', 'floral', 'stripe', 'check', 'dots', 'geometric', 'abstract', 'animal', 'novelty', 'ankara', 'batik', 'botanical', 'camo', 'chevron', 'damask', 'houndstooth', 'ikat', 'ombre', 'paisley', 'tie_dye', 'toile', 'other');
     CREATE TYPE ${isolatedSchema}.fabric_unit AS ENUM ('meters', 'yards');
     CREATE TABLE ${isolatedSchema}.stash_fabrics (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -105,6 +105,59 @@ export function stashTablesSql(isolatedSchema: string): string {
       brand text,
       notes text,
       photo_paths text[] NOT NULL DEFAULT '{}'::text[],
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now()
+    );
+  `;
+}
+
+// The Sewing room project tables. Needs stash_fabrics and the project_status type.
+export function sewingTablesSql(isolatedSchema: string): string {
+  return `
+    CREATE TYPE ${isolatedSchema}.sewing_stage AS ENUM ('prep', 'cut', 'sew', 'fit', 'finish');
+    CREATE TABLE ${isolatedSchema}.sewing_projects (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL REFERENCES ${isolatedSchema}.users(id) ON DELETE CASCADE,
+      title text NOT NULL,
+      status ${isolatedSchema}.project_status NOT NULL DEFAULT 'planning',
+      stage ${isolatedSchema}.sewing_stage NOT NULL DEFAULT 'prep',
+      pattern_name text,
+      pattern_designer text,
+      size_made text,
+      fit_changes text,
+      notes text,
+      completed_at date,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now()
+    );
+    CREATE TABLE ${isolatedSchema}.sewing_project_fabrics (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      project_id uuid NOT NULL REFERENCES ${isolatedSchema}.sewing_projects(id) ON DELETE CASCADE,
+      stash_fabric_id uuid NOT NULL REFERENCES ${isolatedSchema}.stash_fabrics(id) ON DELETE CASCADE,
+      amount_used double precision,
+      position integer NOT NULL DEFAULT 0
+    );
+  `;
+}
+
+export function sewingToolsSql(isolatedSchema: string): string {
+  return `
+    CREATE TYPE ${isolatedSchema}.sewing_tool_section AS ENUM ('notions', 'kit');
+    CREATE TYPE ${isolatedSchema}.sewing_tool_category AS ENUM (
+      'zip', 'button', 'snap', 'hook_and_eye', 'hook_and_loop', 'magnetic_clasp', 'toggle', 'elastic', 'bias_tape', 'ribbon', 'lace', 'piping', 'cord', 'twill_tape', 'buckle', 'd_ring', 'eyelet', 'rivet', 'interfacing', 'boning', 'batting', 'stabilizer', 'fusible_web', 'thread', 'label', 'machine', 'presser_foot', 'needle', 'scissors', 'ruler', 'other'
+    );
+    CREATE TABLE ${isolatedSchema}.sewing_tools (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL REFERENCES ${isolatedSchema}.users(id) ON DELETE CASCADE,
+      section ${isolatedSchema}.sewing_tool_section NOT NULL,
+      category ${isolatedSchema}.sewing_tool_category NOT NULL,
+      name text NOT NULL,
+      quantity integer,
+      size text,
+      color text,
+      brand text,
+      notes text,
+      photo_path text,
       created_at timestamptz NOT NULL DEFAULT now(),
       updated_at timestamptz NOT NULL DEFAULT now()
     );

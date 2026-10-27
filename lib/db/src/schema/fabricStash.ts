@@ -20,6 +20,19 @@ export const fabricTypeEnum = pgEnum("fabric_type", [
   "polyester",
   "blend",
   "other",
+  "canvas",
+  "chambray",
+  "chiffon",
+  "corduroy",
+  "crepe",
+  "flannel",
+  "fleece",
+  "french_terry",
+  "rib_knit",
+  "satin",
+  "tulle",
+  "velvet",
+  "viscose",
 ]);
 
 export const fabricConstructionEnum = pgEnum("fabric_construction", ["woven", "knit"]);
@@ -34,6 +47,19 @@ export const fabricPrintEnum = pgEnum("fabric_print", [
   "abstract",
   "animal",
   "novelty",
+  "ankara",
+  "batik",
+  "botanical",
+  "camo",
+  "chevron",
+  "damask",
+  "houndstooth",
+  "ikat",
+  "ombre",
+  "paisley",
+  "tie_dye",
+  "toile",
+  "other",
 ]);
 
 // Meters go with centimetre widths, yards with inch widths.

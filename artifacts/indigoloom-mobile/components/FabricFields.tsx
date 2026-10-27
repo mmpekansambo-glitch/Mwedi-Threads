@@ -4,15 +4,29 @@ import { Image } from 'expo-image';
 import { View, type ImageStyle, type StyleProp, type ViewStyle } from 'react-native';
 import type { FabricConstruction, FabricPrint, FabricType, FabricUnit, StashFabric } from '@workspace/api-client-react';
 
+// A to Z with Other last.
 export const fabricTypes: Array<{ value: FabricType; label: string }> = [
-  { value: 'cotton', label: 'Cotton' },
-  { value: 'linen', label: 'Linen' },
-  { value: 'jersey', label: 'Jersey' },
-  { value: 'denim', label: 'Denim' },
-  { value: 'silk', label: 'Silk' },
-  { value: 'wool', label: 'Wool' },
-  { value: 'polyester', label: 'Polyester' },
   { value: 'blend', label: 'Blend' },
+  { value: 'canvas', label: 'Canvas' },
+  { value: 'chambray', label: 'Chambray' },
+  { value: 'chiffon', label: 'Chiffon' },
+  { value: 'corduroy', label: 'Corduroy' },
+  { value: 'cotton', label: 'Cotton' },
+  { value: 'crepe', label: 'Crepe' },
+  { value: 'denim', label: 'Denim' },
+  { value: 'flannel', label: 'Flannel' },
+  { value: 'fleece', label: 'Fleece' },
+  { value: 'french_terry', label: 'French terry' },
+  { value: 'jersey', label: 'Jersey' },
+  { value: 'linen', label: 'Linen' },
+  { value: 'polyester', label: 'Polyester' },
+  { value: 'rib_knit', label: 'Rib knit' },
+  { value: 'satin', label: 'Satin' },
+  { value: 'silk', label: 'Silk' },
+  { value: 'tulle', label: 'Tulle' },
+  { value: 'velvet', label: 'Velvet' },
+  { value: 'viscose', label: 'Viscose (rayon)' },
+  { value: 'wool', label: 'Wool' },
   { value: 'other', label: 'Other' },
 ];
 
@@ -21,16 +35,30 @@ export const fabricConstructions: Array<{ value: FabricConstruction; label: stri
   { value: 'knit', label: 'Knit' },
 ];
 
+// A to Z, so the print wheel and filters are easy to scan.
 export const fabricPrints: Array<{ value: FabricPrint; label: string }> = [
-  { value: 'solid', label: 'Solid' },
-  { value: 'floral', label: 'Floral' },
-  { value: 'stripe', label: 'Stripe' },
-  { value: 'check', label: 'Check or plaid' },
-  { value: 'dots', label: 'Dots' },
-  { value: 'geometric', label: 'Geometric' },
   { value: 'abstract', label: 'Abstract' },
   { value: 'animal', label: 'Animal' },
+  { value: 'ankara', label: 'Ankara (wax print)' },
+  { value: 'batik', label: 'Batik' },
+  { value: 'botanical', label: 'Botanical' },
+  { value: 'camo', label: 'Camo' },
+  { value: 'check', label: 'Check or plaid' },
+  { value: 'chevron', label: 'Chevron' },
+  { value: 'damask', label: 'Damask' },
+  { value: 'dots', label: 'Dots' },
+  { value: 'floral', label: 'Floral' },
+  { value: 'geometric', label: 'Geometric' },
+  { value: 'houndstooth', label: 'Houndstooth' },
+  { value: 'ikat', label: 'Ikat' },
   { value: 'novelty', label: 'Novelty' },
+  { value: 'ombre', label: 'Ombré' },
+  { value: 'paisley', label: 'Paisley' },
+  { value: 'solid', label: 'Solid' },
+  { value: 'stripe', label: 'Stripe' },
+  { value: 'tie_dye', label: 'Tie-dye' },
+  { value: 'toile', label: 'Toile' },
+  { value: 'other', label: 'Other' },
 ];
 
 // Meters go with centimeter widths, yards with inch widths.

@@ -1,6 +1,6 @@
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
-export type StatDoodleKind = 'yarn' | 'hook' | 'square';
+export type StatDoodleKind = 'yarn' | 'hook' | 'square' | 'spool' | 'scissors' | 'swatch';
 
 export function StatDoodle({ kind, color, size = 52 }: { kind: StatDoodleKind; color: string; size?: number }) {
   const stroke = { stroke: color, strokeWidth: 2.6, fill: 'none', strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
@@ -21,6 +21,20 @@ export function StatDoodle({ kind, color, size = 52 }: { kind: StatDoodleKind; c
         <Rect x={24} y={24} width={32} height={32} rx={3} {...stroke} />
         <Circle cx={40} cy={40} r={6} {...stroke} />
         <Path d="M12 30h6M12 50h6M62 30h6M62 50h6M30 12v6M50 12v6M30 62v6M50 62v6" {...stroke} />
+      </>}
+      {kind === 'spool' && <>
+        <Path d="M22 16h36M22 64h36M28 16v48M52 16v48" {...stroke} />
+        <Path d="M28 26l24 6M28 36l24 6M28 46l24 6M28 56l24-2" {...stroke} />
+        <Path d="M52 30c8 2 12 10 8 18" {...stroke} />
+      </>}
+      {kind === 'scissors' && <>
+        <Circle cx={22} cy={58} r={8} {...stroke} />
+        <Circle cx={42} cy={64} r={8} {...stroke} />
+        <Path d="M27 52 64 14M38 57 50 28M50 28c4-6 8-10 14-14" {...stroke} />
+      </>}
+      {kind === 'swatch' && <>
+        <Path d="M14 20h52v40H14z" {...stroke} />
+        <Path d="M14 20l6 6-6 6 6 6-6 6 6 6-6 6M30 32c6 4 12 4 18 0M30 46c6 4 12 4 18 0" {...stroke} />
       </>}
     </Svg>
   );

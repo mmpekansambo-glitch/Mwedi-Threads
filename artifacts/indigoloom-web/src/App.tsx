@@ -15,14 +15,18 @@ import {
   useGetCatalogReviewAccess, useGetCatalogReviews, useGetStashYarnReviews, useResolveCatalogReview,
   requestFabricPhotoUpload, useCreateStashFabric, useDeleteStashFabric, useGetMyCrafts, useGetStashFabric, useGetStashFabrics, useUpdateMyCrafts, useUpdateStashFabric,
   getGetMyCraftsQueryKey, getGetStashFabricQueryKey, getGetStashFabricsQueryKey,
+  useCreateSewingProject, useDeleteSewingProject, useGetSewingOverview, useGetSewingProject, useGetSewingProjects, useUpdateSewingProject,
+  getGetSewingOverviewQueryKey, getGetSewingProjectQueryKey, getGetSewingProjectsQueryKey,
+  requestSewingToolPhotoUpload, useCreateSewingTool, useDeleteSewingTool, useGetSewingTool, useGetSewingTools, useUpdateSewingTool,
+  getGetSewingToolQueryKey, getGetSewingToolsQueryKey,
 } from '@workspace/api-client-react';
 import { CrochetHookSize, KnittingNeedleSize, NeedleCableLength } from '@workspace/api-client-react';
-import type { CatalogField, CatalogReview, CreateProject, CreateProgress, Crafts, FabricConstruction, FabricPrint, FabricType, FabricUnit, GeneralColor, Project, ProjectStatus, StashFabric, StashYarn, UpdateProject, YarnWeight } from '@workspace/api-client-react';
+import type { CatalogField, CatalogReview, CreateProject, CreateProgress, Crafts, FabricConstruction, FabricPrint, FabricType, FabricUnit, GeneralColor, Project, ProjectStatus, SewingProject, SewingStage, SewingTool, SewingToolCategory, SewingToolSection, StashFabric, StashYarn, UpdateProject, YarnWeight } from '@workspace/api-client-react';
 import { FormProvider as Form, useForm, type UseFormReturn } from 'react-hook-form';
 import {
   ArrowLeft, ArrowRight, ArrowUpDown, ArrowUpRight, BookOpen, Check,
   Camera, ChevronDown, ChevronUp, CircleHelp, Feather, Filter, Flower2,
-  Layers3, LogOut, Menu, Palette, Plus, Scissors, Search, Sparkles, Star, Trash2,
+  Layers3, LogOut, Menu, Palette, Plus, Scissors, Search, Sparkles, Spool, Star, Trash2,
   X,
 } from 'lucide-react';
 import { projectSorts, sortProjects, sortStash, stashSorts, useSavedSort } from './lib/sorting';
@@ -30,7 +34,7 @@ import {
   Link, Redirect, Route, Switch, useLocation, useSearch, Router as WouterRouter,
 } from 'wouter';
 import { StatDoodle } from '@/components/stat-doodles';
-import { DateWheelField as ProjectDateField } from '@/components/date-wheel-field';
+import { DateWheelField as ProjectDateField, formatWheelDate } from '@/components/date-wheel-field';
 import {
   ProgressAmountField, ProgressMethodFields, amountDraftFor, defaultProgressSettings, progressAmountForApi,
   progressDetail, progressSettingsError, progressSettingsForApi, progressSettingsFromProject,
@@ -50,8 +54,10 @@ import { ProjectCounter } from '@/components/project-counter';
 import { NameReviewButton, NameReviewForm, NameReviewList, catalogFieldLabels } from '@/components/name-review';
 import { ErrorBoundary } from '@/components/error-boundary';
 import {
-  fabricConstructions, fabricName, fabricPhotoUrl, fabricPrints, fabricSize, fabricTypes, fabricUnits, labelFor, maxFabricPhotos, sizeForApi,
+  fabricConstructions, fabricName, fabricPhotoUrl, fabricPrints, fabricSize, fabricTypes, fabricUnits, labelFor, maxFabricPhotos, sizeForApi, OptionWheelField,
 } from '@/components/fabric-fields';
+import { StageTrack, amountLeft, fabricAmount, sewingStages, stageIndex } from '@/components/sewing-fields';
+import { ToolThumb, ToolTypeWheelField, categoryFor, quantityForApi, toolDetails, toolPhotoUrl, toolSections } from '@/components/sewing-tools';
 import { trackEvent, trackSuccessfulAction } from '@/lib/analytics';
 import { Toaster } from '@/components/ui/toaster';
 import { useAppearance, type AppearanceChoice } from '@/hooks/use-appearance';
@@ -251,7 +257,7 @@ function LoadingScreen({ label = 'Gathering your projects…' }: { label?: strin
 }
 
 type Craft = 'yarn' | 'sewing';
-const homePaths: Record<Craft, string> = { yarn: '/dashboard', sewing: '/sewing/fabric' };
+const homePaths: Record<Craft, string> = { yarn: '/dashboard', sewing: '/sewing' };
 
 // If the craft switches can't be read, every page opens as it did before the
 // Sewing room, with yarn on, instead of waiting or locking the maker out.
@@ -315,7 +321,8 @@ function CraftChoicePage() {
   </div>;
 }
 
-const portalTitles = { dashboard: 'Overview', projects: 'My projects', stash: 'Yarn stash', reviews: 'Name reviews', fabric: 'Fabric stash' };
+const portalTitles = { dashboard: 'Overview', projects: 'My projects', stash: 'Yarn stash', reviews: 'Name reviews', sewing: 'Overview', sewingProjects: 'Projects', fabric: 'Fabric stash', tools: 'Tools' };
+const sewingPages = new Set<keyof typeof portalTitles>(['sewing', 'sewingProjects', 'fabric', 'tools']);
 const homeNames: Record<Craft, string> = { yarn: 'Yarn studio', sewing: 'Sewing room' };
 
 function PortalLayout({ children, active }: { children: ReactNode; active: keyof typeof portalTitles }) {
@@ -327,7 +334,7 @@ function PortalLayout({ children, active }: { children: ReactNode; active: keyof
   const reviewAccess = useGetCatalogReviewAccess({ query: { queryKey: getGetCatalogReviewAccessQueryKey(), staleTime: 5 * 60 * 1000 } });
   const crafts = useCrafts().data;
   const appearance = useAppearance();
-  const home: Craft = active === 'fabric' ? 'sewing' : 'yarn';
+  const home: Craft = sewingPages.has(active) ? 'sewing' : 'yarn';
   return <div className={`portal-shell home-${home}`}>
     <aside className={`side-rail ${mobileOpen ? 'mobile-open' : ''}`}>
       <div className="rail-brand"><Brand light/><button className="rail-close" type="button" onClick={() => setMobileOpen(false)} aria-label="Close navigation" data-testid="button-close-navigation"><X size={19}/></button></div>
@@ -341,7 +348,10 @@ function PortalLayout({ children, active }: { children: ReactNode; active: keyof
           <Link href="/stash" className={`rail-link ${active === 'stash' ? 'selected' : ''}`} data-testid="link-stash"><Palette size={18}/><span>Yarn stash</span></Link>
           {reviewAccess.data?.reviewer && <Link href="/reviews" className={`rail-link ${active === 'reviews' ? 'selected' : ''}`} data-testid="link-reviews"><CircleHelp size={18}/><span>Name reviews</span></Link>}
         </> : <>
+          <Link href="/sewing" className={`rail-link ${active === 'sewing' ? 'selected' : ''}`} data-testid="link-sewing-overview"><Layers3 size={18}/><span>Overview</span></Link>
+          <Link href="/sewing/projects" className={`rail-link ${active === 'sewingProjects' ? 'selected' : ''}`} data-testid="link-sewing-projects"><BookOpen size={18}/><span>Projects</span></Link>
           <Link href="/sewing/fabric" className={`rail-link ${active === 'fabric' ? 'selected' : ''}`} data-testid="link-fabric"><Scissors size={18}/><span>Fabric stash</span></Link>
+          <Link href="/sewing/tools" className={`rail-link ${active === 'tools' ? 'selected' : ''}`} data-testid="link-tools"><Spool size={18}/><span>Tools</span></Link>
         </>}
       </nav>
       <div className="rail-bottom"><ProfileMenu initials={initials} displayName={displayName} crafts={crafts} appearance={appearance} onSignOut={() => signOut({ redirectUrl: basePath || '/' })}/></div>
@@ -1478,9 +1488,9 @@ function FabricForm({ fabric }: { fabric?: StashFabric }) {
         {errors.photo && <span className="field-error field-wide">{errors.photo}</span>}
       </div>
       <div className="form-grid">
-        <div className="field-block"><label htmlFor="fabric-type">Fabric type <b>*</b></label><select id="fabric-type" value={draft.fabricType} onChange={(event) => { set({ fabricType: event.target.value as FabricType }); setErrors(({ type: _type, ...rest }) => rest); }} data-testid="select-fabric-type"><option value="">Choose a type</option>{fabricTypes.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select>{errors.type && <span className="field-error">{errors.type}</span>}</div>
+        <OptionWheelField id="fabric-type" label="Fabric type" required options={fabricTypes} value={draft.fabricType} onChange={(fabricType) => { set({ fabricType }); setErrors(({ type: _type, ...rest }) => rest); }} icon={Layers3} placeholder="Choose a type" testId="select-fabric-type" error={errors.type}/>
         <div className="field-block"><label id="fabric-construction-label">Woven or knit</label><div className="segmented" role="radiogroup" aria-labelledby="fabric-construction-label">{fabricConstructions.map((item) => <button key={item.value} type="button" role="radio" aria-checked={draft.construction === item.value} className={draft.construction === item.value ? 'selected' : ''} onClick={() => set({ construction: draft.construction === item.value ? null : item.value })} data-testid={`button-construction-${item.value}`}>{item.label}</button>)}</div></div>
-        <div className="field-block"><label htmlFor="fabric-print">Print</label><select id="fabric-print" value={draft.print} onChange={(event) => set({ print: event.target.value as FabricPrint | '' })} data-testid="select-fabric-print"><option value="">Choose a print</option>{fabricPrints.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></div>
+        <OptionWheelField id="fabric-print" label="Print" options={fabricPrints} value={draft.print} onChange={(print) => set({ print })} icon={Sparkles} placeholder="Choose a print" testId="select-fabric-print"/>
         <div className="field-block"><label id="fabric-unit-label">Measured in</label><div className="segmented" role="radiogroup" aria-labelledby="fabric-unit-label">{fabricUnits.map((item) => <button key={item.value} type="button" role="radio" aria-checked={draft.unit === item.value} className={draft.unit === item.value ? 'selected' : ''} onClick={() => set({ unit: item.value })} data-testid={`button-unit-${item.value}`}>{item.label}</button>)}</div></div>
         <GeneralColorPicker value={draft.generalColor} onChange={(generalColor) => set({ generalColor })}/>
         <div className="field-block"><label htmlFor="fabric-amount">Amount</label><span className="input-with-unit"><input id="fabric-amount" inputMode="decimal" placeholder="e.g. 2.5" value={draft.amount} onChange={(event) => { set({ amount: event.target.value }); setErrors(({ size: _size, ...rest }) => rest); }} data-testid="input-fabric-amount"/><i>{unit.amount}</i></span></div>
@@ -1491,6 +1501,457 @@ function FabricForm({ fabric }: { fabric?: StashFabric }) {
       </div>
       {errors.save && <p className="mutation-error" role="alert">{errors.save}</p>}
       <div className="form-actions"><Link href="/sewing/fabric" className="button button-quiet">Cancel</Link><button type="submit" className="button button-primary" disabled={saving} data-testid="button-save-fabric">{saving ? 'Saving…' : fabric ? 'Save changes' : 'Add to stash'}{!saving && <ArrowRight size={16}/>}</button></div>
+    </form>
+  </PortalLayout>;
+}
+
+function SewingProjectCard({ project }: { project: SewingProject }) {
+  const first = project.fabrics[0]?.fabric;
+  return <Link href={`/sewing/projects/${project.id}`} className="sewing-card loom-card lift" data-testid={`card-sewing-project-${project.id}`}>
+    <span className="sewing-card-swatch">{first ? <img src={fabricPhotoUrl(first, 0)} alt={`${fabricName(first)} print`} loading="lazy"/> : <Scissors size={26} aria-hidden="true"/>}</span>
+    <span className="sewing-card-body">
+      <span className="project-card-meta"><StatusPill status={project.status}/></span>
+      <h3>{project.title}</h3>
+      {(project.patternName || project.sizeMade) && <span className="sewing-card-meta">{[project.patternName, project.sizeMade && `Size ${project.sizeMade}`].filter(Boolean).join(' · ')}</span>}
+      <StageTrack project={project} compact/>
+    </span>
+  </Link>;
+}
+
+function EmptySewingProjects({ compact = false }: { compact?: boolean }) {
+  return <div className={`empty-projects ${compact ? 'empty-compact' : ''}`}><h3>No sewing projects yet</h3><p>Start a project to track it from prep to finish.</p><Link href="/sewing/projects/new" className="button button-primary" data-testid="link-create-first-sewing-project"><Plus size={16}/> Start a project</Link></div>;
+}
+
+function SewingOverviewPage() {
+  const query = useGetSewingOverview({ query: { queryKey: getGetSewingOverviewQueryKey() } });
+  const data = query.data;
+  const { user } = useUser();
+  const name = user?.firstName || 'maker';
+  return <PortalLayout active="sewing">
+    <PageHeading title={<>Hi, {name}</>} action={<Link href="/sewing/projects/new" className="button button-primary" data-testid="link-new-sewing-project"><Plus size={17}/> New project</Link>}/>
+    {query.isLoading ? <div className="dashboard-loading"><div className="stat-skeleton"/><div className="stat-skeleton"/><div className="stat-skeleton"/></div> : query.isError || !data ? <QueryProblem retry={() => query.refetch()}/> : <>
+      <section className="stat-row" aria-label="Sewing totals">
+        <Link href="/sewing/projects?status=in_progress" className="stat-card stat-card-active" data-testid="link-sewing-stat-in-progress"><span className="stat-label">In progress</span><strong>{data.inProgress}</strong><StatDoodle kind="spool"/></Link>
+        <Link href="/sewing/projects?status=completed" className="stat-card stat-card-finished" data-testid="link-sewing-stat-finished"><span className="stat-label">Finished</span><strong>{data.finished}</strong><StatDoodle kind="scissors"/></Link>
+        <Link href="/sewing/fabric" className="stat-card stat-card-all" data-testid="link-sewing-stat-fabric"><span className="stat-label">Fabric pieces</span><strong>{data.fabricPieces}</strong>{data.fabricPieces > 0 && <span className="stat-detail" data-testid="text-fabric-length">{fabricAmount(data.fabricLength, data.fabricUnit)} in your stash</span>}<StatDoodle kind="swatch"/></Link>
+      </section>
+      <section className="stage-board loom-card" aria-labelledby="stage-board-title">
+        <h2 className="serif" id="stage-board-title">Projects by stage</h2>
+        <ol className="stage-board-steps">
+          {data.stages.map((entry) => <li key={entry.stage} className={entry.count ? 'has-projects' : ''} data-testid={`stage-count-${entry.stage}`}><strong>{entry.count}</strong><span>{labelFor(sewingStages, entry.stage)}</span></li>)}
+        </ol>
+      </section>
+      <section className="dashboard-work">
+        <div className="section-heading"><div><h2 className="serif">Recent projects</h2></div><Link href="/sewing/projects" className="quiet-link" data-testid="link-view-all-sewing-projects">All projects <ArrowRight size={15}/></Link></div>
+        {data.recentProjects.length ? <div className="sewing-card-grid">{data.recentProjects.slice(0, 3).map((project) => <SewingProjectCard key={project.id} project={project}/>)}</div> : <EmptySewingProjects compact/>}
+      </section>
+    </>}
+  </PortalLayout>;
+}
+
+function SewingProjectsPage() {
+  const [search, setSearch] = useState('');
+  const [, setLocation] = useLocation();
+  const urlStatus = new URLSearchParams(useSearch()).get('status') ?? '';
+  const status = projectStatuses.includes(urlStatus as ProjectStatus) ? urlStatus : '';
+  const setStatus = (value: string) => setLocation(value ? `/sewing/projects?status=${value}` : '/sewing/projects', { replace: true });
+  const params = {
+    ...(search.trim() ? { search: search.trim() } : {}),
+    ...(status ? { status: status as ProjectStatus } : {}),
+  };
+  const clearFilters = () => { setSearch(''); setStatus(''); };
+  const query = useGetSewingProjects(params, { query: { queryKey: getGetSewingProjectsQueryKey(params) } });
+  return <PortalLayout active="sewingProjects">
+    <PageHeading title="Projects" action={<Link href="/sewing/projects/new" className="button button-primary" data-testid="link-add-sewing-project"><Plus size={17}/> New project</Link>}/>
+    <div className="catalog-tools">
+      <label className="search-box"><Search size={17}/><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search by name, pattern or size…" aria-label="Search sewing projects" data-testid="input-search-sewing-projects"/>{search && <button type="button" onClick={() => setSearch('')} aria-label="Clear search"><X size={15}/></button>}</label>
+      <label className="select-wrap"><Filter size={15}/><select aria-label="Filter by status" value={status} onChange={(event) => setStatus(event.target.value)} data-testid="select-sewing-status-filter"><option value="">Every status</option><option value="planning">Planning</option><option value="in_progress">In progress</option><option value="paused">On pause</option><option value="completed">Finished</option></select><ChevronDown size={14}/></label>
+      {(search || status) && <button className="clear-filters" onClick={clearFilters} data-testid="button-clear-sewing-filters">Clear filters</button>}
+    </div>
+    <div className="catalog-result-caption">{query.data ? <><b>{query.data.length}</b> {query.data.length === 1 ? 'project' : 'projects'}</> : null}</div>
+    {query.isLoading ? <div className="sewing-card-grid">{[0, 1, 2].map((item) => <div className="card-skeleton" key={item}/>)}</div>
+      : query.isError ? <QueryProblem retry={() => query.refetch()}/>
+      : query.data?.length ? <div className="sewing-card-grid">{query.data.map((project) => <SewingProjectCard key={project.id} project={project}/>)}</div>
+      : search || status ? <div className="no-results"><Search size={23}/><h3>No projects match</h3><p>Try a different search or clear a filter.</p><button className="button button-outline" onClick={clearFilters}>Reset filters</button></div>
+      : <EmptySewingProjects/>}
+  </PortalLayout>;
+}
+
+type SewingFabricDraft = { fabric: StashFabric; amountUsed: string };
+type SewingDraft = {
+  title: string; status: ProjectStatus; patternName: string; patternDesigner: string; sizeMade: string;
+  fitChanges: string; notes: string; fabrics: SewingFabricDraft[];
+};
+
+function draftFromSewingProject(project?: SewingProject): SewingDraft {
+  return {
+    title: project?.title ?? '', status: project?.status ?? 'planning', patternName: project?.patternName ?? '',
+    patternDesigner: project?.patternDesigner ?? '', sizeMade: project?.sizeMade ?? '', fitChanges: project?.fitChanges ?? '',
+    notes: project?.notes ?? '',
+    fabrics: project?.fabrics.map((item) => ({ fabric: item.fabric, amountUsed: item.amountUsed === null ? '' : String(item.amountUsed) })) ?? [],
+  };
+}
+
+function SewingProjectFormPage({ projectId }: { projectId?: string }) {
+  const existing = useGetSewingProject(projectId ?? '', { query: { enabled: Boolean(projectId), queryKey: getGetSewingProjectQueryKey(projectId ?? '') } });
+  if (projectId && existing.isLoading) return <PortalLayout active="sewingProjects"><LoadingScreen label="Finding this project…"/></PortalLayout>;
+  if (projectId && (existing.isError || !existing.data)) return <PortalLayout active="sewingProjects"><QueryProblem retry={() => existing.refetch()} message="We couldn’t find this project."/></PortalLayout>;
+  return <SewingProjectForm project={existing.data} key={existing.data?.id ?? 'new'}/>;
+}
+
+// Shows a maker's stash fabric to pick from, leaving out fabric already chosen.
+function StashFabricPicker({ chosen, onPick, onClose }: { chosen: string[]; onPick: (fabric: StashFabric) => void; onClose: () => void }) {
+  const stash = useGetStashFabrics({}, { query: { queryKey: getGetStashFabricsQueryKey({}) } });
+  const available = stash.data?.filter((fabric) => !chosen.includes(fabric.id)) ?? [];
+  return <div className="fabric-picker" role="group" aria-label="Choose fabric from your stash">
+    <div className="fabric-picker-head"><b>Your fabric stash</b><button type="button" className="icon-button" onClick={onClose} aria-label="Close fabric list"><X size={16}/></button></div>
+    {stash.isLoading ? <p className="fabric-picker-note">Loading your fabric…</p>
+      : available.length ? <div className="fabric-picker-grid">{available.map((fabric) => <button key={fabric.id} type="button" className="fabric-pick" onClick={() => onPick(fabric)} data-testid={`button-pick-fabric-${fabric.id}`}>
+        <img src={fabricPhotoUrl(fabric, 0)} alt=""/><span><b>{fabricName(fabric)}</b><small>{fabricSize(fabric)}</small></span>
+      </button>)}</div>
+      : <p className="fabric-picker-note">{stash.data?.length ? 'All your fabric is on this project.' : 'Your fabric stash is empty.'} <Link href="/sewing/fabric/new">Add fabric</Link></p>}
+  </div>;
+}
+
+function SewingProjectForm({ project }: { project?: SewingProject }) {
+  const client = useQueryClient();
+  const [, setLocation] = useLocation();
+  const create = useCreateSewingProject();
+  const update = useUpdateSewingProject();
+  const [draft, setDraft] = useState<SewingDraft>(() => draftFromSewingProject(project));
+  const [picking, setPicking] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const set = (change: Partial<SewingDraft>) => setDraft((current) => ({ ...current, ...change }));
+  const setFabric = (index: number, change: Partial<SewingFabricDraft>) => set({ fabrics: draft.fabrics.map((item, place) => (place === index ? { ...item, ...change } : item)) });
+  const saving = create.isPending || update.isPending;
+  const back = project ? `/sewing/projects/${project.id}` : '/sewing/projects';
+
+  const save = (event: React.FormEvent) => {
+    event.preventDefault();
+    const nextErrors: Record<string, string> = {};
+    if (!draft.title.trim()) nextErrors.title = 'Give your project a name.';
+    const fabrics = draft.fabrics.map((item) => ({ stashFabricId: item.fabric.id, amountUsed: sizeForApi(item.amountUsed) }));
+    if (fabrics.some((item) => item.amountUsed === 'invalid')) nextErrors.fabrics = 'Enter amounts between 0 and 999.';
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length) return;
+    const data = {
+      title: draft.title.trim(), status: draft.status, patternName: draft.patternName || null, patternDesigner: draft.patternDesigner || null,
+      sizeMade: draft.sizeMade || null, fitChanges: draft.fitChanges || null, notes: draft.notes || null,
+      fabrics: fabrics as Array<{ stashFabricId: string; amountUsed: number | null }>,
+    };
+    const finishing = draft.status === 'completed' && project?.status !== 'completed';
+    const options = {
+      onSuccess: (saved: SewingProject) => {
+        void client.invalidateQueries({ queryKey: getGetSewingProjectsQueryKey() });
+        void client.invalidateQueries({ queryKey: getGetSewingOverviewQueryKey() });
+        client.setQueryData(getGetSewingProjectQueryKey(saved.id), saved);
+        setLocation(`/sewing/projects/${saved.id}${finishing ? '?finished=1' : ''}`);
+      },
+      onError: (error: unknown) => setErrors({ save: (error as { data?: { error?: string } })?.data?.error ?? 'We couldn’t save this project just now. Please try again.' }),
+    };
+    if (project) update.mutate({ sewingProjectId: project.id, data }, options);
+    else create.mutate({ data }, options);
+  };
+
+  return <PortalLayout active="sewingProjects">
+    <Link href={back} className="back-link" data-testid="link-back-sewing"><ArrowLeft size={16}/> {project ? 'Back to project' : 'Back to projects'}</Link>
+    <PageHeading title={project ? 'Edit project' : 'New project'}/>
+    <form className="project-form loom-card sewing-form" onSubmit={save} noValidate>
+      <div className="form-grid">
+        <div className="field-block field-wide"><label htmlFor="sewing-title">Project name <b>*</b></label><input id="sewing-title" maxLength={160} placeholder="e.g. Linen summer dress" value={draft.title} onChange={(event) => { set({ title: event.target.value }); setErrors(({ title: _title, ...rest }) => rest); }} data-testid="input-sewing-title"/>{errors.title && <span className="field-error">{errors.title}</span>}</div>
+        <div className="field-block"><label htmlFor="sewing-pattern">Pattern</label><input id="sewing-pattern" maxLength={160} placeholder="Optional" value={draft.patternName} onChange={(event) => set({ patternName: event.target.value })} data-testid="input-sewing-pattern"/></div>
+        <div className="field-block"><label htmlFor="sewing-designer">Designer</label><input id="sewing-designer" maxLength={160} placeholder="Optional" value={draft.patternDesigner} onChange={(event) => set({ patternDesigner: event.target.value })} data-testid="input-sewing-designer"/></div>
+        <div className="field-block"><label htmlFor="sewing-size">Size made</label><input id="sewing-size" maxLength={60} placeholder="e.g. 12 or M" value={draft.sizeMade} onChange={(event) => set({ sizeMade: event.target.value })} data-testid="input-sewing-size"/></div>
+        <div className="field-block"><label htmlFor="sewing-status">Status</label><select id="sewing-status" value={draft.status} onChange={(event) => set({ status: event.target.value as ProjectStatus })} data-testid="select-sewing-status"><option value="planning">Planning</option><option value="in_progress">In progress</option><option value="paused">On pause</option><option value="completed">Finished</option></select></div>
+        <div className="field-block field-wide"><label htmlFor="sewing-fit">Fit changes</label><textarea id="sewing-fit" rows={3} maxLength={2000} placeholder="e.g. Lengthened the bodice 2 cm, took in the waist" value={draft.fitChanges} onChange={(event) => set({ fitChanges: event.target.value })} data-testid="input-sewing-fit"/></div>
+        <div className="field-block field-wide"><label htmlFor="sewing-notes">Notes</label><textarea id="sewing-notes" rows={3} maxLength={2000} placeholder="Optional" value={draft.notes} onChange={(event) => set({ notes: event.target.value })} data-testid="input-sewing-notes"/></div>
+      </div>
+      <fieldset className="sewing-fabric-field">
+        <legend>Fabric</legend>
+        {draft.fabrics.map((item, index) => {
+          const unit = fabricUnits.find((option) => option.value === item.fabric.unit) ?? fabricUnits[0];
+          return <div key={item.fabric.id} className="sewing-fabric-row" data-testid={`sewing-fabric-${index}`}>
+            <img src={fabricPhotoUrl(item.fabric, 0)} alt=""/>
+            <span className="sewing-fabric-name"><b>{fabricName(item.fabric)}</b><small>{fabricSize(item.fabric) || 'No amount saved'}</small></span>
+            <label className="sewing-fabric-used"><span>Used</span><span className="input-with-unit"><input inputMode="decimal" placeholder="e.g. 1.5" value={item.amountUsed} onChange={(event) => { setFabric(index, { amountUsed: event.target.value }); setErrors(({ fabrics: _fabrics, ...rest }) => rest); }} aria-label={`Amount of ${fabricName(item.fabric)} used`} data-testid={`input-sewing-fabric-used-${index}`}/><i>{unit.amount}</i></span></label>
+            <button type="button" className="icon-button" aria-label={`Remove ${fabricName(item.fabric)}`} onClick={() => set({ fabrics: draft.fabrics.filter((_, place) => place !== index) })} data-testid={`button-remove-sewing-fabric-${index}`}><X size={15}/></button>
+          </div>;
+        })}
+        {errors.fabrics && <span className="field-error">{errors.fabrics}</span>}
+        {picking
+          ? <StashFabricPicker chosen={draft.fabrics.map((item) => item.fabric.id)} onPick={(fabric) => { set({ fabrics: [...draft.fabrics, { fabric, amountUsed: '' }] }); setPicking(false); }} onClose={() => setPicking(false)}/>
+          : draft.fabrics.length < 12 && <button type="button" className="button button-outline" onClick={() => setPicking(true)} data-testid="button-add-sewing-fabric"><Plus size={16}/> Add fabric from your stash</button>}
+      </fieldset>
+      {errors.save && <p className="mutation-error" role="alert">{errors.save}</p>}
+      <div className="form-actions"><Link href={back} className="button button-quiet">Cancel</Link><button type="submit" className="button button-primary" disabled={saving} data-testid="button-save-sewing-project">{saving ? 'Saving…' : project ? 'Save changes' : 'Start project'}{!saving && <ArrowRight size={16}/>}</button></div>
+    </form>
+  </PortalLayout>;
+}
+
+// After a project is finished, offers to take the fabric it used off the stash.
+function FabricLeftPrompt({ project, onDone }: { project: SewingProject; onDone: () => void }) {
+  const client = useQueryClient();
+  const updateFabric = useUpdateStashFabric();
+  const [saving, setSaving] = useState(false);
+  const changes = project.fabrics.filter((item) => item.amountUsed !== null && item.fabric.amount !== null);
+  if (!changes.length) return null;
+  const apply = async () => {
+    setSaving(true);
+    try {
+      await Promise.all(changes.map((item) => updateFabric.mutateAsync({ fabricId: item.stashFabricId, data: { amount: amountLeft(item.fabric.amount!, item.amountUsed!) } })));
+      void client.invalidateQueries({ queryKey: getGetStashFabricsQueryKey() });
+      void client.invalidateQueries({ queryKey: getGetSewingProjectQueryKey(project.id) });
+      void client.invalidateQueries({ queryKey: getGetSewingOverviewQueryKey() });
+      onDone();
+    } finally {
+      setSaving(false);
+    }
+  };
+  return <div className="confirm-banner fabric-left-prompt" data-testid="prompt-fabric-left">
+    <div><b>Take the fabric you used off your stash?</b>
+      <ul>{changes.map((item) => <li key={item.stashFabricId}>{fabricName(item.fabric)}: {fabricAmount(item.fabric.amount, item.fabric.unit)} → {fabricAmount(amountLeft(item.fabric.amount!, item.amountUsed!), item.fabric.unit)}</li>)}</ul>
+      {updateFabric.isError && <span className="field-error">We couldn’t update your stash just now. Please try again.</span>}
+    </div>
+    <button className="button button-quiet" onClick={onDone} data-testid="button-keep-stash">Not now</button>
+    <button className="button button-primary" onClick={() => void apply()} disabled={saving} data-testid="button-update-stash">{saving ? 'Updating…' : 'Update stash'}</button>
+  </div>;
+}
+
+function SewingProjectDetailPage({ projectId }: { projectId: string }) {
+  const client = useQueryClient();
+  const [, setLocation] = useLocation();
+  const justFinished = new URLSearchParams(useSearch()).get('finished') === '1';
+  const query = useGetSewingProject(projectId, { query: { queryKey: getGetSewingProjectQueryKey(projectId) } });
+  const update = useUpdateSewingProject();
+  const remove = useDeleteSewingProject();
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  if (query.isLoading) return <PortalLayout active="sewingProjects"><LoadingScreen label="Finding this project…"/></PortalLayout>;
+  if (query.isError || !query.data) return <PortalLayout active="sewingProjects"><QueryProblem retry={() => query.refetch()} message="We couldn’t find this project."/></PortalLayout>;
+  const project = query.data;
+  const refresh = (saved: SewingProject) => {
+    client.setQueryData(getGetSewingProjectQueryKey(saved.id), saved);
+    void client.invalidateQueries({ queryKey: getGetSewingProjectsQueryKey() });
+    void client.invalidateQueries({ queryKey: getGetSewingOverviewQueryKey() });
+  };
+  const change = (data: { stage?: SewingStage; status?: ProjectStatus }, after?: () => void) =>
+    update.mutate({ sewingProjectId: project.id, data }, { onSuccess: (saved) => { refresh(saved); after?.(); } });
+  // Picking a stage on a project that hasn't started yet starts it.
+  const pickStage = (stage: SewingStage) => change(project.status === 'planning' || project.status === 'paused' ? { stage, status: 'in_progress' } : { stage });
+  const finish = () => change({ status: 'completed' }, () => setLocation(`/sewing/projects/${project.id}?finished=1`, { replace: true }));
+  const deleteProject = () => remove.mutate({ sewingProjectId: project.id }, {
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: getGetSewingProjectsQueryKey() });
+      void client.invalidateQueries({ queryKey: getGetSewingOverviewQueryKey() });
+      setLocation('/sewing/projects');
+    },
+  });
+  const current = stageIndex(project.stage);
+  return <PortalLayout active="sewingProjects">
+    <Link href="/sewing/projects" className="back-link" data-testid="link-back-sewing-projects"><ArrowLeft size={16}/> Back to projects</Link>
+    <PageHeading title={project.title} action={<div className="heading-actions">
+      <Link href={`/sewing/projects/${project.id}/edit`} className="button button-outline" data-testid="link-edit-sewing-project">Edit</Link>
+      <button className="icon-button danger-icon" aria-label="Delete project" title="Delete project" onClick={() => setConfirmDelete(true)} data-testid="button-delete-sewing-project"><Trash2 size={17}/></button>
+    </div>}/>
+    {confirmDelete && <div className="confirm-banner"><div><b>Delete this project?</b><span>Your fabric stays in your stash.</span></div><button className="button button-quiet" onClick={() => setConfirmDelete(false)}>Cancel</button><button className="button button-danger" onClick={deleteProject} disabled={remove.isPending} data-testid="button-confirm-delete-sewing-project">{remove.isPending ? 'Deleting…' : 'Delete project'}</button></div>}
+    {justFinished && project.status === 'completed' && <FabricLeftPrompt project={project} onDone={() => setLocation(`/sewing/projects/${project.id}`, { replace: true })}/>}
+    <section className="sewing-detail loom-card">
+      <div className="sewing-detail-status"><StatusPill status={project.status}/>{project.completedAt && <span className="updated-label">Finished {formatWheelDate(project.completedAt, 'day')}</span>}</div>
+      <div className="stage-picker" role="group" aria-label="Stage">
+        {sewingStages.map((item, index) => {
+          const done = project.status === 'completed' || index < current;
+          const isCurrent = project.status !== 'completed' && project.status !== 'planning' && index === current;
+          return <button key={item.value} type="button" className={`stage-pick${done ? ' done' : ''}${isCurrent ? ' current' : ''}`} aria-pressed={isCurrent} onClick={() => pickStage(item.value)} disabled={update.isPending || project.status === 'completed'} data-testid={`button-stage-${item.value}`}>
+            <i>{done ? <Check size={13}/> : index + 1}</i><span>{item.label}</span>
+          </button>;
+        })}
+      </div>
+      <div className="sewing-detail-actions">
+        {project.status === 'completed'
+          ? <button className="button button-outline" onClick={() => change({ status: 'in_progress' })} disabled={update.isPending} data-testid="button-reopen-sewing-project">Reopen project</button>
+          : <button className="button button-primary" onClick={finish} disabled={update.isPending} data-testid="button-finish-sewing-project"><Check size={16}/> Mark finished</button>}
+        {update.isError && <span className="field-error">We couldn’t save that just now. Please try again.</span>}
+      </div>
+      <dl className="sewing-facts">
+        {project.patternName && <div><dt>Pattern</dt><dd>{project.patternName}</dd></div>}
+        {project.patternDesigner && <div><dt>Designer</dt><dd>{project.patternDesigner}</dd></div>}
+        {project.sizeMade && <div><dt>Size made</dt><dd>{project.sizeMade}</dd></div>}
+      </dl>
+      {project.fitChanges && <div className="sewing-text"><h2>Fit changes</h2><p>{project.fitChanges}</p></div>}
+      {project.notes && <div className="sewing-text"><h2>Notes</h2><p>{project.notes}</p></div>}
+    </section>
+    <section className="sewing-detail-fabric">
+      <div className="section-heading"><div><h2 className="serif">Fabric</h2></div></div>
+      {project.fabrics.length ? <div className="fabric-grid">{project.fabrics.map((item) => <Link key={item.stashFabricId} href={`/sewing/fabric/${item.stashFabricId}`} className="fabric-card lift" data-testid={`card-project-fabric-${item.stashFabricId}`}>
+        <span className="fabric-swatch"><img src={fabricPhotoUrl(item.fabric, 0)} alt={`${fabricName(item.fabric)} print`} loading="lazy"/></span>
+        <span className="fabric-card-body"><h3>{fabricName(item.fabric)}</h3>{item.amountUsed !== null && <span className="fabric-card-size">Uses {fabricAmount(item.amountUsed, item.fabric.unit)}</span>}</span>
+      </Link>)}</div> : <p className="notes-empty">No fabric on this project yet. <Link href={`/sewing/projects/${project.id}/edit`}>Add fabric</Link></p>}
+    </section>
+  </PortalLayout>;
+}
+
+function ToolRow({ tool }: { tool: SewingTool }) {
+  return <Link href={`/sewing/tools/${tool.id}`} className="tool-row lift" data-testid={`card-tool-${tool.id}`}>
+    <ToolThumb tool={tool}/>
+    <span className="tool-row-body"><b>{tool.name}</b><small>{toolDetails(tool)}</small></span>
+    {tool.quantity !== null && <span className="tool-quantity" aria-label={`Quantity ${tool.quantity}`}>× {tool.quantity}</span>}
+  </Link>;
+}
+
+function SewingToolsPage() {
+  const [search, setSearch] = useState('');
+  const [, setLocation] = useLocation();
+  const urlSection = new URLSearchParams(useSearch()).get('section') ?? '';
+  const section = toolSections.find((item) => item.value === urlSection)?.value;
+  const setSection = (value?: SewingToolSection) => setLocation(value ? `/sewing/tools?section=${value}` : '/sewing/tools', { replace: true });
+  const params = search.trim() ? { search: search.trim() } : {};
+  const query = useGetSewingTools(params, { query: { queryKey: getGetSewingToolsQueryKey(params) } });
+  const shown = toolSections.filter((item) => !section || item.value === section);
+  return <PortalLayout active="tools">
+    <PageHeading title="Tools" action={<Link href={`/sewing/tools/new${section ? `?section=${section}` : ''}`} className="button button-primary" data-testid="link-add-tool"><Plus size={17}/> Add tool</Link>}/>
+    <div className="catalog-tools">
+      <label className="search-box"><Search size={17}/><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search by name, size, color or brand…" aria-label="Search your tools" data-testid="input-search-tools"/>{search && <button type="button" onClick={() => setSearch('')} aria-label="Clear search"><X size={15}/></button>}</label>
+      <div className="segmented tool-section-filter" role="radiogroup" aria-label="Show">
+        {[{ value: undefined, label: 'All' }, ...toolSections].map((item) => <button key={item.label} type="button" role="radio" aria-checked={section === item.value} className={section === item.value ? 'selected' : ''} onClick={() => setSection(item.value)} data-testid={`button-tool-section-${item.value ?? 'all'}`}>{item.label}</button>)}
+      </div>
+    </div>
+    {query.isLoading ? <div className="tool-list">{[0, 1, 2].map((item) => <div className="card-skeleton tool-skeleton" key={item}/>)}</div>
+      : query.isError ? <QueryProblem retry={() => query.refetch()}/>
+      : search && !query.data?.length ? <div className="no-results"><Search size={23}/><h3>No tools match</h3><p>Try a different search.</p><button className="button button-outline" onClick={() => setSearch('')}>Clear search</button></div>
+      : shown.map((item) => {
+        const tools = (query.data ?? []).filter((tool) => tool.section === item.value);
+        if (search && !tools.length) return null;
+        return <section className="tool-section" key={item.value} data-testid={`section-tools-${item.value}`}>
+          <h2>{item.label} <span>{tools.length}</span></h2>
+          {tools.length ? <div className="tool-list">{tools.map((tool) => <ToolRow key={tool.id} tool={tool}/>)}</div>
+            : <p className="tool-empty">No {item.label.toLowerCase()} yet. <Link href={`/sewing/tools/new?section=${item.value}`} data-testid={`link-add-first-${item.value}`}>Add {item.value === 'kit' ? 'kit' : 'a notion'}</Link></p>}
+        </section>;
+      })}
+  </PortalLayout>;
+}
+
+type ToolDraft = {
+  section: SewingToolSection; category: SewingToolCategory | ''; name: string; quantity: string;
+  size: string; color: string; brand: string; notes: string;
+};
+
+function SewingToolFormPage({ toolId }: { toolId?: string }) {
+  const existing = useGetSewingTool(toolId ?? '', { query: { enabled: Boolean(toolId), queryKey: getGetSewingToolQueryKey(toolId ?? '') } });
+  if (toolId && existing.isLoading) return <PortalLayout active="tools"><LoadingScreen label="Finding this tool…"/></PortalLayout>;
+  if (toolId && (existing.isError || !existing.data)) return <PortalLayout active="tools"><QueryProblem retry={() => existing.refetch()} message="We couldn’t find this tool."/></PortalLayout>;
+  return <SewingToolForm tool={existing.data} key={existing.data?.id ?? 'new'}/>;
+}
+
+// The photo is the saved one, a new file waiting to upload, or none.
+type ToolPhoto = { kind: 'kept' } | { kind: 'new'; file: File; preview: string } | null;
+
+function SewingToolForm({ tool }: { tool?: SewingTool }) {
+  const [, setLocation] = useLocation();
+  const client = useQueryClient();
+  const create = useCreateSewingTool();
+  const update = useUpdateSewingTool();
+  const remove = useDeleteSewingTool();
+  const urlSection = new URLSearchParams(useSearch()).get('section');
+  const [draft, setDraft] = useState<ToolDraft>(() => ({
+    section: tool?.section ?? (urlSection === 'kit' ? 'kit' : 'notions'), category: tool?.category ?? '', name: tool?.name ?? '',
+    quantity: tool?.quantity === null || !tool ? '' : String(tool.quantity), size: tool?.size ?? '', color: tool?.color ?? '',
+    brand: tool?.brand ?? '', notes: tool?.notes ?? '',
+  }));
+  const [photo, setPhoto] = useState<ToolPhoto>(tool?.hasPhoto ? { kind: 'kept' } : null);
+  const [errors, setErrors] = useState<Partial<Record<'photo' | 'category' | 'name' | 'quantity' | 'save', string>>>({});
+  const [saving, setSaving] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const set = (change: Partial<ToolDraft>) => setDraft((current) => ({ ...current, ...change }));
+  const example = draft.category ? categoryFor(draft.category).example : draft.section === 'kit' ? 'Overlocker' : 'Invisible zip';
+
+  useEffect(() => () => { if (photo?.kind === 'new') URL.revokeObjectURL(photo.preview); }, [photo]);
+
+  const choosePhoto = (files: FileList | null) => {
+    const file = files?.[0];
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 10 * 1024 * 1024) {
+      setErrors((current) => ({ ...current, photo: 'Choose a JPEG, PNG, or WebP photo up to 10 MB.' }));
+      return;
+    }
+    setErrors(({ photo: _photo, ...rest }) => rest);
+    setPhoto({ kind: 'new', file, preview: URL.createObjectURL(file) });
+  };
+
+  const done = () => {
+    void client.invalidateQueries({ queryKey: getGetSewingToolsQueryKey() });
+    void client.invalidateQueries({ queryKey: getGetMyCraftsQueryKey() });
+    if (tool) void client.invalidateQueries({ queryKey: getGetSewingToolQueryKey(tool.id) });
+    setLocation(`/sewing/tools?section=${draft.section}`);
+  };
+
+  const save = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const nextErrors: typeof errors = {};
+    if (!draft.category) nextErrors.category = 'Choose what kind of tool this is.';
+    if (!draft.name.trim()) nextErrors.name = 'Give it a name.';
+    const quantity = quantityForApi(draft.quantity);
+    if (quantity === 'invalid') nextErrors.quantity = 'Enter a whole number, like 3.';
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length || !draft.category || quantity === 'invalid') return;
+
+    setSaving(true);
+    let photoPath: string | null | undefined = photo?.kind === 'kept' || (!photo && !tool?.hasPhoto) ? undefined : null;
+    if (photo?.kind === 'new') {
+      try {
+        const contentType = photo.file.type as 'image/jpeg' | 'image/png' | 'image/webp';
+        const upload = await requestSewingToolPhotoUpload({ name: photo.file.name || 'tool-photo', size: photo.file.size, contentType });
+        const uploaded = await fetch(upload.uploadURL, { method: 'PUT', headers: { 'Content-Type': contentType }, body: photo.file });
+        if (!uploaded.ok) throw new Error('The photo upload did not finish.');
+        photoPath = upload.photoPath;
+      } catch {
+        setErrors({ photo: 'We couldn’t upload that photo. Please try again.' });
+        setSaving(false);
+        return;
+      }
+    }
+    const data = {
+      section: draft.section, category: draft.category, name: draft.name.trim(), quantity,
+      size: draft.size.trim() || null, color: draft.section === 'notions' ? draft.color.trim() || null : null,
+      brand: draft.brand.trim() || null, notes: draft.notes.trim() || null,
+      ...(photoPath !== undefined ? { photoPath } : {}),
+    };
+    const options = {
+      onSuccess: done,
+      onError: (error: unknown) => setErrors({ save: (error as { data?: { error?: string } })?.data?.error ?? 'We couldn’t save this tool just now. Please try again.' }),
+      onSettled: () => setSaving(false),
+    };
+    if (tool) update.mutate({ sewingToolId: tool.id, data }, options);
+    else create.mutate({ data }, options);
+  };
+
+  const deleteTool = () => tool && remove.mutate({ sewingToolId: tool.id }, { onSuccess: done });
+  const photoSrc = photo?.kind === 'new' ? photo.preview : photo?.kind === 'kept' && tool ? toolPhotoUrl(tool) : '';
+
+  return <PortalLayout active="tools">
+    <Link href={`/sewing/tools?section=${draft.section}`} className="back-link" data-testid="link-back-tools"><ArrowLeft size={16}/> Back to tools</Link>
+    <PageHeading title={tool ? tool.name : 'Add a tool'} action={tool ? <button className="icon-button danger-icon" aria-label="Delete tool" title="Delete tool" onClick={() => setConfirmDelete(true)} data-testid="button-delete-tool"><Trash2 size={17}/></button> : undefined}/>
+    {confirmDelete && <div className="confirm-banner"><div><b>Remove this tool?</b><span>Its photo will be deleted too.</span></div><button className="button button-quiet" onClick={() => setConfirmDelete(false)}>Cancel</button><button className="button button-danger" onClick={deleteTool} disabled={remove.isPending} data-testid="button-confirm-delete-tool">{remove.isPending ? 'Removing…' : 'Remove tool'}</button></div>}
+    <form className="project-form loom-card tool-form" onSubmit={save} noValidate>
+      <div className="form-grid">
+        <div className="field-block"><label id="tool-section-label">Section</label><div className="segmented" role="radiogroup" aria-labelledby="tool-section-label">{toolSections.map((item) => <button key={item.value} type="button" role="radio" aria-checked={draft.section === item.value} className={draft.section === item.value ? 'selected' : ''} onClick={() => set({ section: item.value, category: draft.category === 'other' ? 'other' : '' })} data-testid={`button-tool-form-section-${item.value}`}>{item.label}</button>)}</div></div>
+        <ToolTypeWheelField section={draft.section} value={draft.category} onChange={(category) => { set({ category }); setErrors(({ category: _category, ...rest }) => rest); }} error={errors.category}/>
+        <div className="field-block field-wide"><label htmlFor="tool-name">Name <b>*</b></label><input id="tool-name" maxLength={80} placeholder={`e.g. ${example}`} value={draft.name} onChange={(event) => { set({ name: event.target.value }); setErrors(({ name: _name, ...rest }) => rest); }} data-testid="input-tool-name"/>{errors.name && <span className="field-error">{errors.name}</span>}</div>
+        <div className="field-block"><label htmlFor="tool-quantity">How many</label><input id="tool-quantity" inputMode="numeric" placeholder="Optional" value={draft.quantity} onChange={(event) => { set({ quantity: event.target.value }); setErrors(({ quantity: _quantity, ...rest }) => rest); }} data-testid="input-tool-quantity"/>{errors.quantity && <span className="field-error">{errors.quantity}</span>}</div>
+        <div className="field-block"><label htmlFor="tool-size">Size</label><input id="tool-size" maxLength={40} placeholder={draft.section === 'kit' ? 'e.g. 90/14 or 45 mm' : 'e.g. 22 cm or 15 mm'} value={draft.size} onChange={(event) => set({ size: event.target.value })} data-testid="input-tool-size"/></div>
+        {draft.section === 'notions' && <div className="field-block"><label htmlFor="tool-color">Color</label><input id="tool-color" maxLength={40} placeholder="e.g. Navy" value={draft.color} onChange={(event) => set({ color: event.target.value })} data-testid="input-tool-color"/></div>}
+        <div className="field-block"><label htmlFor="tool-brand">Brand</label><input id="tool-brand" maxLength={80} placeholder="Optional" value={draft.brand} onChange={(event) => set({ brand: event.target.value })} data-testid="input-tool-brand"/></div>
+        <div className="field-block field-wide"><label htmlFor="tool-notes">Notes</label><textarea id="tool-notes" rows={3} maxLength={1000} placeholder="Optional" value={draft.notes} onChange={(event) => set({ notes: event.target.value })} data-testid="input-tool-notes"/></div>
+        <div className="field-block field-wide">
+          <label htmlFor="tool-photo">Photo</label>
+          <div className="tool-photo-field">
+            <label className={`tool-photo${photoSrc ? ' has-photo' : ''}`} htmlFor="tool-photo">{photoSrc ? <img src={photoSrc} alt="Tool photo"/> : <span><Camera size={20}/>Add a photo</span>}</label>
+            {photoSrc && <button type="button" className="button button-quiet" onClick={() => setPhoto(null)} data-testid="button-remove-tool-photo">Remove photo</button>}
+          </div>
+          <input id="tool-photo" className="visually-hidden" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { choosePhoto(event.target.files); event.target.value = ''; }} data-testid="input-tool-photo"/>
+          {errors.photo && <span className="field-error">{errors.photo}</span>}
+        </div>
+      </div>
+      {errors.save && <p className="mutation-error" role="alert">{errors.save}</p>}
+      <div className="form-actions"><Link href={`/sewing/tools?section=${draft.section}`} className="button button-quiet">Cancel</Link><button type="submit" className="button button-primary" disabled={saving} data-testid="button-save-tool">{saving ? 'Saving…' : tool ? 'Save changes' : 'Add tool'}{!saving && <ArrowRight size={16}/>}</button></div>
     </form>
   </PortalLayout>;
 }
@@ -1572,9 +2033,16 @@ function AuthCacheRouter() {
         <Route path="/stash/new"><PrivateRoute><StashYarnFormPage/></PrivateRoute></Route>
         <Route path="/stash/:yarnId">{(params) => <PrivateRoute><StashYarnFormPage yarnId={params.yarnId}/></PrivateRoute>}</Route>
         <Route path="/projects/:projectId">{(params) => <PrivateRoute><ProjectDetailPage projectId={params.projectId}/></PrivateRoute>}</Route>
-        <Route path="/sewing"><Redirect to="/sewing/fabric"/></Route>
+        <Route path="/sewing"><PrivateRoute craft="sewing"><SewingOverviewPage/></PrivateRoute></Route>
+        <Route path="/sewing/projects"><PrivateRoute craft="sewing"><SewingProjectsPage/></PrivateRoute></Route>
+        <Route path="/sewing/projects/new"><PrivateRoute craft="sewing"><SewingProjectFormPage/></PrivateRoute></Route>
+        <Route path="/sewing/projects/:projectId/edit">{(params) => <PrivateRoute craft="sewing"><SewingProjectFormPage projectId={params.projectId}/></PrivateRoute>}</Route>
+        <Route path="/sewing/projects/:projectId">{(params) => <PrivateRoute craft="sewing"><SewingProjectDetailPage projectId={params.projectId}/></PrivateRoute>}</Route>
         <Route path="/sewing/fabric"><PrivateRoute craft="sewing"><FabricStashPage/></PrivateRoute></Route>
         <Route path="/sewing/fabric/new"><PrivateRoute craft="sewing"><FabricFormPage/></PrivateRoute></Route>
+        <Route path="/sewing/tools"><PrivateRoute craft="sewing"><SewingToolsPage/></PrivateRoute></Route>
+        <Route path="/sewing/tools/new"><PrivateRoute craft="sewing"><SewingToolFormPage/></PrivateRoute></Route>
+        <Route path="/sewing/tools/:toolId">{(params) => <PrivateRoute craft="sewing"><SewingToolFormPage toolId={params.toolId}/></PrivateRoute>}</Route>
         <Route path="/sewing/fabric/:fabricId">{(params) => <PrivateRoute craft="sewing"><FabricFormPage fabricId={params.fabricId}/></PrivateRoute>}</Route>
         <Route component={NotFound}/>
       </Switch>
