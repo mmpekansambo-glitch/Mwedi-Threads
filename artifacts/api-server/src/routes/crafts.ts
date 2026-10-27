@@ -1,7 +1,7 @@
 import { eq, sql } from "drizzle-orm";
 import { Router, type IRouter, type Response } from "express";
 import { GetMyCraftsResponse, UpdateMyCraftsBody } from "@workspace/api-zod";
-import { db, projectsTable, sewingProjectsTable, stashFabricsTable, stashYarnsTable, usersTable } from "@workspace/db";
+import { db, projectsTable, sewingProjectsTable, sewingToolsTable, stashFabricsTable, stashYarnsTable, usersTable } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
 
 const router: IRouter = Router();
@@ -21,7 +21,7 @@ async function loadCrafts(ownerId: string) {
   const hasSomething = row?.chosenAt
     ? true
     : (await Promise.all(
-        [projectsTable, stashYarnsTable, stashFabricsTable, sewingProjectsTable].map((table) =>
+        [projectsTable, stashYarnsTable, stashFabricsTable, sewingProjectsTable, sewingToolsTable].map((table) =>
           db.select({ one: sql`1` }).from(table).where(eq(table.ownerId, ownerId)).limit(1),
         ),
       )).some((rows) => rows.length > 0);

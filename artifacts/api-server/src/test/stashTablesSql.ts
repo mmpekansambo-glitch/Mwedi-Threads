@@ -139,3 +139,28 @@ export function sewingTablesSql(isolatedSchema: string): string {
     );
   `;
 }
+
+export function sewingToolsSql(isolatedSchema: string): string {
+  return `
+    CREATE TYPE ${isolatedSchema}.sewing_tool_section AS ENUM ('notions', 'kit');
+    CREATE TYPE ${isolatedSchema}.sewing_tool_category AS ENUM (
+      'zip', 'button', 'elastic', 'thread', 'interfacing',
+      'machine', 'presser_foot', 'needle', 'scissors', 'ruler', 'other'
+    );
+    CREATE TABLE ${isolatedSchema}.sewing_tools (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL REFERENCES ${isolatedSchema}.users(id) ON DELETE CASCADE,
+      section ${isolatedSchema}.sewing_tool_section NOT NULL,
+      category ${isolatedSchema}.sewing_tool_category NOT NULL,
+      name text NOT NULL,
+      quantity integer,
+      size text,
+      color text,
+      brand text,
+      notes text,
+      photo_path text,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now()
+    );
+  `;
+}

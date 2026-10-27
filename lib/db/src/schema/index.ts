@@ -24,3 +24,4 @@ export * from "./yarnStash";
 export * from "./projectYarns";
 export * from "./fabricStash";
 export * from "./sewingProjects";
+export * from "./sewingTools";
