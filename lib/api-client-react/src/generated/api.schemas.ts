@@ -617,6 +617,21 @@ export const FabricType = {
   polyester: 'polyester',
   blend: 'blend',
   other: 'other',
+  canvas: 'canvas',
+  chambray: 'chambray',
+  chiffon: 'chiffon',
+  corduroy: 'corduroy',
+  crepe: 'crepe',
+  double_gauze: 'double_gauze',
+  flannel: 'flannel',
+  fleece: 'fleece',
+  french_terry: 'french_terry',
+  minky: 'minky',
+  rib_knit: 'rib_knit',
+  satin: 'satin',
+  tulle: 'tulle',
+  velvet: 'velvet',
+  viscose: 'viscose',
 } as const;
 
 export type FabricConstruction = typeof FabricConstruction[keyof typeof FabricConstruction];
@@ -640,6 +655,19 @@ export const FabricPrint = {
   abstract: 'abstract',
   animal: 'animal',
   novelty: 'novelty',
+  ankara: 'ankara',
+  batik: 'batik',
+  botanical: 'botanical',
+  camo: 'camo',
+  chevron: 'chevron',
+  damask: 'damask',
+  houndstooth: 'houndstooth',
+  ikat: 'ikat',
+  ombre: 'ombre',
+  paisley: 'paisley',
+  tie_dye: 'tie_dye',
+  toile: 'toile',
+  other: 'other',
 } as const;
 
 /**

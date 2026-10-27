@@ -169,7 +169,7 @@ test("adds a fabric with a print close-up and an extra photo", async ({ page }) 
   await page.getByTestId("select-fabric-type").selectOption("linen");
   await page.getByTestId("button-construction-woven").click();
   await page.getByTestId("select-fabric-print").click();
-  await expect(page.getByTestId("select-fabric-print-wheel").getByRole("option")).toHaveText(["Abstract", "Animal", "Check or plaid", "Dots", "Floral", "Geometric", "Novelty", "Solid", "Stripe"]);
+  await expect(page.getByTestId("select-fabric-print-wheel").getByRole("option")).toHaveText(["Abstract", "Animal", "Ankara (wax print)", "Batik", "Botanical", "Camo", "Check or plaid", "Chevron", "Damask", "Dots", "Floral", "Geometric", "Houndstooth", "Ikat", "Novelty", "Ombré", "Paisley", "Solid", "Stripe", "Tie-dye", "Toile", "Other"]);
   await page.getByTestId("select-fabric-print-wheel").getByRole("option", { name: "Check or plaid" }).click();
   if (shots) await page.screenshot({ path: `${shots}/fabric-print-wheel-web.png` });
   await page.getByTestId("select-fabric-print-done").click();

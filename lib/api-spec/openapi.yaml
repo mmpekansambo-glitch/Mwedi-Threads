@@ -1780,13 +1780,13 @@ components:
       required: [yarn, sewing]
     FabricType:
       type: string
-      enum: [cotton, linen, jersey, denim, silk, wool, polyester, blend, other]
+      enum: [cotton, linen, jersey, denim, silk, wool, polyester, blend, other, canvas, chambray, chiffon, corduroy, crepe, double_gauze, flannel, fleece, french_terry, minky, rib_knit, satin, tulle, velvet, viscose]
     FabricConstruction:
       type: string
       enum: [woven, knit]
     FabricPrint:
       type: string
-      enum: [solid, floral, stripe, check, dots, geometric, abstract, animal, novelty]
+      enum: [solid, floral, stripe, check, dots, geometric, abstract, animal, novelty, ankara, batik, botanical, camo, chevron, damask, houndstooth, ikat, ombre, paisley, tie_dye, toile, other]
     FabricUnit:
       type: string
       description: Meters go with centimetre widths, yards with inch widths
