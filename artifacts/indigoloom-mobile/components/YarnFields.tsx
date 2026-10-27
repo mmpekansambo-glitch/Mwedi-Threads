@@ -43,11 +43,12 @@ export const generalColors: Array<{ value: GeneralColor; label: string; swatch: 
 const multiColors = ['#C0392B', '#E9C46A', '#5B8C51', '#3D6FB6', '#7D5BA6'] as const;
 
 export function ColorDot({ color, size = 14, style, noun = 'yarn' }: { color: GeneralColor | null | undefined; size?: number; style?: ViewStyle; noun?: string }) {
+  const colors = useColors();
   const match = generalColors.find((item) => item.value === color);
   if (!match) return null;
   const shape = { width: size, height: size, borderRadius: size / 2 };
   return (
-    <View accessible accessibilityRole="image" accessibilityLabel={`${match.label} ${noun}`} style={[styles.dot, shape, style]}>
+    <View accessible accessibilityRole="image" accessibilityLabel={`${match.label} ${noun}`} style={[styles.dot, { borderColor: colors.swatchRing }, shape, style]}>
       {match.value === 'multi'
         ? <LinearGradient colors={multiColors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[StyleSheet.absoluteFill, shape]} />
         : <View style={[StyleSheet.absoluteFill, shape, { backgroundColor: match.swatch }]} />}
@@ -247,7 +248,7 @@ export function CatalogChoices({ options, typed, suggestion, onPick, testID }: {
 
 const styles = StyleSheet.create({
   field: { marginBottom: 14 },
-  dot: { overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(31,47,22,0.18)' },
+  dot: { overflow: 'hidden', borderWidth: 1 },
   colorRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   colorChoice: { width: 36, height: 36, borderRadius: 18, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   trigger: { minHeight: 46, borderRadius: 9, borderWidth: 1, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 10 },

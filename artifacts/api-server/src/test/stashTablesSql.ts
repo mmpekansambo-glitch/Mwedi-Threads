@@ -88,9 +88,9 @@ export function stashTablesSql(isolatedSchema: string): string {
       created_at timestamptz NOT NULL DEFAULT now(),
       resolved_at timestamptz
     );
-    CREATE TYPE ${isolatedSchema}.fabric_type AS ENUM ('cotton', 'linen', 'jersey', 'denim', 'silk', 'wool', 'polyester', 'blend', 'other');
+    CREATE TYPE ${isolatedSchema}.fabric_type AS ENUM ('cotton', 'linen', 'jersey', 'denim', 'silk', 'wool', 'polyester', 'blend', 'other', 'canvas', 'chambray', 'chiffon', 'corduroy', 'crepe', 'double_gauze', 'flannel', 'fleece', 'french_terry', 'minky', 'rib_knit', 'satin', 'tulle', 'velvet', 'viscose');
     CREATE TYPE ${isolatedSchema}.fabric_construction AS ENUM ('woven', 'knit');
-    CREATE TYPE ${isolatedSchema}.fabric_print AS ENUM ('solid', 'floral', 'stripe', 'check', 'dots', 'geometric', 'abstract', 'animal', 'novelty');
+    CREATE TYPE ${isolatedSchema}.fabric_print AS ENUM ('solid', 'floral', 'stripe', 'check', 'dots', 'geometric', 'abstract', 'animal', 'novelty', 'ankara', 'batik', 'botanical', 'camo', 'chevron', 'damask', 'houndstooth', 'ikat', 'ombre', 'paisley', 'tie_dye', 'toile', 'other');
     CREATE TYPE ${isolatedSchema}.fabric_unit AS ENUM ('meters', 'yards');
     CREATE TABLE ${isolatedSchema}.stash_fabrics (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

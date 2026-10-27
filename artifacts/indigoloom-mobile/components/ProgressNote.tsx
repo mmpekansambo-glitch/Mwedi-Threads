@@ -53,6 +53,7 @@ export async function pickProgressPhoto(): Promise<ImagePicker.ImagePickerAsset 
 }
 
 export function SavedProgressPhoto({ projectId, entryId, style }: { projectId: string; entryId: string; style?: StyleProp<ImageStyle> }) {
+  const colors = useColors();
   const { getToken } = useAuth();
   const [token, setToken] = useState<string | null>(null);
   useEffect(() => {
@@ -70,7 +71,7 @@ export function SavedProgressPhoto({ projectId, entryId, style }: { projectId: s
         uri: `https://${domain}/api/projects/${projectId}/progress/${entryId}/photo`,
         headers: { Authorization: `Bearer ${token}` },
       }}
-      style={[styles.savedPhoto, style]}
+      style={[styles.savedPhoto, { backgroundColor: colors.muted }, style]}
       contentFit="cover"
       accessibilityLabel="Photo from this progress entry"
     />
@@ -122,7 +123,7 @@ export function confirmDeleteNote(onConfirm: () => void) {
 }
 
 const styles = StyleSheet.create({
-  savedPhoto: { width: '100%', height: 220, borderRadius: 12, marginTop: 10, backgroundColor: '#EEF2F9' },
+  savedPhoto: { width: '100%', height: 220, borderRadius: 12, marginTop: 10 },
   swipeContainer: { marginBottom: 8, borderRadius: 13 },
   action: { width: 88, alignItems: 'center', justifyContent: 'center', gap: 4 },
   leftAction: { borderTopLeftRadius: 13, borderBottomLeftRadius: 13, marginRight: -13, paddingRight: 13 },

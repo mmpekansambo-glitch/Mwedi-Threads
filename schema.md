@@ -316,9 +316,9 @@ The shared yarn catalog. Every name has a `match_key` (lowercase letters and dig
 | skein_suggestion_status | `pending`, `accepted`, `dismissed` |
 | catalog_field | `brand`, `sub_brand`, `color` |
 | catalog_review_status | `open`, `renamed`, `kept` |
-| fabric_type | `cotton`, `linen`, `jersey`, `denim`, `silk`, `wool`, `polyester`, `blend`, `other` |
+| fabric_type | `cotton`, `linen`, `jersey`, `denim`, `silk`, `wool`, `polyester`, `blend`, `other`, `canvas`, `chambray`, `chiffon`, `corduroy`, `crepe`, `double_gauze`, `flannel`, `fleece`, `french_terry`, `minky`, `rib_knit`, `satin`, `tulle`, `velvet`, `viscose` |
 | fabric_construction | `woven`, `knit` |
-| fabric_print | `solid`, `floral`, `stripe`, `check`, `dots`, `geometric`, `abstract`, `animal`, `novelty` |
+| fabric_print | `solid`, `floral`, `stripe`, `check`, `dots`, `geometric`, `abstract`, `animal`, `novelty`, `ankara`, `batik`, `botanical`, `camo`, `chevron`, `damask`, `houndstooth`, `ikat`, `ombre`, `paisley`, `tie_dye`, `toile`, `other` |
 | fabric_unit | `meters`, `yards` |
 
 ## Date rule

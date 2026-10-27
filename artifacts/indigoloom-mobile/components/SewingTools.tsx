@@ -129,7 +129,7 @@ export function ToolThumb({ tool, size = 56 }: { tool: SewingTool; size?: number
       />
     );
   }
-  return <View style={[box, styles.thumbIcon]}><Feather name={categoryFor(tool.category).icon} size={Math.round(size * 0.4)} color={colors.primary} /></View>;
+  return <View style={[box, styles.thumbIcon]}><Feather name={categoryFor(tool.category).icon} size={Math.round(size * 0.4)} color={colors.primaryText} /></View>;
 }
 
 function Choices<T extends string>({ options, value, onChange, testID }: { options: Array<{ value: T; label: string }>; value: T | ''; onChange: (value: T) => void; testID: string }) {
@@ -177,7 +177,7 @@ function ToolTypeWheelField({ section, value, onChange }: { section: SewingToolS
               style={[styles.trigger, { backgroundColor: colors.card, borderColor: chosenHere ? colors.primary : colors.input, borderWidth: chosenHere ? 2 : 1 }]}
               testID={`button-tool-type-${slug(row.group)}`}
             >
-              <Feather name={chosenHere ? chosenHere.icon : single ? 'box' : 'grid'} size={16} color={colors.primary} />
+              <Feather name={chosenHere ? chosenHere.icon : single ? 'box' : 'grid'} size={16} color={colors.primaryText} />
               <LoomText numberOfLines={1} style={{ flex: 1, color: chosenHere ? colors.foreground : colors.mutedForeground, fontSize: 16 }}>{shown}</LoomText>
               {single ? null : <Feather name="chevron-down" size={16} color={colors.mutedForeground} />}
             </Pressable>
@@ -194,7 +194,7 @@ function ToolTypeWheelField({ section, value, onChange }: { section: SewingToolS
               </Pressable>
               <LoomText serif style={{ color: colors.foreground, fontSize: 20 }}>{openRow?.group ?? ''}</LoomText>
               <Pressable accessibilityRole="button" onPress={() => { const chosen = openRow?.options[draft]; if (chosen) onChange(chosen.value); setOpenRow(null); }} style={styles.headingButton} testID="button-tool-type-done">
-                <LoomText style={{ color: colors.primary, fontFamily: fonts.semibold, fontSize: 16, textAlign: 'right' }}>Done</LoomText>
+                <LoomText style={{ color: colors.primaryText, fontFamily: fonts.semibold, fontSize: 16, textAlign: 'right' }}>Done</LoomText>
               </Pressable>
             </View>
             <View style={[styles.wheels, { backgroundColor: colors.selectedWash }]}>
@@ -325,7 +325,7 @@ export function SewingToolForm({ tool, section: startSection }: { tool?: SewingT
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <View style={[styles.nav, { paddingTop: insets.top + 9, borderBottomColor: colors.border }]}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={() => router.back()} style={styles.navButton}><Feather name="arrow-left" size={19} color={colors.primary} /></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={() => router.back()} style={styles.navButton}><Feather name="arrow-left" size={19} color={colors.primaryText} /></Pressable>
         <LoomText numberOfLines={1} style={[styles.navTitle, { color: colors.foreground }]}>{tool ? tool.name : 'Add a tool'}</LoomText>
         {tool ? <Pressable accessibilityRole="button" accessibilityLabel="Delete tool" onPress={() => setConfirmDelete(true)} style={styles.navButton} testID="button-delete-tool"><Feather name="trash-2" size={18} color={colors.destructive} /></Pressable> : <View style={styles.navButton} />}
       </View>
@@ -371,7 +371,7 @@ export function SewingToolForm({ tool, section: startSection }: { tool?: SewingT
             <Pressable accessibilityRole="button" accessibilityLabel={photo ? 'Change the photo' : 'Add a photo'} onPress={() => { void pickPhoto(); }} style={[styles.photo, { borderColor: colors.input, backgroundColor: colors.selectedWash }]} testID="button-tool-photo">
               {photo?.kind === 'new' ? <Image source={{ uri: photo.asset.uri }} style={styles.photoImage} contentFit="cover" accessibilityLabel="Chosen tool photo" />
                 : photo?.kind === 'kept' && tool ? <ToolThumb tool={tool} size={112} />
-                : <View style={styles.photoEmpty}><Feather name="camera" size={20} color={colors.primary} /><LoomText style={{ color: colors.primary, fontFamily: fonts.semibold, fontSize: 13 }}>Add a photo</LoomText></View>}
+                : <View style={styles.photoEmpty}><Feather name="camera" size={20} color={colors.primaryText} /><LoomText style={{ color: colors.primaryText, fontFamily: fonts.semibold, fontSize: 13 }}>Add a photo</LoomText></View>}
             </Pressable>
             {photo ? <LoomButton title="Remove photo" variant="quiet" onPress={() => setPhoto(null)} testID="button-remove-tool-photo" /> : null}
           </View>

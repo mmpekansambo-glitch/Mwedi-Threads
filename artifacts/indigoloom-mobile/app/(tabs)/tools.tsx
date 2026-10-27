@@ -26,7 +26,7 @@ function ToolRow({ tool }: { tool: SewingTool }) {
       </View>
       {tool.quantity !== null ? (
         <View style={[styles.quantity, { backgroundColor: colors.selectedWash }]}>
-          <LoomText style={{ color: colors.primary, fontFamily: fonts.semibold, fontSize: 14 }}>× {tool.quantity}</LoomText>
+          <LoomText style={{ color: colors.primaryText, fontFamily: fonts.semibold, fontSize: 14 }}>× {tool.quantity}</LoomText>
         </View>
       ) : null}
     </Pressable>
@@ -79,7 +79,7 @@ export default function ToolsScreen() {
             </View>
             {tools.length ? <View style={styles.list}>{tools.map((tool) => <ToolRow key={tool.id} tool={tool} />)}</View> : (
               <Pressable accessibilityRole="button" onPress={() => addTool(item.value)} style={[styles.empty, { borderColor: colors.border }]} testID={`button-add-first-${item.value}`}>
-                <LoomText style={{ color: colors.mutedForeground, fontSize: 15 }}>No {item.label.toLowerCase()} yet. <LoomText style={{ color: colors.primary, fontFamily: fonts.semibold, fontSize: 15 }}>Add {item.value === 'kit' ? 'kit' : 'a notion'}</LoomText></LoomText>
+                <LoomText style={{ color: colors.mutedForeground, fontSize: 15 }}>No {item.label.toLowerCase()} yet. <LoomText style={{ color: colors.primaryText, fontFamily: fonts.semibold, fontSize: 15 }}>Add {item.value === 'kit' ? 'kit' : 'a notion'}</LoomText></LoomText>
               </Pressable>
             )}
           </View>
