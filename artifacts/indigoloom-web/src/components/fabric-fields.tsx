@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Sparkles, X } from 'lucide-react';
+import { X, type LucideIcon } from 'lucide-react';
 import type { FabricConstruction, FabricPrint, FabricType, FabricUnit, StashFabric } from '@workspace/api-client-react';
 import { Wheel } from '@/components/date-wheel-field';
 
@@ -96,8 +96,19 @@ export function sizeForApi(value: string): number | null | 'invalid' {
   return Number.isFinite(number) && number >= 0 && number <= 999 ? number : 'invalid';
 }
 
-// Print picker as a scroll wheel like the date picker.
-export function PrintWheelField({ value, onChange }: { value: FabricPrint | ''; onChange: (value: FabricPrint | '') => void }) {
+// Fabric type and print pickers are scroll wheels like the date picker.
+export function OptionWheelField<T extends string>({ id, label, required, options, value, onChange, icon: Icon, placeholder, testId, error }: {
+  id: string;
+  label: string;
+  required?: boolean;
+  options: Array<{ value: T; label: string }>;
+  value: T | '';
+  onChange: (value: T | '') => void;
+  icon: LucideIcon;
+  placeholder: string;
+  testId: string;
+  error?: string;
+}) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(0);
   const fieldRef = useRef<HTMLDivElement>(null);
@@ -116,27 +127,28 @@ export function PrintWheelField({ value, onChange }: { value: FabricPrint | ''; 
   }, [open]);
 
   const openPicker = () => {
-    setDraft(Math.max(0, fabricPrints.findIndex((item) => item.value === value)));
+    setDraft(Math.max(0, options.findIndex((item) => item.value === value)));
     setOpen(!open);
   };
-  const label = labelFor(fabricPrints, value);
+  const shown = labelFor(options, value);
 
   return <div className="field-block date-wheel-field" ref={fieldRef}>
-    <label htmlFor="fabric-print">Print</label>
+    <label htmlFor={id}>{label}{required && <> <b>*</b></>}</label>
     <div className="date-wheel-controls">
-      <button type="button" id="fabric-print" className={`date-wheel-trigger${label ? '' : ' empty'}`} aria-haspopup="dialog" aria-expanded={open} onClick={openPicker} data-testid="select-fabric-print">
-        <Sparkles size={17}/><span>{label || 'Choose a print'}</span>
+      <button type="button" id={id} className={`date-wheel-trigger${shown ? '' : ' empty'}`} aria-haspopup="dialog" aria-expanded={open} onClick={openPicker} data-testid={testId}>
+        <Icon size={17}/><span>{shown || placeholder}</span>
       </button>
-      {value && <button type="button" className="date-wheel-clear" aria-label="Clear print" onClick={() => { onChange(''); setOpen(false); }} data-testid="select-fabric-print-clear"><X size={16}/></button>}
+      {value && !required && <button type="button" className="date-wheel-clear" aria-label={`Clear ${label.toLowerCase()}`} onClick={() => { onChange(''); setOpen(false); }} data-testid={`${testId}-clear`}><X size={16}/></button>}
     </div>
-    {open && <div className="date-wheel-panel" role="dialog" aria-label="Print">
+    {error && <span className="field-error">{error}</span>}
+    {open && <div className="date-wheel-panel" role="dialog" aria-label={label}>
       <div className="date-wheels weight-wheels">
         <div className="date-wheel-band" aria-hidden="true"/>
-        <Wheel label="Print" items={fabricPrints.map((item) => item.label)} index={draft} onChange={setDraft} testId="select-fabric-print-wheel"/>
+        <Wheel label={label} items={options.map((item) => item.label)} index={draft} onChange={setDraft} testId={`${testId}-wheel`}/>
       </div>
       <div className="date-wheel-actions">
         <button type="button" className="button button-outline" onClick={() => setOpen(false)}>Cancel</button>
-        <button type="button" className="button button-primary" onClick={() => { onChange(fabricPrints[draft]!.value); setOpen(false); }} data-testid="select-fabric-print-done">Done</button>
+        <button type="button" className="button button-primary" onClick={() => { onChange(options[draft]!.value); setOpen(false); }} data-testid={`${testId}-done`}>Done</button>
       </div>
     </div>}
   </div>;

@@ -42,44 +42,53 @@ function Choices<T extends string>({ options, value, onChange, testID }: { optio
   );
 }
 
-// Print picker as a scroll wheel like the date picker.
-function PrintWheelField({ value, onChange }: { value: FabricPrint | null; onChange: (value: FabricPrint | null) => void }) {
+// Fabric type and print pickers are scroll wheels like the date picker.
+function OptionWheelField<T extends string>({ label, required, options, value, onChange, icon, placeholder, testID }: {
+  label: string;
+  required?: boolean;
+  options: Array<{ value: T; label: string }>;
+  value: T | null;
+  onChange: (value: T | null) => void;
+  icon: keyof typeof Feather.glyphMap;
+  placeholder: string;
+  testID: string;
+}) {
   const colors = useSewingColors();
   const [isOpen, setIsOpen] = useState(false);
   const [draft, setDraft] = useState(0);
-  const label = labelFor(fabricPrints, value);
+  const shown = labelFor(options, value);
   const openPicker = () => {
-    setDraft(Math.max(0, fabricPrints.findIndex((item) => item.value === value)));
+    setDraft(Math.max(0, options.findIndex((item) => item.value === value)));
     setIsOpen(true);
   };
   return (
     <View style={styles.wheelField}>
-      <FormFieldLabel>Print</FormFieldLabel>
-      <Pressable accessibilityRole="button" accessibilityLabel={`Print: ${label || 'Choose a print'}`} onPress={openPicker} style={[styles.trigger, { backgroundColor: colors.card, borderColor: colors.input }]} testID="button-fabric-print">
-        <Feather name="star" size={16} color={colors.primaryText} />
-        <LoomText style={{ flex: 1, color: label ? colors.foreground : colors.mutedForeground, fontSize: 16 }}>{label || 'Choose a print'}</LoomText>
+      <FormFieldLabel>{required ? `${label} *` : label}</FormFieldLabel>
+      <Pressable accessibilityRole="button" accessibilityLabel={`${label}: ${shown || placeholder}`} onPress={openPicker} style={[styles.trigger, { backgroundColor: colors.card, borderColor: colors.input }]} testID={`button-${testID}`}>
+        <Feather name={icon} size={16} color={colors.primaryText} />
+        <LoomText style={{ flex: 1, color: shown ? colors.foreground : colors.mutedForeground, fontSize: 16 }}>{shown || placeholder}</LoomText>
         <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
       </Pressable>
       <Modal visible={isOpen} transparent animationType="slide" onRequestClose={() => setIsOpen(false)}>
         <View style={styles.modalBackdrop}>
-          <Pressable accessibilityLabel="Close print picker" onPress={() => setIsOpen(false)} style={StyleSheet.absoluteFill} />
+          <Pressable accessibilityLabel={`Close ${label.toLowerCase()} picker`} onPress={() => setIsOpen(false)} style={StyleSheet.absoluteFill} />
           <View style={[styles.sheet, { backgroundColor: colors.card }]}>
             <View style={styles.sheetHeading}>
               <Pressable accessibilityRole="button" onPress={() => setIsOpen(false)} style={styles.headingButton}>
                 <LoomText style={{ color: colors.mutedForeground, fontSize: 16 }}>Cancel</LoomText>
               </Pressable>
-              <LoomText serif style={{ color: colors.foreground, fontSize: 20 }}>Print</LoomText>
-              <Pressable accessibilityRole="button" onPress={() => { onChange(fabricPrints[draft]!.value); setIsOpen(false); }} style={styles.headingButton} testID="button-fabric-print-done">
+              <LoomText serif style={{ color: colors.foreground, fontSize: 20 }}>{label}</LoomText>
+              <Pressable accessibilityRole="button" onPress={() => { onChange(options[draft]!.value); setIsOpen(false); }} style={styles.headingButton} testID={`button-${testID}-done`}>
                 <LoomText style={{ color: colors.primaryText, fontFamily: fonts.semibold, fontSize: 16, textAlign: 'right' }}>Done</LoomText>
               </Pressable>
             </View>
             <View style={[styles.wheels, { backgroundColor: colors.selectedWash }]}>
               <View pointerEvents="none" style={[styles.wheelBand, { borderColor: colors.accent }]} />
-              <Wheel label="Print" items={fabricPrints.map((item) => item.label)} index={draft} onChange={setDraft} flex={1} testID="wheel-fabric-print" />
+              <Wheel label={label} items={options.map((item) => item.label)} index={draft} onChange={setDraft} flex={1} testID={`wheel-${testID}`} />
             </View>
-            {value ? (
+            {value && !required ? (
               <Pressable accessibilityRole="button" onPress={() => { onChange(null); setIsOpen(false); }} style={styles.clearButton}>
-                <LoomText style={{ color: colors.destructive, fontFamily: fonts.semibold, fontSize: 15 }}>Clear print</LoomText>
+                <LoomText style={{ color: colors.destructive, fontFamily: fonts.semibold, fontSize: 15 }}>Clear {label.toLowerCase()}</LoomText>
               </Pressable>
             ) : null}
           </View>
@@ -240,11 +249,10 @@ export function FabricForm({ fabric }: { fabric?: StashFabric }) {
             </>
           ) : null}
 
-          <FormFieldLabel>Fabric type *</FormFieldLabel>
-          <Choices options={fabricTypes} value={fabricType} onChange={setFabricType} testID="button-fabric-type" />
+          <OptionWheelField label="Fabric type" required options={fabricTypes} value={fabricType || null} onChange={(next) => setFabricType(next ?? '')} icon="layers" placeholder="Choose a type" testID="fabric-type" />
           <FormFieldLabel>Woven or knit</FormFieldLabel>
           <Choices options={fabricConstructions} value={construction} onChange={(next) => setConstruction(construction === next ? null : next)} testID="button-construction" />
-          <PrintWheelField value={print} onChange={setPrint} />
+          <OptionWheelField label="Print" options={fabricPrints} value={print} onChange={setPrint} icon="star" placeholder="Choose a print" testID="fabric-print" />
           <GeneralColorPicker value={generalColor} onChange={setGeneralColor} />
           <FormFieldLabel>Measured in</FormFieldLabel>
           <Choices options={fabricUnits} value={unit} onChange={setUnit} testID="button-unit" />
