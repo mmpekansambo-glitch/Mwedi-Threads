@@ -166,7 +166,14 @@ test("adds a fabric with a print close-up and an extra photo", async ({ page }) 
 
   await page.getByTestId("input-fabric-photo-main").setInputFiles({ name: "print.png", mimeType: "image/png", buffer: photo });
   await page.getByTestId("input-fabric-photo-more").setInputFiles({ name: "drape.png", mimeType: "image/png", buffer: photo });
-  await page.getByTestId("select-fabric-type").selectOption("linen");
+  await page.getByTestId("select-fabric-type").click();
+  const typeWheel = page.getByTestId("select-fabric-type-wheel");
+  await expect(typeWheel.getByRole("option")).toHaveCount(22);
+  await expect(typeWheel.getByRole("option").first()).toHaveText("Blend");
+  await expect(typeWheel.getByRole("option").last()).toHaveText("Other");
+  await typeWheel.getByRole("option", { name: "Linen" }).click();
+  await page.getByTestId("select-fabric-type-done").click();
+  await expect(page.getByTestId("select-fabric-type")).toHaveText("Linen");
   await page.getByTestId("button-construction-woven").click();
   await page.getByTestId("select-fabric-print").click();
   await expect(page.getByTestId("select-fabric-print-wheel").getByRole("option")).toHaveText(["Abstract", "Animal", "Ankara (wax print)", "Batik", "Botanical", "Camo", "Check or plaid", "Chevron", "Damask", "Dots", "Floral", "Geometric", "Houndstooth", "Ikat", "Novelty", "Ombré", "Paisley", "Solid", "Stripe", "Tie-dye", "Toile", "Other"]);

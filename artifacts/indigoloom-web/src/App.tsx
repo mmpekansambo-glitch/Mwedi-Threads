@@ -52,7 +52,7 @@ import { ProjectCounter } from '@/components/project-counter';
 import { NameReviewButton, NameReviewForm, NameReviewList, catalogFieldLabels } from '@/components/name-review';
 import { ErrorBoundary } from '@/components/error-boundary';
 import {
-  fabricConstructions, fabricName, fabricPhotoUrl, fabricPrints, fabricSize, fabricTypes, fabricUnits, labelFor, maxFabricPhotos, sizeForApi, PrintWheelField,
+  fabricConstructions, fabricName, fabricPhotoUrl, fabricPrints, fabricSize, fabricTypes, fabricUnits, labelFor, maxFabricPhotos, sizeForApi, OptionWheelField,
 } from '@/components/fabric-fields';
 import { StageTrack, amountLeft, fabricAmount, sewingStages, stageIndex } from '@/components/sewing-fields';
 import { trackEvent, trackSuccessfulAction } from '@/lib/analytics';
@@ -1484,9 +1484,9 @@ function FabricForm({ fabric }: { fabric?: StashFabric }) {
         {errors.photo && <span className="field-error field-wide">{errors.photo}</span>}
       </div>
       <div className="form-grid">
-        <div className="field-block"><label htmlFor="fabric-type">Fabric type <b>*</b></label><select id="fabric-type" value={draft.fabricType} onChange={(event) => { set({ fabricType: event.target.value as FabricType }); setErrors(({ type: _type, ...rest }) => rest); }} data-testid="select-fabric-type"><option value="">Choose a type</option>{fabricTypes.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select>{errors.type && <span className="field-error">{errors.type}</span>}</div>
+        <OptionWheelField id="fabric-type" label="Fabric type" required options={fabricTypes} value={draft.fabricType} onChange={(fabricType) => { set({ fabricType }); setErrors(({ type: _type, ...rest }) => rest); }} icon={Layers3} placeholder="Choose a type" testId="select-fabric-type" error={errors.type}/>
         <div className="field-block"><label id="fabric-construction-label">Woven or knit</label><div className="segmented" role="radiogroup" aria-labelledby="fabric-construction-label">{fabricConstructions.map((item) => <button key={item.value} type="button" role="radio" aria-checked={draft.construction === item.value} className={draft.construction === item.value ? 'selected' : ''} onClick={() => set({ construction: draft.construction === item.value ? null : item.value })} data-testid={`button-construction-${item.value}`}>{item.label}</button>)}</div></div>
-        <PrintWheelField value={draft.print} onChange={(print) => set({ print })}/>
+        <OptionWheelField id="fabric-print" label="Print" options={fabricPrints} value={draft.print} onChange={(print) => set({ print })} icon={Sparkles} placeholder="Choose a print" testId="select-fabric-print"/>
         <div className="field-block"><label id="fabric-unit-label">Measured in</label><div className="segmented" role="radiogroup" aria-labelledby="fabric-unit-label">{fabricUnits.map((item) => <button key={item.value} type="button" role="radio" aria-checked={draft.unit === item.value} className={draft.unit === item.value ? 'selected' : ''} onClick={() => set({ unit: item.value })} data-testid={`button-unit-${item.value}`}>{item.label}</button>)}</div></div>
         <GeneralColorPicker value={draft.generalColor} onChange={(generalColor) => set({ generalColor })}/>
         <div className="field-block"><label htmlFor="fabric-amount">Amount</label><span className="input-with-unit"><input id="fabric-amount" inputMode="decimal" placeholder="e.g. 2.5" value={draft.amount} onChange={(event) => { set({ amount: event.target.value }); setErrors(({ size: _size, ...rest }) => rest); }} data-testid="input-fabric-amount"/><i>{unit.amount}</i></span></div>
