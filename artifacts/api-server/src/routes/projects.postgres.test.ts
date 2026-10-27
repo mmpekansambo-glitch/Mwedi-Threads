@@ -401,6 +401,71 @@ describe.skipIf(!databaseUrl)("project authorization against PostgreSQL", () => 
     });
   });
 
+  it("edits and deletes progress notes, keeping the project on its newest note", async () => {
+    const created = await request("/projects", {
+      method: "POST",
+      user: ownerA,
+      body: { title: "Cardigan", craft: "crochet" },
+    });
+    const project = await created.json() as { id: string };
+    const addNote = async (notes: string, completionPercent: number) => {
+      const response = await request(`/projects/${project.id}/progress`, {
+        method: "POST",
+        user: ownerA,
+        body: { notes, completionPercent },
+      });
+      expect(response.status).toBe(201);
+      return (await response.json()) as { id: string; createdAt: string };
+    };
+    const projectNow = async () =>
+      (await (await request(`/projects/${project.id}`, { user: ownerA })).json()) as {
+        status: string;
+        completionPercent: number;
+        completedAt: string | null;
+        progress: { id: string; notes: string; completionPercent: number }[];
+      };
+    const edit = (entryId: string, body: unknown, user = ownerA) =>
+      request(`/projects/${project.id}/progress/${entryId}`, { method: "PATCH", user, body });
+
+    const first = await addNote("Started the back", 40);
+    const second = await addNote("Last row done", 100);
+    expect(await projectNow()).toMatchObject({ status: "completed", completionPercent: 100 });
+
+    expect((await edit(second.id, { notes: "Not mine" }, ownerB)).status).toBe(404);
+    expect(
+      (await request(`/projects/${project.id}/progress/${second.id}`, { method: "DELETE", user: ownerB })).status,
+    ).toBe(404);
+
+    const textOnly = await edit(second.id, { notes: "  Last row done, blocked it  " });
+    expect(textOnly.status).toBe(200);
+    expect(await textOnly.json()).toMatchObject({ notes: "Last row done, blocked it", completionPercent: 100 });
+    expect(await projectNow()).toMatchObject({ status: "completed", completionPercent: 100 });
+
+    const lowered = await edit(second.id, { notes: "Nearly there", completionPercent: 90 });
+    expect(lowered.status).toBe(200);
+    expect(await projectNow()).toMatchObject({ status: "in_progress", completionPercent: 90, completedAt: null });
+
+    const future = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+    expect((await edit(first.id, { notes: "Started the back", createdAt: future })).status).toBe(400);
+
+    // Moving the older note's date past the newer one makes it the newest.
+    const later = new Date(new Date(second.createdAt).getTime() + 60_000).toISOString();
+    expect((await edit(first.id, { notes: "Started the back", createdAt: later })).status).toBe(200);
+    expect(await projectNow()).toMatchObject({ completionPercent: 40 });
+
+    expect(
+      (await request(`/projects/${project.id}/progress/${first.id}`, { method: "DELETE", user: ownerA })).status,
+    ).toBe(204);
+    const afterDelete = await projectNow();
+    expect(afterDelete.completionPercent).toBe(90);
+    expect(afterDelete.progress.map(({ id }) => id)).toEqual([second.id]);
+
+    expect(
+      (await request(`/projects/${project.id}/progress/${second.id}`, { method: "DELETE", user: ownerA })).status,
+    ).toBe(204);
+    expect(await projectNow()).toMatchObject({ completionPercent: 0, progress: [] });
+  });
+
   it("moves an old project's yarn into its yarn list and finds projects by any yarn", async () => {
     const ownerC = "postgres-test-user-c";
     await getTestDb().insert(usersTable).values({ id: ownerC, email: "c@example.test" });

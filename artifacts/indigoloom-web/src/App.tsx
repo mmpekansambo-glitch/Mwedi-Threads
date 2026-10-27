@@ -5,7 +5,7 @@ import { ClerkProvider, SignIn, SignUp, useAuth, useClerk, useSignUp, useUser } 
 import { publishableKeyFromHost } from '@clerk/react/internal';
 import { shadcn } from '@clerk/themes';
 import {
-  requestProgressPhotoUpload, requestStashPhotoUpload, useAddProgress, useCreateProject, useDeleteProgressPhoto, useDeleteProject, useGetDashboard,
+  requestStashPhotoUpload, useAddProgress, useCreateProject, useDeleteProgressPhoto, useDeleteProject, useGetDashboard,
   usePreviewDesignerWebsiteTitle,
   useGetProject, useGetProjects, useStarProject, useUnstarProject, useUpdateProject,
   getGetDashboardQueryKey, getGetProjectQueryKey, getGetProjectsQueryKey,
@@ -37,6 +37,7 @@ import {
   type ProgressAmountDraft, type ProgressSettingsDraft,
 } from '@/components/progress-method';
 import { DashboardCharts } from '@/components/dashboard-charts';
+import { ProgressBar, ProgressEntryCard, uploadProgressPhoto } from '@/components/progress-entry';
 import {
   BlendFields, ColorDot, DidYouMean, GeneralColorPicker, WeightWheelField, blendForApi, generalColors, useSettledValue, weightLabel, yarnWeights,
   type BlendDraft,
@@ -404,10 +405,6 @@ function progressSummary(progress: { createdAt: string }[]): string {
   const last = progress.reduce((latest, entry) => (entry.createdAt > latest ? entry.createdAt : latest), progress[0].createdAt);
   const day = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' }).format(new Date(last));
   return `${progress.length} ${progress.length === 1 ? 'note' : 'notes'} · last one ${day}`;
-}
-
-function ProgressBar({ value }: { value: number }) {
-  return <div className="progress-track" aria-label={`${value}% complete`}><span style={{ width: `${Math.min(100, Math.max(0, value))}%` }}/></div>;
 }
 
 function StatusPill({ status }: { status: ProjectStatus }) {
@@ -943,41 +940,22 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
     setProgressAmountError('');
     const payload: CreateProgress = { notes: values.notes.trim(), ...amount };
     setProgressPhotoError('');
-    try {
-      if (progressPhoto) {
-        if (progressPhoto.size > 10 * 1024 * 1024) {
-          setProgressPhotoError('Choose a photo smaller than 10 MB.');
-          return;
-        }
-        if (!['image/jpeg', 'image/png', 'image/webp'].includes(progressPhoto.type)) {
-          setProgressPhotoError('Choose a JPEG, PNG, or WebP photo.');
-          return;
-        }
-        const contentType = progressPhoto.type as 'image/jpeg' | 'image/png' | 'image/webp';
-        const upload = await requestProgressPhotoUpload(projectId, {
-          name: progressPhoto.name || 'progress-photo',
-          size: progressPhoto.size,
-          contentType,
-        });
-        const uploaded = await fetch(upload.uploadURL, {
-          method: 'PUT',
-          headers: { 'Content-Type': contentType },
-          body: progressPhoto,
-        });
-        if (!uploaded.ok) throw new Error('The photo upload did not finish.');
-        payload.photoPath = upload.photoPath;
+    if (progressPhoto) {
+      const uploaded = await uploadProgressPhoto(projectId, progressPhoto);
+      if ('error' in uploaded) {
+        setProgressPhotoError(uploaded.error);
+        return;
       }
-      addProgress.mutate({ projectId, data: payload }, {
-        onSuccess: trackSuccessfulAction('progress_updated', () => {
-          invalidate();
-          setShowProgress(false);
-          setProgressPhoto(null);
-          progressForm.reset({ notes: '' });
-        }),
-      });
-    } catch {
-      setProgressPhotoError('We couldn’t upload that photo. Try again or save without it.');
+      payload.photoPath = uploaded.photoPath;
     }
+    addProgress.mutate({ projectId, data: payload }, {
+      onSuccess: trackSuccessfulAction('progress_updated', () => {
+        invalidate();
+        setShowProgress(false);
+        setProgressPhoto(null);
+        progressForm.reset({ notes: '' });
+      }),
+    });
   });
   const addProgress = useAddProgress();
   const deleteProject = () => remove.mutate({ projectId }, {
@@ -1033,7 +1011,7 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
         <div className="progress-log-heading"><div><h2 className="serif">Progress journal</h2></div><button className="button button-primary button-small" onClick={() => { setShowProgress(!showProgress); setProgressAmount(amountDraftFor(project, latestProgressValue)); setProgressAmountError(''); }} data-testid="button-add-progress">{showProgress ? <X size={15}/> : <Plus size={15}/>} {showProgress ? 'Close note' : 'Add a note'}</button></div>
         {showProgress && <Form {...progressForm}><form className="progress-form loom-card" onSubmit={submitProgress} noValidate><div className="field-block"><label htmlFor="progress-notes">What did you work on?</label><textarea id="progress-notes" rows={3} placeholder="A few rows, a tricky bit figured out, a lovely color change…" {...progressForm.register('notes', { required: 'Add a note about this session.', maxLength: { value: 2000, message: 'Keep your note under 2,000 characters.' } })} data-testid="input-progress-notes"/>{progressForm.formState.errors.notes && <span className="field-error">{progressForm.formState.errors.notes.message}</span>}</div><div className="field-block progress-photo-field"><label htmlFor="progress-photo">Add a progress photo (optional)</label><input id="progress-photo" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { setProgressPhoto(event.target.files?.[0] ?? null); setProgressPhotoError(''); }} data-testid="input-progress-photo"/>{progressPhotoPreview && <div className="progress-photo-preview"><img src={progressPhotoPreview} alt="Selected progress photo preview"/><button type="button" className="button button-quiet" onClick={() => setProgressPhoto(null)}>Remove photo</button></div>}</div><div className="progress-form-row"><ProgressAmountField project={project} value={progressAmount} onChange={setProgressAmount}/>{progressAmountError && <span className="field-error" role="alert">{progressAmountError}</span>}</div>{(addProgress.isError || progressPhotoError) && <p className="mutation-error">{progressPhotoError || "Your note didn't stick this time. Please try again."}</p>}<div className="form-actions"><button type="button" className="button button-quiet" onClick={() => { setShowProgress(false); setProgressPhoto(null); }} data-testid="button-cancel-progress">Cancel</button><button type="submit" className="button button-primary" disabled={addProgress.isPending} data-testid="button-save-progress">{addProgress.isPending ? 'Saving note…' : 'Save progress'} <ArrowRight size={15}/></button></div></form></Form>}
         {photoRemovalError && <p className="mutation-error" role="alert">{photoRemovalError}</p>}
-        {project.progress.length ? <div className="timeline">{[...project.progress].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((entry) => <article className="timeline-entry" key={entry.id} data-testid={`entry-progress-${entry.id}`}><span className="timeline-marker"><Feather size={13}/></span><div className="timeline-card loom-card"><div className="timeline-entry-top"><time>{new Intl.DateTimeFormat('en', { weekday: 'long', month: 'long', day: 'numeric' }).format(new Date(entry.createdAt))}</time><b>{entry.completionPercent}% complete</b></div><p>{entry.notes}</p>{entry.photoPath && <><img className="timeline-photo" src={`/api/projects/${projectId}/progress/${entry.id}/photo`} alt={`Progress photo for ${project.title}`} loading="lazy"/><button type="button" className="button button-quiet button-remove-progress-photo" onClick={() => deleteEntryPhoto(entry.id)} disabled={removingPhotoEntryId === entry.id} data-testid={`button-remove-progress-photo-${entry.id}`}>{removingPhotoEntryId === entry.id ? 'Removing photo…' : 'Remove photo'} <X size={14}/></button></>}<ProgressBar value={entry.completionPercent}/></div></article>)}</div> : <div className="journal-empty"><h3>No notes yet</h3><p>Add a note each time you work on this project.</p><button className="button button-outline" onClick={() => { setShowProgress(true); setProgressAmount(amountDraftFor(project, latestProgressValue)); setProgressAmountError(''); }} data-testid="button-first-progress">Add your first note <ArrowRight size={15}/></button></div>}
+        {project.progress.length ? <div className="timeline">{[...project.progress].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((entry, position) => <ProgressEntryCard key={entry.id} project={project} entry={entry} isLatest={position === 0} onChanged={invalidate}>{entry.photoPath && <><img className="timeline-photo" src={`/api/projects/${projectId}/progress/${entry.id}/photo`} alt={`Progress photo for ${project.title}`} loading="lazy"/><button type="button" className="button button-quiet button-remove-progress-photo" onClick={() => deleteEntryPhoto(entry.id)} disabled={removingPhotoEntryId === entry.id} data-testid={`button-remove-progress-photo-${entry.id}`}>{removingPhotoEntryId === entry.id ? 'Removing photo…' : 'Remove photo'} <X size={14}/></button></>}</ProgressEntryCard>)}</div> : <div className="journal-empty"><h3>No notes yet</h3><p>Add a note each time you work on this project.</p><button className="button button-outline" onClick={() => { setShowProgress(true); setProgressAmount(amountDraftFor(project, latestProgressValue)); setProgressAmountError(''); }} data-testid="button-first-progress">Add your first note <ArrowRight size={15}/></button></div>}
       </div>
       <aside className="detail-aside">
         <div className="aside-card loom-card"><h3 className="serif">Details</h3><dl className="detail-list">

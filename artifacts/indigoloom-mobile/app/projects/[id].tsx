@@ -1,11 +1,8 @@
-import { useEffect, useState } from 'react';
-import { useAddProgress, useDeleteProgressPhoto, useDeleteProject, useGetProject, getGetDashboardQueryKey, getGetProjectQueryKey, getGetProjectsQueryKey, getGetSkeinSuggestionsQueryKey, requestProgressPhotoUpload } from '@workspace/api-client-react';
-import { useAuth } from '@clerk/expo';
+import { useState } from 'react';
+import { useAddProgress, useDeleteProgress, useDeleteProgressPhoto, useDeleteProject, useGetProject, getGetDashboardQueryKey, getGetProjectQueryKey, getGetProjectsQueryKey, getGetSkeinSuggestionsQueryKey } from '@workspace/api-client-react';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { Feather } from '@expo/vector-icons';
-import { File } from 'expo-file-system';
-import { fetch as expoFetch } from 'expo/fetch';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import { Alert, Linking, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
@@ -18,6 +15,7 @@ import { describeNeedle } from '@/components/NeedleFields';
 import { describeProjectYarn } from '@/components/ProjectYarns';
 import { SkeinSuggestions } from '@/components/SkeinSuggestions';
 import { ProjectCounter } from '@/components/ProjectCounter';
+import { SavedProgressPhoto, SwipeableNote, confirmDeleteNote, pickProgressPhoto, uploadProgressPhoto } from '@/components/ProgressNote';
 import { useColors } from '@/hooks/useColors';
 
 export default function ProjectDetailScreen() {
@@ -28,6 +26,7 @@ export default function ProjectDetailScreen() {
   const query = useGetProject(id);
   const addProgress = useAddProgress();
   const removeProgressPhoto = useDeleteProgressPhoto();
+  const removeProgress = useDeleteProgress();
   const remove = useDeleteProject();
   const [notes, setNotes] = useState('');
   const [amount, setAmount] = useState<ProgressAmountDraft | null>(null);
@@ -71,37 +70,14 @@ export default function ProjectDetailScreen() {
     setMessage('');
     let photoPath: string | undefined;
     if (photo) {
-      try {
-        setPhotoUploading(true);
-        const file = new File(photo.uri);
-        const contentType = photo.mimeType || 'image/jpeg';
-        const size = photo.fileSize ?? file.size;
-        if (size > 10 * 1024 * 1024) {
-          setMessage('Choose a photo smaller than 10 MB.');
-          return;
-        }
-        if (!['image/jpeg', 'image/png', 'image/webp'].includes(contentType)) {
-          setMessage('Choose a JPEG, PNG, or WebP photo.');
-          return;
-        }
-        const upload = await requestProgressPhotoUpload(id, {
-          name: photo.fileName || 'progress-photo',
-          size: Math.max(1, size),
-          contentType: contentType as 'image/jpeg' | 'image/png' | 'image/webp',
-        });
-        const response = await expoFetch(upload.uploadURL, {
-          method: 'PUT',
-          headers: { 'Content-Type': contentType },
-          body: file,
-        });
-        if (!response.ok) throw new Error('Photo upload failed.');
-        photoPath = upload.photoPath;
-      } catch {
-        setMessage('We could not upload this photo. Please try again or remove it.');
+      setPhotoUploading(true);
+      const uploaded = await uploadProgressPhoto(id, photo);
+      setPhotoUploading(false);
+      if ('error' in uploaded) {
+        setMessage(uploaded.error);
         return;
-      } finally {
-        setPhotoUploading(false);
       }
+      photoPath = uploaded.photoPath;
     }
     addProgress.mutate({
       projectId: id,
@@ -118,26 +94,9 @@ export default function ProjectDetailScreen() {
   };
 
   const pickPhoto = async () => {
-    try {
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!permission.granted) {
-        Alert.alert('Photo library access', 'Allow access to choose a progress photo in Settings.', [
-          { text: 'Not now', style: 'cancel' },
-          { text: 'Open Settings', onPress: () => { void Linking.openSettings(); } },
-        ]);
-        return;
-      }
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        quality: 0.85,
-      });
-      if (!result.canceled) {
-        const selected = result.assets[0];
-        if (selected) setPhoto(selected);
-      }
-    } catch {
-      setMessage('We could not open your photo library. Please try again.');
-    }
+    const picked = await pickProgressPhoto();
+    if (picked && 'error' in picked) setMessage(picked.error);
+    else if (picked) setPhoto(picked);
   };
 
   const deleteProject = () => {
@@ -149,6 +108,14 @@ export default function ProjectDetailScreen() {
       onError: () => setMessage('We could not delete this project. Please try again.'),
     });
   };
+
+  const deleteNote = (entryId: string) => confirmDeleteNote(() => {
+    setMessage('');
+    removeProgress.mutate({ projectId: id, entryId }, {
+      onSuccess: invalidate,
+      onError: () => setMessage('We could not delete this note. Please try again.'),
+    });
+  });
 
   const deleteEntryPhoto = (entryId: string) => {
     setMessage('');
@@ -231,7 +198,8 @@ export default function ProjectDetailScreen() {
             </View>
             <View style={styles.sectionHeading}><LoomText serif style={[styles.sectionTitle, { color: colors.foreground }]}>Progress journal</LoomText><LoomText style={{ color: colors.mutedForeground, fontSize: 14 }}>{project.progress.length} notes</LoomText></View>
             {project.progress.length ? project.progress.map((entry) => (
-              <View key={entry.id} style={[styles.progressEntry, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <SwipeableNote key={entry.id} onEdit={() => router.push({ pathname: '/projects/[id]/note/[entryId]', params: { id, entryId: entry.id } })} onDelete={() => deleteNote(entry.id)} testID={`entry-progress-${entry.id}`}>
+              <View style={[styles.progressEntry, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <View style={[styles.entryMarker, { backgroundColor: colors.accent }]} />
                 <View style={{ flex: 1 }}>
                   <LoomText style={[styles.entryMeta, { color: colors.primary }]}>{entry.completionPercent}% complete · {new Date(entry.createdAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}</LoomText>
@@ -254,6 +222,7 @@ export default function ProjectDetailScreen() {
                   </> : null}
                 </View>
               </View>
+              </SwipeableNote>
             )) : <LoomText style={[styles.noNotes, { color: colors.mutedForeground }]}>No notes yet.</LoomText>}
             <View style={styles.deleteSection}>
               {confirmDelete ? (
@@ -282,31 +251,6 @@ function designerHostname(website: string) {
     return website.replace(/^[a-z]+:\/\/(?:www\.)?/i, '').split(/[/?#]/)[0] || website;
   }
 }
-function SavedProgressPhoto({ projectId, entryId }: { projectId: string; entryId: string }) {
-  const { getToken } = useAuth();
-  const [token, setToken] = useState<string | null>(null);
-  useEffect(() => {
-    let active = true;
-    void getToken().then((value) => {
-      if (active) setToken(value ?? null);
-    });
-    return () => { active = false; };
-  }, [getToken]);
-  const domain = process.env.EXPO_PUBLIC_DOMAIN;
-  if (!domain || !token) return null;
-  return (
-    <Image
-      source={{
-        uri: `https://${domain}/api/projects/${projectId}/progress/${entryId}/photo`,
-        headers: { Authorization: `Bearer ${token}` },
-      }}
-      style={styles.savedPhoto}
-      contentFit="cover"
-      accessibilityLabel="Photo from this progress entry"
-    />
-  );
-}
-
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   nav: { minHeight: 47, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1 },
@@ -334,11 +278,10 @@ const styles = StyleSheet.create({
   removePhotoButton: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
   photoPreview: { width: '100%', height: 190, borderRadius: 12, marginBottom: 12 },
   sectionHeading: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 10, marginBottom: 11 },
-  progressEntry: { borderWidth: 1, borderRadius: 13, padding: 13, flexDirection: 'row', gap: 10, marginBottom: 8 },
+  progressEntry: { borderWidth: 1, borderRadius: 13, padding: 13, flexDirection: 'row', gap: 10 },
   entryMarker: { width: 7, height: 7, borderRadius: 4, marginTop: 5 },
   entryMeta: { fontFamily: fonts.semibold, fontSize: 13 },
   entryNotes: { fontSize: 15, lineHeight: 22, marginTop: 5 },
-  savedPhoto: { width: '100%', height: 220, borderRadius: 12, marginTop: 10, backgroundColor: '#EEF2F9' },
   removeSavedPhoto: { minHeight: 38, flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 5, paddingHorizontal: 2 },
   noNotes: { fontSize: 15, paddingVertical: 15 },
   deleteSection: { alignItems: 'flex-end', marginTop: 8 },
