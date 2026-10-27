@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useGetProjects } from '@workspace/api-client-react';
 import type { ProjectStatus } from '@workspace/api-client-react';
 import { Feather } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EmptyState, ErrorState, LoadingState, LoomButton, LoomText, PageHeader, ProjectCard, fonts } from '@/components/loom';
@@ -32,6 +32,15 @@ export default function ProjectsScreen() {
     ...(starredOnly ? { starred: true } : {}),
   }), [search, status, craft, starredOnly]);
   const clearFilters = () => { setSearch(''); setStatus(''); setCraft(''); setStarredOnly(false); };
+  // The Overview stat cards and chart bars open this tab with a status (or none for All projects).
+  // `at` changes on every tap, so tapping the same card twice still resets the filters.
+  const link = useLocalSearchParams<{ status?: string; at?: string }>();
+  useEffect(() => {
+    if (!link.at) return;
+    clearFilters();
+    const linked = statusFilters.find((item) => item.value && item.value === link.status);
+    if (linked) setStatus(linked.value);
+  }, [link.at, link.status]);
   const query = useGetProjects(params);
   return (
     <ScrollView

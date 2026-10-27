@@ -685,6 +685,65 @@ export const RequestProgressPhotoUploadResponse = zod.object({
 
 
 /**
+ * @summary Edit a project progress entry
+ */
+export const UpdateProgressParams = zod.object({
+  "projectId": zod.coerce.string().uuid(),
+  "entryId": zod.coerce.string().uuid()
+})
+
+export const updateProgressBodyNotesMax = 2000;
+
+export const updateProgressBodyCompletionPercentMin = 0;
+export const updateProgressBodyCompletionPercentMax = 100;
+
+export const updateProgressBodyProgressValueMin = 0;
+export const updateProgressBodyProgressValueMax = 100000;
+
+export const updateProgressBodySectionsDoneItemMin = 0;
+
+export const updateProgressBodySectionsDoneMax = 40;
+
+
+
+
+export const UpdateProgressBody = zod.object({
+  "notes": zod.string().min(1).max(updateProgressBodyNotesMax),
+  "completionPercent": zod.number().int().min(updateProgressBodyCompletionPercentMin).max(updateProgressBodyCompletionPercentMax).optional(),
+  "progressValue": zod.number().min(updateProgressBodyProgressValueMin).max(updateProgressBodyProgressValueMax).optional(),
+  "sectionsDone": zod.array(zod.number().int().min(updateProgressBodySectionsDoneItemMin)).max(updateProgressBodySectionsDoneMax).optional(),
+  "photoPath": zod.string().min(1).nullish().describe('A new photo, or null to remove it. Leave out to keep the current photo.'),
+  "createdAt": zod.coerce.date().optional().describe('When the entry was written.')
+}).describe('Leave out the progress fields to keep the entry\'s recorded progress.')
+
+export const updateProgressResponseCompletionPercentMin = 0;
+export const updateProgressResponseCompletionPercentMax = 100;
+
+
+
+export const UpdateProgressResponse = zod.object({
+  "id": zod.string().uuid(),
+  "projectId": zod.string().uuid(),
+  "notes": zod.string(),
+  "photoPath": zod.string().nullable(),
+  "completionPercent": zod.number().int().min(updateProgressResponseCompletionPercentMin).max(updateProgressResponseCompletionPercentMax),
+  "progressValue": zod.number().nullable().describe('The row or round reached, or skeins used, when the project tracks those.'),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Delete a project progress entry
+ */
+export const DeleteProgressParams = zod.object({
+  "projectId": zod.coerce.string().uuid(),
+  "entryId": zod.coerce.string().uuid()
+})
+
+export const DeleteProgressResponse = zod.void()
+
+
+/**
  * @summary View an image attached to a project progress entry
  */
 export const GetProgressPhotoParams = zod.object({

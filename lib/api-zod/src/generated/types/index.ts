@@ -63,6 +63,7 @@ export * from './stashFabric';
 export * from './stashYarn';
 export * from './unauthorizedResponse';
 export * from './updateCrafts';
+export * from './updateProgress';
 export * from './updateProject';
 export * from './updateStashFabric';
 export * from './updateStashYarn';

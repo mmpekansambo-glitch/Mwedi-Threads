@@ -15,10 +15,10 @@ const monthFormat = new Intl.DateTimeFormat('en', { month: 'short', timeZone: 'U
 const monthYearFormat = new Intl.DateTimeFormat('en', { month: 'long', year: 'numeric', timeZone: 'UTC' });
 const weekFormat = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', timeZone: 'UTC' });
 
-type Row = { label: string; detail: string; count: number };
+type Row = { label: string; detail: string; count: number; status?: ProjectStatus };
 
-function BarChartCard({ title, rows, unit, emptyText, note, edgeLabelsOnly = false }: {
-  title: string; rows: Row[]; unit: [string, string]; emptyText: string; note?: string; edgeLabelsOnly?: boolean;
+function BarChartCard({ title, rows, unit, emptyText, note, edgeLabelsOnly = false, onPick }: {
+  title: string; rows: Row[]; unit: [string, string]; emptyText: string; note?: string; edgeLabelsOnly?: boolean; onPick?: (row: Row) => void;
 }) {
   const colors = useColors();
   const [selected, setSelected] = useState<number | null>(null);
@@ -37,7 +37,7 @@ function BarChartCard({ title, rows, unit, emptyText, note, edgeLabelsOnly = fal
                 key={row.detail}
                 accessibilityRole="button"
                 accessibilityLabel={describe(row)}
-                onPress={() => setSelected(selected === index ? null : index)}
+                onPress={() => (onPick ? onPick(row) : setSelected(selected === index ? null : index))}
                 style={styles.barSlot}
               >
                 <View
@@ -64,7 +64,7 @@ function BarChartCard({ title, rows, unit, emptyText, note, edgeLabelsOnly = fal
             </View>
           )}
           <LoomText style={[styles.caption, { color: colors.chartAxis }]}>
-            {picked ? describe(picked) : `Tallest bar: ${max} ${max === 1 ? unit[0] : unit[1]}. Tap a bar for its count.`}
+            {picked ? describe(picked) : `Tallest bar: ${max} ${max === 1 ? unit[0] : unit[1]}. ${onPick ? 'Tap a bar to see those projects.' : 'Tap a bar for its count.'}`}
           </LoomText>
         </>
       ) : (
@@ -75,9 +75,9 @@ function BarChartCard({ title, rows, unit, emptyText, note, edgeLabelsOnly = fal
   );
 }
 
-export function DashboardCharts({ charts }: { charts: Charts }) {
+export function DashboardCharts({ charts, onPickStatus }: { charts: Charts; onPickStatus: (status: ProjectStatus) => void }) {
   const statusRows = charts.projectsByStatus.map(({ status, count }) => ({
-    label: statusLabels[status], detail: statusLabels[status], count,
+    label: statusLabels[status], detail: statusLabels[status], count, status,
   }));
   const monthRows = charts.completedPerMonth.map(({ month, count }) => {
     const date = new Date(`${month}-01T00:00:00Z`);
@@ -92,6 +92,7 @@ export function DashboardCharts({ charts }: { charts: Charts }) {
   return (
     <View>
       <BarChartCard title="Projects by status" rows={statusRows} unit={['project', 'projects']}
+        onPick={(row) => row.status && onPickStatus(row.status)}
         emptyText="Add your first project and it will show up here." />
       <BarChartCard title="Finished, last 12 months" rows={monthRows} unit={['project', 'projects']} edgeLabelsOnly
         emptyText="Nothing finished in the last year yet. Your first finish will land here."

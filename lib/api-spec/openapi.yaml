@@ -311,6 +311,54 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+  /projects/{projectId}/progress/{entryId}:
+    parameters:
+      - in: path
+        name: projectId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - in: path
+        name: entryId
+        required: true
+        schema:
+          type: string
+          format: uuid
+    patch:
+      operationId: updateProgress
+      tags: [projects]
+      summary: Edit a project progress entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProgress"
+      responses:
+        "200":
+          description: Progress entry updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProgressEntry"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteProgress
+      tags: [projects]
+      summary: Delete a project progress entry
+      responses:
+        "204":
+          description: Progress entry deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /projects/{projectId}/progress/{entryId}/photo:
     parameters:
       - in: path
@@ -1435,6 +1483,37 @@ components:
         photoPath:
           type: string
           minLength: 1
+      required: [notes]
+    UpdateProgress:
+      type: object
+      description: Leave out the progress fields to keep the entry's recorded progress.
+      properties:
+        notes:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        completionPercent:
+          type: integer
+          minimum: 0
+          maximum: 100
+        progressValue:
+          type: number
+          minimum: 0
+          maximum: 100000
+        sectionsDone:
+          type: array
+          maxItems: 40
+          items:
+            type: integer
+            minimum: 0
+        photoPath:
+          type: [string, "null"]
+          minLength: 1
+          description: A new photo, or null to remove it. Leave out to keep the current photo.
+        createdAt:
+          type: string
+          format: date-time
+          description: When the entry was written.
       required: [notes]
     ProgressPhotoUploadRequest:
       type: object

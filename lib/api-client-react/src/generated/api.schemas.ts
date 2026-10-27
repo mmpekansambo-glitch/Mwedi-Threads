@@ -458,6 +458,40 @@ export interface CreateProgress {
   photoPath?: string;
 }
 
+/**
+ * Leave out the progress fields to keep the entry's recorded progress.
+ */
+export interface UpdateProgress {
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  notes: string;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  completionPercent?: number;
+  /**
+     * @minimum 0
+     * @maximum 100000
+     */
+  progressValue?: number;
+  /**
+     * @maxItems 40
+     * @items.minimum 0
+     */
+  sectionsDone?: number[];
+  /**
+     * A new photo, or null to remove it. Leave out to keep the current photo.
+     * @minLength 1
+     * @nullable
+     */
+  photoPath?: string | null;
+  /** When the entry was written. */
+  createdAt?: string;
+}
+
 export type ProgressPhotoUploadRequestContentType = typeof ProgressPhotoUploadRequestContentType[keyof typeof ProgressPhotoUploadRequestContentType];
 
 

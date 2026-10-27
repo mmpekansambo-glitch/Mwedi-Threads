@@ -1,6 +1,6 @@
 import { and, desc, eq, gte, ilike, or, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
-import { Router, type IRouter, type Response } from "express";
+import { Router, type IRouter, type Request, type Response } from "express";
 import {
   AddProgressBody,
   AddProgressParams,
@@ -13,6 +13,7 @@ import {
   SetProjectCounterResponse,
   StarProjectParams,
   UnstarProjectParams,
+  DeleteProgressParams,
   DeleteProgressPhotoParams,
   GetDashboardResponse,
   GetProjectParams,
@@ -26,6 +27,9 @@ import {
   RequestProgressPhotoUploadResponse,
   PreviewDesignerWebsiteTitleBody,
   PreviewDesignerWebsiteTitleResponse,
+  UpdateProgressBody,
+  UpdateProgressParams,
+  UpdateProgressResponse,
   UpdateProjectBody,
   UpdateProjectParams,
   UpdateProjectResponse,
@@ -36,6 +40,7 @@ import {
   projectYarnsTable,
   projectsTable,
   starsTable,
+  type ProgressSection,
   type Project,
 } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
@@ -145,6 +150,87 @@ type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 // Saves the project and its yarn list together. Returns null when the
 // response has already been sent (a stash yarn that isn't the maker's).
+async function findProjectForProgress(ownerId: string, projectId: string) {
+  const [project] = await db
+    .select({
+      id: projectsTable.id,
+      status: projectsTable.status,
+      completedAt: projectsTable.completedAt,
+      progressMethod: projectsTable.progressMethod,
+      progressTotal: projectsTable.progressTotal,
+      progressSections: projectsTable.progressSections,
+    })
+    .from(projectsTable)
+    .where(and(eq(projectsTable.id, projectId), eq(projectsTable.ownerId, ownerId)));
+  return project ?? null;
+}
+
+type ProgressProject = NonNullable<Awaited<ReturnType<typeof findProjectForProgress>>>;
+
+async function findProgressEntry(projectId: string, entryId: string) {
+  const [entry] = await db
+    .select({ id: progressEntriesTable.id, photoPath: progressEntriesTable.photoPath })
+    .from(progressEntriesTable)
+    .where(and(eq(progressEntriesTable.id, entryId), eq(progressEntriesTable.projectId, projectId)));
+  return entry ?? null;
+}
+
+// The newest note, in the order the journal shows them, sets the project's progress.
+async function latestProgressEntry(tx: Transaction, projectId: string) {
+  const [latest] = await tx
+    .select({ id: progressEntriesTable.id, completionPercent: progressEntriesTable.completionPercent })
+    .from(progressEntriesTable)
+    .where(eq(progressEntriesTable.projectId, projectId))
+    .orderBy(desc(progressEntriesTable.createdAt), desc(progressEntriesTable.id))
+    .limit(1);
+  return latest ?? null;
+}
+
+function isProgressPhotoPath(projectId: string, photoPath: string): boolean {
+  return new RegExp(`^/objects/progress/${projectId}/[0-9a-f-]{36}$`, "i").test(photoPath);
+}
+
+// Moves the project to a note's progress: 100% finishes it, and anything less
+// reopens a finished project.
+async function setProjectProgress(
+  tx: Transaction,
+  ownerId: string,
+  project: ProgressProject,
+  completionPercent: number,
+  progressSections?: ProgressSection[],
+): Promise<void> {
+  const nextStatus: ProjectStatus =
+    completionPercent === 100
+      ? "completed"
+      : project.status === "completed"
+        ? "in_progress"
+        : project.status;
+  await tx
+    .update(projectsTable)
+    .set({
+      completionPercent,
+      ...(progressSections ? { progressSections } : {}),
+      status: nextStatus,
+      ...completedDateChanges(project, nextStatus),
+    })
+    .where(eq(projectsTable.id, project.id));
+  if (nextStatus === "completed" && project.status !== "completed") {
+    await suggestSkeinsLeft(tx, ownerId, project.id);
+  } else if (nextStatus !== "completed" && project.status === "completed") {
+    await withdrawSkeinSuggestions(tx, project.id);
+  }
+}
+
+async function removeStoredProgressPhoto(req: Request, projectId: string, photoPath: string): Promise<void> {
+  const prefix = `/objects/progress/${projectId}/`;
+  if (!photoPath.startsWith(prefix)) return;
+  try {
+    await deleteStoredObject(photoPath.slice("/objects/".length));
+  } catch (error) {
+    req.log.error({ err: error, projectId, photoPath }, "Could not delete stored progress photo");
+  }
+}
+
 async function saveWithYarns(
   res: Response,
   ownerId: string,
@@ -795,31 +881,13 @@ router.post(
     }
 
     const ownerId = getOwnerId(res);
-    const [project] = await db
-      .select({
-        id: projectsTable.id,
-        status: projectsTable.status,
-        completedAt: projectsTable.completedAt,
-        progressMethod: projectsTable.progressMethod,
-        progressTotal: projectsTable.progressTotal,
-        progressSections: projectsTable.progressSections,
-      })
-      .from(projectsTable)
-      .where(
-        and(
-          eq(projectsTable.id, params.data.projectId),
-          eq(projectsTable.ownerId, ownerId),
-        ),
-      );
+    const project = await findProjectForProgress(ownerId, params.data.projectId);
     if (!project) {
       res.status(404).json({ error: "Project not found." });
       return;
     }
     const photoPath = parsed.data.photoPath;
-    if (
-      photoPath &&
-      !new RegExp(`^/objects/progress/${project.id}/[0-9a-f-]{36}$`, "i").test(photoPath)
-    ) {
+    if (photoPath && !isProgressPhotoPath(project.id, photoPath)) {
       res.status(400).json({ error: "The photo must belong to this project." });
       return;
     }
@@ -830,12 +898,6 @@ router.post(
       return;
     }
 
-    const nextStatus: ProjectStatus =
-      progress.completionPercent === 100
-        ? "completed"
-        : project.status === "completed"
-          ? "in_progress"
-          : project.status;
     const [entry] = await db.transaction(async (tx) => {
       const [created] = await tx
         .insert(progressEntriesTable)
@@ -847,25 +909,115 @@ router.post(
           progressValue: progress.progressValue,
         })
         .returning();
-      await tx
-        .update(projectsTable)
-        .set({
-          completionPercent: progress.completionPercent,
-          ...(progress.progressSections ? { progressSections: progress.progressSections } : {}),
-          status: nextStatus,
-          ...completedDateChanges(project, nextStatus),
-        })
-        .where(eq(projectsTable.id, project.id));
-      if (nextStatus === "completed" && project.status !== "completed") {
-        await suggestSkeinsLeft(tx, ownerId, project.id);
-      } else if (nextStatus !== "completed" && project.status === "completed") {
-        await withdrawSkeinSuggestions(tx, project.id);
-      }
+      await setProjectProgress(tx, ownerId, project, progress.completionPercent, progress.progressSections);
       return [created];
     });
 
     const validated = AddProgressResponse.parse(entry);
     res.status(201).json(validated);
+  },
+);
+
+router.patch(
+  "/projects/:projectId/progress/:entryId",
+  async (req, res): Promise<void> => {
+    const params = UpdateProgressParams.safeParse(req.params);
+    const parsed = UpdateProgressBody.safeParse(req.body);
+    if (!params.success || !parsed.success || !parsed.data.notes.trim()) {
+      res.status(400).json({ error: "Check the progress note and try again." });
+      return;
+    }
+
+    const ownerId = getOwnerId(res);
+    const project = await findProjectForProgress(ownerId, params.data.projectId);
+    const entry = project && (await findProgressEntry(project.id, params.data.entryId));
+    if (!project || !entry) {
+      res.status(404).json({ error: "Progress note not found." });
+      return;
+    }
+
+    const { photoPath, createdAt } = parsed.data;
+    if (photoPath && photoPath !== entry.photoPath && !isProgressPhotoPath(project.id, photoPath)) {
+      res.status(400).json({ error: "The photo must belong to this project." });
+      return;
+    }
+    // A day of leeway so a maker ahead of the server's clock can still pick today.
+    if (createdAt && createdAt.getTime() > Date.now() + 24 * 60 * 60 * 1000) {
+      res.status(400).json({ error: "The date can't be in the future." });
+      return;
+    }
+
+    // Progress fields are only sent when the maker changed them, so a note
+    // written under an older tracking method keeps what it recorded.
+    const changesProgress =
+      parsed.data.completionPercent !== undefined ||
+      parsed.data.progressValue !== undefined ||
+      parsed.data.sectionsDone !== undefined;
+    const progress = changesProgress ? workOutProgress(project, parsed.data) : null;
+    if (progress && !progress.ok) {
+      res.status(400).json({ error: progress.error });
+      return;
+    }
+
+    const updated = await db.transaction(async (tx) => {
+      const before = await latestProgressEntry(tx, project.id);
+      const [row] = await tx
+        .update(progressEntriesTable)
+        .set({
+          notes: parsed.data.notes.trim(),
+          ...(photoPath !== undefined ? { photoPath } : {}),
+          ...(createdAt ? { createdAt } : {}),
+          ...(progress?.ok
+            ? { completionPercent: progress.completionPercent, progressValue: progress.progressValue }
+            : {}),
+        })
+        .where(eq(progressEntriesTable.id, entry.id))
+        .returning();
+      const after = await latestProgressEntry(tx, project.id);
+      const sections = progress?.ok && after?.id === entry.id ? progress.progressSections : undefined;
+      if (before?.id !== after?.id || before?.completionPercent !== after?.completionPercent || sections) {
+        await setProjectProgress(tx, ownerId, project, after?.completionPercent ?? 0, sections);
+      }
+      return row;
+    });
+
+    if (photoPath !== undefined && entry.photoPath && photoPath !== entry.photoPath) {
+      await removeStoredProgressPhoto(req, project.id, entry.photoPath);
+    }
+    res.json(UpdateProgressResponse.parse(updated));
+  },
+);
+
+router.delete(
+  "/projects/:projectId/progress/:entryId",
+  async (req, res): Promise<void> => {
+    const params = DeleteProgressParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: "Invalid progress note request." });
+      return;
+    }
+
+    const ownerId = getOwnerId(res);
+    const project = await findProjectForProgress(ownerId, params.data.projectId);
+    const entry = project && (await findProgressEntry(project.id, params.data.entryId));
+    if (!project || !entry) {
+      res.status(404).json({ error: "Progress note not found." });
+      return;
+    }
+
+    await db.transaction(async (tx) => {
+      const before = await latestProgressEntry(tx, project.id);
+      await tx.delete(progressEntriesTable).where(eq(progressEntriesTable.id, entry.id));
+      const after = await latestProgressEntry(tx, project.id);
+      if (before?.id !== after?.id) {
+        await setProjectProgress(tx, ownerId, project, after?.completionPercent ?? 0);
+      }
+    });
+
+    if (entry.photoPath) {
+      await removeStoredProgressPhoto(req, project.id, entry.photoPath);
+    }
+    res.sendStatus(204);
   },
 );
 
