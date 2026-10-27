@@ -54,6 +54,7 @@ import {
 } from '@/components/fabric-fields';
 import { trackEvent, trackSuccessfulAction } from '@/lib/analytics';
 import { Toaster } from '@/components/ui/toaster';
+import { useAppearance, type AppearanceChoice } from '@/hooks/use-appearance';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
 
@@ -325,6 +326,7 @@ function PortalLayout({ children, active }: { children: ReactNode; active: keyof
   const initials = displayName.slice(0, 1).toUpperCase();
   const reviewAccess = useGetCatalogReviewAccess({ query: { queryKey: getGetCatalogReviewAccessQueryKey(), staleTime: 5 * 60 * 1000 } });
   const crafts = useCrafts().data;
+  const appearance = useAppearance();
   const home: Craft = active === 'fabric' ? 'sewing' : 'yarn';
   return <div className={`portal-shell home-${home}`}>
     <aside className={`side-rail ${mobileOpen ? 'mobile-open' : ''}`}>
@@ -342,7 +344,7 @@ function PortalLayout({ children, active }: { children: ReactNode; active: keyof
           <Link href="/sewing/fabric" className={`rail-link ${active === 'fabric' ? 'selected' : ''}`} data-testid="link-fabric"><Scissors size={18}/><span>Fabric stash</span></Link>
         </>}
       </nav>
-      <div className="rail-bottom"><ProfileMenu initials={initials} displayName={displayName} crafts={crafts} onSignOut={() => signOut({ redirectUrl: basePath || '/' })}/></div>
+      <div className="rail-bottom"><ProfileMenu initials={initials} displayName={displayName} crafts={crafts} appearance={appearance} onSignOut={() => signOut({ redirectUrl: basePath || '/' })}/></div>
     </aside>
     {mobileOpen && <button className="mobile-scrim" onClick={() => setMobileOpen(false)} aria-label="Close navigation" data-testid="button-dismiss-navigation"/>}
     <main className="portal-main">
@@ -352,7 +354,13 @@ function PortalLayout({ children, active }: { children: ReactNode; active: keyof
   </div>;
 }
 
-function ProfileMenu({ initials, displayName, crafts, onSignOut }: { initials: string; displayName: string; crafts: Crafts | undefined; onSignOut: () => void }) {
+const appearanceOptions: { value: AppearanceChoice; label: string }[] = [
+  { value: 'system', label: 'Match computer' },
+  { value: 'light', label: 'Light' },
+  { value: 'dark', label: 'Dark' },
+];
+
+function ProfileMenu({ initials, displayName, crafts, appearance, onSignOut }: { initials: string; displayName: string; crafts: Crafts | undefined; appearance: ReturnType<typeof useAppearance>; onSignOut: () => void }) {
   const [open, setOpen] = useState(false);
   const client = useQueryClient();
   const save = useUpdateMyCrafts();
@@ -375,8 +383,9 @@ function ProfileMenu({ initials, displayName, crafts, onSignOut }: { initials: s
   }, [open]);
   return <div className="profile-menu" ref={menuRef}>
     {open && <div className="profile-menu-list" role="menu">
-      {crafts && <div className="menu-settings" role="group" aria-labelledby="menu-crafts-label">
+      <div className="menu-settings">
         <div className="menu-settings-heading">Settings</div>
+        {crafts && <div role="group" aria-labelledby="menu-crafts-label">
         <div className="menu-settings-label" id="menu-crafts-label">My crafts</div>
         {(['yarn', 'sewing'] as const).map((craft) => {
           const on = crafts[craft];
@@ -385,7 +394,14 @@ function ProfileMenu({ initials, displayName, crafts, onSignOut }: { initials: s
             <span>{craft === 'yarn' ? 'Yarn' : 'Sewing'}</span><span className={`switch-track${on ? ' on' : ''}`} aria-hidden="true"><i/></span>
           </button>;
         })}
-      </div>}
+        </div>}
+        <div role="radiogroup" aria-labelledby="menu-appearance-label">
+          <div className="menu-settings-label" id="menu-appearance-label">Appearance</div>
+          <div className="appearance-choice">
+            {appearanceOptions.map((option) => <button key={option.value} type="button" role="menuitemradio" aria-checked={appearance.choice === option.value} className={appearance.choice === option.value ? 'selected' : ''} onClick={() => appearance.choose(option.value)} data-testid={`button-appearance-${option.value}`}>{option.label}</button>)}
+          </div>
+        </div>
+      </div>
       <button type="button" role="menuitem" onClick={onSignOut} data-testid="button-sign-out"><LogOut size={16}/> Sign out</button>
     </div>}
     <button type="button" className="profile-chip" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)} data-testid="button-profile-menu"><span className="profile-initial">{initials}</span><span className="profile-name">{displayName}</span><ChevronUp size={16}/></button>
