@@ -79,6 +79,7 @@ function project(id: string, ownerId: string, title: string) {
     yarnColor: null as string | null,
     tools: null,
     hookSize: null,
+    secondHookSize: null,
     needleSize: null,
     needleType: null,
     needleCableLength: null,

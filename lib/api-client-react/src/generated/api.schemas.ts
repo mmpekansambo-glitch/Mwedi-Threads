@@ -224,6 +224,7 @@ export interface Project {
   /** @nullable */
   tools: string | null;
   hookSize: CrochetHookSize | null;
+  secondHookSize: CrochetHookSize | null;
   needleSize: KnittingNeedleSize | null;
   needleType: KnittingNeedleType | null;
   needleCableLength: NeedleCableLength | null;
@@ -331,6 +332,7 @@ export interface CreateProject {
   /** @nullable */
   tools?: string | null;
   hookSize?: CrochetHookSize | null;
+  secondHookSize?: CrochetHookSize | null;
   needleSize?: KnittingNeedleSize | null;
   needleType?: KnittingNeedleType | null;
   needleCableLength?: NeedleCableLength | null;
@@ -383,6 +385,7 @@ export interface UpdateProject {
   /** @nullable */
   tools?: string | null;
   hookSize?: CrochetHookSize | null;
+  secondHookSize?: CrochetHookSize | null;
   needleSize?: KnittingNeedleSize | null;
   needleType?: KnittingNeedleType | null;
   needleCableLength?: NeedleCableLength | null;

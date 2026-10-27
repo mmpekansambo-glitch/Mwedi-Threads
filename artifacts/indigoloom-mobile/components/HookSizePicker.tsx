@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { CrochetHookSize } from '@workspace/api-zod';
 import { Feather } from '@expo/vector-icons';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { LoomText, fonts } from '@/components/loom';
+import { FormFieldLabel, LoomButton, LoomText, fonts } from '@/components/loom';
 import { useColors } from '@/hooks/useColors';
 
 export type CrochetHookSizeValue = (typeof CrochetHookSize)[keyof typeof CrochetHookSize];
@@ -18,6 +18,25 @@ export function HookSizePicker({
   testID?: string;
 }) {
   return <OptionPicker label="Hook size" placeholder="Choose a hook size" options={crochetHookSizes} value={value} onChange={onChange} testID={testID} />;
+}
+
+// Null until the maker adds a second hook; size stays null until one is picked.
+export type SecondHook = { size: CrochetHookSizeValue | null } | null;
+
+export function SecondHookField({ value, onChange, testIDPrefix }: { value: SecondHook; onChange: (value: SecondHook) => void; testIDPrefix: string }) {
+  const colors = useColors();
+  if (!value) {
+    return <LoomButton title="Add a second hook" icon="plus" variant="quiet" onPress={() => onChange({ size: null })} testID={`${testIDPrefix}-add-second-hook`} style={styles.add} />;
+  }
+  return (
+    <View>
+      <View style={styles.heading}>
+        <FormFieldLabel>Second hook</FormFieldLabel>
+        <Pressable accessibilityRole="button" onPress={() => onChange(null)} testID={`${testIDPrefix}-remove-second-hook`}><LoomText style={{ color: colors.mutedForeground, fontSize: 14, textDecorationLine: 'underline' }}>Remove</LoomText></Pressable>
+      </View>
+      <OptionPicker label="Second hook" placeholder="Choose a hook size" options={crochetHookSizes} value={value.size} onChange={(size) => onChange({ size })} testID={`${testIDPrefix}-second-hook-size`} />
+    </View>
+  );
 }
 
 // A dropdown that opens in place, used for hook sizes and knitting needles.
@@ -87,6 +106,8 @@ export function OptionPicker<T extends string>({
 }
 
 const styles = StyleSheet.create({
+  heading: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
+  add: { alignSelf: 'flex-start', marginBottom: 14 },
   wrap: { marginBottom: 14 },
   trigger: { minHeight: 46, borderWidth: 1, borderRadius: 9, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
   triggerText: { flex: 1, fontFamily: fonts.body, fontSize: 15 },

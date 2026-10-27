@@ -117,6 +117,7 @@ describe.skipIf(!databaseUrl)("project yarn, stash links and catalog reviews aga
         yarn_color text,
         tools text,
         hook_size text,
+        second_hook_size text,
         needle_size text,
         needle_type text,
         needle_cable_length text,

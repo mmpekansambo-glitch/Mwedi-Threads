@@ -6,7 +6,7 @@ function project(overrides: Record<string, unknown> = {}) {
   return {
     id: projectId, title: "Ribbed hat", craft: "knitting", status: "in_progress",
     description: null, patternName: null, patternDesigner: null, designerWebsite: null, designerPageTitle: null,
-    yarn: null, yarns: [], tools: null, hookSize: null,
+    yarn: null, yarns: [], tools: null, hookSize: null, secondHookSize: null,
     needleSize: null, needleType: null, needleCableLength: null, secondNeedleSize: null, secondNeedleType: null, secondNeedleCableLength: null,
     startedAt: null, startedAtPrecision: "day", targetDate: null, targetDatePrecision: "day",
     completedAt: null, completedAtPrecision: "day", starred: false,
@@ -49,7 +49,7 @@ test("saves a main needle with cable length and a second needle", async ({ page 
   if (process.env.NEEDLE_SCREENSHOTS) await page.screenshot({ path: `${process.env.NEEDLE_SCREENSHOTS}/new-project-needles.png`, fullPage: true });
   await page.getByTestId("button-save-project").click();
   await expect.poll(() => sent.create).toMatchObject({
-    tools: null, hookSize: null,
+    tools: null, hookSize: null, secondHookSize: null,
     needleSize: "4.0 mm (US 6, UK/Canada 8)", needleType: "circular", needleCableLength: "40 cm (16 in)",
     secondNeedleSize: "3.25 mm (US 3, UK/Canada 10)", secondNeedleType: "double_pointed", secondNeedleCableLength: null,
   });

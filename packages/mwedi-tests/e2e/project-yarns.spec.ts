@@ -10,7 +10,7 @@ function project(overrides: Record<string, unknown> = {}) {
   return {
     id: projectId, title: "Striped blanket", craft: "crochet", status: "in_progress",
     description: null, patternName: null, patternDesigner: null, designerWebsite: null, designerPageTitle: null,
-    yarn: null, yarns: [], tools: null, hookSize: null,
+    yarn: null, yarns: [], tools: null, hookSize: null, secondHookSize: null,
     needleSize: null, needleType: null, needleCableLength: null, secondNeedleSize: null, secondNeedleType: null, secondNeedleCableLength: null,
     startedAt: null, startedAtPrecision: "day", targetDate: null, targetDatePrecision: "day",
     completedAt: null, completedAtPrecision: "day", starred: false,

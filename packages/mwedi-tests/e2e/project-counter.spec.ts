@@ -6,7 +6,7 @@ function project(overrides: Record<string, unknown> = {}) {
   return {
     id: projectId, title: "Granny square cardigan", craft: "crochet", status: "in_progress",
     description: null, patternName: "Granny cardigan", patternDesigner: null, designerWebsite: null, designerPageTitle: null,
-    yarn: null, yarns: [], tools: null, hookSize: "4.0 mm (US G-6)",
+    yarn: null, yarns: [], tools: null, hookSize: "4.0 mm (US G-6)", secondHookSize: null,
     needleSize: null, needleType: null, needleCableLength: null, secondNeedleSize: null, secondNeedleType: null, secondNeedleCableLength: null,
     startedAt: null, startedAtPrecision: "day", targetDate: null, targetDatePrecision: "day",
     completedAt: null, completedAtPrecision: "day", starred: false,
