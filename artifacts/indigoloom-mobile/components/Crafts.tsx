@@ -13,7 +13,8 @@ import { useColors } from '@/hooks/useColors';
 
 export type Craft = 'yarn' | 'sewing';
 export const homeNames: Record<Craft, string> = { yarn: 'Yarn studio', sewing: 'Sewing room' };
-const homeRoutes = { yarn: '/(tabs)', sewing: '/(tabs)/fabric' } as const;
+const homeRoutes = { yarn: '/(tabs)', sewing: '/(tabs)/sewing' } as const;
+const sewingTabs = ['sewing', 'sewing-projects', 'fabric'];
 
 // If the craft switches can't be read, the app opens as it did before the
 // Sewing room, with yarn on, instead of waiting or locking the maker out.
@@ -33,14 +34,14 @@ const HomeContext = createContext<HomeState>({ home: 'yarn', setHome: () => unde
 
 // The tabs of the other home are hidden, and a hidden native tab can't be
 // opened, so the home changes first and the navigation follows. Landing on
-// the Fabric stash some other way (a link) moves the home there too.
+// a Sewing room tab some other way (a link) moves the home there too.
 export function HomeProvider({ initial, children }: { initial: Craft; children: ReactNode }) {
   const [home, setHome] = useState<Craft>(initial);
   const segments = useSegments() as string[];
-  const onFabric = segments.includes('fabric');
+  const inSewingRoom = segments.some((segment) => sewingTabs.includes(segment));
   useEffect(() => {
-    if (segments[0] === '(tabs)') setHome(onFabric ? 'sewing' : 'yarn');
-  }, [onFabric, segments[0]]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (segments[0] === '(tabs)') setHome(inSewingRoom ? 'sewing' : 'yarn');
+  }, [inSewingRoom, segments[0]]); // eslint-disable-line react-hooks/exhaustive-deps
   return <HomeContext.Provider value={{ home, setHome }}>{children}</HomeContext.Provider>;
 }
 

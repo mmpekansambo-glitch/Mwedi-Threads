@@ -52,6 +52,8 @@ function RootLayoutNav() {
       <Stack.Screen name="stash/[id]" />
       <Stack.Screen name="fabric/new" options={{ presentation: 'modal' }} />
       <Stack.Screen name="fabric/[id]" />
+      <Stack.Screen name="sewing/new" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="sewing/[id]" />
     </Stack>
   );
 }

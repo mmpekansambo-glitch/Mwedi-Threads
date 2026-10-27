@@ -24,7 +24,7 @@ export default function DashboardScreen() {
   const data = query.data;
   const displayName = user?.firstName || user?.username || 'maker';
   // A maker with only sewing on starts in the Sewing room.
-  if (crafts && !crafts.yarn) return <Redirect href="/(tabs)/fabric" />;
+  if (crafts && !crafts.yarn) return <Redirect href="/(tabs)/sewing" />;
   return (
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
