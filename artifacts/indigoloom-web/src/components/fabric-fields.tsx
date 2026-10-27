@@ -1,4 +1,7 @@
+import { useEffect, useRef, useState } from 'react';
+import { Sparkles, X } from 'lucide-react';
 import type { FabricConstruction, FabricPrint, FabricType, FabricUnit, StashFabric } from '@workspace/api-client-react';
+import { Wheel } from '@/components/date-wheel-field';
 
 export const fabricTypes: Array<{ value: FabricType; label: string }> = [
   { value: 'cotton', label: 'Cotton' },
@@ -17,16 +20,17 @@ export const fabricConstructions: Array<{ value: FabricConstruction; label: stri
   { value: 'knit', label: 'Knit' },
 ];
 
+// A to Z, so the print wheel and filters are easy to scan.
 export const fabricPrints: Array<{ value: FabricPrint; label: string }> = [
-  { value: 'solid', label: 'Solid' },
-  { value: 'floral', label: 'Floral' },
-  { value: 'stripe', label: 'Stripe' },
-  { value: 'check', label: 'Check or plaid' },
-  { value: 'dots', label: 'Dots' },
-  { value: 'geometric', label: 'Geometric' },
   { value: 'abstract', label: 'Abstract' },
   { value: 'animal', label: 'Animal' },
+  { value: 'check', label: 'Check or plaid' },
+  { value: 'dots', label: 'Dots' },
+  { value: 'floral', label: 'Floral' },
+  { value: 'geometric', label: 'Geometric' },
   { value: 'novelty', label: 'Novelty' },
+  { value: 'solid', label: 'Solid' },
+  { value: 'stripe', label: 'Stripe' },
 ];
 
 // Meters go with centimeter widths, yards with inch widths.
@@ -63,4 +67,50 @@ export function sizeForApi(value: string): number | null | 'invalid' {
   if (!value.trim()) return null;
   const number = Number(value.replace(',', '.'));
   return Number.isFinite(number) && number >= 0 && number <= 999 ? number : 'invalid';
+}
+
+// Print picker as a scroll wheel like the date picker.
+export function PrintWheelField({ value, onChange }: { value: FabricPrint | ''; onChange: (value: FabricPrint | '') => void }) {
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState(0);
+  const fieldRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (event: MouseEvent | KeyboardEvent) => {
+      if (event instanceof KeyboardEvent ? event.key === 'Escape' : !fieldRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', close);
+    document.addEventListener('keydown', close);
+    return () => {
+      document.removeEventListener('mousedown', close);
+      document.removeEventListener('keydown', close);
+    };
+  }, [open]);
+
+  const openPicker = () => {
+    setDraft(Math.max(0, fabricPrints.findIndex((item) => item.value === value)));
+    setOpen(!open);
+  };
+  const label = labelFor(fabricPrints, value);
+
+  return <div className="field-block date-wheel-field" ref={fieldRef}>
+    <label htmlFor="fabric-print">Print</label>
+    <div className="date-wheel-controls">
+      <button type="button" id="fabric-print" className={`date-wheel-trigger${label ? '' : ' empty'}`} aria-haspopup="dialog" aria-expanded={open} onClick={openPicker} data-testid="select-fabric-print">
+        <Sparkles size={17}/><span>{label || 'Choose a print'}</span>
+      </button>
+      {value && <button type="button" className="date-wheel-clear" aria-label="Clear print" onClick={() => { onChange(''); setOpen(false); }} data-testid="select-fabric-print-clear"><X size={16}/></button>}
+    </div>
+    {open && <div className="date-wheel-panel" role="dialog" aria-label="Print">
+      <div className="date-wheels weight-wheels">
+        <div className="date-wheel-band" aria-hidden="true"/>
+        <Wheel label="Print" items={fabricPrints.map((item) => item.label)} index={draft} onChange={setDraft} testId="select-fabric-print-wheel"/>
+      </div>
+      <div className="date-wheel-actions">
+        <button type="button" className="button button-outline" onClick={() => setOpen(false)}>Cancel</button>
+        <button type="button" className="button button-primary" onClick={() => { onChange(fabricPrints[draft]!.value); setOpen(false); }} data-testid="select-fabric-print-done">Done</button>
+      </div>
+    </div>}
+  </div>;
 }

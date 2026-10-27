@@ -168,7 +168,12 @@ test("adds a fabric with a print close-up and an extra photo", async ({ page }) 
   await page.getByTestId("input-fabric-photo-more").setInputFiles({ name: "drape.png", mimeType: "image/png", buffer: photo });
   await page.getByTestId("select-fabric-type").selectOption("linen");
   await page.getByTestId("button-construction-woven").click();
-  await page.getByTestId("select-fabric-print").selectOption("check");
+  await page.getByTestId("select-fabric-print").click();
+  await expect(page.getByTestId("select-fabric-print-wheel").getByRole("option")).toHaveText(["Abstract", "Animal", "Check or plaid", "Dots", "Floral", "Geometric", "Novelty", "Solid", "Stripe"]);
+  await page.getByTestId("select-fabric-print-wheel").getByRole("option", { name: "Check or plaid" }).click();
+  if (shots) await page.screenshot({ path: `${shots}/fabric-print-wheel-web.png` });
+  await page.getByTestId("select-fabric-print-done").click();
+  await expect(page.getByTestId("select-fabric-print")).toHaveText("Check or plaid");
   await page.getByTestId("button-unit-yards").click();
   await expect(page.locator(".input-with-unit i").first()).toHaveText("yd");
   await page.getByTestId("input-fabric-amount").fill("2.75");
