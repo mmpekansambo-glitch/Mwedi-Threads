@@ -1,17 +1,5 @@
-/**
- * Semantic design tokens for the mobile app.
- *
- * These tokens mirror the naming conventions used in web artifacts (index.css)
- * so that multi-artifact projects share a cohesive visual identity.
- *
- * Replace the placeholder values below with values that match the project's
- * brand. If a sibling web artifact exists, read its index.css and convert the
- * HSL values to hex so both artifacts use the same palette.
- *
- * To add dark mode, add a `dark` key with the same token names.
- * The useColors() hook will automatically pick it up.
- */
-
+// Design tokens for the mobile app, read through useColors(). The light and
+// dark sets share token names; hooks/useColors.ts picks one.
 // Colors follow the PLAN.md palette (section 6): Lavender #C5D1EB, Powder Blue
 // #92AFD7, Blue Slate #5A7684, Granite #395B50 and Evergreen #1F2F16. The
 // washes are lighter shades of those colors. Delete and error stay red.
@@ -49,16 +37,90 @@ const colors = {
     warningWash: '#fbefec',
     warningBorder: '#e8c8be',
     warningText: '#694b4b',
+    accentIcon: '#395B50',
+    quietButton: '#C5D1EB',
+    swatchRing: 'rgba(31,47,22,0.18)',
+    chartBar: '#395B50',
+    chartBarSelected: '#92AFD7',
+    chartAxis: '#5A7684',
+    chartGrid: '#C5D1EB',
+    statAll: '#EEF2FA',
+    statAllInk: '#92AFD7',
+    statActive: '#DCE6F4',
+    statActiveInk: '#5A7684',
+    statFinished: '#E1EAE5',
+    statFinishedInk: '#395B50',
   },
 
-  // The Sewing room's own look: a cooler Granite wash behind its screens.
+  // Slate night: Blue Slate pages and cards, Lavender-white text, and Powder
+  // Blue in place of Granite, which is too dark to see on a dark page.
+  dark: {
+    text: '#E4EAF5',
+    tint: '#92AFD7',
+    background: '#182126',
+    foreground: '#E4EAF5',
+    card: '#212C32',
+    cardForeground: '#E4EAF5',
+    primary: '#92AFD7',
+    primaryForeground: '#182126',
+    secondary: '#26343B',
+    secondaryForeground: '#E4EAF5',
+    muted: '#26343B',
+    mutedForeground: '#A6B5BE',
+    accent: '#92AFD7',
+    accentForeground: '#182126',
+    destructive: '#E8908C',
+    destructiveForeground: '#182126',
+    border: '#33424A',
+    input: '#3D4E57',
+    selectedWash: '#26343B',
+    knitWash: '#26343B',
+    crochetWash: '#2B3A42',
+    planningChip: '#C5D1EB',
+    planningText: '#182126',
+    inProgressChip: '#92AFD7',
+    inProgressText: '#182126',
+    pausedChip: '#33424A',
+    pausedText: '#C9D3DA',
+    completedChip: '#395B50',
+    completedText: '#FFFFFF',
+    warningWash: '#3A2C2C',
+    warningBorder: '#5C4444',
+    warningText: '#F0CBC4',
+    accentIcon: '#182126',
+    quietButton: '#33424A',
+    swatchRing: 'rgba(228,234,245,0.4)',
+    chartBar: '#92AFD7',
+    chartBarSelected: '#C5D1EB',
+    chartAxis: '#A6B5BE',
+    chartGrid: '#33424A',
+    statAll: '#26343B',
+    statAllInk: '#92AFD7',
+    statActive: '#2B3A42',
+    statActiveInk: '#A6B5BE',
+    statFinished: '#26343B',
+    statFinishedInk: '#C5D1EB',
+  },
+
+  // The Sewing room's own look: mauve, in both light and dark.
   sewing: {
-    background: '#E1EAE5',
-    border: '#CFDCD5',
-    input: '#CFDCD5',
-    selectedWash: '#EEF3F0',
-    accent: '#395B50',
-    accentForeground: '#FFFFFF',
+    light: {
+      background: '#E4DEEF',
+      border: '#DDD5EA',
+      input: '#DDD5EA',
+      selectedWash: '#F1EDF7',
+      primary: '#6B5791',
+      tint: '#6B5791',
+      accent: '#B7A3D9',
+      accentForeground: '#1F2F16',
+      accentIcon: '#6B5791',
+    },
+    dark: {
+      primary: '#B7A3D9',
+      tint: '#B7A3D9',
+      accent: '#B7A3D9',
+      accentForeground: '#182126',
+    },
   },
 
   radius: 16,

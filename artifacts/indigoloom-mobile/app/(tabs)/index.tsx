@@ -36,9 +36,9 @@ export default function DashboardScreen() {
         <>
           <View style={styles.stats}>
             {([
-              ['All projects', data.totalProjects, 'yarn', '#EEF2FA', '#92AFD7'],
-              ['In progress', data.activeProjects, 'hook', '#DCE6F4', '#5A7684'],
-              ['Finished', data.completedProjects, 'square', '#E1EAE5', '#395B50'],
+              ['All projects', data.totalProjects, 'yarn', colors.statAll, colors.statAllInk],
+              ['In progress', data.activeProjects, 'hook', colors.statActive, colors.statActiveInk],
+              ['Finished', data.completedProjects, 'square', colors.statFinished, colors.statFinishedInk],
             ] as const).map(([label, value, doodle, tint, ink]) => (
               <View key={label} style={[styles.stat, { backgroundColor: tint, borderColor: tint }]}>
                 <LoomText style={[styles.statLabel, { color: colors.mutedForeground }]}>{label}</LoomText>

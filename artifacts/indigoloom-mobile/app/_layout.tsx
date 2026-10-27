@@ -18,10 +18,14 @@ import {
 } from '@expo-google-fonts/lora';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import * as SystemUI from 'expo-system-ui';
 import * as SplashScreen from 'expo-splash-screen';
 import { ClerkProvider, useAuth } from '@clerk/expo';
 import { tokenCache } from '@clerk/expo/token-cache';
 import { setAuthTokenGetter, setBaseUrl } from '@workspace/api-client-react';
+import { useColors } from '@/hooks/useColors';
+import { loadAppearance, useScheme } from '@/hooks/useAppearance';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -41,8 +45,15 @@ setBaseUrl(`https://${domain}`);
 const queryClient = new QueryClient();
 
 function RootLayoutNav() {
+  const colors = useColors();
+  const dark = useScheme() === 'dark';
+  useEffect(() => {
+    void SystemUI.setBackgroundColorAsync(colors.background);
+  }, [colors.background]);
   return (
-    <Stack initialRouteName="index" screenOptions={{ headerShown: false, headerBackTitle: 'Back' }}>
+    <>
+    <StatusBar style={dark ? 'light' : 'dark'} />
+    <Stack initialRouteName="index" screenOptions={{ headerShown: false, headerBackTitle: 'Back', contentStyle: { backgroundColor: colors.background } }}>
       <Stack.Screen name="index" />
       <Stack.Screen name="(auth)" options={{ presentation: 'modal' }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -53,6 +64,7 @@ function RootLayoutNav() {
       <Stack.Screen name="fabric/new" options={{ presentation: 'modal' }} />
       <Stack.Screen name="fabric/[id]" />
     </Stack>
+    </>
   );
 }
 
@@ -91,13 +103,19 @@ export default function RootLayout() {
     Lora_700Bold,
   });
 
+  const [appearanceLoaded, setAppearanceLoaded] = useState(false);
   useEffect(() => {
-    if (fontsLoaded || fontError) {
+    void loadAppearance().finally(() => setAppearanceLoaded(true));
+  }, []);
+  const ready = (fontsLoaded || !!fontError) && appearanceLoaded;
+
+  useEffect(() => {
+    if (ready) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, fontError]);
+  }, [ready]);
 
-  if (!fontsLoaded && !fontError) return null;
+  if (!ready) return null;
 
   return (
     <SafeAreaProvider>

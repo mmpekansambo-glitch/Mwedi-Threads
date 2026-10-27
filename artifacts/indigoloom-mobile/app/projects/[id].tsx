@@ -283,6 +283,7 @@ function designerHostname(website: string) {
   }
 }
 function SavedProgressPhoto({ projectId, entryId }: { projectId: string; entryId: string }) {
+  const colors = useColors();
   const { getToken } = useAuth();
   const [token, setToken] = useState<string | null>(null);
   useEffect(() => {
@@ -300,7 +301,7 @@ function SavedProgressPhoto({ projectId, entryId }: { projectId: string; entryId
         uri: `https://${domain}/api/projects/${projectId}/progress/${entryId}/photo`,
         headers: { Authorization: `Bearer ${token}` },
       }}
-      style={styles.savedPhoto}
+      style={[styles.savedPhoto, { backgroundColor: colors.muted }]}
       contentFit="cover"
       accessibilityLabel="Photo from this progress entry"
     />
@@ -338,7 +339,7 @@ const styles = StyleSheet.create({
   entryMarker: { width: 7, height: 7, borderRadius: 4, marginTop: 5 },
   entryMeta: { fontFamily: fonts.semibold, fontSize: 13 },
   entryNotes: { fontSize: 15, lineHeight: 22, marginTop: 5 },
-  savedPhoto: { width: '100%', height: 220, borderRadius: 12, marginTop: 10, backgroundColor: '#EEF2F9' },
+  savedPhoto: { width: '100%', height: 220, borderRadius: 12, marginTop: 10 },
   removeSavedPhoto: { minHeight: 38, flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 5, paddingHorizontal: 2 },
   noNotes: { fontSize: 15, paddingVertical: 15 },
   deleteSection: { alignItems: 'flex-end', marginTop: 8 },
