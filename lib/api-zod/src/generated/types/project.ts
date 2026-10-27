@@ -71,6 +71,11 @@ export interface Project {
      * @maximum 100
      */
   completionPercent: number;
+  /**
+     * The project's plain counter (any count the maker likes).
+     * @minimum 0
+     */
+  counter: number;
   createdAt: Date;
   updatedAt: Date;
 }

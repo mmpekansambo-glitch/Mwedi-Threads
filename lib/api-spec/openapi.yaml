@@ -218,6 +218,37 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+  /projects/{projectId}/counter:
+    parameters:
+      - in: path
+        name: projectId
+        required: true
+        schema:
+          type: string
+          format: uuid
+    put:
+      operationId: setProjectCounter
+      tags: [projects]
+      summary: Save the project's counter
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectCounter"
+      responses:
+        "200":
+          description: Counter saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectCounter"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /projects/{projectId}/progress:
     parameters:
       - in: path
@@ -1108,6 +1139,10 @@ components:
           type: integer
           minimum: 0
           maximum: 100
+        counter:
+          type: integer
+          minimum: 0
+          description: The project's plain counter (any count the maker likes).
         createdAt:
           type: string
           format: date-time
@@ -1117,6 +1152,7 @@ components:
       required:
         - id
         - title
+        - counter
         - craft
         - status
         - description
@@ -1147,6 +1183,14 @@ components:
         - completionPercent
         - createdAt
         - updatedAt
+    ProjectCounter:
+      type: object
+      properties:
+        count:
+          type: integer
+          minimum: 0
+          maximum: 1000000
+      required: [count]
     ProjectDetail:
       allOf:
         - $ref: "#/components/schemas/Project"

@@ -255,8 +255,21 @@ export interface Project {
      * @maximum 100
      */
   completionPercent: number;
+  /**
+     * The project's plain counter (any count the maker likes).
+     * @minimum 0
+     */
+  counter: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ProjectCounter {
+  /**
+     * @minimum 0
+     * @maximum 1000000
+     */
+  count: number;
 }
 
 export type ProjectDetail = Project & {
