@@ -46,6 +46,7 @@ import {
 import { requireAuth } from "../middlewares/requireAuth";
 import { deleteStoredObject, signedObjectUrl, storageLocation } from "../lib/objectStorage";
 import { buildDashboardCharts, progressChartStart } from "../lib/dashboardCharts";
+import { averageDaysToFinish, mostUsedYarnBrands } from "../lib/dashboardStats";
 import { checkProgressSettings, workOutProgress } from "../lib/progressMethods";
 import {
   checkProjectYarns,
@@ -279,6 +280,7 @@ router.get("/dashboard", async (req, res): Promise<void> => {
     db
       .select({
         status: projectsTable.status,
+        startedAt: projectsTable.startedAt,
         completedAt: projectsTable.completedAt,
       })
       .from(projectsTable)
@@ -319,10 +321,16 @@ router.get("/dashboard", async (req, res): Promise<void> => {
         ),
       ),
   ]);
-  const [starredIds, recentYarns] = await Promise.all([
+  const [starredIds, recentYarns, brandRows] = await Promise.all([
     starredProjectIds(ownerId),
     projectYarnsFor(recentProjects.map((project) => project.id)),
+    db
+      .select({ projectId: projectYarnsTable.projectId, brand: projectYarnsTable.brand })
+      .from(projectYarnsTable)
+      .innerJoin(projectsTable, eq(projectYarnsTable.projectId, projectsTable.id))
+      .where(eq(projectsTable.ownerId, ownerId)),
   ]);
+  const topBrand = mostUsedYarnBrands(brandRows);
   const serializedRecent = recentProjects.map((project) =>
     serializeProject(project, starredIds.has(project.id), recentYarns.get(project.id) ?? []),
   );
@@ -342,6 +350,9 @@ router.get("/dashboard", async (req, res): Promise<void> => {
       chartProgress.map((entry) => entry.createdAt),
       now,
     ),
+    mostUsedYarnBrands: topBrand.brands,
+    mostUsedYarnBrandProjects: topBrand.projectCount,
+    averageDaysToFinish: averageDaysToFinish(allProjects),
   });
   res.json({ ...dashboard, recentProjects: serializedRecent });
   req.log.debug({ ownerId }, "Loaded Mwedi Threads dashboard");

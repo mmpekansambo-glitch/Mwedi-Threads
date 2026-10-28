@@ -1841,6 +1841,17 @@ components:
             required: [projectTitle, projectId, notes, completionPercent, createdAt]
         charts:
           $ref: "#/components/schemas/DashboardCharts"
+        mostUsedYarnBrands:
+          description: The yarn brand on the most projects, or every tied brand A to Z. Empty when no project yarn has a brand.
+          type: array
+          items:
+            type: string
+        mostUsedYarnBrandProjects:
+          description: How many projects use the most-used yarn brand
+          type: integer
+        averageDaysToFinish:
+          description: Average whole days from start to finish across finished projects with both dates, or null when there are none
+          type: [integer, "null"]
       required:
         - totalProjects
         - activeProjects
@@ -1848,6 +1859,9 @@ components:
         - recentProjects
         - recentProgress
         - charts
+        - mostUsedYarnBrands
+        - mostUsedYarnBrandProjects
+        - averageDaysToFinish
     DashboardCharts:
       type: object
       properties:

@@ -15,6 +15,16 @@ function openProjects(status: string) {
   router.push({ pathname: '/(tabs)/projects', params: { status, at: String(Date.now()) } });
 }
 
+// Opens My projects searched for one yarn brand.
+function searchProjects(search: string) {
+  router.push({ pathname: '/(tabs)/projects', params: { search, at: String(Date.now()) } });
+}
+
+// "Big Twist & Lion Brand", or "A, B & C" for three or more.
+function joinBrands(brands: string[]) {
+  return brands.length < 2 ? brands[0] ?? '' : `${brands.slice(0, -1).join(', ')} & ${brands[brands.length - 1]}`;
+}
+
 export default function DashboardScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -39,7 +49,7 @@ export default function DashboardScreen() {
       <HomeSwitcher />
       {query.isLoading ? <LoadingState /> : query.isError || !data ? <ErrorState onRetry={() => void query.refetch()} /> : (
         <>
-          <View style={styles.stats}>
+          <View style={[styles.stats, { marginBottom: 8 }]}>
             {([
               ['All projects', data.totalProjects, 'yarn', colors.statAll, colors.statAllInk, ''],
               ['In progress', data.activeProjects, 'hook', colors.statActive, colors.statActiveInk, 'in_progress'],
@@ -58,6 +68,28 @@ export default function DashboardScreen() {
                 <View style={styles.statDoodle}><StatDoodle kind={doodle} color={ink} size={40} /></View>
               </Pressable>
             ))}
+          </View>
+          <View style={styles.stats}>
+            {/* A single brand opens My projects searched for it; a tie has no one brand to search. */}
+            <Pressable
+              accessibilityRole={data.mostUsedYarnBrands.length === 1 ? 'button' : undefined}
+              disabled={data.mostUsedYarnBrands.length !== 1}
+              onPress={() => searchProjects(data.mostUsedYarnBrands[0])}
+              style={({ pressed }) => [styles.stat, { backgroundColor: colors.statActive, borderColor: colors.statActive }, pressed && styles.statPressed]}
+              testID="button-stat-top-brand"
+            >
+              <LoomText style={[styles.statLabel, { color: colors.mutedForeground }]}>Most-used yarn brand</LoomText>
+              <LoomText serif style={[styles.statBrand, { color: colors.foreground }]}>{data.mostUsedYarnBrands.length ? joinBrands(data.mostUsedYarnBrands) : '—'}</LoomText>
+              {data.mostUsedYarnBrands.length > 0 && (
+                <LoomText style={[styles.statDetail, { color: colors.mutedForeground }]}>
+                  On {data.mostUsedYarnBrandProjects} {data.mostUsedYarnBrandProjects === 1 ? 'project' : 'projects'}{data.mostUsedYarnBrands.length > 1 ? ' each' : ''}
+                </LoomText>
+              )}
+            </Pressable>
+            <View style={[styles.stat, { backgroundColor: colors.statAll, borderColor: colors.statAll }]} testID="card-stat-average-days">
+              <LoomText style={[styles.statLabel, { color: colors.mutedForeground }]}>Average days to finish</LoomText>
+              <LoomText serif style={[styles.statValue, { color: colors.foreground }]}>{data.averageDaysToFinish ?? '—'}</LoomText>
+            </View>
           </View>
           <DashboardCharts charts={data.charts} onPickStatus={openProjects} />
           <View style={[styles.sectionHeading, { marginTop: 22 }]}>
@@ -101,6 +133,8 @@ const styles = StyleSheet.create({
   statDoodle: { position: 'absolute', right: 6, bottom: 6 },
   statLabel: { fontFamily: fonts.semibold, fontSize: 14 },
   statValue: { fontSize: 34, lineHeight: 39 },
+  statBrand: { fontSize: 22, lineHeight: 27, marginTop: 6 },
+  statDetail: { fontSize: 13, marginTop: 4 },
   sectionHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 13, marginTop: 3 },
   sectionTitle: { fontSize: 26 },
   note: { borderWidth: 1, borderRadius: 13, padding: 13, marginBottom: 8, flexDirection: 'row', alignItems: 'flex-start', gap: 10 },

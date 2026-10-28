@@ -14,7 +14,7 @@ function dashboard(charts: {
   completedPerMonth?: number[];
   completedWithoutDate?: number;
   progressPerWeek?: number[];
-}) {
+}, stats: { brands?: string[]; brandProjects?: number; averageDays?: number | null } = {}) {
   const statuses = ["planning", "in_progress", "paused", "completed"] as const;
   return {
     totalProjects: 0,
@@ -22,6 +22,9 @@ function dashboard(charts: {
     completedProjects: 0,
     recentProjects: [],
     recentProgress: [],
+    mostUsedYarnBrands: stats.brands ?? [],
+    mostUsedYarnBrandProjects: stats.brandProjects ?? 0,
+    averageDaysToFinish: stats.averageDays ?? null,
     charts: {
       projectsByStatus: statuses.map((status, index) => ({
         status,
@@ -45,6 +48,10 @@ async function mockDashboard(page: Page, body: ReturnType<typeof dashboard>) {
     const url = new URL(route.request().url());
     if (url.pathname === "/api/dashboard") {
       await route.fulfill({ status: 200, json: body });
+      return;
+    }
+    if (url.pathname === "/api/projects") {
+      await route.fulfill({ status: 200, json: [] });
       return;
     }
     await route.fulfill({ status: 404, json: { error: `Unhandled test request: ${url.pathname}` } });
@@ -87,4 +94,25 @@ test("shows a friendly note on each chart when there is nothing to draw yet", as
   await expect(page.getByText("Nothing finished in the last year yet. Your first finish will land here.")).toBeVisible();
   await expect(page.getByText("No progress notes in the last 12 weeks. Add one from any project page.")).toBeVisible();
   await expect(page.locator(".recharts-bar-rectangle")).toHaveCount(0);
+});
+
+test("shows the most-used yarn brand and average days, and a single brand opens a search", async ({ page }) => {
+  await mockDashboard(page, dashboard({}, { brands: ["Big Twist", "Lion Brand"], brandProjects: 2, averageDays: 15 }));
+  await page.setViewportSize({ width: 1280, height: 1000 });
+  await page.goto("/dashboard");
+
+  await expect(page.getByTestId("text-top-yarn-brand")).toHaveText("Big Twist & Lion Brand");
+  await expect(page.getByTestId("card-stat-top-brand")).toContainText("On 2 projects each");
+  await expect(page.getByTestId("text-average-days")).toHaveText("15");
+  if (process.env.DASHBOARD_STATS_SCREENSHOT) {
+    await page.locator(".stat-row-second").screenshot({ path: process.env.DASHBOARD_STATS_SCREENSHOT });
+  }
+
+  await page.unrouteAll({ behavior: "ignoreErrors" });
+  await mockDashboard(page, dashboard({}, { brands: ["Lion Brand"], brandProjects: 3, averageDays: null }));
+  await page.reload();
+  await expect(page.getByTestId("text-average-days")).toHaveText("—");
+  await page.getByTestId("link-stat-top-brand").click();
+  await expect(page).toHaveURL(/\/projects\?search=Lion%20Brand$/);
+  await expect(page.getByRole("searchbox").or(page.getByPlaceholder("Search by name, pattern or yarn…"))).toHaveValue("Lion Brand");
 });

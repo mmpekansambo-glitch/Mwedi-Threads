@@ -29,6 +29,7 @@ const projects = [
 
 const dashboard = {
   totalProjects: 3, activeProjects: 1, completedProjects: 1, recentProjects: projects, recentProgress: [],
+  mostUsedYarnBrands: ["Lion Brand"], mostUsedYarnBrandProjects: 2, averageDaysToFinish: 24,
   charts: {
     projectsByStatus: (["planning", "in_progress", "paused", "completed"] as const).map((status, index) => ({ status, count: [1, 1, 0, 1][index] })),
     completedPerMonth: months.map((month, index) => ({ month, count: [0, 1, 0, 2, 1, 0, 1, 3, 0, 1, 2, 1][index] })),
