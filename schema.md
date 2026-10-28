@@ -22,6 +22,7 @@ erDiagram
     projects ||--o{ skein_suggestions : "finished in"
     users ||--o{ catalog_reviews : asks
     users ||--o{ stash_fabrics : owns
+    users ||--o{ yarn_tools : owns
 
     users {
         text id PK
@@ -30,6 +31,12 @@ erDiagram
         timestamptz joined_at
         boolean yarn_enabled
         boolean sewing_enabled
+    }
+    yarn_tools {
+        uuid id PK
+        text owner_id FK
+        yarn_tool_section section
+        text size
     }
     stash_fabrics {
         uuid id PK
@@ -115,6 +122,7 @@ erDiagram
 - **skein_suggestions:** when a project is finished, each linked stash yarn gets a suggestion to take the project's skeins off what's left. The maker confirms or dismisses it.
 - **catalog_reviews:** a maker asking the catalog reviewer to look at how a name was merged.
 - **users → stash_fabrics:** one-to-many. The Sewing room's fabric stash, separate from the yarn stash.
+- **users → yarn_tools:** one-to-many. The hooks, needles and notions a maker owns, shown on the Yarn studio's Tools page. Not linked to projects.
 
 The diagram shows the key columns only. Every column is listed below.
 
@@ -246,6 +254,28 @@ One row per piece of fabric in a maker's Sewing room stash. There is no shared c
 | created_at | timestamp with time zone | yes | now | |
 | updated_at | timestamp with time zone | yes | now | Updated on every change. |
 
+## yarn_tools
+
+One row per crochet hook, knitting needle or notion a maker owns in their Yarn studio. Each row belongs to one section, and only that section's columns are kept.
+
+| Column | Type | Required | Default | Notes |
+|---|---|---|---|---|
+| id | uuid | yes | random | Primary key. |
+| owner_id | text | yes | | Links to `users.id`. Deleted with the user. |
+| section | yarn_tool_section | yes | | Hooks, needles or notions. |
+| size | text | no | | Required for hooks and needles, from the same size lists projects use. Empty for notions. |
+| needle_type | text | no | | Needles only: `straight`, `circular`, `double_pointed` or `interchangeable`. |
+| cable_length | text | no | | Circular and interchangeable needles only. |
+| material | yarn_tool_material | no | | Hooks and needles only. |
+| notion_type | yarn_notion_type | no | | Required for notions. |
+| name | text | no | | Optional. A notion with no name shows its type. |
+| quantity | integer | no | | How many the maker owns. |
+| brand | text | no | | |
+| notes | text | no | | |
+| photo_path | text | no | | Private photo, only shown to its owner. |
+| created_at | timestamp with time zone | yes | now | |
+| updated_at | timestamp with time zone | yes | now | Updated on every change. |
+
 ## project_yarns
 
 Every yarn a project uses, in the order the maker listed them.
@@ -320,6 +350,9 @@ The shared yarn catalog. Every name has a `match_key` (lowercase letters and dig
 | fabric_construction | `woven`, `knit` |
 | fabric_print | `solid`, `floral`, `stripe`, `check`, `dots`, `geometric`, `abstract`, `animal`, `novelty`, `ankara`, `batik`, `botanical`, `camo`, `chevron`, `damask`, `houndstooth`, `ikat`, `ombre`, `paisley`, `tie_dye`, `toile`, `other` |
 | fabric_unit | `meters`, `yards` |
+| yarn_tool_section | `hooks`, `needles`, `notions` |
+| yarn_tool_material | `aluminium`, `steel`, `bamboo`, `wood`, `plastic`, `ergonomic` |
+| yarn_notion_type | `stitch_markers`, `tapestry_needles`, `row_counter`, `cable_needles`, `scissors`, `measuring_tape`, `blocking_mats`, `blocking_pins`, `yarn_swift`, `ball_winder`, `other` |
 
 ## Date rule
 

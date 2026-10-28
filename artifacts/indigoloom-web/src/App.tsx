@@ -19,14 +19,16 @@ import {
   getGetSewingOverviewQueryKey, getGetSewingProjectQueryKey, getGetSewingProjectsQueryKey,
   requestSewingToolPhotoUpload, useCreateSewingTool, useDeleteSewingTool, useGetSewingTool, useGetSewingTools, useUpdateSewingTool,
   getGetSewingToolQueryKey, getGetSewingToolsQueryKey,
+  requestYarnToolPhotoUpload, useCreateYarnTool, useDeleteYarnTool, useGetYarnTool, useGetYarnTools, useUpdateYarnTool,
+  getGetYarnToolQueryKey, getGetYarnToolsQueryKey,
 } from '@workspace/api-client-react';
 import { CrochetHookSize, KnittingNeedleSize, NeedleCableLength } from '@workspace/api-client-react';
-import type { CatalogField, CatalogReview, CreateProject, CreateProgress, Crafts, FabricConstruction, FabricPrint, FabricType, FabricUnit, GeneralColor, Project, ProjectStatus, SewingProject, SewingStage, SewingTool, SewingToolCategory, SewingToolSection, StashFabric, StashYarn, UpdateProject, YarnWeight } from '@workspace/api-client-react';
+import type { CatalogField, CatalogReview, CreateProject, CreateProgress, Crafts, FabricConstruction, FabricPrint, FabricType, FabricUnit, GeneralColor, Project, ProjectStatus, SewingProject, SewingStage, SewingTool, SewingToolCategory, SewingToolSection, StashFabric, StashYarn, UpdateProject, YarnNotionType, YarnTool, YarnToolMaterial, YarnToolSection, YarnWeight, KnittingNeedleType } from '@workspace/api-client-react';
 import { FormProvider as Form, useForm, type UseFormReturn } from 'react-hook-form';
 import {
   ArrowLeft, ArrowRight, ArrowUpDown, ArrowUpRight, BookOpen, Check,
   Camera, ChevronDown, ChevronUp, CircleHelp, Feather, Filter, Flower2,
-  Layers3, LogOut, Menu, Palette, Plus, Scissors, Search, Sparkles, Spool, Star, Trash2,
+  Box, Layers3, LogOut, Menu, Palette, Plus, Ruler, Scissors, Search, Sparkles, Spool, Star, Trash2, Wrench,
   X,
 } from 'lucide-react';
 import { projectSorts, sortProjects, sortStash, stashSorts, useSavedSort } from './lib/sorting';
@@ -58,6 +60,7 @@ import {
 } from '@/components/fabric-fields';
 import { StageTrack, amountLeft, fabricAmount, sewingStages, stageIndex } from '@/components/sewing-fields';
 import { ToolThumb, ToolTypeWheelField, categoryFor, quantityForApi, toolDetails, toolPhotoUrl, toolSections } from '@/components/sewing-tools';
+import { NeedleIcon, YarnToolThumb, hookSizes, notionFor, sortYarnTools, yarnNeedleTypes, yarnNotionTypes, yarnToolDetails, yarnToolMaterials, yarnToolPhotoUrl, yarnToolSections, yarnToolTitle } from '@/components/yarn-tools';
 import { trackEvent, trackSuccessfulAction } from '@/lib/analytics';
 import { Toaster } from '@/components/ui/toaster';
 import { useAppearance, type AppearanceChoice } from '@/hooks/use-appearance';
@@ -321,7 +324,7 @@ function CraftChoicePage() {
   </div>;
 }
 
-const portalTitles = { dashboard: 'Overview', projects: 'My projects', stash: 'Yarn stash', reviews: 'Name reviews', sewing: 'Overview', sewingProjects: 'Projects', fabric: 'Fabric stash', tools: 'Tools' };
+const portalTitles = { dashboard: 'Overview', projects: 'My projects', stash: 'Yarn stash', reviews: 'Name reviews', sewing: 'Overview', sewingProjects: 'Projects', fabric: 'Fabric stash', tools: 'Tools', yarnTools: 'Tools' };
 const sewingPages = new Set<keyof typeof portalTitles>(['sewing', 'sewingProjects', 'fabric', 'tools']);
 const homeNames: Record<Craft, string> = { yarn: 'Yarn studio', sewing: 'Sewing room' };
 
@@ -346,6 +349,7 @@ function PortalLayout({ children, active }: { children: ReactNode; active: keyof
           <Link href="/dashboard" className={`rail-link ${active === 'dashboard' ? 'selected' : ''}`} data-testid="link-dashboard"><Layers3 size={18}/><span>Overview</span></Link>
           <Link href="/projects" className={`rail-link ${active === 'projects' ? 'selected' : ''}`} data-testid="link-projects"><BookOpen size={18}/><span>My projects</span></Link>
           <Link href="/stash" className={`rail-link ${active === 'stash' ? 'selected' : ''}`} data-testid="link-stash"><Palette size={18}/><span>Yarn stash</span></Link>
+          <Link href="/tools" className={`rail-link ${active === 'yarnTools' ? 'selected' : ''}`} data-testid="link-yarn-tools"><Wrench size={18}/><span>Tools</span></Link>
           {reviewAccess.data?.reviewer && <Link href="/reviews" className={`rail-link ${active === 'reviews' ? 'selected' : ''}`} data-testid="link-reviews"><CircleHelp size={18}/><span>Name reviews</span></Link>}
         </> : <>
           <Link href="/sewing" className={`rail-link ${active === 'sewing' ? 'selected' : ''}`} data-testid="link-sewing-overview"><Layers3 size={18}/><span>Overview</span></Link>
@@ -1975,6 +1979,194 @@ function SewingToolForm({ tool }: { tool?: SewingTool }) {
   </PortalLayout>;
 }
 
+function YarnToolRow({ tool }: { tool: YarnTool }) {
+  const details = yarnToolDetails(tool);
+  return <Link href={`/tools/${tool.id}`} className="tool-row lift" data-testid={`card-yarn-tool-${tool.id}`}>
+    <YarnToolThumb tool={tool}/>
+    <span className="tool-row-body"><b>{yarnToolTitle(tool)}</b>{details && <small>{details}</small>}</span>
+    {tool.quantity !== null && <span className="tool-quantity" aria-label={`Quantity ${tool.quantity}`}>× {tool.quantity}</span>}
+  </Link>;
+}
+
+function YarnToolsPage() {
+  const [search, setSearch] = useState('');
+  const [, setLocation] = useLocation();
+  const urlSection = new URLSearchParams(useSearch()).get('section') ?? '';
+  const section = yarnToolSections.find((item) => item.value === urlSection)?.value;
+  const setSection = (value?: YarnToolSection) => setLocation(value ? `/tools?section=${value}` : '/tools', { replace: true });
+  const params = search.trim() ? { search: search.trim() } : {};
+  const query = useGetYarnTools(params, { query: { queryKey: getGetYarnToolsQueryKey(params) } });
+  const shown = yarnToolSections.filter((item) => !section || item.value === section);
+  return <PortalLayout active="yarnTools">
+    <PageHeading title="Tools" action={<Link href={`/tools/new${section ? `?section=${section}` : ''}`} className="button button-primary" data-testid="link-add-yarn-tool"><Plus size={17}/> Add tool</Link>}/>
+    <div className="catalog-tools">
+      <label className="search-box"><Search size={17}/><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search by size, name or brand…" aria-label="Search your tools" data-testid="input-search-yarn-tools"/>{search && <button type="button" onClick={() => setSearch('')} aria-label="Clear search"><X size={15}/></button>}</label>
+      <div className="segmented tool-section-filter" role="radiogroup" aria-label="Show">
+        {[{ value: undefined, label: 'All' }, ...yarnToolSections].map((item) => <button key={item.label} type="button" role="radio" aria-checked={section === item.value} className={section === item.value ? 'selected' : ''} onClick={() => setSection(item.value)} data-testid={`button-yarn-tool-section-${item.value ?? 'all'}`}>{item.label}</button>)}
+      </div>
+    </div>
+    {query.isLoading ? <div className="tool-list">{[0, 1, 2].map((item) => <div className="card-skeleton tool-skeleton" key={item}/>)}</div>
+      : query.isError ? <QueryProblem retry={() => query.refetch()}/>
+      : search && !query.data?.length ? <div className="no-results"><Search size={23}/><h3>No tools match</h3><p>Try a different search.</p><button className="button button-outline" onClick={() => setSearch('')}>Clear search</button></div>
+      : shown.map((item) => {
+        const tools = sortYarnTools((query.data ?? []).filter((tool) => tool.section === item.value));
+        if (search && !tools.length) return null;
+        return <section className="tool-section" key={item.value} data-testid={`section-yarn-tools-${item.value}`}>
+          <h2>{item.label} <span>{tools.length}</span></h2>
+          {tools.length ? <div className="tool-list">{tools.map((tool) => <YarnToolRow key={tool.id} tool={tool}/>)}</div>
+            : <p className="tool-empty">No {item.label.toLowerCase()} yet. <Link href={`/tools/new?section=${item.value}`} data-testid={`link-add-first-${item.value}`}>Add {item.one}</Link></p>}
+        </section>;
+      })}
+  </PortalLayout>;
+}
+
+type YarnToolDraft = {
+  section: YarnToolSection; size: string; needleType: KnittingNeedleType | ''; cableLength: string;
+  material: YarnToolMaterial | ''; notionType: YarnNotionType | ''; name: string; quantity: string; brand: string; notes: string;
+};
+
+function YarnToolFormPage({ toolId }: { toolId?: string }) {
+  const existing = useGetYarnTool(toolId ?? '', { query: { enabled: Boolean(toolId), queryKey: getGetYarnToolQueryKey(toolId ?? '') } });
+  if (toolId && existing.isLoading) return <PortalLayout active="yarnTools"><LoadingScreen label="Finding this tool…"/></PortalLayout>;
+  if (toolId && (existing.isError || !existing.data)) return <PortalLayout active="yarnTools"><QueryProblem retry={() => existing.refetch()} message="We couldn’t find this tool."/></PortalLayout>;
+  return <YarnToolForm tool={existing.data} key={existing.data?.id ?? 'new'}/>;
+}
+
+const sizeOptions = (sizes: string[]) => sizes.map((size) => ({ value: size, label: size }));
+const cableOptions = (Object.values(NeedleCableLength) as string[]).map((length) => ({ value: length, label: length }));
+
+function YarnToolForm({ tool }: { tool?: YarnTool }) {
+  const [, setLocation] = useLocation();
+  const client = useQueryClient();
+  const create = useCreateYarnTool();
+  const update = useUpdateYarnTool();
+  const remove = useDeleteYarnTool();
+  const urlSection = new URLSearchParams(useSearch()).get('section');
+  const [draft, setDraft] = useState<YarnToolDraft>(() => ({
+    section: tool?.section ?? yarnToolSections.find((item) => item.value === urlSection)?.value ?? 'hooks',
+    size: tool?.size ?? '', needleType: tool?.needleType ?? '', cableLength: tool?.cableLength ?? '',
+    material: tool?.material ?? '', notionType: tool?.notionType ?? '', name: tool?.name ?? '',
+    quantity: tool?.quantity === null || !tool ? '' : String(tool.quantity), brand: tool?.brand ?? '', notes: tool?.notes ?? '',
+  }));
+  const [photo, setPhoto] = useState<ToolPhoto>(tool?.hasPhoto ? { kind: 'kept' } : null);
+  const [errors, setErrors] = useState<Partial<Record<'photo' | 'size' | 'notionType' | 'quantity' | 'save', string>>>({});
+  const [saving, setSaving] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const set = (change: Partial<YarnToolDraft>) => setDraft((current) => ({ ...current, ...change }));
+  const clearError = (key: keyof typeof errors) => setErrors(({ [key]: _removed, ...rest }) => rest);
+  const isNotion = draft.section === 'notions';
+  const title = tool ? yarnToolTitle(tool) : 'Add a tool';
+
+  useEffect(() => () => { if (photo?.kind === 'new') URL.revokeObjectURL(photo.preview); }, [photo]);
+
+  const choosePhoto = (files: FileList | null) => {
+    const file = files?.[0];
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 10 * 1024 * 1024) {
+      setErrors((current) => ({ ...current, photo: 'Choose a JPEG, PNG, or WebP photo up to 10 MB.' }));
+      return;
+    }
+    clearError('photo');
+    setPhoto({ kind: 'new', file, preview: URL.createObjectURL(file) });
+  };
+
+  // Hooks and needles use different size lists, so switching clears the size.
+  const chooseSection = (section: YarnToolSection) => {
+    if (section === draft.section) return;
+    set({ section, size: '', needleType: '', cableLength: '' });
+    setErrors({});
+  };
+
+  const done = () => {
+    void client.invalidateQueries({ queryKey: getGetYarnToolsQueryKey() });
+    void client.invalidateQueries({ queryKey: getGetMyCraftsQueryKey() });
+    if (tool) void client.invalidateQueries({ queryKey: getGetYarnToolQueryKey(tool.id) });
+    setLocation(`/tools?section=${draft.section}`);
+  };
+
+  const save = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const nextErrors: typeof errors = {};
+    if (isNotion && !draft.notionType) nextErrors.notionType = 'Choose what kind of notion this is.';
+    if (!isNotion && !draft.size) nextErrors.size = 'Choose a size.';
+    const quantity = quantityForApi(draft.quantity);
+    if (quantity === 'invalid') nextErrors.quantity = 'Enter a whole number, like 3.';
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length || quantity === 'invalid') return;
+
+    setSaving(true);
+    let photoPath: string | null | undefined = photo?.kind === 'kept' || (!photo && !tool?.hasPhoto) ? undefined : null;
+    if (photo?.kind === 'new') {
+      try {
+        const contentType = photo.file.type as 'image/jpeg' | 'image/png' | 'image/webp';
+        const upload = await requestYarnToolPhotoUpload({ name: photo.file.name || 'tool-photo', size: photo.file.size, contentType });
+        const uploaded = await fetch(upload.uploadURL, { method: 'PUT', headers: { 'Content-Type': contentType }, body: photo.file });
+        if (!uploaded.ok) throw new Error('The photo upload did not finish.');
+        photoPath = upload.photoPath;
+      } catch {
+        setErrors({ photo: 'We couldn’t upload that photo. Please try again.' });
+        setSaving(false);
+        return;
+      }
+    }
+    const isNeedle = draft.section === 'needles';
+    const data = {
+      section: draft.section,
+      size: isNotion ? null : draft.size,
+      needleType: isNeedle ? draft.needleType || null : null,
+      cableLength: isNeedle && needleHasCable(draft.needleType) ? (draft.cableLength as NonNullable<YarnTool['cableLength']>) || null : null,
+      material: isNotion ? null : draft.material || null,
+      notionType: isNotion ? draft.notionType || null : null,
+      name: draft.name.trim() || null, quantity,
+      brand: draft.brand.trim() || null, notes: draft.notes.trim() || null,
+      ...(photoPath !== undefined ? { photoPath } : {}),
+    };
+    const options = {
+      onSuccess: done,
+      onError: (error: unknown) => setErrors({ save: (error as { data?: { error?: string } })?.data?.error ?? 'We couldn’t save this tool just now. Please try again.' }),
+      onSettled: () => setSaving(false),
+    };
+    if (tool) update.mutate({ yarnToolId: tool.id, data }, options);
+    else create.mutate({ data }, options);
+  };
+
+  const deleteTool = () => tool && remove.mutate({ yarnToolId: tool.id }, { onSuccess: done });
+  const photoSrc = photo?.kind === 'new' ? photo.preview : photo?.kind === 'kept' && tool ? yarnToolPhotoUrl(tool) : '';
+  const example = isNotion ? notionFor(draft.notionType || null)?.example ?? 'Locking stitch markers' : draft.section === 'hooks' ? 'My favourite hook' : 'Sock set';
+
+  return <PortalLayout active="yarnTools">
+    <Link href={`/tools?section=${draft.section}`} className="back-link" data-testid="link-back-yarn-tools"><ArrowLeft size={16}/> Back to tools</Link>
+    <PageHeading title={title} action={tool ? <button className="icon-button danger-icon" aria-label="Delete tool" title="Delete tool" onClick={() => setConfirmDelete(true)} data-testid="button-delete-yarn-tool"><Trash2 size={17}/></button> : undefined}/>
+    {confirmDelete && <div className="confirm-banner"><div><b>Remove this tool?</b><span>Its photo will be deleted too.</span></div><button className="button button-quiet" onClick={() => setConfirmDelete(false)}>Cancel</button><button className="button button-danger" onClick={deleteTool} disabled={remove.isPending} data-testid="button-confirm-delete-yarn-tool">{remove.isPending ? 'Removing…' : 'Remove tool'}</button></div>}
+    <form className="project-form loom-card tool-form" onSubmit={save} noValidate>
+      <div className="form-grid">
+        <div className="field-block field-wide"><label id="yarn-tool-section-label">Section</label><div className="segmented" role="radiogroup" aria-labelledby="yarn-tool-section-label">{yarnToolSections.map((item) => <button key={item.value} type="button" role="radio" aria-checked={draft.section === item.value} className={draft.section === item.value ? 'selected' : ''} onClick={() => chooseSection(item.value)} data-testid={`button-yarn-tool-form-section-${item.value}`}>{item.label}</button>)}</div></div>
+        {isNotion
+          ? <OptionWheelField id="yarn-tool-notion-type" label="Type" required options={yarnNotionTypes} value={draft.notionType} onChange={(notionType) => { set({ notionType }); clearError('notionType'); }} icon={notionFor(draft.notionType || null)?.icon ?? Box} placeholder="Choose a type" testId="select-yarn-notion-type" error={errors.notionType}/>
+          : <OptionWheelField id="yarn-tool-size" label="Size" required options={sizeOptions(draft.section === 'hooks' ? hookSizes : needleSizes)} value={draft.size} onChange={(size) => { set({ size }); clearError('size'); }} icon={Ruler} placeholder="Choose a size" testId="select-yarn-tool-size" error={errors.size}/>}
+        {draft.section === 'needles' && <OptionWheelField id="yarn-tool-needle-type" label="Needle type" options={yarnNeedleTypes} value={draft.needleType} onChange={(needleType) => set({ needleType })} icon={NeedleIcon} placeholder="Choose a type" testId="select-yarn-tool-needle-type"/>}
+        {draft.section === 'needles' && needleHasCable(draft.needleType) && <OptionWheelField id="yarn-tool-cable" label="Cable length" options={cableOptions} value={draft.cableLength} onChange={(cableLength) => set({ cableLength })} icon={Ruler} placeholder="Choose a length" testId="select-yarn-tool-cable"/>}
+        {!isNotion && <OptionWheelField id="yarn-tool-material" label="Material" options={yarnToolMaterials} value={draft.material} onChange={(material) => set({ material })} icon={Layers3} placeholder="Choose a material" testId="select-yarn-tool-material"/>}
+        <div className="field-block"><label htmlFor="yarn-tool-quantity">How many</label><input id="yarn-tool-quantity" inputMode="numeric" placeholder="Optional" value={draft.quantity} onChange={(event) => { set({ quantity: event.target.value }); clearError('quantity'); }} data-testid="input-yarn-tool-quantity"/>{errors.quantity && <span className="field-error">{errors.quantity}</span>}</div>
+        <div className="field-block"><label htmlFor="yarn-tool-name">Name</label><input id="yarn-tool-name" maxLength={80} placeholder={`e.g. ${example}`} value={draft.name} onChange={(event) => set({ name: event.target.value })} data-testid="input-yarn-tool-name"/></div>
+        <div className="field-block"><label htmlFor="yarn-tool-brand">Brand</label><input id="yarn-tool-brand" maxLength={80} placeholder="Optional" value={draft.brand} onChange={(event) => set({ brand: event.target.value })} data-testid="input-yarn-tool-brand"/></div>
+        <div className="field-block field-wide"><label htmlFor="yarn-tool-notes">Notes</label><textarea id="yarn-tool-notes" rows={3} maxLength={1000} placeholder="Optional" value={draft.notes} onChange={(event) => set({ notes: event.target.value })} data-testid="input-yarn-tool-notes"/></div>
+        <div className="field-block field-wide">
+          <label htmlFor="yarn-tool-photo">Photo</label>
+          <div className="tool-photo-field">
+            <label className={`tool-photo${photoSrc ? ' has-photo' : ''}`} htmlFor="yarn-tool-photo">{photoSrc ? <img src={photoSrc} alt="Tool photo"/> : <span><Camera size={20}/>Add a photo</span>}</label>
+            {photoSrc && <button type="button" className="button button-quiet" onClick={() => setPhoto(null)} data-testid="button-remove-yarn-tool-photo">Remove photo</button>}
+          </div>
+          <input id="yarn-tool-photo" className="visually-hidden" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { choosePhoto(event.target.files); event.target.value = ''; }} data-testid="input-yarn-tool-photo"/>
+          {errors.photo && <span className="field-error">{errors.photo}</span>}
+        </div>
+      </div>
+      {errors.save && <p className="mutation-error" role="alert">{errors.save}</p>}
+      <div className="form-actions"><Link href={`/tools?section=${draft.section}`} className="button button-quiet">Cancel</Link><button type="submit" className="button button-primary" disabled={saving} data-testid="button-save-yarn-tool">{saving ? 'Saving…' : tool ? 'Save changes' : 'Add tool'}{!saving && <ArrowRight size={16}/>}</button></div>
+    </form>
+  </PortalLayout>;
+}
+
 function ReviewCard({ review }: { review: CatalogReview }) {
   const client = useQueryClient();
   const resolve = useResolveCatalogReview();
@@ -2050,6 +2242,9 @@ function AuthCacheRouter() {
         <Route path="/stash"><PrivateRoute><StashPage/></PrivateRoute></Route>
         <Route path="/reviews"><PrivateRoute><ReviewsPage/></PrivateRoute></Route>
         <Route path="/stash/new"><PrivateRoute><StashYarnFormPage/></PrivateRoute></Route>
+        <Route path="/tools"><PrivateRoute><YarnToolsPage/></PrivateRoute></Route>
+        <Route path="/tools/new"><PrivateRoute><YarnToolFormPage/></PrivateRoute></Route>
+        <Route path="/tools/:toolId">{(params) => <PrivateRoute><YarnToolFormPage toolId={params.toolId}/></PrivateRoute>}</Route>
         <Route path="/stash/:yarnId">{(params) => <PrivateRoute><StashYarnFormPage yarnId={params.yarnId}/></PrivateRoute>}</Route>
         <Route path="/projects/:projectId">{(params) => <PrivateRoute><ProjectDetailPage projectId={params.projectId}/></PrivateRoute>}</Route>
         <Route path="/sewing"><PrivateRoute craft="sewing"><SewingOverviewPage/></PrivateRoute></Route>

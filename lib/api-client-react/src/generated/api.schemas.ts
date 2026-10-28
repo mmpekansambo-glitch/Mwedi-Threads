@@ -934,6 +934,150 @@ export interface UpdateSewingTool {
   photoPath?: string | null;
 }
 
+export type YarnToolSection = typeof YarnToolSection[keyof typeof YarnToolSection];
+
+
+export const YarnToolSection = {
+  hooks: 'hooks',
+  needles: 'needles',
+  notions: 'notions',
+} as const;
+
+export type YarnToolMaterial = typeof YarnToolMaterial[keyof typeof YarnToolMaterial];
+
+
+export const YarnToolMaterial = {
+  aluminium: 'aluminium',
+  steel: 'steel',
+  bamboo: 'bamboo',
+  wood: 'wood',
+  plastic: 'plastic',
+  ergonomic: 'ergonomic',
+} as const;
+
+export type YarnNotionType = typeof YarnNotionType[keyof typeof YarnNotionType];
+
+
+export const YarnNotionType = {
+  stitch_markers: 'stitch_markers',
+  tapestry_needles: 'tapestry_needles',
+  row_counter: 'row_counter',
+  cable_needles: 'cable_needles',
+  scissors: 'scissors',
+  measuring_tape: 'measuring_tape',
+  blocking_mats: 'blocking_mats',
+  blocking_pins: 'blocking_pins',
+  yarn_swift: 'yarn_swift',
+  ball_winder: 'ball_winder',
+  other: 'other',
+} as const;
+
+export interface YarnTool {
+  id: string;
+  section: YarnToolSection;
+  /**
+     * A CrochetHookSize for hooks or a KnittingNeedleSize for needles
+     * @nullable
+     */
+  size: string | null;
+  needleType: KnittingNeedleType | null;
+  cableLength: NeedleCableLength | null;
+  material: YarnToolMaterial | null;
+  notionType: YarnNotionType | null;
+  /** @nullable */
+  name: string | null;
+  /** @nullable */
+  quantity: number | null;
+  /** @nullable */
+  brand: string | null;
+  /** @nullable */
+  notes: string | null;
+  hasPhoto: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Hooks and needles need a size; notions need a notion type.
+ */
+export interface CreateYarnTool {
+  section: YarnToolSection;
+  /**
+     * @maxLength 60
+     * @nullable
+     */
+  size?: string | null;
+  needleType?: KnittingNeedleType | null;
+  cableLength?: NeedleCableLength | null;
+  material?: YarnToolMaterial | null;
+  notionType?: YarnNotionType | null;
+  /**
+     * @maxLength 80
+     * @nullable
+     */
+  name?: string | null;
+  /**
+     * @minimum 0
+     * @maximum 9999
+     * @nullable
+     */
+  quantity?: number | null;
+  /**
+     * @maxLength 80
+     * @nullable
+     */
+  brand?: string | null;
+  /**
+     * @maxLength 1000
+     * @nullable
+     */
+  notes?: string | null;
+  /**
+     * A path from the yarn tool photo upload URL
+     * @nullable
+     */
+  photoPath?: string | null;
+}
+
+export interface UpdateYarnTool {
+  section?: YarnToolSection;
+  /**
+     * @maxLength 60
+     * @nullable
+     */
+  size?: string | null;
+  needleType?: KnittingNeedleType | null;
+  cableLength?: NeedleCableLength | null;
+  material?: YarnToolMaterial | null;
+  notionType?: YarnNotionType | null;
+  /**
+     * @maxLength 80
+     * @nullable
+     */
+  name?: string | null;
+  /**
+     * @minimum 0
+     * @maximum 9999
+     * @nullable
+     */
+  quantity?: number | null;
+  /**
+     * @maxLength 80
+     * @nullable
+     */
+  brand?: string | null;
+  /**
+     * @maxLength 1000
+     * @nullable
+     */
+  notes?: string | null;
+  /**
+     * A new path from the upload URL, or null to remove the photo. Leave it out to keep the photo.
+     * @nullable
+     */
+  photoPath?: string | null;
+}
+
 /**
  * Prep, Cut, Sew, Fit, Finish, in that order
  */
@@ -1382,5 +1526,13 @@ export type GetSewingToolsParams = {
 search?: string;
 section?: SewingToolSection;
 category?: SewingToolCategory;
+};
+
+export type GetYarnToolsParams = {
+/**
+ * Matches size, name, brand or notes
+ */
+search?: string;
+section?: YarnToolSection;
 };
 
