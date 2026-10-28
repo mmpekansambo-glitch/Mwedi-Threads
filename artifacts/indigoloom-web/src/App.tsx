@@ -464,6 +464,22 @@ function ProjectCard({ project }: { project: Project }) {
   </Link></div>;
 }
 
+// "Big Twist & Lion Brand", or "A, B & C" for three or more.
+function joinBrands(brands: string[]) {
+  return brands.length < 2 ? brands[0] ?? '' : `${brands.slice(0, -1).join(', ')} & ${brands[brands.length - 1]}`;
+}
+
+function YarnStats({ brands, brandProjects, averageDays }: { brands: string[]; brandProjects: number; averageDays: number | null }) {
+  const brandBody = <><span className="stat-label">Most-used yarn brand</span><strong data-testid="text-top-yarn-brand">{brands.length ? joinBrands(brands) : '—'}</strong>{brands.length > 0 && <span className="stat-detail">On {brandProjects} {brandProjects === 1 ? 'project' : 'projects'}{brands.length > 1 ? ' each' : ''}</span>}</>;
+  return <section className="stat-row stat-row-second" aria-label="Yarn and finishing stats">
+    {/* A single brand opens My projects searched for it; a tie has no one brand to search. */}
+    {brands.length === 1
+      ? <Link href={`/projects?search=${encodeURIComponent(brands[0])}`} className="stat-card stat-card-brand stat-card-active" data-testid="link-stat-top-brand">{brandBody}</Link>
+      : <div className="stat-card stat-card-brand stat-card-active" data-testid="card-stat-top-brand">{brandBody}</div>}
+    <div className="stat-card stat-card-all" data-testid="card-stat-average-days"><span className="stat-label">Average days to finish</span><strong data-testid="text-average-days">{averageDays ?? '—'}</strong>{averageDays !== null && <span className="stat-detail">From start date to finish date</span>}</div>
+  </section>;
+}
+
 function DashboardPage() {
   const query = useGetDashboard({ query: { queryKey: getGetDashboardQueryKey() } });
   const data = query.data;
@@ -477,6 +493,7 @@ function DashboardPage() {
         <Link href="/projects?status=in_progress" className="stat-card stat-card-active" data-testid="link-stat-in-progress"><span className="stat-label">In progress</span><strong>{data.activeProjects}</strong><StatDoodle kind="hook"/></Link>
         <Link href="/projects?status=completed" className="stat-card stat-card-finished" data-testid="link-stat-finished"><span className="stat-label">Finished</span><strong>{data.completedProjects}</strong><StatDoodle kind="square"/></Link>
       </section>
+      <YarnStats brands={data.mostUsedYarnBrands} brandProjects={data.mostUsedYarnBrandProjects} averageDays={data.averageDaysToFinish}/>
       <DashboardCharts charts={data.charts}/>
       <section className="dashboard-grid">
         <div className="dashboard-work">
@@ -499,7 +516,9 @@ function EmptyProjects({ compact = false }: { compact?: boolean }) {
 const projectStatuses: ProjectStatus[] = ['planning', 'in_progress', 'paused', 'completed'];
 
 function ProjectsPage() {
-  const [search, setSearch] = useState('');
+  // The Overview's yarn brand card links here with ?search= already filled in.
+  const urlSearch = new URLSearchParams(useSearch()).get('search') ?? '';
+  const [search, setSearch] = useState(urlSearch);
   // The status filter lives in the URL, so the Overview stat cards and chart bars can link straight to it.
   const [, setLocation] = useLocation();
   const urlStatus = new URLSearchParams(useSearch()).get('status') ?? '';

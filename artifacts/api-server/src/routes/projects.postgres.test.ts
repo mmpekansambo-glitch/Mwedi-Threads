@@ -5,7 +5,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import * as schema from "@workspace/db/schema";
-import { progressEntriesTable, projectsTable, usersTable } from "@workspace/db/schema";
+import { progressEntriesTable, projectsTable, projectYarnsTable, usersTable } from "@workspace/db/schema";
 import { stashTablesSql } from "../test/stashTablesSql";
 
 vi.mock("@clerk/express", () => ({
@@ -538,5 +538,43 @@ describe.skipIf(!databaseUrl)("project authorization against PostgreSQL", () => 
       body: { count: -1 },
     });
     expect(negative.status).toBe(400);
+  });
+
+  // PLAN.md test 2: the dashboard's "Most-used yarn brand" stat.
+  it("shows every tied most-used yarn brand A to Z, counting only the maker's own projects", async () => {
+    const ownerD = "postgres-test-user-d";
+    const ownerE = "postgres-test-user-e";
+    await getTestDb().insert(usersTable).values([
+      { id: ownerD, email: "d@example.test" },
+      { id: ownerE, email: "e@example.test" },
+    ]);
+    const addProject = async (ownerId: string, title: string, brands: string[]) => {
+      const [project] = await getTestDb()
+        .insert(projectsTable)
+        .values({ ownerId, title, craft: "crochet" })
+        .returning();
+      await getTestDb().insert(projectYarnsTable).values(
+        brands.map((brand, position) => ({ projectId: project.id, position, brand })),
+      );
+    };
+    // Given 2 projects with Lion Brand (spelled two ways), 2 with Big Twist and
+    // 1 with Red Heart, where one Big Twist project uses two colors...
+    await addProject(ownerD, "Granny square blanket", ["Lion Brand"]);
+    await addProject(ownerD, "Market bag", ["lion brand"]);
+    await addProject(ownerD, "Striped scarf", ["Big Twist", "Big Twist"]);
+    await addProject(ownerD, "Baby hat", ["Big Twist"]);
+    await addProject(ownerD, "Coasters", ["Red Heart"]);
+    // ...and someone else's Red Heart projects, which must not count.
+    await addProject(ownerE, "Other maker's throw", ["Red Heart"]);
+    await addProject(ownerE, "Other maker's pillow", ["Red Heart"]);
+
+    // When the maker opens the dashboard...
+    const response = await request("/dashboard", { user: ownerD });
+    expect(response.status).toBe(200);
+    const dashboard = await response.json() as { mostUsedYarnBrands: string[]; mostUsedYarnBrandProjects: number };
+
+    // Then "Most-used yarn brand" shows Big Twist & Lion Brand, on 2 projects each.
+    expect(dashboard.mostUsedYarnBrands).toEqual(["Big Twist", "Lion Brand"]);
+    expect(dashboard.mostUsedYarnBrandProjects).toBe(2);
   });
 });

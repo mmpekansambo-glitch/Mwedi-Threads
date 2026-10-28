@@ -34,13 +34,15 @@ export default function ProjectsScreen() {
   const clearFilters = () => { setSearch(''); setStatus(''); setCraft(''); setStarredOnly(false); };
   // The Overview stat cards and chart bars open this tab with a status (or none for All projects).
   // `at` changes on every tap, so tapping the same card twice still resets the filters.
-  const link = useLocalSearchParams<{ status?: string; at?: string }>();
+  // The yarn brand card sends `search` instead.
+  const link = useLocalSearchParams<{ status?: string; search?: string; at?: string }>();
   useEffect(() => {
     if (!link.at) return;
     clearFilters();
     const linked = statusFilters.find((item) => item.value && item.value === link.status);
     if (linked) setStatus(linked.value);
-  }, [link.at, link.status]);
+    if (link.search) setSearch(link.search);
+  }, [link.at, link.status, link.search]);
   const query = useGetProjects(params);
   return (
     <ScrollView

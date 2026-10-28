@@ -124,7 +124,7 @@ async function mockApi(page: Page, crafts: { yarn: boolean; sewing: boolean; nee
       return route.fulfill({ json: stash.find((entry) => entry.id === itemMatchPatch(pathname)) });
     }
     if (pathname === "/api/dashboard") {
-      return route.fulfill({ json: { totalProjects: 0, activeProjects: 0, completedProjects: 0, recentProjects: [], recentProgress: [], charts: { projectsByStatus: [], completedPerMonth: [], completedWithoutDate: 0, progressPerWeek: [] } } });
+      return route.fulfill({ json: { totalProjects: 0, activeProjects: 0, completedProjects: 0, recentProjects: [], recentProgress: [], mostUsedYarnBrands: [], mostUsedYarnBrandProjects: 0, averageDaysToFinish: null, charts: { projectsByStatus: [], completedPerMonth: [], completedWithoutDate: 0, progressPerWeek: [] } } });
     }
     return route.fulfill({ json: [] });
   });

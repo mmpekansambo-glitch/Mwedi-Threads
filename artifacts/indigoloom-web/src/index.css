@@ -233,6 +233,8 @@ a { color: inherit; text-decoration: none; }
 a.stat-card { display: block; color: inherit; transition: transform .18s ease, box-shadow .18s ease; }
 a.stat-card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(57, 91, 80, .1); }
 a.stat-card:active { transform: scale(.98); box-shadow: none; }
+.stat-row-second { grid-template-columns: 1fr 1fr; margin-top: 14px; }
+.stat-card-brand > strong { font-size: 30px; line-height: 1.1; overflow-wrap: anywhere; }
 .stat-card-all { background: #EEF2FA; }
 .stat-card-active { background: #DCE6F4; border-color: #DCE6F4; }
 .stat-card-finished { background: #E1EAE5; border-color: #E1EAE5; }
@@ -520,6 +522,8 @@ a.stat-card:active { transform: scale(.98); box-shadow: none; }
   .page-title { font-size: 36px; }
   .page-heading p { max-width: 400px; line-height: 1.55; }
   .stat-row { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stat-row-second { margin-top: 10px; }
+  .stat-card-brand > strong { font-size: 24px; }
   .chart-row { grid-template-columns: 1fr; gap: 10px; margin-top: 10px; }
   .stat-card { height: 138px; padding: 16px; }
   .stat-card > strong { font-size: 37px; margin-top: 14px; }
