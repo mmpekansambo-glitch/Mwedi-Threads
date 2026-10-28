@@ -163,3 +163,30 @@ export function sewingToolsSql(isolatedSchema: string): string {
     );
   `;
 }
+
+export function yarnToolsSql(isolatedSchema: string): string {
+  return `
+    CREATE TYPE ${isolatedSchema}.yarn_tool_section AS ENUM ('hooks', 'needles', 'notions');
+    CREATE TYPE ${isolatedSchema}.yarn_tool_material AS ENUM ('aluminium', 'steel', 'bamboo', 'wood', 'plastic', 'ergonomic');
+    CREATE TYPE ${isolatedSchema}.yarn_notion_type AS ENUM (
+      'stitch_markers', 'tapestry_needles', 'row_counter', 'cable_needles', 'scissors', 'measuring_tape', 'blocking_mats', 'blocking_pins', 'yarn_swift', 'ball_winder', 'other'
+    );
+    CREATE TABLE ${isolatedSchema}.yarn_tools (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL REFERENCES ${isolatedSchema}.users(id) ON DELETE CASCADE,
+      section ${isolatedSchema}.yarn_tool_section NOT NULL,
+      size text,
+      needle_type text,
+      cable_length text,
+      material ${isolatedSchema}.yarn_tool_material,
+      notion_type ${isolatedSchema}.yarn_notion_type,
+      name text,
+      quantity integer,
+      brand text,
+      notes text,
+      photo_path text,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now()
+    );
+  `;
+}

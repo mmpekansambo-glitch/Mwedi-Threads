@@ -17,8 +17,8 @@ import { CraftChoiceScreen, HomeProvider, useCrafts, useHome } from '@/component
 // NativeTabs intentionally does NOT use custom design tokens — liquid glass
 // is a system-level appearance provided by iOS and cannot be overridden.
 // Custom brand colors are applied only on the ClassicTabLayout path (older iOS / Android / web).
-// Each home shows only its own tabs: Overview, My projects and Yarn stash in
-// the Yarn studio; Overview, Projects, Fabric and Tools in the Sewing room.
+// Each home shows only its own tabs: Overview, My projects, Yarn stash and
+// Tools in the Yarn studio; Overview, Projects, Fabric and Tools in the Sewing room.
 function NativeTabLayout() {
   const { home } = useHome();
   const yarnHidden = home !== 'yarn';
@@ -37,6 +37,10 @@ function NativeTabLayout() {
       <NativeTabs.Trigger name="stash" hidden={yarnHidden}>
         <NativeTabs.Trigger.Icon sf={{ default: 'paintpalette', selected: 'paintpalette.fill' }} />
         <NativeTabs.Trigger.Label>Yarn stash</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="yarn-tools" hidden={yarnHidden}>
+        <NativeTabs.Trigger.Icon sf={{ default: 'wrench.and.screwdriver', selected: 'wrench.and.screwdriver.fill' }} />
+        <NativeTabs.Trigger.Label>Tools</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="sewing" hidden={!yarnHidden}>
         <NativeTabs.Trigger.Icon sf={{ default: 'house', selected: 'house.fill' }} />
@@ -139,6 +143,19 @@ function ClassicTabLayout() {
               <SymbolView name="paintpalette" tintColor={color} size={23} />
             ) : (
               <Feather name="droplet" size={21} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="yarn-tools"
+        options={{
+          title: 'Tools',
+          href: yarnHidden ? null : undefined,
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="wrench.and.screwdriver" tintColor={color} size={23} />
+            ) : (
+              <Feather name="tool" size={21} color={color} />
             ),
         }}
       />

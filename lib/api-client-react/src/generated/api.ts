@@ -31,6 +31,7 @@ import type {
   CreateSewingTool,
   CreateStashFabric,
   CreateStashYarn,
+  CreateYarnTool,
   Dashboard,
   DesignerWebsiteTitlePreviewRequest,
   DesignerWebsiteTitlePreviewResponse,
@@ -42,6 +43,7 @@ import type {
   GetStashFabricsParams,
   GetStashYarnsParams,
   GetYarnCatalogParams,
+  GetYarnToolsParams,
   HealthStatus,
   NotFoundResponse,
   ProgressEntry,
@@ -65,7 +67,9 @@ import type {
   UpdateSewingTool,
   UpdateStashFabric,
   UpdateStashYarn,
-  YarnCatalog
+  UpdateYarnTool,
+  YarnCatalog,
+  YarnTool
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -4593,6 +4597,583 @@ export function useGetSewingToolPhoto<TData = Awaited<ReturnType<typeof getSewin
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetSewingToolPhotoQueryOptions(sewingToolId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetYarnToolsUrl = (params?: GetYarnToolsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/yarn-tools?${stringifiedParams}` : `/api/yarn-tools`
+}
+
+/**
+ * @summary List the signed-in maker's hooks, needles and notions
+ */
+export const getYarnTools = async (params?: GetYarnToolsParams, options?: Parameters<typeof customFetch>[1]): Promise<YarnTool[]> => {
+
+  return customFetch<YarnTool[]>(getGetYarnToolsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetYarnToolsQueryKey = (params?: GetYarnToolsParams,) => {
+    return [
+    `/api/yarn-tools`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetYarnToolsQueryOptions = <TData = Awaited<ReturnType<typeof getYarnTools>>, TError = ErrorType<UnauthorizedResponse>>(params?: GetYarnToolsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getYarnTools>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetYarnToolsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getYarnTools>>> = ({ signal }) => getYarnTools(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getYarnTools>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetYarnToolsQueryResult = NonNullable<Awaited<ReturnType<typeof getYarnTools>>>
+export type GetYarnToolsQueryError = ErrorType<UnauthorizedResponse>
+
+
+/**
+ * @summary List the signed-in maker's hooks, needles and notions
+ */
+
+export function useGetYarnTools<TData = Awaited<ReturnType<typeof getYarnTools>>, TError = ErrorType<UnauthorizedResponse>>(
+ params?: GetYarnToolsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getYarnTools>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetYarnToolsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateYarnToolUrl = () => {
+
+
+
+
+  return `/api/yarn-tools`
+}
+
+/**
+ * @summary Add a hook, needle or notion
+ */
+export const createYarnTool = async (createYarnToolBody: CreateYarnTool, options?: Parameters<typeof customFetch>[1]): Promise<YarnTool> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<YarnTool>(getCreateYarnToolUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(createYarnToolBody)
+  }
+);}
+
+
+
+
+
+export const getCreateYarnToolMutationKey = () => ['createYarnTool'] as const;
+
+export const getCreateYarnToolMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createYarnTool>>, TError,CreateYarnToolMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createYarnTool>>, TError,CreateYarnToolMutationVariables, TContext> => {
+
+const mutationKey = getCreateYarnToolMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createYarnTool>>, CreateYarnToolMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createYarnTool(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateYarnToolMutationResult = NonNullable<Awaited<ReturnType<typeof createYarnTool>>>
+    export type CreateYarnToolMutationBody = BodyType<CreateYarnTool>
+    export type CreateYarnToolMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse>
+    export type CreateYarnToolMutationVariables = {data: BodyType<CreateYarnTool>}
+
+    /**
+ * @summary Add a hook, needle or notion
+ */
+export const useCreateYarnTool = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createYarnTool>>, TError,CreateYarnToolMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createYarnTool>>,
+        TError,
+        CreateYarnToolMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateYarnToolMutationOptions(options));
+    }
+
+export const getRequestYarnToolPhotoUploadUrl = () => {
+
+
+
+
+  return `/api/yarn-tools/photo-upload`
+}
+
+/**
+ * @summary Request a private upload URL for a yarn tool photo
+ */
+export const requestYarnToolPhotoUpload = async (progressPhotoUploadRequest: ProgressPhotoUploadRequest, options?: Parameters<typeof customFetch>[1]): Promise<ProgressPhotoUploadResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<ProgressPhotoUploadResponse>(getRequestYarnToolPhotoUploadUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(progressPhotoUploadRequest)
+  }
+);}
+
+
+
+
+
+export const getRequestYarnToolPhotoUploadMutationKey = () => ['requestYarnToolPhotoUpload'] as const;
+
+export const getRequestYarnToolPhotoUploadMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestYarnToolPhotoUpload>>, TError,RequestYarnToolPhotoUploadMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestYarnToolPhotoUpload>>, TError,RequestYarnToolPhotoUploadMutationVariables, TContext> => {
+
+const mutationKey = getRequestYarnToolPhotoUploadMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestYarnToolPhotoUpload>>, RequestYarnToolPhotoUploadMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  requestYarnToolPhotoUpload(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequestYarnToolPhotoUploadMutationResult = NonNullable<Awaited<ReturnType<typeof requestYarnToolPhotoUpload>>>
+    export type RequestYarnToolPhotoUploadMutationBody = BodyType<ProgressPhotoUploadRequest>
+    export type RequestYarnToolPhotoUploadMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse>
+    export type RequestYarnToolPhotoUploadMutationVariables = {data: BodyType<ProgressPhotoUploadRequest>}
+
+    /**
+ * @summary Request a private upload URL for a yarn tool photo
+ */
+export const useRequestYarnToolPhotoUpload = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestYarnToolPhotoUpload>>, TError,RequestYarnToolPhotoUploadMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof requestYarnToolPhotoUpload>>,
+        TError,
+        RequestYarnToolPhotoUploadMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRequestYarnToolPhotoUploadMutationOptions(options));
+    }
+
+export const getGetYarnToolUrl = (yarnToolId: string,) => {
+
+
+
+
+  return `/api/yarn-tools/${yarnToolId}`
+}
+
+/**
+ * @summary Get one hook, needle or notion
+ */
+export const getYarnTool = async (yarnToolId: string, options?: Parameters<typeof customFetch>[1]): Promise<YarnTool> => {
+
+  return customFetch<YarnTool>(getGetYarnToolUrl(yarnToolId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetYarnToolQueryKey = (yarnToolId: string,) => {
+    return [
+    `/api/yarn-tools/${yarnToolId}`
+    ] as const;
+    }
+
+
+export const getGetYarnToolQueryOptions = <TData = Awaited<ReturnType<typeof getYarnTool>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse>>(yarnToolId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getYarnTool>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetYarnToolQueryKey(yarnToolId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getYarnTool>>> = ({ signal }) => getYarnTool(yarnToolId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: yarnToolId !== null && yarnToolId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getYarnTool>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetYarnToolQueryResult = NonNullable<Awaited<ReturnType<typeof getYarnTool>>>
+export type GetYarnToolQueryError = ErrorType<UnauthorizedResponse | NotFoundResponse>
+
+
+/**
+ * @summary Get one hook, needle or notion
+ */
+
+export function useGetYarnTool<TData = Awaited<ReturnType<typeof getYarnTool>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse>>(
+ yarnToolId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getYarnTool>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetYarnToolQueryOptions(yarnToolId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateYarnToolUrl = (yarnToolId: string,) => {
+
+
+
+
+  return `/api/yarn-tools/${yarnToolId}`
+}
+
+/**
+ * @summary Change a hook, needle or notion
+ */
+export const updateYarnTool = async (yarnToolId: string,
+    updateYarnToolBody: UpdateYarnTool, options?: Parameters<typeof customFetch>[1]): Promise<YarnTool> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<YarnTool>(getUpdateYarnToolUrl(yarnToolId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(updateYarnToolBody)
+  }
+);}
+
+
+
+
+
+export const getUpdateYarnToolMutationKey = () => ['updateYarnTool'] as const;
+
+export const getUpdateYarnToolMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateYarnTool>>, TError,UpdateYarnToolMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateYarnTool>>, TError,UpdateYarnToolMutationVariables, TContext> => {
+
+const mutationKey = getUpdateYarnToolMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateYarnTool>>, UpdateYarnToolMutationVariables> = (props) => {
+          const {yarnToolId,data} = props ?? {};
+
+          return  updateYarnTool(yarnToolId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateYarnToolMutationResult = NonNullable<Awaited<ReturnType<typeof updateYarnTool>>>
+    export type UpdateYarnToolMutationBody = BodyType<UpdateYarnTool>
+    export type UpdateYarnToolMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse>
+    export type UpdateYarnToolMutationVariables = {yarnToolId: string;data: BodyType<UpdateYarnTool>}
+
+    /**
+ * @summary Change a hook, needle or notion
+ */
+export const useUpdateYarnTool = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateYarnTool>>, TError,UpdateYarnToolMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateYarnTool>>,
+        TError,
+        UpdateYarnToolMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateYarnToolMutationOptions(options));
+    }
+
+export const getDeleteYarnToolUrl = (yarnToolId: string,) => {
+
+
+
+
+  return `/api/yarn-tools/${yarnToolId}`
+}
+
+/**
+ * @summary Remove a hook, needle or notion
+ */
+export const deleteYarnTool = async (yarnToolId: string, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getDeleteYarnToolUrl(yarnToolId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteYarnToolMutationKey = () => ['deleteYarnTool'] as const;
+
+export const getDeleteYarnToolMutationOptions = <TError = ErrorType<UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteYarnTool>>, TError,DeleteYarnToolMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteYarnTool>>, TError,DeleteYarnToolMutationVariables, TContext> => {
+
+const mutationKey = getDeleteYarnToolMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteYarnTool>>, DeleteYarnToolMutationVariables> = (props) => {
+          const {yarnToolId} = props ?? {};
+
+          return  deleteYarnTool(yarnToolId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteYarnToolMutationResult = NonNullable<Awaited<ReturnType<typeof deleteYarnTool>>>
+
+    export type DeleteYarnToolMutationError = ErrorType<UnauthorizedResponse | NotFoundResponse>
+    export type DeleteYarnToolMutationVariables = {yarnToolId: string}
+
+    /**
+ * @summary Remove a hook, needle or notion
+ */
+export const useDeleteYarnTool = <TError = ErrorType<UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteYarnTool>>, TError,DeleteYarnToolMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteYarnTool>>,
+        TError,
+        DeleteYarnToolMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeleteYarnToolMutationOptions(options));
+    }
+
+export const getGetYarnToolPhotoUrl = (yarnToolId: string,) => {
+
+
+
+
+  return `/api/yarn-tools/${yarnToolId}/photo`
+}
+
+/**
+ * @summary View a yarn tool's photo
+ */
+export const getYarnToolPhoto = async (yarnToolId: string, options?: Parameters<typeof customFetch>[1]): Promise<unknown> => {
+
+  return customFetch<unknown>(getGetYarnToolPhotoUrl(yarnToolId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetYarnToolPhotoQueryKey = (yarnToolId: string,) => {
+    return [
+    `/api/yarn-tools/${yarnToolId}/photo`
+    ] as const;
+    }
+
+
+export const getGetYarnToolPhotoQueryOptions = <TData = Awaited<ReturnType<typeof getYarnToolPhoto>>, TError = ErrorType<void | UnauthorizedResponse | NotFoundResponse>>(yarnToolId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getYarnToolPhoto>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetYarnToolPhotoQueryKey(yarnToolId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getYarnToolPhoto>>> = ({ signal }) => getYarnToolPhoto(yarnToolId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: yarnToolId !== null && yarnToolId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getYarnToolPhoto>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetYarnToolPhotoQueryResult = NonNullable<Awaited<ReturnType<typeof getYarnToolPhoto>>>
+export type GetYarnToolPhotoQueryError = ErrorType<void | UnauthorizedResponse | NotFoundResponse>
+
+
+/**
+ * @summary View a yarn tool's photo
+ */
+
+export function useGetYarnToolPhoto<TData = Awaited<ReturnType<typeof getYarnToolPhoto>>, TError = ErrorType<void | UnauthorizedResponse | NotFoundResponse>>(
+ yarnToolId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getYarnToolPhoto>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetYarnToolPhotoQueryOptions(yarnToolId,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

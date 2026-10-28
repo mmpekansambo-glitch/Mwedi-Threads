@@ -863,6 +863,7 @@ a.stat-card:active { transform: scale(.98); box-shadow: none; }
 .note-edit-form { margin-bottom: 0; }
 .note-edit-form .date-wheel-field { margin-top: 12px; }
 .tool-section-filter { flex: 0 0 auto; }
+.tool-section-filter button { padding: 0 14px; }
 .tool-section { margin-top: 22px; }
 .tool-section h2 { display: flex; align-items: baseline; gap: 10px; margin: 0 0 12px; font-size: 22px; color: var(--evergreen); }
 .tool-section h2 span { color: var(--slate); font: 700 14px/1 var(--app-font-sans); }
@@ -984,3 +985,5 @@ a.stat-card:active { transform: scale(.98); box-shadow: none; }
 .dark .counter-minus { background: var(--lavender-soft); }
 .dark .home-sewing .rail-link.selected { box-shadow: inset 3px 0 #A595C2; }
 .dark .home-sewing .rail-link.selected svg { color: #A595C2; }
+/* Yarn studio Tools reuse the Sewing room tool rows in the yarn colours. */
+.home-yarn { --sew-accent: var(--granite); --sew-line: var(--lavender-deep); --sew-soft: var(--lavender-wash); }

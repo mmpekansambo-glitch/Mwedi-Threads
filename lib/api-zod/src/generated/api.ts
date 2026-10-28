@@ -1934,3 +1934,196 @@ export const GetSewingToolPhotoParams = zod.object({
 export const GetSewingToolPhotoResponse = zod.void()
 
 
+/**
+ * @summary List the signed-in maker's hooks, needles and notions
+ */
+export const GetYarnToolsQueryParams = zod.object({
+  "search": zod.coerce.string().optional().describe('Matches size, name, brand or notes'),
+  "section": zod.enum(['hooks', 'needles', 'notions']).optional()
+})
+
+export const GetYarnToolsResponseItem = zod.object({
+  "id": zod.string().uuid(),
+  "section": zod.enum(['hooks', 'needles', 'notions']),
+  "size": zod.string().nullable().describe('A CrochetHookSize for hooks or a KnittingNeedleSize for needles'),
+  "needleType": zod.union([zod.enum(['straight', 'circular', 'double_pointed', 'interchangeable']),zod.null()]),
+  "cableLength": zod.union([zod.enum(['23 cm (9 in)', '30 cm (12 in)', '40 cm (16 in)', '60 cm (24 in)', '80 cm (32 in)', '100 cm (40 in)', '120 cm (47 in)', '150 cm (60 in)']).describe('Cable length for circular and interchangeable needles.'),zod.null()]),
+  "material": zod.union([zod.enum(['aluminium', 'steel', 'bamboo', 'wood', 'plastic', 'ergonomic']),zod.null()]),
+  "notionType": zod.union([zod.enum(['stitch_markers', 'tapestry_needles', 'row_counter', 'cable_needles', 'scissors', 'measuring_tape', 'blocking_mats', 'blocking_pins', 'yarn_swift', 'ball_winder', 'other']),zod.null()]),
+  "name": zod.string().nullable(),
+  "quantity": zod.number().int().nullable(),
+  "brand": zod.string().nullable(),
+  "notes": zod.string().nullable(),
+  "hasPhoto": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const GetYarnToolsResponse = zod.array(GetYarnToolsResponseItem)
+
+
+/**
+ * @summary Add a hook, needle or notion
+ */
+export const createYarnToolBodySizeMax = 60;
+
+export const createYarnToolBodyNameMax = 80;
+
+export const createYarnToolBodyQuantityMin = 0;
+export const createYarnToolBodyQuantityMax = 9999;
+
+export const createYarnToolBodyBrandMax = 80;
+
+export const createYarnToolBodyNotesMax = 1000;
+
+
+
+export const CreateYarnToolBody = zod.object({
+  "section": zod.enum(['hooks', 'needles', 'notions']),
+  "size": zod.string().max(createYarnToolBodySizeMax).nullish(),
+  "needleType": zod.union([zod.enum(['straight', 'circular', 'double_pointed', 'interchangeable']),zod.null()]).optional(),
+  "cableLength": zod.union([zod.enum(['23 cm (9 in)', '30 cm (12 in)', '40 cm (16 in)', '60 cm (24 in)', '80 cm (32 in)', '100 cm (40 in)', '120 cm (47 in)', '150 cm (60 in)']).describe('Cable length for circular and interchangeable needles.'),zod.null()]).optional(),
+  "material": zod.union([zod.enum(['aluminium', 'steel', 'bamboo', 'wood', 'plastic', 'ergonomic']),zod.null()]).optional(),
+  "notionType": zod.union([zod.enum(['stitch_markers', 'tapestry_needles', 'row_counter', 'cable_needles', 'scissors', 'measuring_tape', 'blocking_mats', 'blocking_pins', 'yarn_swift', 'ball_winder', 'other']),zod.null()]).optional(),
+  "name": zod.string().max(createYarnToolBodyNameMax).nullish(),
+  "quantity": zod.number().int().min(createYarnToolBodyQuantityMin).max(createYarnToolBodyQuantityMax).nullish(),
+  "brand": zod.string().max(createYarnToolBodyBrandMax).nullish(),
+  "notes": zod.string().max(createYarnToolBodyNotesMax).nullish(),
+  "photoPath": zod.string().nullish().describe('A path from the yarn tool photo upload URL')
+}).describe('Hooks and needles need a size; notions need a notion type.')
+
+export const CreateYarnToolResponse = zod.object({
+  "id": zod.string().uuid(),
+  "section": zod.enum(['hooks', 'needles', 'notions']),
+  "size": zod.string().nullable().describe('A CrochetHookSize for hooks or a KnittingNeedleSize for needles'),
+  "needleType": zod.union([zod.enum(['straight', 'circular', 'double_pointed', 'interchangeable']),zod.null()]),
+  "cableLength": zod.union([zod.enum(['23 cm (9 in)', '30 cm (12 in)', '40 cm (16 in)', '60 cm (24 in)', '80 cm (32 in)', '100 cm (40 in)', '120 cm (47 in)', '150 cm (60 in)']).describe('Cable length for circular and interchangeable needles.'),zod.null()]),
+  "material": zod.union([zod.enum(['aluminium', 'steel', 'bamboo', 'wood', 'plastic', 'ergonomic']),zod.null()]),
+  "notionType": zod.union([zod.enum(['stitch_markers', 'tapestry_needles', 'row_counter', 'cable_needles', 'scissors', 'measuring_tape', 'blocking_mats', 'blocking_pins', 'yarn_swift', 'ball_winder', 'other']),zod.null()]),
+  "name": zod.string().nullable(),
+  "quantity": zod.number().int().nullable(),
+  "brand": zod.string().nullable(),
+  "notes": zod.string().nullable(),
+  "hasPhoto": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Request a private upload URL for a yarn tool photo
+ */
+export const requestYarnToolPhotoUploadBodyNameMax = 255;
+
+export const requestYarnToolPhotoUploadBodySizeMax = 10485760;
+
+
+
+export const RequestYarnToolPhotoUploadBody = zod.object({
+  "name": zod.string().min(1).max(requestYarnToolPhotoUploadBodyNameMax),
+  "size": zod.number().int().min(1).max(requestYarnToolPhotoUploadBodySizeMax),
+  "contentType": zod.enum(['image/jpeg', 'image/png', 'image/webp'])
+})
+
+export const RequestYarnToolPhotoUploadResponse = zod.object({
+  "uploadURL": zod.string().url(),
+  "photoPath": zod.string()
+})
+
+
+/**
+ * @summary Get one hook, needle or notion
+ */
+export const GetYarnToolParams = zod.object({
+  "yarnToolId": zod.coerce.string().uuid()
+})
+
+export const GetYarnToolResponse = zod.object({
+  "id": zod.string().uuid(),
+  "section": zod.enum(['hooks', 'needles', 'notions']),
+  "size": zod.string().nullable().describe('A CrochetHookSize for hooks or a KnittingNeedleSize for needles'),
+  "needleType": zod.union([zod.enum(['straight', 'circular', 'double_pointed', 'interchangeable']),zod.null()]),
+  "cableLength": zod.union([zod.enum(['23 cm (9 in)', '30 cm (12 in)', '40 cm (16 in)', '60 cm (24 in)', '80 cm (32 in)', '100 cm (40 in)', '120 cm (47 in)', '150 cm (60 in)']).describe('Cable length for circular and interchangeable needles.'),zod.null()]),
+  "material": zod.union([zod.enum(['aluminium', 'steel', 'bamboo', 'wood', 'plastic', 'ergonomic']),zod.null()]),
+  "notionType": zod.union([zod.enum(['stitch_markers', 'tapestry_needles', 'row_counter', 'cable_needles', 'scissors', 'measuring_tape', 'blocking_mats', 'blocking_pins', 'yarn_swift', 'ball_winder', 'other']),zod.null()]),
+  "name": zod.string().nullable(),
+  "quantity": zod.number().int().nullable(),
+  "brand": zod.string().nullable(),
+  "notes": zod.string().nullable(),
+  "hasPhoto": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Change a hook, needle or notion
+ */
+export const UpdateYarnToolParams = zod.object({
+  "yarnToolId": zod.coerce.string().uuid()
+})
+
+export const updateYarnToolBodySizeMax = 60;
+
+export const updateYarnToolBodyNameMax = 80;
+
+export const updateYarnToolBodyQuantityMin = 0;
+export const updateYarnToolBodyQuantityMax = 9999;
+
+export const updateYarnToolBodyBrandMax = 80;
+
+export const updateYarnToolBodyNotesMax = 1000;
+
+
+
+export const UpdateYarnToolBody = zod.object({
+  "section": zod.enum(['hooks', 'needles', 'notions']).optional(),
+  "size": zod.string().max(updateYarnToolBodySizeMax).nullish(),
+  "needleType": zod.union([zod.enum(['straight', 'circular', 'double_pointed', 'interchangeable']),zod.null()]).optional(),
+  "cableLength": zod.union([zod.enum(['23 cm (9 in)', '30 cm (12 in)', '40 cm (16 in)', '60 cm (24 in)', '80 cm (32 in)', '100 cm (40 in)', '120 cm (47 in)', '150 cm (60 in)']).describe('Cable length for circular and interchangeable needles.'),zod.null()]).optional(),
+  "material": zod.union([zod.enum(['aluminium', 'steel', 'bamboo', 'wood', 'plastic', 'ergonomic']),zod.null()]).optional(),
+  "notionType": zod.union([zod.enum(['stitch_markers', 'tapestry_needles', 'row_counter', 'cable_needles', 'scissors', 'measuring_tape', 'blocking_mats', 'blocking_pins', 'yarn_swift', 'ball_winder', 'other']),zod.null()]).optional(),
+  "name": zod.string().max(updateYarnToolBodyNameMax).nullish(),
+  "quantity": zod.number().int().min(updateYarnToolBodyQuantityMin).max(updateYarnToolBodyQuantityMax).nullish(),
+  "brand": zod.string().max(updateYarnToolBodyBrandMax).nullish(),
+  "notes": zod.string().max(updateYarnToolBodyNotesMax).nullish(),
+  "photoPath": zod.string().nullish().describe('A new path from the upload URL, or null to remove the photo. Leave it out to keep the photo.')
+})
+
+export const UpdateYarnToolResponse = zod.object({
+  "id": zod.string().uuid(),
+  "section": zod.enum(['hooks', 'needles', 'notions']),
+  "size": zod.string().nullable().describe('A CrochetHookSize for hooks or a KnittingNeedleSize for needles'),
+  "needleType": zod.union([zod.enum(['straight', 'circular', 'double_pointed', 'interchangeable']),zod.null()]),
+  "cableLength": zod.union([zod.enum(['23 cm (9 in)', '30 cm (12 in)', '40 cm (16 in)', '60 cm (24 in)', '80 cm (32 in)', '100 cm (40 in)', '120 cm (47 in)', '150 cm (60 in)']).describe('Cable length for circular and interchangeable needles.'),zod.null()]),
+  "material": zod.union([zod.enum(['aluminium', 'steel', 'bamboo', 'wood', 'plastic', 'ergonomic']),zod.null()]),
+  "notionType": zod.union([zod.enum(['stitch_markers', 'tapestry_needles', 'row_counter', 'cable_needles', 'scissors', 'measuring_tape', 'blocking_mats', 'blocking_pins', 'yarn_swift', 'ball_winder', 'other']),zod.null()]),
+  "name": zod.string().nullable(),
+  "quantity": zod.number().int().nullable(),
+  "brand": zod.string().nullable(),
+  "notes": zod.string().nullable(),
+  "hasPhoto": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Remove a hook, needle or notion
+ */
+export const DeleteYarnToolParams = zod.object({
+  "yarnToolId": zod.coerce.string().uuid()
+})
+
+export const DeleteYarnToolResponse = zod.void()
+
+
+/**
+ * @summary View a yarn tool's photo
+ */
+export const GetYarnToolPhotoParams = zod.object({
+  "yarnToolId": zod.coerce.string().uuid()
+})
+
+export const GetYarnToolPhotoResponse = zod.void()
+
+
