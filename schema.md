@@ -23,6 +23,12 @@ erDiagram
     users ||--o{ catalog_reviews : asks
     users ||--o{ stash_fabrics : owns
     users ||--o{ yarn_tools : owns
+    users ||--o{ sewing_projects : owns
+    users ||--o{ sewing_tools : owns
+    sewing_projects ||--o{ sewing_project_fabrics : uses
+    stash_fabrics ||--o{ sewing_project_fabrics : "links"
+    sewing_projects ||--o{ sewing_project_tools : uses
+    sewing_tools ||--o{ sewing_project_tools : "links"
 
     users {
         text id PK
@@ -43,6 +49,32 @@ erDiagram
         text owner_id FK
         fabric_type fabric_type
         text_array photo_paths
+    }
+    sewing_projects {
+        uuid id PK
+        text owner_id FK
+        text title
+        sewing_stage stage
+        sewing_needle_type needle_type
+        general_color thread_color
+    }
+    sewing_project_fabrics {
+        uuid id PK
+        uuid project_id FK
+        uuid stash_fabric_id FK
+        double amount_used
+    }
+    sewing_tools {
+        uuid id PK
+        text owner_id FK
+        sewing_tool_section section
+        sewing_tool_category category
+    }
+    sewing_project_tools {
+        uuid id PK
+        uuid project_id FK
+        uuid sewing_tool_id FK
+        integer position
     }
     projects {
         uuid id PK
@@ -122,6 +154,9 @@ erDiagram
 - **skein_suggestions:** when a project is finished, each linked stash yarn gets a suggestion to take the project's skeins off what's left. The maker confirms or dismisses it.
 - **catalog_reviews:** a maker asking the catalog reviewer to look at how a name was merged.
 - **users → stash_fabrics:** one-to-many. The Sewing room's fabric stash, separate from the yarn stash.
+- **users → sewing_projects:** one-to-many. Sewing projects live apart from yarn projects.
+- **sewing_projects ↔ stash_fabrics through sewing_project_fabrics:** the fabric a project uses, with how much. Removing the fabric from the stash removes the link.
+- **sewing_projects ↔ sewing_tools through sewing_project_tools:** the notions and kit a project uses. Just a list: nothing is counted, and Tools quantities never change. Removing the tool removes the link.
 - **users → yarn_tools:** one-to-many. The hooks, needles and notions a maker owns, shown on the Yarn studio's Tools page. Not linked to projects.
 
 The diagram shows the key columns only. Every column is listed below.
@@ -248,11 +283,74 @@ One row per piece of fabric in a maker's Sewing room stash. There is no shared c
 | unit | fabric_unit | yes | `meters` | Meters go with centimeter widths, yards with inch widths. |
 | amount | double precision | no | | How much is left, to two decimals. |
 | width | double precision | no | | |
+| pre_washed | boolean | no | | Empty when the maker hasn't said. Washing shrinks fabric, so this tells them whether the amount and width are before or after. |
 | brand | text | no | | |
 | notes | text | no | | |
 | photo_paths | text[] | yes | `{}` | Private photos, only shown to their owner. The first is the print close-up (required), then up to three more. |
 | created_at | timestamp with time zone | yes | now | |
 | updated_at | timestamp with time zone | yes | now | Updated on every change. |
+
+## sewing_projects
+
+One row per sewing project in a maker's Sewing room.
+
+| Column | Type | Required | Default | Notes |
+|---|---|---|---|---|
+| id | uuid | yes | random | Primary key. |
+| owner_id | text | yes | | Links to `users.id`. Deleted with the user. |
+| title | text | yes | | |
+| status | project_status | yes | `planning` | Same statuses as yarn projects. |
+| stage | sewing_stage | yes | `prep` | Prep, Cut, Sew, Fit, Finish. Finishing a project moves it to Finish. |
+| pattern_name | text | no | | |
+| pattern_designer | text | no | | |
+| size_made | text | no | | |
+| fit_changes | text | no | | |
+| needle_type | sewing_needle_type | no | | Universal, ballpoint, stretch, jeans, microtex, quilting, leather, topstitch, embroidery or metallic. |
+| needle_size | text | no | | One of 60/8, 65/9, 70/10, 75/11, 80/12, 90/14, 100/16, 110/18 (the API checks it). |
+| thread_color | general_color | no | | The same color families as stash yarn and fabric. |
+| notes | text | no | | |
+| completed_at | date | no | | Set when finished, cleared on reopening. |
+| created_at | timestamp with time zone | yes | now | |
+| updated_at | timestamp with time zone | yes | now | Updated on every change. |
+
+## sewing_project_fabrics
+
+| Column | Type | Required | Default | Notes |
+|---|---|---|---|---|
+| id | uuid | yes | random | Primary key. |
+| project_id | uuid | yes | | Links to `sewing_projects.id`. Deleted with the project. |
+| stash_fabric_id | uuid | yes | | Links to `stash_fabrics.id`. Deleted with the fabric. |
+| amount_used | double precision | no | | In the fabric's own unit. |
+| position | integer | yes | 0 | Order on the project. |
+
+## sewing_tools
+
+One row per notion or piece of kit in a maker's Sewing room.
+
+| Column | Type | Required | Default | Notes |
+|---|---|---|---|---|
+| id | uuid | yes | random | Primary key. |
+| owner_id | text | yes | | Links to `users.id`. Deleted with the user. |
+| section | sewing_tool_section | yes | | Notions or kit. |
+| category | sewing_tool_category | yes | | |
+| name | text | yes | | |
+| quantity | integer | no | | |
+| size | text | no | | |
+| color | text | no | | |
+| brand | text | no | | |
+| notes | text | no | | |
+| photo_path | text | no | | Private photo, only shown to its owner. |
+| created_at | timestamp with time zone | yes | now | |
+| updated_at | timestamp with time zone | yes | now | Updated on every change. |
+
+## sewing_project_tools
+
+| Column | Type | Required | Default | Notes |
+|---|---|---|---|---|
+| id | uuid | yes | random | Primary key. |
+| project_id | uuid | yes | | Links to `sewing_projects.id`. Deleted with the project. |
+| sewing_tool_id | uuid | yes | | Links to `sewing_tools.id`. Deleted with the tool. |
+| position | integer | yes | 0 | Order on the project. |
 
 ## yarn_tools
 

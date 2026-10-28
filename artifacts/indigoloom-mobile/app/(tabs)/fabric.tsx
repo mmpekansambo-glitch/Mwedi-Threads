@@ -1,13 +1,13 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useGetStashFabrics } from '@workspace/api-client-react';
-import type { FabricPrint, GeneralColor, StashFabric } from '@workspace/api-client-react';
+import type { FabricPrint, FabricType, GeneralColor, StashFabric } from '@workspace/api-client-react';
 import { Feather } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EmptyState, ErrorState, LoadingState, LoomButton, LoomText, fonts } from '@/components/loom';
 import { ColorDot, generalColors } from '@/components/YarnFields';
-import { FabricPhoto, fabricConstructions, fabricName, fabricPrints, fabricSize, labelFor } from '@/components/FabricFields';
+import { FabricPhoto, fabricConstructions, fabricName, fabricPrints, fabricSize, fabricTypes, labelFor } from '@/components/FabricFields';
 import { HomeSwitcher, ProfileMenu } from '@/components/Crafts';
 import { useSewingColors } from '@/hooks/useColors';
 
@@ -40,13 +40,23 @@ export default function FabricStashScreen() {
   const [search, setSearch] = useState('');
   const [print, setPrint] = useState<FabricPrint | ''>('');
   const [generalColor, setGeneralColor] = useState<GeneralColor | ''>('');
+  const [fabricType, setFabricType] = useState<FabricType | ''>('');
   const params = useMemo(() => ({
     ...(search.trim() ? { search: search.trim() } : {}),
     ...(print ? { print } : {}),
     ...(generalColor ? { generalColor } : {}),
-  }), [search, print, generalColor]);
-  const filtered = Boolean(search || print || generalColor);
-  const clearFilters = () => { setSearch(''); setPrint(''); setGeneralColor(''); };
+    ...(fabricType ? { fabricType } : {}),
+  }), [search, print, generalColor, fabricType]);
+  const filtered = Boolean(search || print || generalColor || fabricType);
+  const clearFilters = () => { setSearch(''); setPrint(''); setGeneralColor(''); setFabricType(''); };
+  // The Overview fabric chart opens this tab with a type; `at` changes on every tap.
+  const link = useLocalSearchParams<{ type?: string; at?: string }>();
+  useEffect(() => {
+    if (!link.at) return;
+    clearFilters();
+    const linked = fabricTypes.find((item) => item.value === link.type);
+    if (linked) setFabricType(linked.value);
+  }, [link.at, link.type]);
   const query = useGetStashFabrics(params);
   const chip = (active: boolean) => [styles.filterChip, { backgroundColor: active ? colors.accent : colors.card, borderColor: active ? colors.accent : colors.border }];
   return (
@@ -72,6 +82,14 @@ export default function FabricStashScreen() {
           return <Pressable key={item.value} accessibilityRole="button" accessibilityLabel={`${item.label} fabric`} accessibilityState={{ selected: active }} onPress={() => setGeneralColor(active ? '' : item.value)} style={[styles.colorFilter, { borderColor: active ? colors.primary : 'transparent' }]}><ColorDot color={item.value} noun="fabric" size={22} /></Pressable>;
         })}
       </ScrollView>
+      {fabricType ? (
+        <View style={styles.filterRow}>
+          <Pressable accessibilityRole="button" accessibilityLabel={`Stop showing only ${labelFor(fabricTypes, fabricType)}`} onPress={() => setFabricType('')} style={[chip(true), styles.typeChip]} testID="button-clear-fabric-type">
+            <LoomText style={{ color: colors.accentForeground, fontSize: 14, fontFamily: fonts.semibold }}>{labelFor(fabricTypes, fabricType)}</LoomText>
+            <Feather name="x" size={14} color={colors.accentForeground} />
+          </Pressable>
+        </View>
+      ) : null}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
         <Pressable onPress={() => setPrint('')} style={chip(!print)}><LoomText style={{ color: !print ? colors.accentForeground : colors.mutedForeground, fontSize: 14, fontFamily: fonts.semibold }}>Every print</LoomText></Pressable>
         {fabricPrints.map((item) => {
@@ -102,6 +120,7 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, paddingVertical: 10, fontSize: 16, fontFamily: fonts.body },
   filterRow: { gap: 7, paddingBottom: 8, alignItems: 'center' },
   filterChip: { borderWidth: 1, paddingHorizontal: 12, minHeight: 31, borderRadius: 99, justifyContent: 'center' },
+  typeChip: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start' },
   colorFilter: { width: 32, height: 32, borderRadius: 16, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   count: { fontSize: 13, marginVertical: 10, fontFamily: fonts.medium },
   grid: { gap: 14 },

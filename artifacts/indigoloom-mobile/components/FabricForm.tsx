@@ -42,6 +42,8 @@ function Choices<T extends string>({ options, value, onChange, testID }: { optio
   );
 }
 
+const washedChoices: Array<{ value: 'yes' | 'no'; label: string }> = [{ value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' }];
+
 // Fabric type and print pickers are scroll wheels like the date picker.
 function OptionWheelField<T extends string>({ label, required, options, value, onChange, icon, placeholder, testID }: {
   label: string;
@@ -112,6 +114,7 @@ export function FabricForm({ fabric }: { fabric?: StashFabric }) {
   const [unit, setUnit] = useState<FabricUnit>(fabric?.unit ?? 'meters');
   const [amount, setAmount] = useState(fabric?.amount === null || !fabric ? '' : String(fabric.amount));
   const [width, setWidth] = useState(fabric?.width === null || !fabric ? '' : String(fabric.width));
+  const [preWashed, setPreWashed] = useState<boolean | null>(fabric?.preWashed ?? null);
   const [brand, setBrand] = useState(fabric?.brand ?? '');
   const [notes, setNotes] = useState(fabric?.notes ?? '');
   const [photos, setPhotos] = useState<PhotoSlot[]>(() => Array.from({ length: fabric?.photoCount ?? 0 }, (_, index) => ({ kind: 'kept', index })));
@@ -183,7 +186,7 @@ export function FabricForm({ fabric }: { fabric?: StashFabric }) {
       return;
     }
     const data = {
-      fabricType, construction, print, generalColor, unit, amount: amountForSave, width: widthForSave,
+      fabricType, construction, print, generalColor, unit, amount: amountForSave, width: widthForSave, preWashed,
       brand: brand.trim() || null, notes: notes.trim() || null, photoPaths,
     };
     const options = {
@@ -254,8 +257,16 @@ export function FabricForm({ fabric }: { fabric?: StashFabric }) {
           <Choices options={fabricConstructions} value={construction} onChange={(next) => setConstruction(construction === next ? null : next)} testID="button-construction" />
           <OptionWheelField label="Print" options={fabricPrints} value={print} onChange={setPrint} icon="star" placeholder="Choose a print" testID="fabric-print" />
           <GeneralColorPicker value={generalColor} onChange={setGeneralColor} />
-          <FormFieldLabel>Measured in</FormFieldLabel>
-          <Choices options={fabricUnits} value={unit} onChange={setUnit} testID="button-unit" />
+          <View style={styles.sizeRow}>
+            <View>
+              <FormFieldLabel>Measured in</FormFieldLabel>
+              <Choices options={fabricUnits} value={unit} onChange={setUnit} testID="button-unit" />
+            </View>
+            <View>
+              <FormFieldLabel>Pre-washed</FormFieldLabel>
+              <Choices options={washedChoices} value={preWashed === null ? null : preWashed ? 'yes' : 'no'} onChange={(next) => setPreWashed(preWashed === (next === 'yes') ? null : next === 'yes')} testID="button-prewashed" />
+            </View>
+          </View>
           <View style={styles.sizeRow}>
             <View style={{ flex: 1 }}>
               <FormFieldLabel>Amount ({unitLabels.amount})</FormFieldLabel>
