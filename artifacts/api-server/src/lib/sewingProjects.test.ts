@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkFabricLinks, stashLength, statusChanges } from "./sewingProjects";
+import { checkFabricLinks, checkToolIds, fabricTypeCounts, stashLength, statusChanges } from "./sewingProjects";
 
 describe("statusChanges", () => {
   it("dates a finished project and moves it to the Finish stage", () => {
@@ -33,5 +33,25 @@ describe("stashLength", () => {
     expect(stashLength([{ unit: "meters", amount: 2 }, { unit: "yards", amount: 1 }])).toEqual({ length: 2.91, unit: "meters" });
     expect(stashLength([{ unit: "yards", amount: 2 }, { unit: "yards", amount: null }, { unit: "meters", amount: 0.9144 }]))
       .toEqual({ length: 3, unit: "yards" });
+  });
+});
+
+describe("checkToolIds", () => {
+  it("refuses the same tool twice", () => {
+    expect(checkToolIds(["a", "b"])).toEqual({ ok: true, ids: ["a", "b"] });
+    expect(checkToolIds(["a", "a"]).ok).toBe(false);
+  });
+});
+
+describe("fabricTypeCounts", () => {
+  it("counts pieces per type, most first, A to Z on a tie", () => {
+    const pieces = ["linen", "cotton", "silk", "cotton", "denim", "silk", "cotton"].map((fabricType) => ({ fabricType }));
+    expect(fabricTypeCounts(pieces)).toEqual([
+      { fabricType: "cotton", count: 3 },
+      { fabricType: "silk", count: 2 },
+      { fabricType: "denim", count: 1 },
+      { fabricType: "linen", count: 1 },
+    ]);
+    expect(fabricTypeCounts([])).toEqual([]);
   });
 });

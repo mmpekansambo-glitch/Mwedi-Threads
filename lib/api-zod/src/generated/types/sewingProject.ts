@@ -5,9 +5,13 @@
  * Mwedi Threads project catalog and progress tracking API
  * OpenAPI spec version: 0.1.0
  */
+import type { GeneralColor } from './generalColor';
 import type { ProjectStatus } from './projectStatus';
+import type { SewingNeedleSize } from './sewingNeedleSize';
+import type { SewingNeedleType } from './sewingNeedleType';
 import type { SewingProjectFabric } from './sewingProjectFabric';
 import type { SewingStage } from './sewingStage';
+import type { SewingTool } from './sewingTool';
 
 export interface SewingProject {
   id: string;
@@ -22,11 +26,16 @@ export interface SewingProject {
   sizeMade: string | null;
   /** @nullable */
   fitChanges: string | null;
+  needleType: SewingNeedleType | null;
+  needleSize: SewingNeedleSize | null;
+  threadColor: GeneralColor | null;
   /** @nullable */
   notes: string | null;
   /** @nullable */
   completedAt: Date | null;
   fabrics: SewingProjectFabric[];
+  /** Tools from the maker's Sewing room the project uses, in the order listed */
+  tools: SewingTool[];
   createdAt: Date;
   updatedAt: Date;
 }

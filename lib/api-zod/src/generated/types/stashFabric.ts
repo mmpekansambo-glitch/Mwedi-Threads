@@ -22,6 +22,11 @@ export interface StashFabric {
   amount: number | null;
   /** @nullable */
   width: number | null;
+  /**
+     * Null when the maker hasn't said
+     * @nullable
+     */
+  preWashed: boolean | null;
   /** @nullable */
   brand: string | null;
   /** @nullable */

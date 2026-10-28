@@ -5,7 +5,10 @@
  * Mwedi Threads project catalog and progress tracking API
  * OpenAPI spec version: 0.1.0
  */
+import type { GeneralColor } from './generalColor';
 import type { ProjectStatus } from './projectStatus';
+import type { SewingNeedleSize } from './sewingNeedleSize';
+import type { SewingNeedleType } from './sewingNeedleType';
 import type { SewingProjectFabricInput } from './sewingProjectFabricInput';
 import type { SewingStage } from './sewingStage';
 
@@ -37,6 +40,9 @@ export interface UpdateSewingProject {
      * @nullable
      */
   fitChanges?: string | null;
+  needleType?: SewingNeedleType | null;
+  needleSize?: SewingNeedleSize | null;
+  threadColor?: GeneralColor | null;
   /**
      * @maxLength 2000
      * @nullable
@@ -47,4 +53,9 @@ export interface UpdateSewingProject {
      * @maxItems 12
      */
   fabrics?: SewingProjectFabricInput[];
+  /**
+     * The full list of tools on the project, replacing what was there
+     * @maxItems 30
+     */
+  toolIds?: string[];
 }

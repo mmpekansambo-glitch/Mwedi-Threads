@@ -32,7 +32,7 @@ function tidyText(value: string | null | undefined): string | null {
 
 // The stored photo path stays on the server; the app only learns whether
 // there is one.
-function serializeTool(tool: SewingTool) {
+export function serializeTool(tool: SewingTool) {
   const { photoPath, ownerId: _ownerId, ...rest } = tool;
   return GetSewingToolResponse.parse({ ...rest, hasPhoto: photoPath !== null });
 }

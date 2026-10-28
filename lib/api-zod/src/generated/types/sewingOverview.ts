@@ -5,6 +5,7 @@
  * Mwedi Threads project catalog and progress tracking API
  * OpenAPI spec version: 0.1.0
  */
+import type { FabricTypeCount } from './fabricTypeCount';
 import type { FabricUnit } from './fabricUnit';
 import type { SewingProject } from './sewingProject';
 import type { SewingStageCount } from './sewingStageCount';
@@ -19,5 +20,7 @@ export interface SewingOverview {
   fabricUnit: FabricUnit;
   /** Projects in progress at each stage, Prep to Finish */
   stages: SewingStageCount[];
+  /** Stash pieces of each fabric type the maker owns, most first */
+  fabricTypes: FabricTypeCount[];
   recentProjects: SewingProject[];
 }

@@ -2127,6 +2127,9 @@ components:
           type: [number, "null"]
         width:
           type: [number, "null"]
+        preWashed:
+          type: [boolean, "null"]
+          description: Null when the maker hasn't said
         brand:
           type: [string, "null"]
         notes:
@@ -2140,7 +2143,7 @@ components:
         updatedAt:
           type: string
           format: date-time
-      required: [id, fabricType, construction, print, generalColor, unit, amount, width, brand, notes, photoCount, createdAt, updatedAt]
+      required: [id, fabricType, construction, print, generalColor, unit, amount, width, preWashed, brand, notes, photoCount, createdAt, updatedAt]
     CreateStashFabric:
       type: object
       properties:
@@ -2168,6 +2171,8 @@ components:
           type: [number, "null"]
           minimum: 0
           maximum: 999
+        preWashed:
+          type: [boolean, "null"]
         brand:
           type: [string, "null"]
           maxLength: 80
@@ -2209,6 +2214,8 @@ components:
           type: [number, "null"]
           minimum: 0
           maximum: 999
+        preWashed:
+          type: [boolean, "null"]
         brand:
           type: [string, "null"]
           maxLength: 80
@@ -2463,6 +2470,13 @@ components:
       type: string
       description: Prep, Cut, Sew, Fit, Finish, in that order
       enum: [prep, cut, sew, fit, finish]
+    SewingNeedleType:
+      type: string
+      enum: [universal, ballpoint, stretch, jeans, microtex, quilting, leather, topstitch, embroidery, metallic]
+    SewingNeedleSize:
+      type: string
+      description: Metric/US machine needle size, finest first
+      enum: ["60/8", "65/9", "70/10", "75/11", "80/12", "90/14", "100/16", "110/18"]
     SewingProjectFabric:
       type: object
       properties:
@@ -2506,6 +2520,18 @@ components:
           type: [string, "null"]
         fitChanges:
           type: [string, "null"]
+        needleType:
+          oneOf:
+            - $ref: "#/components/schemas/SewingNeedleType"
+            - type: "null"
+        needleSize:
+          oneOf:
+            - $ref: "#/components/schemas/SewingNeedleSize"
+            - type: "null"
+        threadColor:
+          oneOf:
+            - $ref: "#/components/schemas/GeneralColor"
+            - type: "null"
         notes:
           type: [string, "null"]
         completedAt:
@@ -2515,13 +2541,18 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/SewingProjectFabric"
+        tools:
+          type: array
+          description: Tools from the maker's Sewing room the project uses, in the order listed
+          items:
+            $ref: "#/components/schemas/SewingTool"
         createdAt:
           type: string
           format: date-time
         updatedAt:
           type: string
           format: date-time
-      required: [id, title, status, stage, patternName, patternDesigner, sizeMade, fitChanges, notes, completedAt, fabrics, createdAt, updatedAt]
+      required: [id, title, status, stage, patternName, patternDesigner, sizeMade, fitChanges, needleType, needleSize, threadColor, notes, completedAt, fabrics, tools, createdAt, updatedAt]
     CreateSewingProject:
       type: object
       properties:
@@ -2545,6 +2576,18 @@ components:
         fitChanges:
           type: [string, "null"]
           maxLength: 2000
+        needleType:
+          oneOf:
+            - $ref: "#/components/schemas/SewingNeedleType"
+            - type: "null"
+        needleSize:
+          oneOf:
+            - $ref: "#/components/schemas/SewingNeedleSize"
+            - type: "null"
+        threadColor:
+          oneOf:
+            - $ref: "#/components/schemas/GeneralColor"
+            - type: "null"
         notes:
           type: [string, "null"]
           maxLength: 2000
@@ -2553,6 +2596,12 @@ components:
           maxItems: 12
           items:
             $ref: "#/components/schemas/SewingProjectFabricInput"
+        toolIds:
+          type: array
+          maxItems: 30
+          items:
+            type: string
+            format: uuid
       required: [title]
     UpdateSewingProject:
       type: object
@@ -2577,6 +2626,18 @@ components:
         fitChanges:
           type: [string, "null"]
           maxLength: 2000
+        needleType:
+          oneOf:
+            - $ref: "#/components/schemas/SewingNeedleType"
+            - type: "null"
+        needleSize:
+          oneOf:
+            - $ref: "#/components/schemas/SewingNeedleSize"
+            - type: "null"
+        threadColor:
+          oneOf:
+            - $ref: "#/components/schemas/GeneralColor"
+            - type: "null"
         notes:
           type: [string, "null"]
           maxLength: 2000
@@ -2586,6 +2647,13 @@ components:
           maxItems: 12
           items:
             $ref: "#/components/schemas/SewingProjectFabricInput"
+        toolIds:
+          type: array
+          description: The full list of tools on the project, replacing what was there
+          maxItems: 30
+          items:
+            type: string
+            format: uuid
     SewingStageCount:
       type: object
       properties:
@@ -2594,6 +2662,14 @@ components:
         count:
           type: integer
       required: [stage, count]
+    FabricTypeCount:
+      type: object
+      properties:
+        fabricType:
+          $ref: "#/components/schemas/FabricType"
+        count:
+          type: integer
+      required: [fabricType, count]
     SewingOverview:
       type: object
       properties:
@@ -2614,11 +2690,16 @@ components:
           description: Projects in progress at each stage, Prep to Finish
           items:
             $ref: "#/components/schemas/SewingStageCount"
+        fabricTypes:
+          type: array
+          description: Stash pieces of each fabric type the maker owns, most first
+          items:
+            $ref: "#/components/schemas/FabricTypeCount"
         recentProjects:
           type: array
           items:
             $ref: "#/components/schemas/SewingProject"
-      required: [inProgress, finished, fabricPieces, fabricLength, fabricUnit, stages, recentProjects]
+      required: [inProgress, finished, fabricPieces, fabricLength, fabricUnit, stages, fabricTypes, recentProjects]
     StashYarn:
       type: object
       properties:

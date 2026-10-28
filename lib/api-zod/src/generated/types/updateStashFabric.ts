@@ -29,6 +29,8 @@ export interface UpdateStashFabric {
      * @nullable
      */
   width?: number | null;
+  /** @nullable */
+  preWashed?: boolean | null;
   /**
      * @maxLength 80
      * @nullable
