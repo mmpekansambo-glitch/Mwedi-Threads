@@ -108,7 +108,10 @@ export const GetDashboardResponse = zod.object({
   "weekStart": zod.string().describe('The Monday the week starts on, like 2026-10-12'),
   "count": zod.number().int()
 })).describe('Progress entries in each of the last 12 weeks (UTC, weeks start Monday), oldest first, current week last')
-})
+}),
+  "mostUsedYarnBrands": zod.array(zod.string()).describe('The yarn brand on the most projects, or every tied brand A to Z. Empty when no project yarn has a brand.'),
+  "mostUsedYarnBrandProjects": zod.number().int().describe('How many projects use the most-used yarn brand'),
+  "averageDaysToFinish": zod.number().int().nullable().describe('Average whole days from start to finish across finished projects with both dates, or null when there are none')
 })
 
 

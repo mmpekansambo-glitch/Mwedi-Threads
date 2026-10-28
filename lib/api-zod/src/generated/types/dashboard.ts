@@ -16,4 +16,13 @@ export interface Dashboard {
   recentProjects: Project[];
   recentProgress: DashboardRecentProgressItem[];
   charts: DashboardCharts;
+  /** The yarn brand on the most projects, or every tied brand A to Z. Empty when no project yarn has a brand. */
+  mostUsedYarnBrands: string[];
+  /** How many projects use the most-used yarn brand */
+  mostUsedYarnBrandProjects: number;
+  /**
+     * Average whole days from start to finish across finished projects with both dates, or null when there are none
+     * @nullable
+     */
+  averageDaysToFinish: number | null;
 }
