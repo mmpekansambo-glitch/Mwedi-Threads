@@ -114,7 +114,7 @@ Today projects store the Clerk user ID in `owner_id` and there is no users table
 | 8. Completed date | Shipped | Done | _Ngwe to write_ | Fills in when a project is finished, clears when reopened, and a date the maker picks wins (#8, closes #7). |
 | 9. Stars | Changed | Done | _Ngwe to write_ | The "Starred" view became a filter chip on My projects instead of its own page (#10, closes #9). |
 | 10. Find things | Changed | Done | _Ngwe to write_ | Search also matches yarn type (#41, closes #29). Sort kept "Recently updated" as the default next to newest, oldest and A to Z (#53, closes #30). |
-| 11. Dashboard | Changed | Partly backlogged | _Ngwe to write_ | All three charts shipped (#12, closes #11) and the cards and bars open filtered lists (#64). Average days to finish and most-used yarn brand are still in #31. |
+| 11. Dashboard | Shipped | Done | _Ngwe to write_ | All three charts shipped (#12, closes #11), the cards and bars open filtered lists (#64), and average days to finish and most-used yarn brand came last (#74, closes #31). |
 
 **Added after the plan** (not in sections 1 to 7 above)
 
@@ -135,4 +135,4 @@ Today projects store the Clerk user ID in `owner_id` and there is no users table
 | Sewing room part 1: craft switches and fabric stash | #55 | #54 |
 | Counter card on each project page | #57 | #56 |
 | Dark mode (phone and web), mauve Sewing room | #65, #67 | #62 |
-| Sewing room part 2: Overview, Projects and Tools | #68, #69 (open) | #66 |
+| Sewing room part 2: Overview, Projects and Tools | #68, #69 | #66 |
