@@ -1,4 +1,4 @@
-import { and, asc, eq, ilike, or } from "drizzle-orm";
+import { and, asc, eq, ilike, isNotNull, isNull, or } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { Router, type IRouter, type Response } from "express";
 import {
@@ -8,6 +8,7 @@ import {
   GetSewingToolPhotoParams,
   GetSewingToolResponse,
   GetSewingToolsQueryParams,
+  RenameSewingToolBrandsBody,
   RequestSewingToolPhotoUploadBody,
   RequestSewingToolPhotoUploadResponse,
   UpdateSewingToolBody,
@@ -17,6 +18,7 @@ import { db, sewingToolsTable, type SewingTool } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
 import { deleteStoredObject, signedObjectUrl, storageLocation } from "../lib/objectStorage";
 import { categoryFits, isOwnToolPhoto } from "../lib/sewingTools";
+import { matchKey } from "../lib/yarnCatalog";
 
 const router: IRouter = Router();
 const allowedPhotoTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -66,7 +68,12 @@ router.get("/sewing-tools", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
-  const filters = [eq(sewingToolsTable.ownerId, getOwnerId(res))];
+  // zod reads "false" as true, so the raw query decides.
+  const archived = req.query.archived === "true";
+  const filters = [
+    eq(sewingToolsTable.ownerId, getOwnerId(res)),
+    archived ? isNotNull(sewingToolsTable.archivedAt) : isNull(sewingToolsTable.archivedAt),
+  ];
   const search = parsed.data.search?.trim();
   if (search) {
     filters.push(or(
@@ -142,6 +149,31 @@ router.post("/sewing-tools", requireAuth, async (req, res): Promise<void> => {
   res.status(201).json(serializeTool(created!));
 });
 
+// After a brand is renamed on one tool, the maker can rename it on the rest.
+router.post("/sewing-tools/rename-brand", requireAuth, async (req, res): Promise<void> => {
+  const parsed = RenameSewingToolBrandsBody.safeParse(req.body);
+  const to = parsed.success ? parsed.data.to.trim() : "";
+  if (!parsed.success || !matchKey(parsed.data.from) || !to) {
+    res.status(400).json({ error: "Check the names and try again." });
+    return;
+  }
+  const ownerId = getOwnerId(res);
+  const fromKey = matchKey(parsed.data.from);
+  const renamed = await db.transaction(async (tx) => {
+    const tools = await tx
+      .select({ id: sewingToolsTable.id, brand: sewingToolsTable.brand })
+      .from(sewingToolsTable)
+      .where(and(eq(sewingToolsTable.ownerId, ownerId), isNotNull(sewingToolsTable.brand)))
+      .for("update");
+    const ids = tools.filter((tool) => matchKey(tool.brand ?? "") === fromKey && tool.brand !== to).map((tool) => tool.id);
+    for (const id of ids) {
+      await tx.update(sewingToolsTable).set({ brand: to }).where(eq(sewingToolsTable.id, id));
+    }
+    return ids.length;
+  });
+  res.json({ renamed });
+});
+
 router.get("/sewing-tools/:sewingToolId", requireAuth, async (req, res): Promise<void> => {
   const params = GetSewingToolParams.safeParse(req.params);
   if (!params.success) {
@@ -184,6 +216,13 @@ router.patch("/sewing-tools/:sewingToolId", requireAuth, async (req, res): Promi
     if (changes.photoPath && changes.photoPath !== current.photoPath && !isOwnToolPhoto(ownerId, changes.photoPath)) {
       return { status: 400, error: "The photo didn't upload. Please add it again." };
     }
+    // Only notions get used up, so kit never goes in the Archive.
+    if (changes.archived && section !== "notions") {
+      return { status: 400, error: "Only notions can go in the Archive." };
+    }
+    const archivedAt = section !== "notions" || changes.archived === false
+      ? null
+      : changes.archived ? current.archivedAt ?? new Date() : current.archivedAt;
 
     const text = (value: string | null | undefined, existing: string | null) =>
       value !== undefined ? tidyText(value) : existing;
@@ -199,6 +238,7 @@ router.patch("/sewing-tools/:sewingToolId", requireAuth, async (req, res): Promi
         brand: text(changes.brand, current.brand),
         notes: text(changes.notes, current.notes),
         photoPath: changes.photoPath !== undefined ? changes.photoPath : current.photoPath,
+        archivedAt,
       })
       .where(and(eq(sewingToolsTable.id, current.id), eq(sewingToolsTable.ownerId, ownerId)))
       .returning();

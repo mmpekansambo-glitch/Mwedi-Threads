@@ -646,6 +646,20 @@ a.stat-card:active { transform: scale(.98); box-shadow: none; }
 
 /* Skeins-left suggestions */
 .skein-suggestions { display: grid; gap: 10px; margin: 0 0 18px; }
+.signpost { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 60; display: flex; align-items: center; gap: 12px; max-width: min(560px, calc(100vw - 32px)); padding: 12px 14px 12px 18px; border-radius: 12px; background: var(--granite-deep); color: #fff; box-shadow: 0 8px 24px rgba(31, 47, 22, .18); font-size: 15px; line-height: 1.45; }
+.signpost-action { border: 0; background: none; color: #fff; font: inherit; font-weight: 700; text-decoration: underline; cursor: pointer; white-space: nowrap; }
+.signpost-close { border: 0; background: none; color: rgba(255,255,255,.8); cursor: pointer; display: inline-flex; padding: 2px; }
+.dark .signpost { color: #182126; }
+.dark .signpost-action { color: #182126; }
+.dark .signpost-close { color: rgba(24,33,38,.75); }
+.gentle-nudge { display: block; margin-top: 8px; padding: 9px 12px; border-radius: 10px; background: var(--lavender-soft); color: var(--slate-deep); font-size: 14px; line-height: 1.45; }
+.gentle-nudge button { margin-left: 6px; border: 0; background: none; padding: 0; color: var(--granite); font: inherit; font-weight: 600; text-decoration: underline; cursor: pointer; }
+.skein-suggestion.same-fabric { flex-direction: column; align-items: stretch; }
+.same-fabric-photos { display: flex; gap: 12px; }
+.same-fabric-photos figure { margin: 0; flex: 0 1 140px; }
+.same-fabric-photos img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 10px; border: 1px solid var(--line, rgba(57, 91, 80, 0.18)); }
+.same-fabric-photos figcaption { margin-top: 5px; font-size: 13px; color: var(--slate-deep); }
+.fabric-left-nudges { display: grid; gap: 10px; margin-bottom: 14px; }
 .skein-suggestion { display: flex; align-items: center; gap: 12px; padding: 13px 16px; border-left: 4px solid var(--powder); }
 .skein-suggestion p { margin: 0; flex: 1; color: var(--slate-deep); line-height: 1.5; }
 .skein-suggestion-actions { display: flex; gap: 8px; }
@@ -753,6 +767,12 @@ a.stat-card:active { transform: scale(.98); box-shadow: none; }
 /* Sewing room Overview and Projects. Colors come from the --sew-* tokens so
    the Sewing room accent can change in one place. */
 .home-sewing { --sew-accent: var(--granite); --sew-line: var(--sewing-line); --sew-soft: var(--sewing-wash); }
+.sewing-journal { margin-top: 26px; }
+.home-sewing .sewing-journal .timeline::before { background: var(--sewing-dash); }
+.home-sewing .sewing-journal .timeline-marker { color: var(--granite); background: var(--sewing-wash); border-color: var(--sewing-line); }
+.home-sewing .sewing-journal .note-menu-bubble { background: var(--sewing-line); color: var(--granite-deep); box-shadow: 0 0 0 3px var(--sewing-wash); }
+.home-sewing .sewing-journal .note-menu-bubble:hover { background: var(--sewing-dash); }
+.home-sewing .sewing-journal .note-menu-bubble.open { background: var(--granite); color: var(--white); box-shadow: 0 0 0 3px var(--sewing-dash); }
 .stat-detail { display: block; margin-top: 6px; color: var(--slate-deep); font-size: 13px; font-weight: 600; position: relative; z-index: 1; }
 .stage-board { margin: 18px 0 26px; padding: 20px 23px; }
 .stage-board h2 { margin: 0 0 14px; font-size: 20px; color: var(--evergreen); }

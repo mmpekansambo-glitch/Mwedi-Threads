@@ -15,7 +15,7 @@ const prints: Record<string, string> = {
 function fabric(id: string, overrides: Record<string, unknown> = {}) {
   return {
     id, fabricType: "cotton", construction: "woven", print: "floral", generalColor: "blue", unit: "meters",
-    amount: 2.5, width: 145, preWashed: null, brand: "Liberty", notes: "Lawn for a summer dress", photoCount: 2,
+    amount: 2.5, amountLeft: null, width: 145, preWashed: null, notes: "Lawn for a summer dress", photoCount: 2, archivedAt: null as string | null,
     createdAt: "2026-10-20T12:00:00.000Z", updatedAt: "2026-10-20T12:00:00.000Z",
     ...overrides,
   };
@@ -23,8 +23,8 @@ function fabric(id: string, overrides: Record<string, unknown> = {}) {
 
 const stash = [
   fabric("bbbbbbbb-0000-4000-8000-000000000001"),
-  fabric("bbbbbbbb-0000-4000-8000-000000000002", { fabricType: "jersey", construction: "knit", print: "stripe", generalColor: "black", unit: "yards", amount: 1.5, width: 60, brand: null, photoCount: 1 }),
-  fabric("bbbbbbbb-0000-4000-8000-000000000003", { fabricType: "wool", print: "check", generalColor: "red", amount: 3, width: 150, brand: null, photoCount: 1 }),
+  fabric("bbbbbbbb-0000-4000-8000-000000000002", { fabricType: "jersey", construction: "knit", print: "stripe", generalColor: "black", unit: "yards", amount: 1.5, width: 60, photoCount: 1 }),
+  fabric("bbbbbbbb-0000-4000-8000-000000000003", { fabricType: "wool", print: "check", generalColor: "red", amount: 3, width: 150, photoCount: 1 }),
 ];
 
 type Sent = { crafts: unknown[]; create?: unknown; uploads: number; projectSaves: unknown[]; fabricUpdates: unknown[] };
@@ -36,7 +36,7 @@ function sewingProject(id: string, overrides: Record<string, unknown> = {}) {
   return {
     id, title: "Linen shirt", status: "in_progress", stage: "cut", patternName: "Camp shirt", patternDesigner: "Maker Example",
     sizeMade: "M", fitChanges: "Shortened the sleeves 3 cm", needleType: null, needleSize: null, threadColor: null, notes: null, completedAt: null,
-    fabrics: [{ stashFabricId: stash[0].id, amountUsed: 1.75, fabric: stash[0] }], tools: [],
+    fabrics: [{ stashFabricId: stash[0].id, amountUsed: 1.75, fabric: stash[0] }], tools: [], entries: [],
     createdAt: "2026-10-21T12:00:00.000Z", updatedAt: "2026-10-22T12:00:00.000Z",
     ...overrides,
   };
@@ -101,7 +101,8 @@ async function mockApi(page: Page, crafts: { yarn: boolean; sewing: boolean; nee
     if (pathname === "/api/fabric-stash") {
       const print = url.searchParams.get("print");
       const type = url.searchParams.get("fabricType");
-      return route.fulfill({ json: stash.filter((item) => (!print || item.print === print) && (!type || item.fabricType === type)) });
+      const archived = url.searchParams.get("archived") === "true";
+      return route.fulfill({ json: stash.filter((item) => (!print || item.print === print) && (!type || item.fabricType === type) && Boolean(item.archivedAt) === archived) });
     }
     const itemMatch = pathname.match(/^\/api\/fabric-stash\/([^/]+)$/);
     if (itemMatch && request.method() === "GET") return route.fulfill({ json: stash.find((entry) => entry.id === itemMatch[1]) });
@@ -157,7 +158,7 @@ test("shows the Sewing room with its own look, switcher and fabric swatches", as
   await expect(page.getByText("3 fabrics")).toBeVisible();
   const card = page.getByTestId("card-fabric-bbbbbbbb-0000-4000-8000-000000000001");
   await expect(card).toContainText("Cotton, floral");
-  await expect(card).toContainText("Woven · Liberty");
+  await expect(card).toContainText("Woven");
   await expect(card).toContainText("2.5 m · 145 cm wide");
   await expect(page.getByTestId("card-fabric-bbbbbbbb-0000-4000-8000-000000000002")).toContainText("1.5 yd · 60 in wide");
   if (shots) await page.screenshot({ path: `${shots}/fabric-stash-web.png` });
@@ -213,7 +214,7 @@ test("adds a fabric with a print close-up and an extra photo", async ({ page }) 
   expect(sent.uploads).toBe(2);
   expect(sent.create).toMatchObject({
     fabricType: "linen", construction: "woven", print: "check", generalColor: "green", unit: "yards",
-    amount: 2.75, width: 54, preWashed: true, brand: null, notes: "For a shirt",
+    amount: 2.75, amountLeft: null, width: 54, preWashed: true, notes: "For a shirt",
     photoPaths: ["/objects/fabric/user/bbbbbbbb-0000-4000-8000-0000000000f1", "/objects/fabric/user/bbbbbbbb-0000-4000-8000-0000000000f2"],
   });
 });
@@ -353,9 +354,9 @@ test("moves a project through stages and offers to update the stash when it's fi
   expect(sent.projectSaves[0]).toEqual({ stage: "sew" });
 
   await page.getByTestId("button-finish-sewing-project").click();
-  await expect(page.getByTestId("prompt-fabric-left")).toContainText("Cotton, floral: 2.5 m → 0.75 m");
+  await expect(page.getByTestId("prompt-fabric-left")).toContainText("Cotton, floral: 2.5 m left → 0.75 m");
   await page.getByTestId("button-update-stash").click();
   await expect(page.getByTestId("prompt-fabric-left")).toHaveCount(0);
-  expect(sent.fabricUpdates).toEqual([{ id: stash[0].id, amount: 0.75 }]);
+  expect(sent.fabricUpdates).toEqual([{ id: stash[0].id, amountLeft: 0.75 }]);
   await expect(page.getByTestId("button-reopen-sewing-project")).toBeVisible();
 });

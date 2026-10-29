@@ -50,6 +50,7 @@ export function stashTablesSql(isolatedSchema: string): string {
       photo_path text,
       skeins_purchased double precision,
       skeins_left double precision,
+      archived_at timestamptz,
       created_at timestamptz NOT NULL DEFAULT now(),
       updated_at timestamptz NOT NULL DEFAULT now()
     );
@@ -101,11 +102,13 @@ export function stashTablesSql(isolatedSchema: string): string {
       general_color ${isolatedSchema}.general_color,
       unit ${isolatedSchema}.fabric_unit NOT NULL DEFAULT 'meters',
       amount double precision,
+      amount_left double precision,
       width double precision,
       pre_washed boolean,
       brand text,
       notes text,
       photo_paths text[] NOT NULL DEFAULT '{}'::text[],
+      archived_at timestamptz,
       created_at timestamptz NOT NULL DEFAULT now(),
       updated_at timestamptz NOT NULL DEFAULT now()
     );
@@ -163,6 +166,7 @@ export function sewingToolsSql(isolatedSchema: string): string {
       brand text,
       notes text,
       photo_path text,
+      archived_at timestamptz,
       created_at timestamptz NOT NULL DEFAULT now(),
       updated_at timestamptz NOT NULL DEFAULT now()
     );
@@ -177,6 +181,19 @@ export function sewingProjectToolsSql(isolatedSchema: string): string {
       project_id uuid NOT NULL REFERENCES ${isolatedSchema}.sewing_projects(id) ON DELETE CASCADE,
       sewing_tool_id uuid NOT NULL REFERENCES ${isolatedSchema}.sewing_tools(id) ON DELETE CASCADE,
       position integer NOT NULL DEFAULT 0
+    );
+  `;
+}
+
+// Dated notes on sewing projects. Needs sewing_projects.
+export function sewingProjectEntriesSql(isolatedSchema: string): string {
+  return `
+    CREATE TABLE ${isolatedSchema}.sewing_project_entries (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      project_id uuid NOT NULL REFERENCES ${isolatedSchema}.sewing_projects(id) ON DELETE CASCADE,
+      notes text NOT NULL,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now()
     );
   `;
 }

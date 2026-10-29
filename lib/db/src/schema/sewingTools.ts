@@ -54,6 +54,8 @@ export const sewingToolsTable = pgTable("sewing_tools", {
   brand: text("brand"),
   notes: text("notes"),
   photoPath: text("photo_path"),
+  // Set when the maker moves a used-up notion to their Archive. Kit is never archived.
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

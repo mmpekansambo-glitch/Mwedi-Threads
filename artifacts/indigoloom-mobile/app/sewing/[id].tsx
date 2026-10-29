@@ -8,32 +8,54 @@ import {
   getGetSewingOverviewQueryKey, getGetSewingProjectQueryKey, getGetSewingProjectsQueryKey, getGetStashFabricsQueryKey,
   useDeleteSewingProject, useGetSewingProject, useUpdateSewingProject, useUpdateStashFabric,
 } from '@workspace/api-client-react';
-import type { ProjectStatus, SewingProject, SewingStage } from '@workspace/api-client-react';
+import type { ProjectStatus, SewingProject, SewingStage, StashFabric } from '@workspace/api-client-react';
+import { UsedUpNudge, fabricArchive, fabricUsedUp } from '@/components/ArchiveNudge';
 import { ErrorState, LoadingState, LoomButton, LoomText, SignedInGate, StatusChip, fonts } from '@/components/loom';
 import { FabricPhoto, fabricName } from '@/components/FabricFields';
 import { amountLeft, fabricAmount, needleLabel, sewingStages, stageIndex } from '@/components/SewingFields';
 import { ToolThumb, toolDetails } from '@/components/SewingTools';
 import { ColorDot, generalColors } from '@/components/YarnFields';
+import { SewingJournal } from '@/components/SewingJournal';
 import { useSewingColors } from '@/hooks/useColors';
 
-// After a project is finished, offers to take the fabric it used off the stash.
+// What's still in the stash: a blank amount left means all of it.
+function fabricLeft(fabric: Pick<StashFabric, 'amount' | 'amountLeft'>): number | null {
+  return fabric.amountLeft ?? fabric.amount;
+}
+
+// After a project is finished, offers to take the fabric it used off what's left.
 function FabricLeftPrompt({ project, onDone }: { project: SewingProject; onDone: () => void }) {
   const colors = useSewingColors();
   const client = useQueryClient();
   const updateFabric = useUpdateStashFabric();
   const [saving, setSaving] = useState(false);
   const [failed, setFailed] = useState(false);
-  const changes = project.fabrics.filter((item) => item.amountUsed !== null && item.fabric.amount !== null);
+  // Fabric this project used the last of gets a gentle offer to archive it.
+  const [finished, setFinished] = useState<StashFabric[] | null>(null);
+  const changes = project.fabrics.filter((item) => item.amountUsed !== null && fabricLeft(item.fabric) !== null && !item.fabric.archivedAt);
+  if (finished) {
+    return (
+      <View>
+        {finished.map((fabric) => <UsedUpNudge key={fabric.id} item={fabric} kind={fabricArchive} onDone={() => {
+          const rest = finished.filter((item) => item.id !== fabric.id);
+          setFinished(rest);
+          if (!rest.length) onDone();
+        }} />)}
+      </View>
+    );
+  }
   if (!changes.length) return null;
   const apply = async () => {
     setSaving(true);
     setFailed(false);
     try {
-      await Promise.all(changes.map((item) => updateFabric.mutateAsync({ fabricId: item.stashFabricId, data: { amount: amountLeft(item.fabric.amount!, item.amountUsed!) } })));
+      const saved = await Promise.all(changes.map((item) => updateFabric.mutateAsync({ fabricId: item.stashFabricId, data: { amountLeft: amountLeft(fabricLeft(item.fabric)!, item.amountUsed!) } })));
       void client.invalidateQueries({ queryKey: getGetStashFabricsQueryKey() });
       void client.invalidateQueries({ queryKey: getGetSewingProjectQueryKey(project.id) });
       void client.invalidateQueries({ queryKey: getGetSewingOverviewQueryKey() });
-      onDone();
+      const usedUp = saved.filter((fabric) => fabricUsedUp(fabric));
+      if (usedUp.length) setFinished(usedUp);
+      else onDone();
     } catch {
       setFailed(true);
     } finally {
@@ -42,10 +64,10 @@ function FabricLeftPrompt({ project, onDone }: { project: SewingProject; onDone:
   };
   return (
     <View style={[styles.prompt, { backgroundColor: colors.warningWash, borderColor: colors.warningBorder }]} testID="prompt-fabric-left">
-      <LoomText style={{ color: colors.warningText, fontFamily: fonts.semibold, fontSize: 15 }}>Take the fabric you used off your stash?</LoomText>
+      <LoomText style={{ color: colors.warningText, fontFamily: fonts.semibold, fontSize: 15 }}>Take the fabric you used off what’s left?</LoomText>
       {changes.map((item) => (
         <LoomText key={item.stashFabricId} style={{ color: colors.warningText, fontSize: 14, marginTop: 4 }}>
-          {fabricName(item.fabric)}: {fabricAmount(item.fabric.amount, item.fabric.unit)} → {fabricAmount(amountLeft(item.fabric.amount!, item.amountUsed!), item.fabric.unit)}
+          {fabricName(item.fabric)}: {fabricAmount(fabricLeft(item.fabric), item.fabric.unit)} left → {fabricAmount(amountLeft(fabricLeft(item.fabric)!, item.amountUsed!), item.fabric.unit)}
         </LoomText>
       ))}
       {failed ? <LoomText accessibilityRole="alert" style={{ color: colors.destructive, fontSize: 14, marginTop: 6 }}>We could not update your stash just now. Please try again.</LoomText> : null}
@@ -161,6 +183,7 @@ function SewingProjectView({ project }: { project: SewingProject }) {
             </View>
           ) : null)}
         </View>
+        <SewingJournal project={project} />
         <LoomText serif style={[styles.section, { color: colors.foreground }]}>Fabric</LoomText>
         {project.fabrics.length ? project.fabrics.map((item) => (
           <Pressable key={item.stashFabricId} accessibilityRole="button" onPress={() => router.push({ pathname: '/fabric/[id]', params: { id: item.stashFabricId } })} style={[styles.fabric, { backgroundColor: colors.card, borderColor: colors.border }]} testID={`project-fabric-${item.stashFabricId}`}>

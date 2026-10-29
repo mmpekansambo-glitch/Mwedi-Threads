@@ -47,4 +47,6 @@ export interface UpdateStashYarn {
      * @nullable
      */
   skeinsLeft?: number | null;
+  /** Moves the yarn to the Archive, or back to the stash. */
+  archived?: boolean;
 }

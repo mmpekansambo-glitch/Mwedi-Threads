@@ -15,6 +15,7 @@ import { describeNeedle } from '@/components/NeedleFields';
 import { describeProjectYarn } from '@/components/ProjectYarns';
 import { SkeinSuggestions } from '@/components/SkeinSuggestions';
 import { ProjectCounter } from '@/components/ProjectCounter';
+import { showSignpost } from '@/components/Signpost';
 import { SavedProgressPhoto, SwipeableNote, confirmDeleteNote, pickProgressPhoto, uploadProgressPhoto } from '@/components/ProgressNote';
 import { useColors } from '@/hooks/useColors';
 
@@ -56,16 +57,17 @@ export default function ProjectDetailScreen() {
   )?.progressValue;
   const amountDraft = amount ?? (project ? amountDraftFor(project, latestProgressValue) : null);
 
-  const saveProgress = async () => {
-    if (!project || !amountDraft) return;
+  // Saves the new note and says whether it went through.
+  const saveProgress = async (): Promise<boolean> => {
+    if (!project || !amountDraft) return false;
     if (!notes.trim()) {
       setMessage('Add a note about this session.');
-      return;
+      return false;
     }
     const progressAmount = progressAmountForApi(project, amountDraft);
     if (typeof progressAmount === 'string') {
       setMessage(progressAmount);
-      return;
+      return false;
     }
     setMessage('');
     let photoPath: string | undefined;
@@ -75,22 +77,34 @@ export default function ProjectDetailScreen() {
       setPhotoUploading(false);
       if ('error' in uploaded) {
         setMessage(uploaded.error);
-        return;
+        return false;
       }
       photoPath = uploaded.photoPath;
     }
-    addProgress.mutate({
-      projectId: id,
-      data: { notes: notes.trim(), ...progressAmount, ...(photoPath ? { photoPath } : {}) },
-    }, {
-      onSuccess: () => {
-        setNotes('');
-        setAmount(null);
-        setPhoto(null);
-        invalidate();
-      },
-      onError: () => setMessage('We could not save this note. Please try again.'),
-    });
+    try {
+      await addProgress.mutateAsync({
+        projectId: id,
+        data: { notes: notes.trim(), ...progressAmount, ...(photoPath ? { photoPath } : {}) },
+      });
+    } catch {
+      setMessage('We could not save this note. Please try again.');
+      return false;
+    }
+    setNotes('');
+    setAmount(null);
+    setPhoto(null);
+    invalidate();
+    return true;
+  };
+
+  // Only one note is open at a time: a half-written new note is saved
+  // before another note opens for editing.
+  const openNote = async (entryId: string) => {
+    if (notes.trim()) {
+      if (!(await saveProgress())) return;
+      showSignpost('Changes saved');
+    }
+    router.push({ pathname: '/projects/[id]/note/[entryId]', params: { id, entryId } });
   };
 
   const pickPhoto = async () => {
@@ -194,11 +208,11 @@ export default function ProjectDetailScreen() {
               {photo ? <Image source={{ uri: photo.uri }} style={styles.photoPreview} contentFit="cover" accessibilityLabel="Selected progress photo preview" /> : null}
               {amountDraft ? <ProgressAmountInput project={project} value={amountDraft} onChange={setAmount} /> : null}
               {message ? <LoomText accessibilityRole="alert" style={{ color: colors.destructive, fontSize: 15, marginBottom: 11 }}>{message}</LoomText> : null}
-              <LoomButton title="Save progress note" icon="feather" onPress={saveProgress} busy={addProgress.isPending || photoUploading} disabled={!notes.trim()} testID="button-save-progress" />
+              <LoomButton title="Save progress note" icon="feather" onPress={() => { void saveProgress(); }} busy={addProgress.isPending || photoUploading} disabled={!notes.trim()} testID="button-save-progress" />
             </View>
             <View style={styles.sectionHeading}><LoomText serif style={[styles.sectionTitle, { color: colors.foreground }]}>Progress journal</LoomText><LoomText style={{ color: colors.mutedForeground, fontSize: 14 }}>{project.progress.length} notes</LoomText></View>
             {project.progress.length ? project.progress.map((entry) => (
-              <SwipeableNote key={entry.id} onEdit={() => router.push({ pathname: '/projects/[id]/note/[entryId]', params: { id, entryId: entry.id } })} onDelete={() => deleteNote(entry.id)} testID={`entry-progress-${entry.id}`}>
+              <SwipeableNote key={entry.id} onEdit={() => { void openNote(entry.id); }} onDelete={() => deleteNote(entry.id)} testID={`entry-progress-${entry.id}`}>
               <View style={[styles.progressEntry, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <View style={[styles.entryMarker, { backgroundColor: colors.accent }]} />
                 <View style={{ flex: 1 }}>

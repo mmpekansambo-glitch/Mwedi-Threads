@@ -6,7 +6,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import * as schema from "@workspace/db/schema";
 import { sewingToolsTable, usersTable } from "@workspace/db/schema";
-import { sewingProjectToolsSql, sewingTablesSql, sewingToolsSql, stashTablesSql } from "../test/stashTablesSql";
+import { sewingProjectEntriesSql, sewingProjectToolsSql, sewingTablesSql, sewingToolsSql, stashTablesSql } from "../test/stashTablesSql";
 
 vi.mock("@clerk/express", () => ({
   getAuth: (req: Request) => ({
@@ -97,6 +97,7 @@ describe.skipIf(!databaseUrl)("sewing projects against PostgreSQL", () => {
       ${sewingTablesSql(isolatedSchema)}
       ${sewingToolsSql(isolatedSchema)}
       ${sewingProjectToolsSql(isolatedSchema)}
+      ${sewingProjectEntriesSql(isolatedSchema)}
     `);
 
     testPool = new pg.Pool({
@@ -266,6 +267,38 @@ describe.skipIf(!databaseUrl)("sewing projects against PostgreSQL", () => {
     expect((await addFabric(ownerB)).preWashed).toBeNull();
     const changed = await read(await request(`/fabric-stash/${washed.id}`, { method: "PATCH", user: ownerB, body: { preWashed: false } }));
     expect(changed.preWashed).toBe(false);
+  });
+
+  it("keeps a dated notes journal on a project for its owner only", async () => {
+    const project = await read(await request("/sewing-projects", { method: "POST", user: ownerB, body: { title: "Coat" } }));
+    expect(project.entries).toEqual([]);
+    const notes = `/sewing-projects/${project.id}/entries`;
+    const first = await read(await request(notes, { method: "POST", user: ownerB, body: { notes: " Cut the lining ", createdAt: "2026-10-01T12:00:00.000Z" } }));
+    expect(first).toMatchObject({ notes: "Cut the lining", createdAt: "2026-10-01T12:00:00.000Z" });
+    expect(first.projectId).toBeUndefined();
+    const second = await read(await request(notes, { method: "POST", user: ownerB, body: { notes: "Sewed the sleeves" } }));
+    expect((await read(await request(`/sewing-projects/${project.id}`, { user: ownerB }))).entries.map((entry: { id: string }) => entry.id)).toEqual([second.id, first.id]);
+
+    expect((await request(notes, { method: "POST", user: ownerB, body: { notes: "   " } })).status).toBe(400);
+    expect((await request(notes, { method: "POST", user: ownerB, body: { notes: "Later", createdAt: "2099-01-01T00:00:00.000Z" } })).status).toBe(400);
+    expect((await request(notes, { method: "POST", user: ownerA, body: { notes: "Not mine" } })).status).toBe(404);
+
+    const edited = await read(await request(`${notes}/${first.id}`, { method: "PATCH", user: ownerB, body: { notes: "Cut the lining and interfacing" } }));
+    expect(edited).toMatchObject({ notes: "Cut the lining and interfacing", createdAt: "2026-10-01T12:00:00.000Z" });
+    expect((await request(`${notes}/${first.id}`, { method: "PATCH", user: ownerA, body: { notes: "Mine now" } })).status).toBe(404);
+    expect((await request(`${notes}/${first.id}`, { method: "DELETE", user: ownerA })).status).toBe(404);
+    expect((await request(`${notes}/${first.id}`, { method: "DELETE", user: ownerB })).status).toBe(204);
+    expect((await read(await request(`/sewing-projects/${project.id}`, { user: ownerB }))).entries).toHaveLength(1);
+    expect((await request(`/sewing-projects/${project.id}`, { method: "DELETE", user: ownerB })).status).toBe(204);
+  });
+
+  it("leaves fabric in the Archive out of the Overview's stash counts", async () => {
+    const plain = await addFabric(ownerB, { fabricType: "denim" });
+    const before = await read(await request("/sewing-overview", { user: ownerB }));
+    await request(`/fabric-stash/${plain.id}`, { method: "PATCH", user: ownerB, body: { archived: true } });
+    const after = await read(await request("/sewing-overview", { user: ownerB }));
+    expect(after.fabricPieces).toBe(before.fabricPieces - 1);
+    expect(after.fabricLength).toBe(before.fabricLength - 3);
   });
 
   it("sums up the Sewing room for the Overview", async () => {

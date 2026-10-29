@@ -79,14 +79,20 @@ export const stashFabricsTable = pgTable("stash_fabrics", {
   print: fabricPrintEnum("print"),
   generalColor: generalColorEnum("general_color"),
   unit: fabricUnitEnum("unit").notNull().default("meters"),
+  // How much was bought, and how much of it is still in the stash.
   amount: doublePrecision("amount"),
+  amountLeft: doublePrecision("amount_left"),
   width: doublePrecision("width"),
   // Left empty when the maker hasn't said; washing shrinks fabric, so this
   // tells them whether the amount and width are before or after.
   preWashed: boolean("pre_washed"),
+  // No longer asked for. Kept until every saved brand has moved into the
+  // notes (the API does that the first time a maker's fabric loads).
   brand: text("brand"),
   notes: text("notes"),
   photoPaths: text("photo_paths").array().notNull().default(sql`'{}'::text[]`),
+  // Set when the maker moves used-up fabric to their Archive.
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

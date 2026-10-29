@@ -29,6 +29,7 @@ erDiagram
     stash_fabrics ||--o{ sewing_project_fabrics : "links"
     sewing_projects ||--o{ sewing_project_tools : uses
     sewing_tools ||--o{ sewing_project_tools : "links"
+    sewing_projects ||--o{ sewing_project_entries : "notes"
 
     users {
         text id PK
@@ -75,6 +76,12 @@ erDiagram
         uuid project_id FK
         uuid sewing_tool_id FK
         integer position
+    }
+    sewing_project_entries {
+        uuid id PK
+        uuid project_id FK
+        text notes
+        timestamptz created_at
     }
     projects {
         uuid id PK
@@ -157,6 +164,7 @@ erDiagram
 - **users → sewing_projects:** one-to-many. Sewing projects live apart from yarn projects.
 - **sewing_projects ↔ stash_fabrics through sewing_project_fabrics:** the fabric a project uses, with how much. Removing the fabric from the stash removes the link.
 - **sewing_projects ↔ sewing_tools through sewing_project_tools:** the notions and kit a project uses. Just a list: nothing is counted, and Tools quantities never change. Removing the tool removes the link.
+- **sewing_projects → sewing_project_entries:** one-to-many. A sewing project's dated notes journal. Deleting the project deletes its notes.
 - **users → yarn_tools:** one-to-many. The hooks, needles and notions a maker owns, shown on the Yarn studio's Tools page. Not linked to projects.
 
 The diagram shows the key columns only. Every column is listed below.
@@ -265,6 +273,7 @@ One row per yarn in a maker's stash. The brand, sub brand and color names are co
 | photo_path | text | no | | Private photo, only shown to its owner. Empty for yarn added from a project until the maker adds a photo ("Needs a photo"). |
 | skeins_purchased | double precision | no | | Halves allowed. |
 | skeins_left | double precision | no | | Starts at skeins purchased. Can't be more than that. |
+| archived_at | timestamp with time zone | no | | Set when the maker moves used-up yarn to their Archive; empty while it's in the stash. Archived yarn stays linked to its projects and still counts on the Overview. |
 | created_at | timestamp with time zone | yes | now | |
 | updated_at | timestamp with time zone | yes | now | Updated on every change. |
 
@@ -281,12 +290,14 @@ One row per piece of fabric in a maker's Sewing room stash. There is no shared c
 | print | fabric_print | no | | |
 | general_color | general_color | no | | Shown as a color dot on the photo. |
 | unit | fabric_unit | yes | `meters` | Meters go with centimeter widths, yards with inch widths. |
-| amount | double precision | no | | How much is left, to two decimals. |
+| amount | double precision | no | | How much was bought, to two decimals. |
+| amount_left | double precision | no | | How much is still in the stash. Empty means all of it. Can't be more than `amount`. |
 | width | double precision | no | | |
 | pre_washed | boolean | no | | Empty when the maker hasn't said. Washing shrinks fabric, so this tells them whether the amount and width are before or after. |
-| brand | text | no | | |
+| brand | text | no | | No longer asked for. A brand saved before is moved into the notes ("Brand: …") the first time the maker's fabric loads; the column can be dropped once that's done. |
 | notes | text | no | | |
 | photo_paths | text[] | yes | `{}` | Private photos, only shown to their owner. The first is the print close-up (required), then up to three more. |
+| archived_at | timestamp with time zone | no | | Set when the maker moves used-up fabric to their Archive. Archived fabric stays linked to its projects but is left out of the Overview's stash counts. |
 | created_at | timestamp with time zone | yes | now | |
 | updated_at | timestamp with time zone | yes | now | Updated on every change. |
 
@@ -340,6 +351,7 @@ One row per notion or piece of kit in a maker's Sewing room.
 | brand | text | no | | |
 | notes | text | no | | |
 | photo_path | text | no | | Private photo, only shown to its owner. |
+| archived_at | timestamp with time zone | no | | Set when the maker moves a used-up notion to their Archive. Kit is never archived. |
 | created_at | timestamp with time zone | yes | now | |
 | updated_at | timestamp with time zone | yes | now | Updated on every change. |
 
@@ -351,6 +363,18 @@ One row per notion or piece of kit in a maker's Sewing room.
 | project_id | uuid | yes | | Links to `sewing_projects.id`. Deleted with the project. |
 | sewing_tool_id | uuid | yes | | Links to `sewing_tools.id`. Deleted with the tool. |
 | position | integer | yes | 0 | Order on the project. |
+
+## sewing_project_entries
+
+One row per dated note in a sewing project's notes journal. Notes and a date only: no photo or progress amount.
+
+| Column | Type | Required | Default | Notes |
+|---|---|---|---|---|
+| id | uuid | yes | random | Primary key. |
+| project_id | uuid | yes | | Links to `sewing_projects.id`. Deleted with the project. |
+| notes | text | yes | | Up to 2,000 characters. |
+| created_at | timestamp with time zone | yes | now | When the note was written. The maker can move it to another day, never into the future. |
+| updated_at | timestamp with time zone | yes | now | |
 
 ## yarn_tools
 

@@ -28,14 +28,15 @@ export interface UpdateStashFabric {
      * @maximum 999
      * @nullable
      */
+  amountLeft?: number | null;
+  /**
+     * @minimum 0
+     * @maximum 999
+     * @nullable
+     */
   width?: number | null;
   /** @nullable */
   preWashed?: boolean | null;
-  /**
-     * @maxLength 80
-     * @nullable
-     */
-  brand?: string | null;
   /**
      * @maxLength 1000
      * @nullable
@@ -47,4 +48,6 @@ export interface UpdateStashFabric {
      * @maxItems 4
      */
   photoPaths?: string[];
+  /** true moves the fabric to the Archive, false brings it back */
+  archived?: boolean;
 }

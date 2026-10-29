@@ -1,10 +1,12 @@
+import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   getGetSkeinSuggestionsQueryKey, getGetStashYarnQueryKey, getGetStashYarnsQueryKey,
   useAcceptSkeinSuggestion, useDismissSkeinSuggestion, useGetSkeinSuggestions,
 } from '@workspace/api-client-react';
-import type { GetSkeinSuggestionsParams } from '@workspace/api-client-react';
+import type { GetSkeinSuggestionsParams, StashYarn } from '@workspace/api-client-react';
+import { ArchiveNudge, usedUp } from '@/components/ArchiveNudge';
 import { LoomButton, LoomText, fonts } from '@/components/loom';
 import { useColors } from '@/hooks/useColors';
 
@@ -25,18 +27,21 @@ export function SkeinSuggestions({ projectId }: { projectId?: string }) {
     void client.invalidateQueries({ queryKey: getGetStashYarnsQueryKey() });
     void client.invalidateQueries({ queryKey: getGetStashYarnQueryKey(stashYarnId) });
   };
-  if (!query.data?.length) return null;
+  // A yarn this project used the last of gets a gentle offer to archive it.
+  const [finished, setFinished] = useState<StashYarn[]>([]);
+  if (!query.data?.length && !finished.length) return null;
   const busy = accept.isPending || dismiss.isPending;
   return (
     <View style={styles.list}>
-      {query.data.map((suggestion) => (
+      {finished.map((yarn) => <ArchiveNudge key={yarn.id} yarn={yarn} onDone={() => setFinished((current) => current.filter((item) => item.id !== yarn.id))} />)}
+      {(query.data ?? []).map((suggestion) => (
         <View key={suggestion.id} accessibilityRole="summary" style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderLeftColor: colors.primary }]} testID={`skein-suggestion-${suggestion.id}`}>
           <LoomText style={{ color: colors.foreground, fontSize: 15, lineHeight: 22 }}>
             <LoomText style={{ fontFamily: fonts.semibold, fontSize: 15 }}>{suggestion.projectTitle}</LoomText> used {skeins(suggestion.skeinsUsed)} of {suggestion.yarnName}. Update skeins left from {suggestion.skeinsLeft} to {suggestion.suggestedLeft}?
           </LoomText>
           <View style={styles.actions}>
             <LoomButton title="Keep as is" variant="quiet" disabled={busy} onPress={() => dismiss.mutate({ suggestionId: suggestion.id }, { onSuccess: () => refresh(suggestion.stashYarnId) })} style={styles.button} testID={`button-keep-skeins-${suggestion.id}`} />
-            <LoomButton title={`Update to ${suggestion.suggestedLeft}`} disabled={busy} onPress={() => accept.mutate({ suggestionId: suggestion.id }, { onSuccess: () => refresh(suggestion.stashYarnId) })} style={styles.button} testID={`button-update-skeins-${suggestion.id}`} />
+            <LoomButton title={`Update to ${suggestion.suggestedLeft}`} disabled={busy} onPress={() => accept.mutate({ suggestionId: suggestion.id }, { onSuccess: (yarn) => { refresh(suggestion.stashYarnId); if (usedUp(yarn) && !yarn.archivedAt) setFinished((current) => [...current, yarn]); } })} style={styles.button} testID={`button-update-skeins-${suggestion.id}`} />
           </View>
         </View>
       ))}

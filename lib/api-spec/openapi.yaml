@@ -416,6 +416,11 @@ paths:
           name: generalColor
           schema:
             $ref: "#/components/schemas/GeneralColor"
+        - in: query
+          name: archived
+          description: true lists the Archive instead of the stash
+          schema:
+            type: boolean
       responses:
         "200":
           description: Matching stash yarn
@@ -819,9 +824,14 @@ paths:
       parameters:
         - in: query
           name: search
-          description: Matches fabric type, brand or notes
+          description: Matches fabric type or notes
           schema:
             type: string
+        - in: query
+          name: archived
+          description: true lists the fabric in the Archive instead of the stash
+          schema:
+            type: boolean
         - in: query
           name: fabricType
           schema:
@@ -849,6 +859,11 @@ paths:
       operationId: createStashFabric
       tags: [sewing]
       summary: Add a fabric to the stash
+      description: >-
+        When every detail matches a fabric in the Archive and the print photos
+        look alike (or can't be compared), answers 409 with that fabric so the
+        maker can say whether it's the same one. Send restoreId to bring it
+        back with the new details, or addAsNew to add a separate piece.
       requestBody:
         required: true
         content:
@@ -856,12 +871,24 @@ paths:
             schema:
               $ref: "#/components/schemas/CreateStashFabric"
       responses:
+        "200":
+          description: Archived fabric brought back with the new details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StashFabric"
         "201":
           description: Fabric added
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/StashFabric"
+        "409":
+          description: A fabric in the Archive looks like the same one
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FabricArchiveMatch"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -1078,6 +1105,85 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+  /sewing-projects/{sewingProjectId}/entries:
+    parameters:
+      - in: path
+        name: sewingProjectId
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      operationId: addSewingProjectEntry
+      tags: [sewing]
+      summary: Add a dated note to a sewing project's journal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveSewingProjectEntry"
+      responses:
+        "201":
+          description: Note added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SewingProjectEntry"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /sewing-projects/{sewingProjectId}/entries/{entryId}:
+    parameters:
+      - in: path
+        name: sewingProjectId
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - in: path
+        name: entryId
+        required: true
+        schema:
+          type: string
+          format: uuid
+    patch:
+      operationId: updateSewingProjectEntry
+      tags: [sewing]
+      summary: Change a note in a sewing project's journal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveSewingProjectEntry"
+      responses:
+        "200":
+          description: Note changed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SewingProjectEntry"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteSewingProjectEntry
+      tags: [sewing]
+      summary: Delete a note from a sewing project's journal
+      responses:
+        "204":
+          description: Note deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /sewing-overview:
     get:
       operationId: getSewingOverview
@@ -1103,6 +1209,11 @@ paths:
           description: Matches name, brand, size, color or notes
           schema:
             type: string
+        - in: query
+          name: archived
+          description: true lists the notions in the Archive instead
+          schema:
+            type: boolean
         - in: query
           name: section
           schema:
@@ -1139,6 +1250,28 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SewingTool"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /sewing-tools/rename-brand:
+    post:
+      operationId: renameSewingToolBrands
+      tags: [sewing]
+      summary: Rename a brand on every tool that still has the old name
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RenameSewingToolBrands"
+      responses:
+        "200":
+          description: Tools renamed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RenameStashYarnsResult"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -2147,25 +2280,55 @@ components:
           $ref: "#/components/schemas/FabricUnit"
         amount:
           type: [number, "null"]
+          description: How much was bought
+        amountLeft:
+          type: [number, "null"]
+          description: How much is still in the stash; null means all of it
         width:
           type: [number, "null"]
         preWashed:
           type: [boolean, "null"]
           description: Null when the maker hasn't said
-        brand:
-          type: [string, "null"]
         notes:
           type: [string, "null"]
         photoCount:
           type: integer
           description: The first photo is the print close-up
+        archivedAt:
+          type: [string, "null"]
+          format: date-time
+          description: Set while the fabric is in the maker's Archive
+        restored:
+          type: boolean
+          description: True when adding this fabric brought it back from the Archive
         createdAt:
           type: string
           format: date-time
         updatedAt:
           type: string
           format: date-time
-      required: [id, fabricType, construction, print, generalColor, unit, amount, width, preWashed, brand, notes, photoCount, createdAt, updatedAt]
+      required: [id, fabricType, construction, print, generalColor, unit, amount, amountLeft, width, preWashed, notes, photoCount, archivedAt, createdAt, updatedAt]
+    FabricArchiveMatch:
+      type: object
+      properties:
+        match:
+          $ref: "#/components/schemas/StashFabric"
+        similarPhoto:
+          type: [boolean, "null"]
+          description: Whether the print photos look alike; null when they couldn't be compared
+      required: [match, similarPhoto]
+    RenameSewingToolBrands:
+      type: object
+      properties:
+        from:
+          type: string
+          minLength: 1
+          maxLength: 80
+        to:
+          type: string
+          minLength: 1
+          maxLength: 80
+      required: [from, to]
     CreateStashFabric:
       type: object
       properties:
@@ -2189,15 +2352,16 @@ components:
           type: [number, "null"]
           minimum: 0
           maximum: 999
+        amountLeft:
+          type: [number, "null"]
+          minimum: 0
+          maximum: 999
         width:
           type: [number, "null"]
           minimum: 0
           maximum: 999
         preWashed:
           type: [boolean, "null"]
-        brand:
-          type: [string, "null"]
-          maxLength: 80
         notes:
           type: [string, "null"]
           maxLength: 1000
@@ -2208,6 +2372,13 @@ components:
           maxItems: 4
           items:
             type: string
+        restoreId:
+          type: string
+          format: uuid
+          description: The archived fabric the maker said is the same one
+        addAsNew:
+          type: boolean
+          description: The maker said it's a different piece, so don't ask again
       required: [fabricType, unit, photoPaths]
     UpdateStashFabric:
       type: object
@@ -2232,15 +2403,16 @@ components:
           type: [number, "null"]
           minimum: 0
           maximum: 999
+        amountLeft:
+          type: [number, "null"]
+          minimum: 0
+          maximum: 999
         width:
           type: [number, "null"]
           minimum: 0
           maximum: 999
         preWashed:
           type: [boolean, "null"]
-        brand:
-          type: [string, "null"]
-          maxLength: 80
         notes:
           type: [string, "null"]
           maxLength: 1000
@@ -2253,6 +2425,9 @@ components:
           maxItems: 4
           items:
             type: string
+        archived:
+          type: boolean
+          description: true moves the fabric to the Archive, false brings it back
     SewingToolSection:
       type: string
       description: Notions get used up; kit stays
@@ -2285,13 +2460,17 @@ components:
           type: [string, "null"]
         hasPhoto:
           type: boolean
+        archivedAt:
+          type: [string, "null"]
+          format: date-time
+          description: Set while a used-up notion is in the maker's Archive
         createdAt:
           type: string
           format: date-time
         updatedAt:
           type: string
           format: date-time
-      required: [id, section, category, name, quantity, size, color, brand, notes, hasPhoto, createdAt, updatedAt]
+      required: [id, section, category, name, quantity, size, color, brand, notes, hasPhoto, archivedAt, createdAt, updatedAt]
     CreateSewingTool:
       type: object
       properties:
@@ -2353,6 +2532,9 @@ components:
         photoPath:
           type: [string, "null"]
           description: A new path from the upload URL, or null to remove the photo. Leave it out to keep the photo.
+        archived:
+          type: boolean
+          description: true moves a notion to the Archive, false brings it back
     YarnToolSection:
       type: string
       enum: [hooks, needles, notions]
@@ -2568,13 +2750,46 @@ components:
           description: Tools from the maker's Sewing room the project uses, in the order listed
           items:
             $ref: "#/components/schemas/SewingTool"
+        entries:
+          type: array
+          description: The project's notes journal, newest first
+          items:
+            $ref: "#/components/schemas/SewingProjectEntry"
         createdAt:
           type: string
           format: date-time
         updatedAt:
           type: string
           format: date-time
-      required: [id, title, status, stage, patternName, patternDesigner, sizeMade, fitChanges, needleType, needleSize, threadColor, notes, completedAt, fabrics, tools, createdAt, updatedAt]
+      required: [id, title, status, stage, patternName, patternDesigner, sizeMade, fitChanges, needleType, needleSize, threadColor, notes, completedAt, fabrics, tools, entries, createdAt, updatedAt]
+    SewingProjectEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        notes:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+          description: When the note was written
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, notes, createdAt, updatedAt]
+    SaveSewingProjectEntry:
+      type: object
+      properties:
+        notes:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        createdAt:
+          type: string
+          format: date-time
+          description: When the note was written. Leave out for now (new notes) or to keep the date.
+      required: [notes]
     CreateSewingProject:
       type: object
       properties:
@@ -2755,13 +2970,20 @@ components:
           type: [number, "null"]
         skeinsLeft:
           type: [number, "null"]
+        archivedAt:
+          type: [string, "null"]
+          format: date-time
+          description: When the yarn was moved to the Archive; empty while it's in the stash.
+        restored:
+          type: boolean
+          description: Only on add. True when the yarn matched one in the Archive, which was brought back with the new details instead of adding a copy.
         createdAt:
           type: string
           format: date-time
         updatedAt:
           type: string
           format: date-time
-      required: [id, brand, subBrand, color, generalColor, weight, blend, brandLink, photoPath, skeinsPurchased, skeinsLeft, createdAt, updatedAt]
+      required: [id, brand, subBrand, color, generalColor, weight, blend, brandLink, photoPath, skeinsPurchased, skeinsLeft, archivedAt, createdAt, updatedAt]
     RenameStashYarns:
       type: object
       properties:
@@ -2866,6 +3088,9 @@ components:
           type: [number, "null"]
           minimum: 0
           maximum: 999
+        archived:
+          type: boolean
+          description: Moves the yarn to the Archive, or back to the stash.
     ProjectYarn:
       type: object
       properties:

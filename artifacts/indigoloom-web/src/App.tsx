@@ -21,14 +21,14 @@ import {
   getGetSewingToolQueryKey, getGetSewingToolsQueryKey,
   requestYarnToolPhotoUpload, useCreateYarnTool, useDeleteYarnTool, useGetYarnTool, useGetYarnTools, useUpdateYarnTool,
   getGetYarnToolQueryKey, getGetYarnToolsQueryKey,
-  acceptRenameOffer, findRenameOffer, getStashYarns, nameKey, refreshPaths, renameOfferText, showRemoved, showSaved,
+  acceptRenameOffer, findRenameOffer, getSewingTools, getStashYarns, nameKey, refreshPaths, renameOfferText, renameSewingToolBrands, showRemoved, showSaved, skeinsLeftAfter,
 } from '@workspace/api-client-react';
 import { CrochetHookSize, KnittingNeedleSize, NeedleCableLength } from '@workspace/api-client-react';
 import type { RenameOffer } from '@workspace/api-client-react';
-import type { CatalogField, CatalogReview, CreateProject, CreateProgress, Crafts, FabricConstruction, FabricPrint, FabricType, FabricUnit, GeneralColor, Project, ProjectStatus, SewingNeedleSize, SewingNeedleType, SewingProject, SewingStage, SewingTool, SewingToolCategory, SewingToolSection, StashFabric, StashYarn, UpdateProject, YarnNotionType, YarnTool, YarnToolMaterial, YarnToolSection, YarnWeight, KnittingNeedleType } from '@workspace/api-client-react';
+import type { CatalogField, CatalogReview, CreateProject, CreateStashFabric, CreateProgress, Crafts, FabricConstruction, FabricPrint, FabricType, FabricUnit, GeneralColor, Project, ProjectStatus, SewingNeedleSize, SewingNeedleType, SewingProject, SewingStage, SewingTool, SewingToolCategory, SewingToolSection, StashFabric, StashYarn, UpdateProject, YarnNotionType, YarnTool, YarnToolMaterial, YarnToolSection, YarnWeight, KnittingNeedleType } from '@workspace/api-client-react';
 import { FormProvider as Form, useForm, type UseFormReturn } from 'react-hook-form';
 import {
-  ArrowLeft, ArrowRight, ArrowUpDown, ArrowUpRight, BookOpen, Check,
+  Archive, ArrowLeft, ArrowRight, ArrowUpDown, ArrowUpRight, BookOpen, Check,
   Camera, ChevronDown, ChevronUp, CircleHelp, Feather, Filter, Flower2,
   Box, Layers3, LogOut, Menu, Palette, Plus, Ruler, Scissors, Search, Sparkles, Spool, Star, Trash2, Wrench,
   X,
@@ -54,6 +54,7 @@ import {
   ProjectYarnsField, describeProjectYarn, yarnDraftsFromProject, yarnsForApi, type YarnDraft,
 } from '@/components/project-yarns';
 import { SkeinSuggestions } from '@/components/skein-suggestions';
+import { ArchiveNudge, ArchivedNote, UsedUpNudge, fabricArchive, fabricUsedUp, toolArchive, toolUsedUp, usedUp, yarnArchive } from '@/components/archive-nudge';
 import { ProjectCounter } from '@/components/project-counter';
 import { NameReviewButton, NameReviewForm, NameReviewList, catalogFieldLabels } from '@/components/name-review';
 import { ErrorBoundary } from '@/components/error-boundary';
@@ -65,6 +66,9 @@ import { ToolThumb, ToolTypeWheelField, categoryFor, quantityForApi, toolDetails
 import { NeedleIcon, YarnToolThumb, hookSizes, notionFor, sortYarnTools, yarnNeedleTypes, yarnNotionTypes, yarnToolDetails, yarnToolMaterials, yarnToolPhotoUrl, yarnToolSections, yarnToolTitle } from '@/components/yarn-tools';
 import { trackEvent, trackSuccessfulAction } from '@/lib/analytics';
 import { Toaster } from '@/components/ui/toaster';
+import { SignpostHost, showSignpost } from '@/components/signpost';
+import { NEW_NOTE, NoteEditingProvider, useNoteEditing, useNoteEditor } from '@/components/note-editing';
+import { SewingJournal } from '@/components/sewing-journal';
 import { useAppearance, type AppearanceChoice } from '@/hooks/use-appearance';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
@@ -872,13 +876,18 @@ function designerWebsiteLabel(websiteUrl: string, pageTitle: string | null, desi
 }
 
 function ProjectDetailPage({ projectId }: { projectId: string }) {
+  return <NoteEditingProvider><ProjectDetailView projectId={projectId}/></NoteEditingProvider>;
+}
+
+function ProjectDetailView({ projectId }: { projectId: string }) {
   const query = useGetProject(projectId, { query: { queryKey: getGetProjectQueryKey(projectId) } });
   const [editing, setEditing] = useState(false);
   const previewTitle = usePreviewDesignerWebsiteTitle();
   const [designerMode, setDesignerMode] = useState<DesignerMode>('name');
   const [designerPreviewMessage, setDesignerPreviewMessage] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [showProgress, setShowProgress] = useState(false);
+  const noteEditing = useNoteEditing();
+  const showProgress = noteEditing.openId === NEW_NOTE;
   const [progressPhoto, setProgressPhoto] = useState<File | null>(null);
   const [progressPhotoPreview, setProgressPhotoPreview] = useState('');
   const [progressPhotoError, setProgressPhotoError] = useState('');
@@ -995,34 +1004,50 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
     };
     update.mutate({ projectId, data: payload }, { onSuccess: () => { invalidate(); setEditing(false); } });
   });
-  const submitProgress = progressForm.handleSubmit(async (values) => {
-    if (!project) return;
+  const addProgress = useAddProgress();
+  // Saves the new note and says whether it went through.
+  const persistProgress = async (): Promise<boolean> => {
+    if (!project || !(await progressForm.trigger())) return false;
     const amount = progressAmountForApi(project, progressAmount);
     if (typeof amount === 'string') {
       setProgressAmountError(amount);
-      return;
+      return false;
     }
     setProgressAmountError('');
-    const payload: CreateProgress = { notes: values.notes.trim(), ...amount };
+    const payload: CreateProgress = { notes: progressForm.getValues('notes').trim(), ...amount };
     setProgressPhotoError('');
     if (progressPhoto) {
       const uploaded = await uploadProgressPhoto(projectId, progressPhoto);
       if ('error' in uploaded) {
         setProgressPhotoError(uploaded.error);
-        return;
+        return false;
       }
       payload.photoPath = uploaded.photoPath;
     }
-    addProgress.mutate({ projectId, data: payload }, {
-      onSuccess: trackSuccessfulAction('progress_updated', () => {
-        invalidate();
-        setShowProgress(false);
-        setProgressPhoto(null);
-        progressForm.reset({ notes: '' });
-      }),
+    try {
+      await addProgress.mutateAsync({ projectId, data: payload });
+    } catch {
+      return false;
+    }
+    trackSuccessfulAction('progress_updated', () => {
+      invalidate();
+      setProgressPhoto(null);
+      progressForm.reset({ notes: '' });
+    })();
+    return true;
+  };
+  useNoteEditor(NEW_NOTE, { dirty: () => Boolean(progressForm.getValues('notes').trim() || progressPhoto), save: persistProgress });
+  const submitProgress = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (await persistProgress()) noteEditing.close();
+  };
+  const startNote = () => {
+    void noteEditing.open(NEW_NOTE).then((opened) => {
+      if (!opened) return;
+      setProgressAmount(amountDraftFor(project!, latestProgressValue));
+      setProgressAmountError('');
     });
-  });
-  const addProgress = useAddProgress();
+  };
   const deleteProject = () => remove.mutate({ projectId }, {
     onSuccess: () => {
       void client.invalidateQueries({ queryKey: getGetProjectsQueryKey() });
@@ -1073,10 +1098,10 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
       <div className="detail-primary">
         <article className="progress-hero loom-card"><div className="progress-hero-copy"><h2 className="serif">Progress</h2>{progressDetail(project, latestProgressValue) && <p className="progress-detail" data-testid="text-progress-detail">{progressDetail(project, latestProgressValue)}</p>}<p>{progressSummary(project.progress)}</p></div><div className="progress-ring" style={{ '--progress': `${project.completionPercent * 3.6}deg` } as CSSProperties}><div><strong>{project.completionPercent}<small>%</small></strong><span>complete</span></div></div></article>
         <ProjectCounter key={project.id} projectId={project.id} initial={project.counter}/>
-        <div className="progress-log-heading"><div><h2 className="serif">Progress journal</h2></div><button className="button button-primary button-small" onClick={() => { setShowProgress(!showProgress); setProgressAmount(amountDraftFor(project, latestProgressValue)); setProgressAmountError(''); }} data-testid="button-add-progress">{showProgress ? <X size={15}/> : <Plus size={15}/>} {showProgress ? 'Close note' : 'Add a note'}</button></div>
-        {showProgress && <Form {...progressForm}><form className="progress-form loom-card" onSubmit={submitProgress} noValidate><div className="field-block"><label htmlFor="progress-notes">What did you work on?</label><textarea id="progress-notes" rows={3} placeholder="A few rows, a tricky bit figured out, a lovely color change…" {...progressForm.register('notes', { required: 'Add a note about this session.', maxLength: { value: 2000, message: 'Keep your note under 2,000 characters.' } })} data-testid="input-progress-notes"/>{progressForm.formState.errors.notes && <span className="field-error">{progressForm.formState.errors.notes.message}</span>}</div><div className="field-block progress-photo-field"><label htmlFor="progress-photo">Add a progress photo (optional)</label><input id="progress-photo" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { setProgressPhoto(event.target.files?.[0] ?? null); setProgressPhotoError(''); }} data-testid="input-progress-photo"/>{progressPhotoPreview && <div className="progress-photo-preview"><img src={progressPhotoPreview} alt="Selected progress photo preview"/><button type="button" className="button button-quiet" onClick={() => setProgressPhoto(null)}>Remove photo</button></div>}</div><div className="progress-form-row"><ProgressAmountField project={project} value={progressAmount} onChange={setProgressAmount}/>{progressAmountError && <span className="field-error" role="alert">{progressAmountError}</span>}</div>{(addProgress.isError || progressPhotoError) && <p className="mutation-error">{progressPhotoError || "Your note didn't stick this time. Please try again."}</p>}<div className="form-actions"><button type="button" className="button button-quiet" onClick={() => { setShowProgress(false); setProgressPhoto(null); }} data-testid="button-cancel-progress">Cancel</button><button type="submit" className="button button-primary" disabled={addProgress.isPending} data-testid="button-save-progress">{addProgress.isPending ? 'Saving note…' : 'Save progress'} <ArrowRight size={15}/></button></div></form></Form>}
+        <div className="progress-log-heading"><div><h2 className="serif">Progress journal</h2></div><button className="button button-primary button-small" onClick={() => { if (showProgress) noteEditing.close(); else startNote(); }} data-testid="button-add-progress">{showProgress ? <X size={15}/> : <Plus size={15}/>} {showProgress ? 'Close note' : 'Add a note'}</button></div>
+        {showProgress && <Form {...progressForm}><form className="progress-form loom-card" onSubmit={submitProgress} noValidate><div className="field-block"><label htmlFor="progress-notes">What did you work on?</label><textarea id="progress-notes" rows={3} placeholder="A few rows, a tricky bit figured out, a lovely color change…" {...progressForm.register('notes', { required: 'Add a note about this session.', maxLength: { value: 2000, message: 'Keep your note under 2,000 characters.' } })} data-testid="input-progress-notes"/>{progressForm.formState.errors.notes && <span className="field-error">{progressForm.formState.errors.notes.message}</span>}</div><div className="field-block progress-photo-field"><label htmlFor="progress-photo">Add a progress photo (optional)</label><input id="progress-photo" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { setProgressPhoto(event.target.files?.[0] ?? null); setProgressPhotoError(''); }} data-testid="input-progress-photo"/>{progressPhotoPreview && <div className="progress-photo-preview"><img src={progressPhotoPreview} alt="Selected progress photo preview"/><button type="button" className="button button-quiet" onClick={() => setProgressPhoto(null)}>Remove photo</button></div>}</div><div className="progress-form-row"><ProgressAmountField project={project} value={progressAmount} onChange={setProgressAmount}/>{progressAmountError && <span className="field-error" role="alert">{progressAmountError}</span>}</div>{(addProgress.isError || progressPhotoError) && <p className="mutation-error">{progressPhotoError || "Your note didn't stick this time. Please try again."}</p>}<div className="form-actions"><button type="button" className="button button-quiet" onClick={() => { noteEditing.close(); setProgressPhoto(null); }} data-testid="button-cancel-progress">Cancel</button><button type="submit" className="button button-primary" disabled={addProgress.isPending} data-testid="button-save-progress">{addProgress.isPending ? 'Saving note…' : 'Save progress'} <ArrowRight size={15}/></button></div></form></Form>}
         {photoRemovalError && <p className="mutation-error" role="alert">{photoRemovalError}</p>}
-        {project.progress.length ? <div className="timeline">{[...project.progress].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((entry, position) => <ProgressEntryCard key={entry.id} project={project} entry={entry} isLatest={position === 0} onChanged={invalidate}>{entry.photoPath && <><img className="timeline-photo" src={`/api/projects/${projectId}/progress/${entry.id}/photo`} alt={`Progress photo for ${project.title}`} loading="lazy"/><button type="button" className="button button-quiet button-remove-progress-photo" onClick={() => deleteEntryPhoto(entry.id)} disabled={removingPhotoEntryId === entry.id} data-testid={`button-remove-progress-photo-${entry.id}`}>{removingPhotoEntryId === entry.id ? 'Removing photo…' : 'Remove photo'} <X size={14}/></button></>}</ProgressEntryCard>)}</div> : <div className="journal-empty"><h3>No notes yet</h3><p>Add a note each time you work on this project.</p><button className="button button-outline" onClick={() => { setShowProgress(true); setProgressAmount(amountDraftFor(project, latestProgressValue)); setProgressAmountError(''); }} data-testid="button-first-progress">Add your first note <ArrowRight size={15}/></button></div>}
+        {project.progress.length ? <div className="timeline">{[...project.progress].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((entry, position) => <ProgressEntryCard key={entry.id} project={project} entry={entry} isLatest={position === 0} onChanged={invalidate}>{entry.photoPath && <><img className="timeline-photo" src={`/api/projects/${projectId}/progress/${entry.id}/photo`} alt={`Progress photo for ${project.title}`} loading="lazy"/><button type="button" className="button button-quiet button-remove-progress-photo" onClick={() => deleteEntryPhoto(entry.id)} disabled={removingPhotoEntryId === entry.id} data-testid={`button-remove-progress-photo-${entry.id}`}>{removingPhotoEntryId === entry.id ? 'Removing photo…' : 'Remove photo'} <X size={14}/></button></>}</ProgressEntryCard>)}</div> : <div className="journal-empty"><h3>No notes yet</h3><p>Add a note each time you work on this project.</p><button className="button button-outline" onClick={startNote} data-testid="button-first-progress">Add your first note <ArrowRight size={15}/></button></div>}
       </div>
       <aside className="detail-aside">
         <div className="aside-card loom-card"><h3 className="serif">Details</h3><dl className="detail-list">
@@ -1129,12 +1154,14 @@ function StashPage() {
   const [weight, setWeight] = useState('');
   const [color, setColor] = useState('');
   const [sort, setSort] = useSavedSort('mwedi:stash-sort', stashSorts);
+  const [archived, setArchived] = useState(false);
   const params = {
     ...(search.trim() ? { search: search.trim() } : {}),
     ...(weight ? { weight: weight as YarnWeight } : {}),
     ...(color ? { generalColor: color as GeneralColor } : {}),
+    ...(archived ? { archived: true } : {}),
   };
-  const clearFilters = () => { setSearch(''); setWeight(''); setColor(''); };
+  const clearFilters = () => { setSearch(''); setWeight(''); setColor(''); setArchived(false); };
   const query = useGetStashYarns(params, { query: { queryKey: getGetStashYarnsQueryKey(params) } });
   const filtered = Boolean(search || weight || color);
   return <PortalLayout active="stash">
@@ -1145,12 +1172,14 @@ function StashPage() {
       <label className="select-wrap"><Filter size={15}/><select aria-label="Filter by weight" value={weight} onChange={(event) => setWeight(event.target.value)} data-testid="select-weight-filter"><option value="">Every weight</option>{yarnWeights.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select><ChevronDown size={14}/></label>
       <label className="select-wrap">{color ? <ColorDot color={color as GeneralColor}/> : <Palette size={15}/>}<select aria-label="Filter by color" value={color} onChange={(event) => setColor(event.target.value)} data-testid="select-color-filter"><option value="">Every color</option>{generalColors.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select><ChevronDown size={14}/></label>
       <label className="select-wrap"><ArrowUpDown size={15}/><select aria-label="Sort your stash" value={sort} onChange={(event) => setSort(event.target.value as typeof sort)} data-testid="select-stash-sort">{stashSorts.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select><ChevronDown size={14}/></label>
-      {filtered && <button className="clear-filters" onClick={clearFilters} data-testid="button-clear-stash-filters">Clear filters</button>}
+      <button type="button" className={`starred-filter${archived ? ' is-active' : ''}`} aria-pressed={archived} onClick={() => setArchived(!archived)} data-testid="button-archive-filter"><Archive size={14}/> Archive</button>
+      {(filtered || archived) && <button className="clear-filters" onClick={clearFilters} data-testid="button-clear-stash-filters">Clear filters</button>}
     </div>
-    <div className="catalog-result-caption">{query.data ? <><b>{query.data.length}</b> {query.data.length === 1 ? 'yarn' : 'yarns'}</> : null}</div>
+    <div className="catalog-result-caption">{query.data ? <><b>{query.data.length}</b> {archived ? 'in your Archive' : query.data.length === 1 ? 'yarn' : 'yarns'}</> : null}</div>
     {query.isLoading ? <div className="stash-grid">{[0, 1, 2, 3].map((item) => <div className="card-skeleton" key={item}/>)}</div>
       : query.isError ? <QueryProblem retry={() => query.refetch()}/>
       : query.data?.length ? <div className="stash-grid">{sortStash(query.data, sort).map((yarn) => <StashYarnCard key={yarn.id} yarn={yarn}/>)}</div>
+      : archived && !filtered ? <div className="no-results"><Archive size={23}/><h3>Nothing in your Archive</h3><p>Yarn you’ve used up can be moved here.</p></div>
       : filtered ? <div className="no-results"><Search size={23}/><h3>No yarn matches</h3><p>Try a different search or clear a filter.</p><button className="button button-outline" onClick={clearFilters}>Reset filters</button></div>
       : <div className="empty-projects"><h3>No yarn yet</h3><p>Add your first yarn to start your stash.</p><Link href="/stash/new" className="button button-primary" data-testid="link-add-first-yarn"><Plus size={16}/> Add yarn</Link></div>}
   </PortalLayout>;
@@ -1237,19 +1266,42 @@ function StashYarnForm({ yarn }: { yarn?: StashYarn }) {
     if (color?.generalColor) setDraft((current) => current.generalColor ? current : { ...current, generalColor: color.generalColor });
   }, [catalog.data?.colors, draft.color]);
 
+  // Skeins left follows a change to skeins purchased until the maker types
+  // their own number, with a gentle note saying what changed.
+  const [leftTouched, setLeftTouched] = useState(false);
+  const [leftNudge, setLeftNudge] = useState<{ from: number; to: number } | null>(null);
+  const changePurchased = (value: string) => {
+    const change: Partial<StashDraft> = { skeinsPurchased: value };
+    if (yarn && !leftTouched) {
+      const purchased = skeinsForApi(value);
+      const after = typeof purchased === 'number' ? skeinsLeftAfter(yarn.skeinsPurchased, yarn.skeinsLeft, purchased) : null;
+      change.skeinsLeft = after === null ? (yarn.skeinsLeft === null ? '' : String(yarn.skeinsLeft)) : String(after);
+      setLeftNudge(after === null || yarn.skeinsLeft === null ? null : { from: yarn.skeinsLeft, to: after });
+    }
+    set(change);
+  };
   const [offer, setOffer] = useState<RenameOffer | null>(null);
   const [renaming, setRenaming] = useState(false);
   // A changed yarn name shows on its projects and the Overview too.
   const refreshLinked = () => refreshPaths(client, '/api/projects', '/api/dashboard', '/api/yarn-catalog');
   const done = async (saved?: StashYarn) => {
-    if (saved) showSaved(client, { list: getGetStashYarnsQueryKey(), item: getGetStashYarnQueryKey(saved.id) }, saved);
+    // Archived yarn isn't added to the stash list, only updated where it's shown.
+    if (saved) showSaved(client, { list: getGetStashYarnsQueryKey(), item: getGetStashYarnQueryKey(saved.id) }, saved, { insert: !saved.archivedAt });
     else if (yarn) showRemoved(client, getGetStashYarnsQueryKey(), yarn.id);
+    if (saved?.restored) showSignpost(`Welcome back: ${[saved.brand, saved.subBrand, saved.color].filter(Boolean).join(' ')} was in your Archive, so it’s back in your stash with your new details.`);
     refreshLinked();
-    if (yarn && saved && (yarn.brand !== saved.brand || yarn.subBrand !== saved.subBrand)) {
-      const next = await getStashYarns().then((stash) => findRenameOffer(yarn, saved, stash)).catch(() => null);
-      if (next) { setOffer(next); return; }
-    }
+    const rename = yarn && saved && (yarn.brand !== saved.brand || yarn.subBrand !== saved.subBrand)
+      ? await getStashYarns().then((stash) => findRenameOffer(yarn, saved, stash)).catch(() => null)
+      : null;
+    // Offer the Archive when this edit used the last of the yarn.
+    const finished = yarn && saved && !saved.archivedAt && usedUp(saved) && !usedUp(yarn) ? saved : null;
+    if (rename || finished) { setOffer(rename); setArchiveOffer(finished); return; }
     setLocation('/stash');
+  };
+  const [archiveOffer, setArchiveOffer] = useState<StashYarn | null>(null);
+  const answerArchive = () => {
+    setArchiveOffer(null);
+    if (!offer) setLocation('/stash');
   };
   const answerOffer = async (rename: boolean) => {
     if (rename && offer) {
@@ -1259,7 +1311,8 @@ function StashYarnForm({ yarn }: { yarn?: StashYarn }) {
       refreshPaths(client, '/api/yarn-stash/');
       refreshLinked();
     }
-    setLocation('/stash');
+    setOffer(null);
+    if (!archiveOffer) setLocation('/stash');
   };
 
   const save = async (event: React.FormEvent) => {
@@ -1329,8 +1382,10 @@ function StashYarnForm({ yarn }: { yarn?: StashYarn }) {
         <button type="button" className="button button-primary button-small" disabled={renaming} onClick={() => void answerOffer(true)} data-testid="button-rename-others">{renaming ? 'Renaming…' : 'Rename them too'}</button>
       </div>
     </div>}
+    {archiveOffer && <ArchiveNudge yarn={archiveOffer} onDone={answerArchive}/>}
+    {yarn?.archivedAt && !offer && !archiveOffer && <ArchivedNote item={yarn} kind={yarnArchive} text="This yarn is all used up. Bring it back if you have more." onRestored={() => setLocation('/stash')}/>}
     {confirmDelete && <div className="confirm-banner"><div><b>Remove this yarn from your stash?</b><span>Its photo will be deleted too.</span></div><button className="button button-quiet" onClick={() => setConfirmDelete(false)}>Cancel</button><button className="button button-danger" onClick={deleteYarn} disabled={remove.isPending} data-testid="button-confirm-delete-yarn">{remove.isPending ? 'Removing…' : 'Remove yarn'}</button></div>}
-    {!offer && <form className="project-form loom-card" onSubmit={save} noValidate>
+    {!offer && !archiveOffer && <form className="project-form loom-card" onSubmit={save} noValidate>
       <div className="stash-form-top">
         <div className="field-block stash-photo-field">
           <label htmlFor="stash-photo">Photo <b>*</b></label>
@@ -1353,8 +1408,10 @@ function StashYarnForm({ yarn }: { yarn?: StashYarn }) {
         <WeightWheelField value={draft.weight} onChange={(weight) => set({ weight })}/>
         <div className="field-block"><label htmlFor="stash-link">Brand page link</label><input id="stash-link" type="url" placeholder="https://" value={draft.brandLink} onChange={(event) => set({ brandLink: event.target.value })} data-testid="input-stash-link"/>{errors.link && <span className="field-error">{errors.link}</span>}</div>
         <BlendFields value={draft.blend} onChange={(blend) => set({ blend })} fibers={fibers} error={errors.blend ?? ''}/>
-        <div className="field-block"><label htmlFor="stash-skeins-purchased">Skeins purchased</label><input id="stash-skeins-purchased" inputMode="decimal" placeholder="e.g. 4" value={draft.skeinsPurchased} onChange={(event) => set({ skeinsPurchased: event.target.value })} data-testid="input-skeins-purchased"/></div>
-        <div className="field-block"><label htmlFor="stash-skeins-left">Skeins left</label><input id="stash-skeins-left" inputMode="decimal" placeholder={draft.skeinsPurchased || 'Same as purchased'} value={draft.skeinsLeft} onChange={(event) => set({ skeinsLeft: event.target.value })} data-testid="input-skeins-left"/></div>
+        <div className="field-block"><label htmlFor="stash-skeins-purchased">Skeins purchased</label><input id="stash-skeins-purchased" inputMode="decimal" placeholder="e.g. 4" value={draft.skeinsPurchased} onChange={(event) => changePurchased(event.target.value)} data-testid="input-skeins-purchased"/></div>
+        <div className="field-block"><label htmlFor="stash-skeins-left">Skeins left</label><input id="stash-skeins-left" inputMode="decimal" placeholder={draft.skeinsPurchased || 'Same as purchased'} value={draft.skeinsLeft} onChange={(event) => { setLeftTouched(true); setLeftNudge(null); set({ skeinsLeft: event.target.value }); }} data-testid="input-skeins-left"/>
+          {leftNudge && <span className="gentle-nudge" role="status" data-testid="skeins-left-nudge">Skeins left is now {leftNudge.to} (was {leftNudge.from}). Look right? <button type="button" onClick={() => setLeftNudge(null)} data-testid="button-skeins-left-ok">Looks right</button></span>}
+        </div>
         {errors.skeins && <span className="field-error field-wide">{errors.skeins}</span>}
       </div>
       <NameReviewList reviews={reviews.data ?? []}/>
@@ -1369,7 +1426,7 @@ function FabricCard({ fabric }: { fabric: StashFabric }) {
     <span className="fabric-swatch"><img src={fabricPhotoUrl(fabric, 0)} alt={`${fabricName(fabric)} print`} loading="lazy"/><ColorDot color={fabric.generalColor} noun="fabric" className="stash-photo-dot"/></span>
     <span className="fabric-card-body">
       <h3>{fabricName(fabric)}</h3>
-      <span className="fabric-card-meta">{[labelFor(fabricConstructions, fabric.construction), fabric.brand].filter(Boolean).join(' · ')}</span>
+      {fabric.construction && <span className="fabric-card-meta">{labelFor(fabricConstructions, fabric.construction)}</span>}
       {fabricSize(fabric) && <span className="fabric-card-size">{fabricSize(fabric)}</span>}
     </span>
   </Link>;
@@ -1381,28 +1438,32 @@ function FabricStashPage() {
   const [fabricType, setFabricType] = useState(fabricTypes.some((item) => item.value === urlType) ? urlType : '');
   const [print, setPrint] = useState('');
   const [color, setColor] = useState('');
+  const [archived, setArchived] = useState(false);
   const params = {
     ...(search.trim() ? { search: search.trim() } : {}),
     ...(fabricType ? { fabricType: fabricType as FabricType } : {}),
     ...(print ? { print: print as FabricPrint } : {}),
     ...(color ? { generalColor: color as GeneralColor } : {}),
+    ...(archived ? { archived: true } : {}),
   };
-  const clearFilters = () => { setSearch(''); setFabricType(''); setPrint(''); setColor(''); };
+  const clearFilters = () => { setSearch(''); setFabricType(''); setPrint(''); setColor(''); setArchived(false); };
   const query = useGetStashFabrics(params, { query: { queryKey: getGetStashFabricsQueryKey(params) } });
   const filtered = Boolean(search || fabricType || print || color);
   return <PortalLayout active="fabric">
     <PageHeading title="Fabric stash" action={<Link href="/sewing/fabric/new" className="button button-primary" data-testid="link-add-fabric"><Plus size={17}/> Add fabric</Link>}/>
     <div className="catalog-tools">
-      <label className="search-box"><Search size={17}/><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search by type, brand or notes…" aria-label="Search your fabric" data-testid="input-search-fabric"/>{search && <button type="button" onClick={() => setSearch('')} aria-label="Clear search"><X size={15}/></button>}</label>
+      <label className="search-box"><Search size={17}/><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search by type or notes…" aria-label="Search your fabric" data-testid="input-search-fabric"/>{search && <button type="button" onClick={() => setSearch('')} aria-label="Clear search"><X size={15}/></button>}</label>
       <label className="select-wrap"><Filter size={15}/><select aria-label="Filter by fabric type" value={fabricType} onChange={(event) => setFabricType(event.target.value)} data-testid="select-fabric-type-filter"><option value="">Every type</option>{fabricTypes.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select><ChevronDown size={14}/></label>
       <label className="select-wrap"><Sparkles size={15}/><select aria-label="Filter by print" value={print} onChange={(event) => setPrint(event.target.value)} data-testid="select-fabric-print-filter"><option value="">Every print</option>{fabricPrints.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select><ChevronDown size={14}/></label>
       <label className="select-wrap">{color ? <ColorDot color={color as GeneralColor} noun="fabric"/> : <Palette size={15}/>}<select aria-label="Filter by color" value={color} onChange={(event) => setColor(event.target.value)} data-testid="select-fabric-color-filter"><option value="">Every color</option>{generalColors.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select><ChevronDown size={14}/></label>
-      {filtered && <button className="clear-filters" onClick={clearFilters} data-testid="button-clear-fabric-filters">Clear filters</button>}
+      <button type="button" className={`starred-filter${archived ? ' is-active' : ''}`} aria-pressed={archived} onClick={() => setArchived(!archived)} data-testid="button-archive-filter"><Archive size={14}/> Archive</button>
+      {(filtered || archived) && <button className="clear-filters" onClick={clearFilters} data-testid="button-clear-fabric-filters">Clear filters</button>}
     </div>
-    <div className="catalog-result-caption">{query.data ? <><b>{query.data.length}</b> {query.data.length === 1 ? 'fabric' : 'fabrics'}</> : null}</div>
+    <div className="catalog-result-caption">{query.data ? <><b>{query.data.length}</b> {archived ? 'in your Archive' : query.data.length === 1 ? 'fabric' : 'fabrics'}</> : null}</div>
     {query.isLoading ? <div className="fabric-grid">{[0, 1, 2].map((item) => <div className="card-skeleton" key={item}/>)}</div>
       : query.isError ? <QueryProblem retry={() => query.refetch()}/>
       : query.data?.length ? <div className="fabric-grid">{query.data.map((fabric) => <FabricCard key={fabric.id} fabric={fabric}/>)}</div>
+      : archived && !filtered ? <div className="no-results"><Archive size={23}/><h3>Nothing in your Archive</h3><p>Fabric you’ve used up can be moved here.</p></div>
       : filtered ? <div className="no-results"><Search size={23}/><h3>No fabric matches</h3><p>Try a different search or clear a filter.</p><button className="button button-outline" onClick={clearFilters}>Reset filters</button></div>
       : <div className="empty-projects"><h3>No fabric yet</h3><p>Add your first fabric to start your stash.</p><Link href="/sewing/fabric/new" className="button button-primary" data-testid="link-add-first-fabric"><Plus size={16}/> Add fabric</Link></div>}
   </PortalLayout>;
@@ -1414,14 +1475,15 @@ type FabricPhotoSlot = { kind: 'kept'; index: number } | { kind: 'new'; file: Fi
 
 type FabricDraft = {
   fabricType: FabricType | ''; construction: FabricConstruction | null; print: FabricPrint | ''; generalColor: GeneralColor | null;
-  unit: FabricUnit; amount: string; width: string; preWashed: boolean | null; brand: string; notes: string;
+  unit: FabricUnit; amount: string; amountLeft: string; width: string; preWashed: boolean | null; notes: string;
 };
 
 function draftFromFabric(fabric?: StashFabric): FabricDraft {
   return {
     fabricType: fabric?.fabricType ?? '', construction: fabric?.construction ?? null, print: fabric?.print ?? '', generalColor: fabric?.generalColor ?? null,
     unit: fabric?.unit ?? 'meters', amount: fabric?.amount === null || !fabric ? '' : String(fabric.amount),
-    width: fabric?.width === null || !fabric ? '' : String(fabric.width), preWashed: fabric?.preWashed ?? null, brand: fabric?.brand ?? '', notes: fabric?.notes ?? '',
+    amountLeft: fabric?.amountLeft === null || !fabric ? '' : String(fabric.amountLeft),
+    width: fabric?.width === null || !fabric ? '' : String(fabric.width), preWashed: fabric?.preWashed ?? null, notes: fabric?.notes ?? '',
   };
 }
 
@@ -1445,6 +1507,26 @@ function FabricForm({ fabric }: { fabric?: StashFabric }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const set = (change: Partial<FabricDraft>) => setDraft((current) => ({ ...current, ...change }));
   const unit = fabricUnits.find((item) => item.value === draft.unit) ?? fabricUnits[0];
+  // Amount left follows a change to amount bought until the maker types
+  // their own number, with a gentle note saying what changed.
+  const [leftTouched, setLeftTouched] = useState(false);
+  const [leftNudge, setLeftNudge] = useState<{ from: number; to: number } | null>(null);
+  const changeAmount = (value: string) => {
+    const change: Partial<FabricDraft> = { amount: value };
+    if (fabric && !leftTouched) {
+      const amount = sizeForApi(value);
+      const after = typeof amount === 'number' ? skeinsLeftAfter(fabric.amount, fabric.amountLeft, amount) : null;
+      const rounded = after === null ? null : Math.round(after * 100) / 100;
+      change.amountLeft = rounded === null ? (fabric.amountLeft === null ? '' : String(fabric.amountLeft)) : String(rounded);
+      setLeftNudge(rounded === null || fabric.amountLeft === null ? null : { from: fabric.amountLeft, to: rounded });
+    }
+    set(change);
+    setErrors(({ size: _size, ...rest }) => rest);
+  };
+  const [archiveOffer, setArchiveOffer] = useState<StashFabric | null>(null);
+  // An archived fabric that looks like the one being added, waiting for the
+  // maker to say whether it's the same piece.
+  const [sameFabric, setSameFabric] = useState<{ match: StashFabric; similarPhoto: boolean | null; data: CreateStashFabric } | null>(null);
 
   useEffect(() => () => photos.forEach((slot) => { if (slot.kind === 'new') URL.revokeObjectURL(slot.preview); }), []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -1473,11 +1555,24 @@ function FabricForm({ fabric }: { fabric?: StashFabric }) {
   const photoSrc = (slot: FabricPhotoSlot) => slot.kind === 'new' ? slot.preview : fabric ? fabricPhotoUrl(fabric, slot.index) : '';
 
   const done = (saved?: StashFabric | void) => {
-    if (saved) showSaved(client, { list: getGetStashFabricsQueryKey(), item: getGetStashFabricQueryKey(saved.id) }, saved);
+    // Archived fabric isn't added to the stash list, only updated where it's shown.
+    if (saved) showSaved(client, { list: getGetStashFabricsQueryKey(), item: getGetStashFabricQueryKey(saved.id) }, saved, { insert: !saved.archivedAt });
     else if (fabric) showRemoved(client, getGetStashFabricsQueryKey(), fabric.id);
+    if (saved?.restored) showSignpost(`Welcome back: your ${fabricName(saved).toLowerCase()} was in your Archive, so it’s back in your stash with your new details.`);
     void client.invalidateQueries({ queryKey: getGetMyCraftsQueryKey() });
     refreshPaths(client, '/api/sewing-projects', '/api/sewing-overview');
+    // Offer the Archive when this edit used the last of the fabric.
+    if (fabric && saved && !saved.archivedAt && fabricUsedUp(saved) && !fabricUsedUp(fabric)) { setArchiveOffer(saved); return; }
     setLocation('/sewing/fabric');
+  };
+  const saveError = (error: unknown) => setErrors({ save: (error as { data?: { error?: string } })?.data?.error ?? 'We couldn’t save this fabric just now. Please try again.' });
+  const answerSame = (same: boolean) => {
+    if (!sameFabric) return;
+    setSaving(true);
+    create.mutate(
+      { data: { ...sameFabric.data, ...(same ? { restoreId: sameFabric.match.id } : { addAsNew: true }) } },
+      { onSuccess: done, onError: (error) => { setSameFabric(null); saveError(error); }, onSettled: () => setSaving(false) },
+    );
   };
 
   const save = async (event: React.FormEvent) => {
@@ -1486,10 +1581,13 @@ function FabricForm({ fabric }: { fabric?: StashFabric }) {
     if (!photos.length) nextErrors.photo = 'Add a photo of the print.';
     if (!draft.fabricType) nextErrors.type = 'Choose the fabric type.';
     const amount = sizeForApi(draft.amount);
+    const left = sizeForApi(draft.amountLeft);
     const width = sizeForApi(draft.width);
-    if (amount === 'invalid' || width === 'invalid') nextErrors.size = 'Enter amounts between 0 and 999, like 2.5.';
+    if (amount === 'invalid' || width === 'invalid' || left === 'invalid') nextErrors.size = 'Enter amounts between 0 and 999, like 2.5.';
+    else if (left !== null && amount === null) nextErrors.size = 'Enter how much you bought first.';
+    else if (left !== null && amount !== null && left > amount) nextErrors.size = 'Amount left can’t be more than amount bought.';
     setErrors(nextErrors);
-    if (Object.keys(nextErrors).length || !draft.fabricType || amount === 'invalid' || width === 'invalid') return;
+    if (Object.keys(nextErrors).length || !draft.fabricType || amount === 'invalid' || width === 'invalid' || left === 'invalid') return;
 
     setSaving(true);
     let photoPaths: string[];
@@ -1509,15 +1607,22 @@ function FabricForm({ fabric }: { fabric?: StashFabric }) {
     }
     const data = {
       fabricType: draft.fabricType, construction: draft.construction, print: draft.print || null, generalColor: draft.generalColor,
-      unit: draft.unit, amount, width, preWashed: draft.preWashed, brand: draft.brand.trim() || null, notes: draft.notes.trim() || null, photoPaths,
+      unit: draft.unit, amount, amountLeft: left, width, preWashed: draft.preWashed, notes: draft.notes.trim() || null, photoPaths,
     };
-    const options = {
+    if (fabric) {
+      update.mutate({ fabricId: fabric.id, data }, { onSuccess: done, onError: saveError, onSettled: () => setSaving(false) });
+      return;
+    }
+    create.mutate({ data }, {
       onSuccess: done,
-      onError: (error: unknown) => setErrors({ save: (error as { data?: { error?: string } })?.data?.error ?? 'We couldn’t save this fabric just now. Please try again.' }),
+      onError: (error) => {
+        // A fabric in the Archive looks like this one: ask before adding.
+        const found = (error as { data?: { match?: StashFabric; similarPhoto?: boolean | null } })?.data;
+        if (found?.match) setSameFabric({ match: found.match, similarPhoto: found.similarPhoto ?? null, data });
+        else saveError(error);
+      },
       onSettled: () => setSaving(false),
-    };
-    if (fabric) update.mutate({ fabricId: fabric.id, data }, options);
-    else create.mutate({ data }, options);
+    });
   };
 
   const deleteFabric = () => fabric && remove.mutate({ fabricId: fabric.id }, { onSuccess: () => done() });
@@ -1527,7 +1632,20 @@ function FabricForm({ fabric }: { fabric?: StashFabric }) {
     <Link href="/sewing/fabric" className="back-link" data-testid="link-back-fabric"><ArrowLeft size={16}/> Back to fabric</Link>
     <PageHeading title={fabric ? fabricName(fabric) : 'Add fabric'} action={fabric ? <button className="icon-button danger-icon" aria-label="Delete fabric" title="Delete fabric" onClick={() => setConfirmDelete(true)} data-testid="button-delete-fabric"><Trash2 size={17}/></button> : undefined}/>
     {confirmDelete && <div className="confirm-banner"><div><b>Remove this fabric from your stash?</b><span>Its photos will be deleted too.</span></div><button className="button button-quiet" onClick={() => setConfirmDelete(false)}>Cancel</button><button className="button button-danger" onClick={deleteFabric} disabled={remove.isPending} data-testid="button-confirm-delete-fabric">{remove.isPending ? 'Removing…' : 'Remove fabric'}</button></div>}
-    <form className="project-form loom-card fabric-form" onSubmit={save} noValidate>
+    {archiveOffer && <UsedUpNudge item={archiveOffer} kind={fabricArchive} onDone={() => setLocation('/sewing/fabric')}/>}
+    {sameFabric && <div className="skein-suggestion loom-card same-fabric" role="status" data-testid="same-fabric-check">
+      <div className="same-fabric-photos">
+        {main && <figure><img src={photoSrc(main)} alt="The print you’re adding"/><figcaption>Adding</figcaption></figure>}
+        <figure><img src={fabricPhotoUrl(sameFabric.match, 0)} alt={`${fabricName(sameFabric.match)} print in your Archive`}/><figcaption>In your Archive</figcaption></figure>
+      </div>
+      <p><b>Same fabric?</b> {sameFabric.similarPhoto ? 'This looks like' : 'This matches'} the {fabricName(sameFabric.match).toLowerCase()} in your Archive. If it’s the same, we’ll bring it back with these details instead of adding a copy.</p>
+      <div className="skein-suggestion-actions">
+        <button type="button" className="button button-quiet button-small" disabled={saving} onClick={() => answerSame(false)} data-testid="button-different-fabric">No, add it as new</button>
+        <button type="button" className="button button-primary button-small" disabled={saving} onClick={() => answerSame(true)} data-testid="button-same-fabric">{saving ? 'Saving…' : 'Yes, bring it back'}</button>
+      </div>
+    </div>}
+    {fabric?.archivedAt && !archiveOffer && <ArchivedNote item={fabric} kind={fabricArchive} text="This fabric is all used up. Bring it back if you have more." onRestored={() => setLocation('/sewing/fabric')}/>}
+    {!archiveOffer && !sameFabric && <form className="project-form loom-card fabric-form" onSubmit={save} noValidate>
       <div className="fabric-photos">
         <div className="field-block">
           <label htmlFor="fabric-photo-main">Print close-up <b>*</b></label>
@@ -1552,18 +1670,20 @@ function FabricForm({ fabric }: { fabric?: StashFabric }) {
         <OptionWheelField id="fabric-type" label="Fabric type" required options={fabricTypes} value={draft.fabricType} onChange={(fabricType) => { set({ fabricType }); setErrors(({ type: _type, ...rest }) => rest); }} icon={Layers3} placeholder="Choose a type" testId="select-fabric-type" error={errors.type}/>
         <div className="field-block"><label id="fabric-construction-label">Woven or knit</label><div className="segmented" role="radiogroup" aria-labelledby="fabric-construction-label">{fabricConstructions.map((item) => <button key={item.value} type="button" role="radio" aria-checked={draft.construction === item.value} className={draft.construction === item.value ? 'selected' : ''} onClick={() => set({ construction: draft.construction === item.value ? null : item.value })} data-testid={`button-construction-${item.value}`}>{item.label}</button>)}</div></div>
         <OptionWheelField id="fabric-print" label="Print" options={fabricPrints} value={draft.print} onChange={(print) => set({ print })} icon={Sparkles} placeholder="Choose a print" testId="select-fabric-print"/>
-        <div className="field-block"><label htmlFor="fabric-brand">Brand</label><input id="fabric-brand" maxLength={80} placeholder="Optional" value={draft.brand} onChange={(event) => set({ brand: event.target.value })} data-testid="input-fabric-brand"/></div>
         <GeneralColorPicker value={draft.generalColor} onChange={(generalColor) => set({ generalColor })}/>
         <div className="field-block"><label id="fabric-unit-label">Measured in</label><div className="segmented" role="radiogroup" aria-labelledby="fabric-unit-label">{fabricUnits.map((item) => <button key={item.value} type="button" role="radio" aria-checked={draft.unit === item.value} className={draft.unit === item.value ? 'selected' : ''} onClick={() => set({ unit: item.value })} data-testid={`button-unit-${item.value}`}>{item.label}</button>)}</div></div>
         <div className="field-block"><label id="fabric-washed-label">Pre-washed</label><div className="segmented" role="radiogroup" aria-labelledby="fabric-washed-label">{([[true, 'Yes'], [false, 'No']] as const).map(([value, label]) => <button key={label} type="button" role="radio" aria-checked={draft.preWashed === value} className={draft.preWashed === value ? 'selected' : ''} onClick={() => set({ preWashed: draft.preWashed === value ? null : value })} data-testid={`button-prewashed-${label.toLowerCase()}`}>{label}</button>)}</div></div>
-        <div className="field-block"><label htmlFor="fabric-amount">Amount</label><span className="input-with-unit"><input id="fabric-amount" inputMode="decimal" placeholder="e.g. 2.5" value={draft.amount} onChange={(event) => { set({ amount: event.target.value }); setErrors(({ size: _size, ...rest }) => rest); }} data-testid="input-fabric-amount"/><i>{unit.amount}</i></span></div>
+        <div className="field-block"><label htmlFor="fabric-amount">Amount bought</label><span className="input-with-unit"><input id="fabric-amount" inputMode="decimal" placeholder="e.g. 2.5" value={draft.amount} onChange={(event) => changeAmount(event.target.value)} data-testid="input-fabric-amount"/><i>{unit.amount}</i></span></div>
+        <div className="field-block"><label htmlFor="fabric-amount-left">Amount left</label><span className="input-with-unit"><input id="fabric-amount-left" inputMode="decimal" placeholder={draft.amount || 'Same as bought'} value={draft.amountLeft} onChange={(event) => { setLeftTouched(true); setLeftNudge(null); set({ amountLeft: event.target.value }); setErrors(({ size: _size, ...rest }) => rest); }} data-testid="input-fabric-amount-left"/><i>{unit.amount}</i></span>
+          {leftNudge && <span className="gentle-nudge" role="status" data-testid="fabric-left-nudge">Amount left is now {leftNudge.to} {unit.amount} (was {leftNudge.from}). Look right? <button type="button" onClick={() => setLeftNudge(null)} data-testid="button-fabric-left-ok">Looks right</button></span>}
+        </div>
         <div className="field-block"><label htmlFor="fabric-width">Width</label><span className="input-with-unit"><input id="fabric-width" inputMode="decimal" placeholder={draft.unit === 'meters' ? 'e.g. 145' : 'e.g. 58'} value={draft.width} onChange={(event) => { set({ width: event.target.value }); setErrors(({ size: _size, ...rest }) => rest); }} data-testid="input-fabric-width"/><i>{unit.width}</i></span></div>
         {errors.size && <span className="field-error field-wide">{errors.size}</span>}
         <div className="field-block field-wide"><label htmlFor="fabric-notes">Notes</label><textarea id="fabric-notes" rows={3} maxLength={1000} placeholder="Where it's from, what it's for…" value={draft.notes} onChange={(event) => set({ notes: event.target.value })} data-testid="input-fabric-notes"/></div>
       </div>
       {errors.save && <p className="mutation-error" role="alert">{errors.save}</p>}
       <div className="form-actions"><Link href="/sewing/fabric" className="button button-quiet">Cancel</Link><button type="submit" className="button button-primary" disabled={saving} data-testid="button-save-fabric">{saving ? 'Saving…' : fabric ? 'Save changes' : 'Add to stash'}{!saving && <ArrowRight size={16}/>}</button></div>
-    </form>
+    </form>}
   </PortalLayout>;
 }
 
@@ -1808,27 +1928,44 @@ function SewingProjectForm({ project }: { project?: SewingProject }) {
 }
 
 // After a project is finished, offers to take the fabric it used off the stash.
+// What's still in the stash: a blank amount left means all of it.
+function fabricLeft(fabric: Pick<StashFabric, 'amount' | 'amountLeft'>): number | null {
+  return fabric.amountLeft ?? fabric.amount;
+}
+
 function FabricLeftPrompt({ project, onDone }: { project: SewingProject; onDone: () => void }) {
   const client = useQueryClient();
   const updateFabric = useUpdateStashFabric();
   const [saving, setSaving] = useState(false);
-  const changes = project.fabrics.filter((item) => item.amountUsed !== null && item.fabric.amount !== null);
+  // Fabric this project used the last of gets a gentle offer to archive it.
+  const [finished, setFinished] = useState<StashFabric[] | null>(null);
+  const changes = project.fabrics.filter((item) => item.amountUsed !== null && fabricLeft(item.fabric) !== null && !item.fabric.archivedAt);
+  if (finished) {
+    if (!finished.length) return null;
+    return <div className="fabric-left-nudges">{finished.map((fabric) => <UsedUpNudge key={fabric.id} item={fabric} kind={fabricArchive} onDone={() => {
+      const rest = finished.filter((item) => item.id !== fabric.id);
+      setFinished(rest);
+      if (!rest.length) onDone();
+    }}/>)}</div>;
+  }
   if (!changes.length) return null;
   const apply = async () => {
     setSaving(true);
     try {
-      await Promise.all(changes.map((item) => updateFabric.mutateAsync({ fabricId: item.stashFabricId, data: { amount: amountLeft(item.fabric.amount!, item.amountUsed!) } })));
+      const saved = await Promise.all(changes.map((item) => updateFabric.mutateAsync({ fabricId: item.stashFabricId, data: { amountLeft: amountLeft(fabricLeft(item.fabric)!, item.amountUsed!) } })));
       void client.invalidateQueries({ queryKey: getGetStashFabricsQueryKey() });
       void client.invalidateQueries({ queryKey: getGetSewingProjectQueryKey(project.id) });
       void client.invalidateQueries({ queryKey: getGetSewingOverviewQueryKey() });
-      onDone();
+      const usedUp = saved.filter((fabric) => fabricUsedUp(fabric));
+      if (usedUp.length) setFinished(usedUp);
+      else onDone();
     } finally {
       setSaving(false);
     }
   };
   return <div className="confirm-banner fabric-left-prompt" data-testid="prompt-fabric-left">
-    <div><b>Take the fabric you used off your stash?</b>
-      <ul>{changes.map((item) => <li key={item.stashFabricId}>{fabricName(item.fabric)}: {fabricAmount(item.fabric.amount, item.fabric.unit)} → {fabricAmount(amountLeft(item.fabric.amount!, item.amountUsed!), item.fabric.unit)}</li>)}</ul>
+    <div><b>Take the fabric you used off what’s left?</b>
+      <ul>{changes.map((item) => <li key={item.stashFabricId}>{fabricName(item.fabric)}: {fabricAmount(fabricLeft(item.fabric), item.fabric.unit)} left → {fabricAmount(amountLeft(fabricLeft(item.fabric)!, item.amountUsed!), item.fabric.unit)}</li>)}</ul>
       {updateFabric.isError && <span className="field-error">We couldn’t update your stash just now. Please try again.</span>}
     </div>
     <button className="button button-quiet" onClick={onDone} data-testid="button-keep-stash">Not now</button>
@@ -1900,6 +2037,7 @@ function SewingProjectDetailPage({ projectId }: { projectId: string }) {
       {project.fitChanges && <div className="sewing-text"><h2>Fit changes</h2><p>{project.fitChanges}</p></div>}
       {project.notes && <div className="sewing-text"><h2>Notes</h2><p>{project.notes}</p></div>}
     </section>
+    <SewingJournal project={project} onChanged={() => { void client.invalidateQueries({ queryKey: getGetSewingProjectQueryKey(project.id) }); }}/>
     <section className="sewing-detail-fabric">
       <div className="section-heading"><div><h2 className="serif">Fabric</h2></div></div>
       {project.fabrics.length ? <div className="fabric-grid">{project.fabrics.map((item) => <Link key={item.stashFabricId} href={`/sewing/fabric/${item.stashFabricId}`} className="fabric-card lift" data-testid={`card-project-fabric-${item.stashFabricId}`}>
@@ -1928,9 +2066,11 @@ function SewingToolsPage() {
   const urlSection = new URLSearchParams(useSearch()).get('section') ?? '';
   const section = toolSections.find((item) => item.value === urlSection)?.value;
   const setSection = (value?: SewingToolSection) => setLocation(value ? `/sewing/tools?section=${value}` : '/sewing/tools', { replace: true });
-  const params = search.trim() ? { search: search.trim() } : {};
+  const [archived, setArchived] = useState(false);
+  const params = { ...(search.trim() ? { search: search.trim() } : {}), ...(archived ? { archived: true } : {}) };
   const query = useGetSewingTools(params, { query: { queryKey: getGetSewingToolsQueryKey(params) } });
-  const shown = toolSections.filter((item) => !section || item.value === section);
+  // Only notions go in the Archive.
+  const shown = toolSections.filter((item) => (!section || item.value === section) && (!archived || item.value === 'notions'));
   return <PortalLayout active="tools">
     <PageHeading title="Tools" action={<Link href={`/sewing/tools/new${section ? `?section=${section}` : ''}`} className="button button-primary" data-testid="link-add-tool"><Plus size={17}/> Add tool</Link>}/>
     <div className="catalog-tools">
@@ -1938,6 +2078,7 @@ function SewingToolsPage() {
       <div className="segmented tool-section-filter" role="radiogroup" aria-label="Show">
         {[{ value: undefined, label: 'All' }, ...toolSections].map((item) => <button key={item.label} type="button" role="radio" aria-checked={section === item.value} className={section === item.value ? 'selected' : ''} onClick={() => setSection(item.value)} data-testid={`button-tool-section-${item.value ?? 'all'}`}>{item.label}</button>)}
       </div>
+      <button type="button" className={`starred-filter${archived ? ' is-active' : ''}`} aria-pressed={archived} onClick={() => setArchived(!archived)} data-testid="button-archive-filter"><Archive size={14}/> Archive</button>
     </div>
     {query.isLoading ? <div className="tool-list">{[0, 1, 2].map((item) => <div className="card-skeleton tool-skeleton" key={item}/>)}</div>
       : query.isError ? <QueryProblem retry={() => query.refetch()}/>
@@ -1948,6 +2089,7 @@ function SewingToolsPage() {
         return <section className="tool-section" key={item.value} data-testid={`section-tools-${item.value}`}>
           <h2>{item.label} <span>{tools.length}</span></h2>
           {tools.length ? <div className="tool-list">{tools.map((tool) => <ToolRow key={tool.id} tool={tool}/>)}</div>
+            : archived ? <p className="tool-empty">Nothing in your Archive. Notions you’ve used up can be moved here.</p>
             : <p className="tool-empty">No {item.label.toLowerCase()} yet. <Link href={`/sewing/tools/new?section=${item.value}`} data-testid={`link-add-first-${item.value}`}>Add {item.value === 'kit' ? 'kit' : 'a notion'}</Link></p>}
         </section>;
       })}
@@ -2001,12 +2143,37 @@ function SewingToolForm({ tool }: { tool?: SewingTool }) {
     setPhoto({ kind: 'new', file, preview: URL.createObjectURL(file) });
   };
 
-  const done = (saved?: SewingTool | void) => {
-    if (saved) showSaved(client, { list: getGetSewingToolsQueryKey(), item: getGetSewingToolQueryKey(saved.id) }, saved);
+  const [archiveOffer, setArchiveOffer] = useState<SewingTool | null>(null);
+  const [brandOffer, setBrandOffer] = useState<{ from: string; to: string; count: number } | null>(null);
+  const [renaming, setRenaming] = useState(false);
+  const leave = () => setLocation(`/sewing/tools?section=${draft.section}`);
+  const done = async (saved?: SewingTool | void) => {
+    if (saved) showSaved(client, { list: getGetSewingToolsQueryKey(), item: getGetSewingToolQueryKey(saved.id) }, saved, { insert: !saved.archivedAt });
     else if (tool) showRemoved(client, getGetSewingToolsQueryKey(), tool.id);
     void client.invalidateQueries({ queryKey: getGetMyCraftsQueryKey() });
     refreshPaths(client, '/api/sewing-projects');
-    setLocation(`/sewing/tools?section=${draft.section}`);
+    // After a brand is renamed, offer to rename it on the maker's other tools.
+    let offer: typeof brandOffer = null;
+    if (tool?.brand && saved?.brand && tool.brand !== saved.brand) {
+      const others = await getSewingTools().catch(() => [] as SewingTool[]);
+      const count = others.filter((item) => item.id !== saved.id && item.brand && nameKey(item.brand) === nameKey(tool.brand!) && item.brand !== saved.brand).length;
+      if (count) offer = { from: tool.brand, to: saved.brand, count };
+    }
+    // Offer the Archive when this edit used the last of a notion.
+    const finished = tool && saved && !saved.archivedAt && toolUsedUp(saved) && !toolUsedUp(tool) ? saved : null;
+    if (offer || finished) { setBrandOffer(offer); setArchiveOffer(finished); return; }
+    leave();
+  };
+  const answerBrand = async (rename: boolean) => {
+    if (rename && brandOffer) {
+      setRenaming(true);
+      try { await renameSewingToolBrands({ from: brandOffer.from, to: brandOffer.to }); } catch { setRenaming(false); setErrors({ save: 'We couldn’t rename the other tools just now. Please try again.' }); return; }
+      void client.invalidateQueries({ queryKey: getGetSewingToolsQueryKey() });
+      refreshPaths(client, '/api/sewing-tools/', '/api/sewing-projects');
+    }
+    setRenaming(false);
+    setBrandOffer(null);
+    if (!archiveOffer) leave();
   };
 
   const save = async (event: React.FormEvent) => {
@@ -2056,7 +2223,17 @@ function SewingToolForm({ tool }: { tool?: SewingTool }) {
     <Link href={`/sewing/tools?section=${draft.section}`} className="back-link" data-testid="link-back-tools"><ArrowLeft size={16}/> Back to tools</Link>
     <PageHeading title={tool ? tool.name : 'Add a tool'} action={tool ? <button className="icon-button danger-icon" aria-label="Delete tool" title="Delete tool" onClick={() => setConfirmDelete(true)} data-testid="button-delete-tool"><Trash2 size={17}/></button> : undefined}/>
     {confirmDelete && <div className="confirm-banner"><div><b>Remove this tool?</b><span>Its photo will be deleted too.</span></div><button className="button button-quiet" onClick={() => setConfirmDelete(false)}>Cancel</button><button className="button button-danger" onClick={deleteTool} disabled={remove.isPending} data-testid="button-confirm-delete-tool">{remove.isPending ? 'Removing…' : 'Remove tool'}</button></div>}
-    <form className="project-form loom-card tool-form" onSubmit={save} noValidate>
+    {brandOffer && <div className="skein-suggestion loom-card rename-offer" role="status" data-testid="rename-offer">
+      <p>You have {brandOffer.count} other {brandOffer.count === 1 ? 'tool' : 'tools'} with the old brand. Rename {brandOffer.from} to {brandOffer.to} on {brandOffer.count === 1 ? 'it' : 'them'} too?</p>
+      {errors.save && <p className="mutation-error" role="alert">{errors.save}</p>}
+      <div className="skein-suggestion-actions">
+        <button type="button" className="button button-quiet button-small" disabled={renaming} onClick={() => void answerBrand(false)} data-testid="button-keep-other-names">Keep them as they are</button>
+        <button type="button" className="button button-primary button-small" disabled={renaming} onClick={() => void answerBrand(true)} data-testid="button-rename-others">{renaming ? 'Renaming…' : 'Rename them too'}</button>
+      </div>
+    </div>}
+    {archiveOffer && <UsedUpNudge item={archiveOffer} kind={toolArchive} onDone={() => { setArchiveOffer(null); if (!brandOffer) leave(); }}/>}
+    {tool?.archivedAt && !archiveOffer && !brandOffer && <ArchivedNote item={tool} kind={toolArchive} text="This notion is all used up. Bring it back if you have more." onRestored={leave}/>}
+    {!archiveOffer && !brandOffer && <form className="project-form loom-card tool-form" onSubmit={save} noValidate>
       <div className="form-grid">
         <div className="field-block"><label id="tool-section-label">Section</label><div className="segmented" role="radiogroup" aria-labelledby="tool-section-label">{toolSections.map((item) => <button key={item.value} type="button" role="radio" aria-checked={draft.section === item.value} className={draft.section === item.value ? 'selected' : ''} onClick={() => set({ section: item.value, category: draft.category === 'other' ? 'other' : '' })} data-testid={`button-tool-form-section-${item.value}`}>{item.label}</button>)}</div></div>
         <ToolTypeWheelField section={draft.section} value={draft.category} onChange={(category) => { set({ category }); setErrors(({ category: _category, ...rest }) => rest); }} error={errors.category}/>
@@ -2078,7 +2255,7 @@ function SewingToolForm({ tool }: { tool?: SewingTool }) {
       </div>
       {errors.save && <p className="mutation-error" role="alert">{errors.save}</p>}
       <div className="form-actions"><Link href={`/sewing/tools?section=${draft.section}`} className="button button-quiet">Cancel</Link><button type="submit" className="button button-primary" disabled={saving} data-testid="button-save-tool">{saving ? 'Saving…' : tool ? 'Save changes' : 'Add tool'}{!saving && <ArrowRight size={16}/>}</button></div>
-    </form>
+    </form>}
   </PortalLayout>;
 }
 
@@ -2364,6 +2541,7 @@ function AuthCacheRouter() {
         <Route component={NotFound}/>
       </Switch>
       <Toaster/>
+      <SignpostHost/>
     </TooltipProvider></QueryClientProvider>
   </ClerkProvider>;
 }

@@ -28,14 +28,15 @@ export interface CreateStashFabric {
      * @maximum 999
      * @nullable
      */
+  amountLeft?: number | null;
+  /**
+     * @minimum 0
+     * @maximum 999
+     * @nullable
+     */
   width?: number | null;
   /** @nullable */
   preWashed?: boolean | null;
-  /**
-     * @maxLength 80
-     * @nullable
-     */
-  brand?: string | null;
   /**
      * @maxLength 1000
      * @nullable
@@ -47,4 +48,8 @@ export interface CreateStashFabric {
      * @maxItems 4
      */
   photoPaths: string[];
+  /** The archived fabric the maker said is the same one */
+  restoreId?: string;
+  /** The maker said it's a different piece, so don't ask again */
+  addAsNew?: boolean;
 }

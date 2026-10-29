@@ -774,7 +774,8 @@ export const DeleteProgressPhotoResponse = zod.void()
 export const GetStashYarnsQueryParams = zod.object({
   "search": zod.coerce.string().optional().describe('Matches brand, sub brand, color or fiber'),
   "weight": zod.enum(['lace', 'fingering', 'sport', 'dk', 'worsted', 'bulky', 'super_bulky', 'jumbo']).optional(),
-  "generalColor": zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']).optional()
+  "generalColor": zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']).optional(),
+  "archived": zod.coerce.boolean().optional().describe('true lists the Archive instead of the stash')
 })
 
 export const getStashYarnsResponseBlendItemFiberMax = 40;
@@ -798,6 +799,8 @@ export const GetStashYarnsResponseItem = zod.object({
   "photoPath": zod.string().nullable().describe('Empty for yarn added from a project that still needs a photo.'),
   "skeinsPurchased": zod.number().nullable(),
   "skeinsLeft": zod.number().nullable(),
+  "archivedAt": zod.coerce.date().nullable().describe('When the yarn was moved to the Archive; empty while it\'s in the stash.'),
+  "restored": zod.boolean().optional().describe('Only on add. True when the yarn matched one in the Archive, which was brought back with the new details instead of adding a copy.'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -866,6 +869,8 @@ export const CreateStashYarnResponse = zod.object({
   "photoPath": zod.string().nullable().describe('Empty for yarn added from a project that still needs a photo.'),
   "skeinsPurchased": zod.number().nullable(),
   "skeinsLeft": zod.number().nullable(),
+  "archivedAt": zod.coerce.date().nullable().describe('When the yarn was moved to the Archive; empty while it\'s in the stash.'),
+  "restored": zod.boolean().optional().describe('Only on add. True when the yarn matched one in the Archive, which was brought back with the new details instead of adding a copy.'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -919,6 +924,8 @@ export const AcceptSkeinSuggestionResponse = zod.object({
   "photoPath": zod.string().nullable().describe('Empty for yarn added from a project that still needs a photo.'),
   "skeinsPurchased": zod.number().nullable(),
   "skeinsLeft": zod.number().nullable(),
+  "archivedAt": zod.coerce.date().nullable().describe('When the yarn was moved to the Archive; empty while it\'s in the stash.'),
+  "restored": zod.boolean().optional().describe('Only on add. True when the yarn matched one in the Archive, which was brought back with the new details instead of adding a copy.'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -1006,6 +1013,8 @@ export const GetStashYarnResponse = zod.object({
   "photoPath": zod.string().nullable().describe('Empty for yarn added from a project that still needs a photo.'),
   "skeinsPurchased": zod.number().nullable(),
   "skeinsLeft": zod.number().nullable(),
+  "archivedAt": zod.coerce.date().nullable().describe('When the yarn was moved to the Archive; empty while it\'s in the stash.'),
+  "restored": zod.boolean().optional().describe('Only on add. True when the yarn matched one in the Archive, which was brought back with the new details instead of adding a copy.'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -1053,7 +1062,8 @@ export const UpdateStashYarnBody = zod.object({
   "brandLink": zod.string().max(updateStashYarnBodyBrandLinkMax).nullish(),
   "photoPath": zod.string().optional(),
   "skeinsPurchased": zod.number().min(updateStashYarnBodySkeinsPurchasedMin).max(updateStashYarnBodySkeinsPurchasedMax).nullish(),
-  "skeinsLeft": zod.number().min(updateStashYarnBodySkeinsLeftMin).max(updateStashYarnBodySkeinsLeftMax).nullish()
+  "skeinsLeft": zod.number().min(updateStashYarnBodySkeinsLeftMin).max(updateStashYarnBodySkeinsLeftMax).nullish(),
+  "archived": zod.boolean().optional().describe('Moves the yarn to the Archive, or back to the stash.')
 })
 
 export const updateStashYarnResponseBlendItemFiberMax = 40;
@@ -1077,6 +1087,8 @@ export const UpdateStashYarnResponse = zod.object({
   "photoPath": zod.string().nullable().describe('Empty for yarn added from a project that still needs a photo.'),
   "skeinsPurchased": zod.number().nullable(),
   "skeinsLeft": zod.number().nullable(),
+  "archivedAt": zod.coerce.date().nullable().describe('When the yarn was moved to the Archive; empty while it\'s in the stash.'),
+  "restored": zod.boolean().optional().describe('Only on add. True when the yarn matched one in the Archive, which was brought back with the new details instead of adding a copy.'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -1285,7 +1297,8 @@ export const UpdateMyCraftsResponse = zod.object({
  * @summary List the fabric in the signed-in maker's stash
  */
 export const GetStashFabricsQueryParams = zod.object({
-  "search": zod.coerce.string().optional().describe('Matches fabric type, brand or notes'),
+  "search": zod.coerce.string().optional().describe('Matches fabric type or notes'),
+  "archived": zod.coerce.boolean().optional().describe('true lists the fabric in the Archive instead of the stash'),
   "fabricType": zod.enum(['cotton', 'linen', 'jersey', 'denim', 'silk', 'wool', 'polyester', 'blend', 'other', 'canvas', 'chambray', 'chiffon', 'corduroy', 'crepe', 'flannel', 'fleece', 'french_terry', 'rib_knit', 'satin', 'tulle', 'velvet', 'viscose']).optional(),
   "print": zod.enum(['solid', 'floral', 'stripe', 'check', 'dots', 'geometric', 'abstract', 'animal', 'novelty', 'ankara', 'batik', 'botanical', 'camo', 'chevron', 'damask', 'houndstooth', 'ikat', 'ombre', 'paisley', 'tie_dye', 'toile', 'other']).optional(),
   "generalColor": zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']).optional()
@@ -1298,12 +1311,14 @@ export const GetStashFabricsResponseItem = zod.object({
   "print": zod.union([zod.enum(['solid', 'floral', 'stripe', 'check', 'dots', 'geometric', 'abstract', 'animal', 'novelty', 'ankara', 'batik', 'botanical', 'camo', 'chevron', 'damask', 'houndstooth', 'ikat', 'ombre', 'paisley', 'tie_dye', 'toile', 'other']),zod.null()]),
   "generalColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]),
   "unit": zod.enum(['meters', 'yards']).describe('Meters go with centimetre widths, yards with inch widths'),
-  "amount": zod.number().nullable(),
+  "amount": zod.number().nullable().describe('How much was bought'),
+  "amountLeft": zod.number().nullable().describe('How much is still in the stash; null means all of it'),
   "width": zod.number().nullable(),
   "preWashed": zod.boolean().nullable().describe('Null when the maker hasn\'t said'),
-  "brand": zod.string().nullable(),
   "notes": zod.string().nullable(),
   "photoCount": zod.number().int().describe('The first photo is the print close-up'),
+  "archivedAt": zod.coerce.date().nullable().describe('Set while the fabric is in the maker\'s Archive'),
+  "restored": zod.boolean().optional().describe('True when adding this fabric brought it back from the Archive'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -1311,15 +1326,17 @@ export const GetStashFabricsResponse = zod.array(GetStashFabricsResponseItem)
 
 
 /**
+ * When every detail matches a fabric in the Archive and the print photos look alike (or can't be compared), answers 409 with that fabric so the maker can say whether it's the same one. Send restoreId to bring it back with the new details, or addAsNew to add a separate piece.
  * @summary Add a fabric to the stash
  */
 export const createStashFabricBodyAmountMin = 0;
 export const createStashFabricBodyAmountMax = 999;
 
+export const createStashFabricBodyAmountLeftMin = 0;
+export const createStashFabricBodyAmountLeftMax = 999;
+
 export const createStashFabricBodyWidthMin = 0;
 export const createStashFabricBodyWidthMax = 999;
-
-export const createStashFabricBodyBrandMax = 80;
 
 export const createStashFabricBodyNotesMax = 1000;
 
@@ -1334,11 +1351,13 @@ export const CreateStashFabricBody = zod.object({
   "generalColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]).optional(),
   "unit": zod.enum(['meters', 'yards']).describe('Meters go with centimetre widths, yards with inch widths'),
   "amount": zod.number().min(createStashFabricBodyAmountMin).max(createStashFabricBodyAmountMax).nullish(),
+  "amountLeft": zod.number().min(createStashFabricBodyAmountLeftMin).max(createStashFabricBodyAmountLeftMax).nullish(),
   "width": zod.number().min(createStashFabricBodyWidthMin).max(createStashFabricBodyWidthMax).nullish(),
   "preWashed": zod.boolean().nullish(),
-  "brand": zod.string().max(createStashFabricBodyBrandMax).nullish(),
   "notes": zod.string().max(createStashFabricBodyNotesMax).nullish(),
-  "photoPaths": zod.array(zod.string()).min(1).max(createStashFabricBodyPhotoPathsMax).describe('The print close-up first, then up to three more')
+  "photoPaths": zod.array(zod.string()).min(1).max(createStashFabricBodyPhotoPathsMax).describe('The print close-up first, then up to three more'),
+  "restoreId": zod.string().uuid().optional().describe('The archived fabric the maker said is the same one'),
+  "addAsNew": zod.boolean().optional().describe('The maker said it\'s a different piece, so don\'t ask again')
 })
 
 export const CreateStashFabricResponse = zod.object({
@@ -1348,12 +1367,14 @@ export const CreateStashFabricResponse = zod.object({
   "print": zod.union([zod.enum(['solid', 'floral', 'stripe', 'check', 'dots', 'geometric', 'abstract', 'animal', 'novelty', 'ankara', 'batik', 'botanical', 'camo', 'chevron', 'damask', 'houndstooth', 'ikat', 'ombre', 'paisley', 'tie_dye', 'toile', 'other']),zod.null()]),
   "generalColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]),
   "unit": zod.enum(['meters', 'yards']).describe('Meters go with centimetre widths, yards with inch widths'),
-  "amount": zod.number().nullable(),
+  "amount": zod.number().nullable().describe('How much was bought'),
+  "amountLeft": zod.number().nullable().describe('How much is still in the stash; null means all of it'),
   "width": zod.number().nullable(),
   "preWashed": zod.boolean().nullable().describe('Null when the maker hasn\'t said'),
-  "brand": zod.string().nullable(),
   "notes": zod.string().nullable(),
   "photoCount": zod.number().int().describe('The first photo is the print close-up'),
+  "archivedAt": zod.coerce.date().nullable().describe('Set while the fabric is in the maker\'s Archive'),
+  "restored": zod.boolean().optional().describe('True when adding this fabric brought it back from the Archive'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -1394,12 +1415,14 @@ export const GetStashFabricResponse = zod.object({
   "print": zod.union([zod.enum(['solid', 'floral', 'stripe', 'check', 'dots', 'geometric', 'abstract', 'animal', 'novelty', 'ankara', 'batik', 'botanical', 'camo', 'chevron', 'damask', 'houndstooth', 'ikat', 'ombre', 'paisley', 'tie_dye', 'toile', 'other']),zod.null()]),
   "generalColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]),
   "unit": zod.enum(['meters', 'yards']).describe('Meters go with centimetre widths, yards with inch widths'),
-  "amount": zod.number().nullable(),
+  "amount": zod.number().nullable().describe('How much was bought'),
+  "amountLeft": zod.number().nullable().describe('How much is still in the stash; null means all of it'),
   "width": zod.number().nullable(),
   "preWashed": zod.boolean().nullable().describe('Null when the maker hasn\'t said'),
-  "brand": zod.string().nullable(),
   "notes": zod.string().nullable(),
   "photoCount": zod.number().int().describe('The first photo is the print close-up'),
+  "archivedAt": zod.coerce.date().nullable().describe('Set while the fabric is in the maker\'s Archive'),
+  "restored": zod.boolean().optional().describe('True when adding this fabric brought it back from the Archive'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -1415,10 +1438,11 @@ export const UpdateStashFabricParams = zod.object({
 export const updateStashFabricBodyAmountMin = 0;
 export const updateStashFabricBodyAmountMax = 999;
 
+export const updateStashFabricBodyAmountLeftMin = 0;
+export const updateStashFabricBodyAmountLeftMax = 999;
+
 export const updateStashFabricBodyWidthMin = 0;
 export const updateStashFabricBodyWidthMax = 999;
-
-export const updateStashFabricBodyBrandMax = 80;
 
 export const updateStashFabricBodyNotesMax = 1000;
 
@@ -1433,11 +1457,12 @@ export const UpdateStashFabricBody = zod.object({
   "generalColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]).optional(),
   "unit": zod.enum(['meters', 'yards']).optional().describe('Meters go with centimetre widths, yards with inch widths'),
   "amount": zod.number().min(updateStashFabricBodyAmountMin).max(updateStashFabricBodyAmountMax).nullish(),
+  "amountLeft": zod.number().min(updateStashFabricBodyAmountLeftMin).max(updateStashFabricBodyAmountLeftMax).nullish(),
   "width": zod.number().min(updateStashFabricBodyWidthMin).max(updateStashFabricBodyWidthMax).nullish(),
   "preWashed": zod.boolean().nullish(),
-  "brand": zod.string().max(updateStashFabricBodyBrandMax).nullish(),
   "notes": zod.string().max(updateStashFabricBodyNotesMax).nullish(),
-  "photoPaths": zod.array(zod.string()).min(1).max(updateStashFabricBodyPhotoPathsMax).optional().describe('The full photo list in order. Keep an existing photo by sending "keep:<index>"; new photos are paths from the upload URL.')
+  "photoPaths": zod.array(zod.string()).min(1).max(updateStashFabricBodyPhotoPathsMax).optional().describe('The full photo list in order. Keep an existing photo by sending "keep:<index>"; new photos are paths from the upload URL.'),
+  "archived": zod.boolean().optional().describe('true moves the fabric to the Archive, false brings it back')
 })
 
 export const UpdateStashFabricResponse = zod.object({
@@ -1447,12 +1472,14 @@ export const UpdateStashFabricResponse = zod.object({
   "print": zod.union([zod.enum(['solid', 'floral', 'stripe', 'check', 'dots', 'geometric', 'abstract', 'animal', 'novelty', 'ankara', 'batik', 'botanical', 'camo', 'chevron', 'damask', 'houndstooth', 'ikat', 'ombre', 'paisley', 'tie_dye', 'toile', 'other']),zod.null()]),
   "generalColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]),
   "unit": zod.enum(['meters', 'yards']).describe('Meters go with centimetre widths, yards with inch widths'),
-  "amount": zod.number().nullable(),
+  "amount": zod.number().nullable().describe('How much was bought'),
+  "amountLeft": zod.number().nullable().describe('How much is still in the stash; null means all of it'),
   "width": zod.number().nullable(),
   "preWashed": zod.boolean().nullable().describe('Null when the maker hasn\'t said'),
-  "brand": zod.string().nullable(),
   "notes": zod.string().nullable(),
   "photoCount": zod.number().int().describe('The first photo is the print close-up'),
+  "archivedAt": zod.coerce.date().nullable().describe('Set while the fabric is in the maker\'s Archive'),
+  "restored": zod.boolean().optional().describe('True when adding this fabric brought it back from the Archive'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -1516,12 +1543,14 @@ export const GetSewingProjectsResponseItem = zod.object({
   "print": zod.union([zod.enum(['solid', 'floral', 'stripe', 'check', 'dots', 'geometric', 'abstract', 'animal', 'novelty', 'ankara', 'batik', 'botanical', 'camo', 'chevron', 'damask', 'houndstooth', 'ikat', 'ombre', 'paisley', 'tie_dye', 'toile', 'other']),zod.null()]),
   "generalColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]),
   "unit": zod.enum(['meters', 'yards']).describe('Meters go with centimetre widths, yards with inch widths'),
-  "amount": zod.number().nullable(),
+  "amount": zod.number().nullable().describe('How much was bought'),
+  "amountLeft": zod.number().nullable().describe('How much is still in the stash; null means all of it'),
   "width": zod.number().nullable(),
   "preWashed": zod.boolean().nullable().describe('Null when the maker hasn\'t said'),
-  "brand": zod.string().nullable(),
   "notes": zod.string().nullable(),
   "photoCount": zod.number().int().describe('The first photo is the print close-up'),
+  "archivedAt": zod.coerce.date().nullable().describe('Set while the fabric is in the maker\'s Archive'),
+  "restored": zod.boolean().optional().describe('True when adding this fabric brought it back from the Archive'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -1537,9 +1566,16 @@ export const GetSewingProjectsResponseItem = zod.object({
   "brand": zod.string().nullable(),
   "notes": zod.string().nullable(),
   "hasPhoto": zod.boolean(),
+  "archivedAt": zod.coerce.date().nullable().describe('Set while a used-up notion is in the maker\'s Archive'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })).describe('Tools from the maker\'s Sewing room the project uses, in the order listed'),
+  "entries": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "notes": zod.string(),
+  "createdAt": zod.coerce.date().describe('When the note was written'),
+  "updatedAt": zod.coerce.date()
+})).describe('The project\'s notes journal, newest first'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -1613,12 +1649,14 @@ export const CreateSewingProjectResponse = zod.object({
   "print": zod.union([zod.enum(['solid', 'floral', 'stripe', 'check', 'dots', 'geometric', 'abstract', 'animal', 'novelty', 'ankara', 'batik', 'botanical', 'camo', 'chevron', 'damask', 'houndstooth', 'ikat', 'ombre', 'paisley', 'tie_dye', 'toile', 'other']),zod.null()]),
   "generalColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]),
   "unit": zod.enum(['meters', 'yards']).describe('Meters go with centimetre widths, yards with inch widths'),
-  "amount": zod.number().nullable(),
+  "amount": zod.number().nullable().describe('How much was bought'),
+  "amountLeft": zod.number().nullable().describe('How much is still in the stash; null means all of it'),
   "width": zod.number().nullable(),
   "preWashed": zod.boolean().nullable().describe('Null when the maker hasn\'t said'),
-  "brand": zod.string().nullable(),
   "notes": zod.string().nullable(),
   "photoCount": zod.number().int().describe('The first photo is the print close-up'),
+  "archivedAt": zod.coerce.date().nullable().describe('Set while the fabric is in the maker\'s Archive'),
+  "restored": zod.boolean().optional().describe('True when adding this fabric brought it back from the Archive'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -1634,9 +1672,16 @@ export const CreateSewingProjectResponse = zod.object({
   "brand": zod.string().nullable(),
   "notes": zod.string().nullable(),
   "hasPhoto": zod.boolean(),
+  "archivedAt": zod.coerce.date().nullable().describe('Set while a used-up notion is in the maker\'s Archive'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })).describe('Tools from the maker\'s Sewing room the project uses, in the order listed'),
+  "entries": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "notes": zod.string(),
+  "createdAt": zod.coerce.date().describe('When the note was written'),
+  "updatedAt": zod.coerce.date()
+})).describe('The project\'s notes journal, newest first'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -1673,12 +1718,14 @@ export const GetSewingProjectResponse = zod.object({
   "print": zod.union([zod.enum(['solid', 'floral', 'stripe', 'check', 'dots', 'geometric', 'abstract', 'animal', 'novelty', 'ankara', 'batik', 'botanical', 'camo', 'chevron', 'damask', 'houndstooth', 'ikat', 'ombre', 'paisley', 'tie_dye', 'toile', 'other']),zod.null()]),
   "generalColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]),
   "unit": zod.enum(['meters', 'yards']).describe('Meters go with centimetre widths, yards with inch widths'),
-  "amount": zod.number().nullable(),
+  "amount": zod.number().nullable().describe('How much was bought'),
+  "amountLeft": zod.number().nullable().describe('How much is still in the stash; null means all of it'),
   "width": zod.number().nullable(),
   "preWashed": zod.boolean().nullable().describe('Null when the maker hasn\'t said'),
-  "brand": zod.string().nullable(),
   "notes": zod.string().nullable(),
   "photoCount": zod.number().int().describe('The first photo is the print close-up'),
+  "archivedAt": zod.coerce.date().nullable().describe('Set while the fabric is in the maker\'s Archive'),
+  "restored": zod.boolean().optional().describe('True when adding this fabric brought it back from the Archive'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -1694,9 +1741,16 @@ export const GetSewingProjectResponse = zod.object({
   "brand": zod.string().nullable(),
   "notes": zod.string().nullable(),
   "hasPhoto": zod.boolean(),
+  "archivedAt": zod.coerce.date().nullable().describe('Set while a used-up notion is in the maker\'s Archive'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })).describe('Tools from the maker\'s Sewing room the project uses, in the order listed'),
+  "entries": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "notes": zod.string(),
+  "createdAt": zod.coerce.date().describe('When the note was written'),
+  "updatedAt": zod.coerce.date()
+})).describe('The project\'s notes journal, newest first'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -1773,12 +1827,14 @@ export const UpdateSewingProjectResponse = zod.object({
   "print": zod.union([zod.enum(['solid', 'floral', 'stripe', 'check', 'dots', 'geometric', 'abstract', 'animal', 'novelty', 'ankara', 'batik', 'botanical', 'camo', 'chevron', 'damask', 'houndstooth', 'ikat', 'ombre', 'paisley', 'tie_dye', 'toile', 'other']),zod.null()]),
   "generalColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]),
   "unit": zod.enum(['meters', 'yards']).describe('Meters go with centimetre widths, yards with inch widths'),
-  "amount": zod.number().nullable(),
+  "amount": zod.number().nullable().describe('How much was bought'),
+  "amountLeft": zod.number().nullable().describe('How much is still in the stash; null means all of it'),
   "width": zod.number().nullable(),
   "preWashed": zod.boolean().nullable().describe('Null when the maker hasn\'t said'),
-  "brand": zod.string().nullable(),
   "notes": zod.string().nullable(),
   "photoCount": zod.number().int().describe('The first photo is the print close-up'),
+  "archivedAt": zod.coerce.date().nullable().describe('Set while the fabric is in the maker\'s Archive'),
+  "restored": zod.boolean().optional().describe('True when adding this fabric brought it back from the Archive'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -1794,9 +1850,16 @@ export const UpdateSewingProjectResponse = zod.object({
   "brand": zod.string().nullable(),
   "notes": zod.string().nullable(),
   "hasPhoto": zod.boolean(),
+  "archivedAt": zod.coerce.date().nullable().describe('Set while a used-up notion is in the maker\'s Archive'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })).describe('Tools from the maker\'s Sewing room the project uses, in the order listed'),
+  "entries": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "notes": zod.string(),
+  "createdAt": zod.coerce.date().describe('When the note was written'),
+  "updatedAt": zod.coerce.date()
+})).describe('The project\'s notes journal, newest first'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -1810,6 +1873,66 @@ export const DeleteSewingProjectParams = zod.object({
 })
 
 export const DeleteSewingProjectResponse = zod.void()
+
+
+/**
+ * @summary Add a dated note to a sewing project's journal
+ */
+export const AddSewingProjectEntryParams = zod.object({
+  "sewingProjectId": zod.coerce.string().uuid()
+})
+
+export const addSewingProjectEntryBodyNotesMax = 2000;
+
+
+
+export const AddSewingProjectEntryBody = zod.object({
+  "notes": zod.string().min(1).max(addSewingProjectEntryBodyNotesMax),
+  "createdAt": zod.coerce.date().optional().describe('When the note was written. Leave out for now (new notes) or to keep the date.')
+})
+
+export const AddSewingProjectEntryResponse = zod.object({
+  "id": zod.string().uuid(),
+  "notes": zod.string(),
+  "createdAt": zod.coerce.date().describe('When the note was written'),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Change a note in a sewing project's journal
+ */
+export const UpdateSewingProjectEntryParams = zod.object({
+  "sewingProjectId": zod.coerce.string().uuid(),
+  "entryId": zod.coerce.string().uuid()
+})
+
+export const updateSewingProjectEntryBodyNotesMax = 2000;
+
+
+
+export const UpdateSewingProjectEntryBody = zod.object({
+  "notes": zod.string().min(1).max(updateSewingProjectEntryBodyNotesMax),
+  "createdAt": zod.coerce.date().optional().describe('When the note was written. Leave out for now (new notes) or to keep the date.')
+})
+
+export const UpdateSewingProjectEntryResponse = zod.object({
+  "id": zod.string().uuid(),
+  "notes": zod.string(),
+  "createdAt": zod.coerce.date().describe('When the note was written'),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Delete a note from a sewing project's journal
+ */
+export const DeleteSewingProjectEntryParams = zod.object({
+  "sewingProjectId": zod.coerce.string().uuid(),
+  "entryId": zod.coerce.string().uuid()
+})
+
+export const DeleteSewingProjectEntryResponse = zod.void()
 
 
 /**
@@ -1853,12 +1976,14 @@ export const GetSewingOverviewResponse = zod.object({
   "print": zod.union([zod.enum(['solid', 'floral', 'stripe', 'check', 'dots', 'geometric', 'abstract', 'animal', 'novelty', 'ankara', 'batik', 'botanical', 'camo', 'chevron', 'damask', 'houndstooth', 'ikat', 'ombre', 'paisley', 'tie_dye', 'toile', 'other']),zod.null()]),
   "generalColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]),
   "unit": zod.enum(['meters', 'yards']).describe('Meters go with centimetre widths, yards with inch widths'),
-  "amount": zod.number().nullable(),
+  "amount": zod.number().nullable().describe('How much was bought'),
+  "amountLeft": zod.number().nullable().describe('How much is still in the stash; null means all of it'),
   "width": zod.number().nullable(),
   "preWashed": zod.boolean().nullable().describe('Null when the maker hasn\'t said'),
-  "brand": zod.string().nullable(),
   "notes": zod.string().nullable(),
   "photoCount": zod.number().int().describe('The first photo is the print close-up'),
+  "archivedAt": zod.coerce.date().nullable().describe('Set while the fabric is in the maker\'s Archive'),
+  "restored": zod.boolean().optional().describe('True when adding this fabric brought it back from the Archive'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -1874,9 +1999,16 @@ export const GetSewingOverviewResponse = zod.object({
   "brand": zod.string().nullable(),
   "notes": zod.string().nullable(),
   "hasPhoto": zod.boolean(),
+  "archivedAt": zod.coerce.date().nullable().describe('Set while a used-up notion is in the maker\'s Archive'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })).describe('Tools from the maker\'s Sewing room the project uses, in the order listed'),
+  "entries": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "notes": zod.string(),
+  "createdAt": zod.coerce.date().describe('When the note was written'),
+  "updatedAt": zod.coerce.date()
+})).describe('The project\'s notes journal, newest first'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 }))
@@ -1888,6 +2020,7 @@ export const GetSewingOverviewResponse = zod.object({
  */
 export const GetSewingToolsQueryParams = zod.object({
   "search": zod.coerce.string().optional().describe('Matches name, brand, size, color or notes'),
+  "archived": zod.coerce.boolean().optional().describe('true lists the notions in the Archive instead'),
   "section": zod.enum(['notions', 'kit']).optional(),
   "category": zod.enum(['zip', 'button', 'snap', 'hook_and_eye', 'hook_and_loop', 'magnetic_clasp', 'toggle', 'elastic', 'bias_tape', 'ribbon', 'lace', 'piping', 'cord', 'twill_tape', 'buckle', 'd_ring', 'eyelet', 'rivet', 'interfacing', 'boning', 'batting', 'stabilizer', 'fusible_web', 'thread', 'label', 'machine', 'presser_foot', 'needle', 'scissors', 'ruler', 'other']).optional()
 })
@@ -1903,6 +2036,7 @@ export const GetSewingToolsResponseItem = zod.object({
   "brand": zod.string().nullable(),
   "notes": zod.string().nullable(),
   "hasPhoto": zod.boolean(),
+  "archivedAt": zod.coerce.date().nullable().describe('Set while a used-up notion is in the maker\'s Archive'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -1950,8 +2084,28 @@ export const CreateSewingToolResponse = zod.object({
   "brand": zod.string().nullable(),
   "notes": zod.string().nullable(),
   "hasPhoto": zod.boolean(),
+  "archivedAt": zod.coerce.date().nullable().describe('Set while a used-up notion is in the maker\'s Archive'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Rename a brand on every tool that still has the old name
+ */
+export const renameSewingToolBrandsBodyFromMax = 80;
+
+export const renameSewingToolBrandsBodyToMax = 80;
+
+
+
+export const RenameSewingToolBrandsBody = zod.object({
+  "from": zod.string().min(1).max(renameSewingToolBrandsBodyFromMax),
+  "to": zod.string().min(1).max(renameSewingToolBrandsBodyToMax)
+})
+
+export const RenameSewingToolBrandsResponse = zod.object({
+  "renamed": zod.number().int()
 })
 
 
@@ -1994,6 +2148,7 @@ export const GetSewingToolResponse = zod.object({
   "brand": zod.string().nullable(),
   "notes": zod.string().nullable(),
   "hasPhoto": zod.boolean(),
+  "archivedAt": zod.coerce.date().nullable().describe('Set while a used-up notion is in the maker\'s Archive'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -2030,7 +2185,8 @@ export const UpdateSewingToolBody = zod.object({
   "color": zod.string().max(updateSewingToolBodyColorMax).nullish(),
   "brand": zod.string().max(updateSewingToolBodyBrandMax).nullish(),
   "notes": zod.string().max(updateSewingToolBodyNotesMax).nullish(),
-  "photoPath": zod.string().nullish().describe('A new path from the upload URL, or null to remove the photo. Leave it out to keep the photo.')
+  "photoPath": zod.string().nullish().describe('A new path from the upload URL, or null to remove the photo. Leave it out to keep the photo.'),
+  "archived": zod.boolean().optional().describe('true moves a notion to the Archive, false brings it back')
 })
 
 export const UpdateSewingToolResponse = zod.object({
@@ -2044,6 +2200,7 @@ export const UpdateSewingToolResponse = zod.object({
   "brand": zod.string().nullable(),
   "notes": zod.string().nullable(),
   "hasPhoto": zod.boolean(),
+  "archivedAt": zod.coerce.date().nullable().describe('Set while a used-up notion is in the maker\'s Archive'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })

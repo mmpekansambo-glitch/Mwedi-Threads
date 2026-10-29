@@ -9,7 +9,7 @@ import { Image } from 'expo-image';
 import { Alert, Linking, Pressable, StyleSheet, View, type StyleProp, type ImageStyle } from 'react-native';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { LoomText, fonts } from '@/components/loom';
-import { useColors } from '@/hooks/useColors';
+import { useColors, useSewingColors } from '@/hooks/useColors';
 
 const photoTypes = ['image/jpeg', 'image/png', 'image/webp'];
 
@@ -79,13 +79,16 @@ export function SavedProgressPhoto({ projectId, entryId, style }: { projectId: s
 }
 
 // Swipe left on a note to delete it and swipe right to edit it, as in Mail and Messages.
-export function SwipeableNote({ onEdit, onDelete, testID, children }: {
+export function SwipeableNote({ onEdit, onDelete, testID, sewing = false, children }: {
   onEdit: () => void;
   onDelete: () => void;
   testID: string;
+  sewing?: boolean;
   children: ReactNode;
 }) {
-  const colors = useColors();
+  const yarnColors = useColors();
+  const sewingColors = useSewingColors();
+  const colors = sewing ? sewingColors : yarnColors;
   return (
     <ReanimatedSwipeable
       friction={2}

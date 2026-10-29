@@ -12,9 +12,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   getGetMyCraftsQueryKey, getGetSewingToolQueryKey, getGetSewingToolsQueryKey,
   requestSewingToolPhotoUpload, useCreateSewingTool, useDeleteSewingTool, useUpdateSewingTool,
-  refreshPaths, showRemoved, showSaved,
+  getSewingTools, nameKey, refreshPaths, renameSewingToolBrands, showRemoved, showSaved,
 } from '@workspace/api-client-react';
 import type { SewingTool, SewingToolCategory, SewingToolSection } from '@workspace/api-client-react';
+import { ArchivedNote, UsedUpNudge, toolArchive, toolUsedUp } from '@/components/ArchiveNudge';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import { FormFieldLabel, LoomButton, LoomText, fonts } from '@/components/loom';
 import { ITEM_HEIGHT, Wheel } from '@/components/ProjectDateField';
@@ -279,12 +280,36 @@ export function SewingToolForm({ tool, section: startSection }: { tool?: SewingT
     return upload.photoPath;
   };
 
-  const done = (saved?: SewingTool | void) => {
-    if (saved) showSaved(client, { list: getGetSewingToolsQueryKey(), item: getGetSewingToolQueryKey(saved.id) }, saved);
+  const [archiveOffer, setArchiveOffer] = useState<SewingTool | null>(null);
+  const [brandOffer, setBrandOffer] = useState<{ from: string; to: string; count: number } | null>(null);
+  const [renaming, setRenaming] = useState(false);
+  const done = async (saved?: SewingTool | void) => {
+    if (saved) showSaved(client, { list: getGetSewingToolsQueryKey(), item: getGetSewingToolQueryKey(saved.id) }, saved, { insert: !saved.archivedAt });
     else if (tool) showRemoved(client, getGetSewingToolsQueryKey(), tool.id);
     void client.invalidateQueries({ queryKey: getGetMyCraftsQueryKey() });
     refreshPaths(client, '/api/sewing-projects');
+    // After a brand is renamed, offer to rename it on the maker's other tools.
+    let offer: typeof brandOffer = null;
+    if (tool?.brand && saved?.brand && tool.brand !== saved.brand) {
+      const others = await getSewingTools().catch(() => [] as SewingTool[]);
+      const count = others.filter((item) => item.id !== saved.id && item.brand && nameKey(item.brand) === nameKey(tool.brand!) && item.brand !== saved.brand).length;
+      if (count) offer = { from: tool.brand, to: saved.brand, count };
+    }
+    // Offer the Archive when this edit used the last of a notion.
+    const finished = tool && saved && !saved.archivedAt && toolUsedUp(saved) && !toolUsedUp(tool) ? saved : null;
+    if (offer || finished) { setBrandOffer(offer); setArchiveOffer(finished); return; }
     router.back();
+  };
+  const answerBrand = async (rename: boolean) => {
+    if (rename && brandOffer) {
+      setRenaming(true);
+      try { await renameSewingToolBrands({ from: brandOffer.from, to: brandOffer.to }); } catch { setRenaming(false); setMessage('We could not rename the other tools just now. Please try again.'); return; }
+      void client.invalidateQueries({ queryKey: getGetSewingToolsQueryKey() });
+      refreshPaths(client, '/api/sewing-tools/', '/api/sewing-projects');
+    }
+    setRenaming(false);
+    setBrandOffer(null);
+    if (!archiveOffer) router.back();
   };
 
   const save = async () => {
@@ -342,7 +367,19 @@ export function SewingToolForm({ tool, section: startSection }: { tool?: SewingT
             </View>
           </View>
         ) : null}
-        <View style={[styles.formCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        {brandOffer ? (
+          <View accessibilityRole="summary" style={[styles.offer, { backgroundColor: colors.card, borderColor: colors.border, borderLeftColor: colors.primary }]} testID="rename-offer">
+            <LoomText style={{ color: colors.foreground, fontSize: 15, lineHeight: 22 }}>You have {brandOffer.count} other {brandOffer.count === 1 ? 'tool' : 'tools'} with the old brand. Rename {brandOffer.from} to {brandOffer.to} on {brandOffer.count === 1 ? 'it' : 'them'} too?</LoomText>
+            {message ? <LoomText accessibilityRole="alert" style={{ color: colors.destructive, fontSize: 14 }}>{message}</LoomText> : null}
+            <View style={styles.confirmActions}>
+              <LoomButton title="Keep them" variant="quiet" disabled={renaming} onPress={() => { void answerBrand(false); }} testID="button-keep-other-names" />
+              <LoomButton title="Rename them too" busy={renaming} onPress={() => { void answerBrand(true); }} testID="button-rename-others" />
+            </View>
+          </View>
+        ) : null}
+        {archiveOffer ? <UsedUpNudge item={archiveOffer} kind={toolArchive} onDone={() => { setArchiveOffer(null); if (!brandOffer) router.back(); }} /> : null}
+        {tool?.archivedAt && !archiveOffer && !brandOffer ? <ArchivedNote item={tool} kind={toolArchive} text="This notion is all used up. Bring it back if you have more." onRestored={() => router.back()} /> : null}
+        {archiveOffer || brandOffer ? null : <View style={[styles.formCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <FormFieldLabel>Section</FormFieldLabel>
           <Choices options={toolSections} value={section} onChange={chooseSection} testID="button-tool-section" />
           <ToolTypeWheelField section={section} value={category} onChange={setCategory} />
@@ -379,7 +416,7 @@ export function SewingToolForm({ tool, section: startSection }: { tool?: SewingT
           </View>
           {message ? <LoomText accessibilityRole="alert" style={[styles.error, { color: colors.destructive }]}>{message}</LoomText> : null}
           <LoomButton title={tool ? 'Save changes' : 'Add tool'} icon="arrow-right" onPress={() => { void save(); }} busy={saving} testID="button-save-tool" />
-        </View>
+        </View>}
       </KeyboardAwareScrollViewCompat>
     </View>
   );
@@ -397,6 +434,7 @@ const styles = StyleSheet.create({
   input: { minHeight: 45, borderWidth: 1, borderRadius: 9, paddingHorizontal: 12, paddingVertical: 10, fontSize: 16, fontFamily: fonts.body, marginBottom: 14 },
   notes: { minHeight: 90, textAlignVertical: 'top' },
   row: { flexDirection: 'row', gap: 10 },
+  offer: { borderWidth: 1, borderLeftWidth: 4, borderRadius: 12, padding: 13, gap: 10, marginBottom: 14 },
   choices: { gap: 7, paddingBottom: 14 },
   typeRow: { marginTop: 8 },
   typeGroup: { fontSize: 12, fontFamily: fonts.semibold, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 4 },
