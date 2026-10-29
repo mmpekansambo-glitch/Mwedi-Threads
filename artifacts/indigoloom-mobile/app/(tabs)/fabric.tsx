@@ -13,7 +13,7 @@ import { useSewingColors } from '@/hooks/useColors';
 
 function FabricCard({ fabric }: { fabric: StashFabric }) {
   const colors = useSewingColors();
-  const meta = [labelFor(fabricConstructions, fabric.construction), fabric.brand].filter(Boolean).join(' · ');
+  const meta = labelFor(fabricConstructions, fabric.construction);
   return (
     <Pressable
       accessibilityRole="button"
@@ -41,14 +41,16 @@ export default function FabricStashScreen() {
   const [print, setPrint] = useState<FabricPrint | ''>('');
   const [generalColor, setGeneralColor] = useState<GeneralColor | ''>('');
   const [fabricType, setFabricType] = useState<FabricType | ''>('');
+  const [archived, setArchived] = useState(false);
   const params = useMemo(() => ({
     ...(search.trim() ? { search: search.trim() } : {}),
     ...(print ? { print } : {}),
     ...(generalColor ? { generalColor } : {}),
     ...(fabricType ? { fabricType } : {}),
-  }), [search, print, generalColor, fabricType]);
+    ...(archived ? { archived: true } : {}),
+  }), [search, print, generalColor, fabricType, archived]);
   const filtered = Boolean(search || print || generalColor || fabricType);
-  const clearFilters = () => { setSearch(''); setPrint(''); setGeneralColor(''); setFabricType(''); };
+  const clearFilters = () => { setSearch(''); setPrint(''); setGeneralColor(''); setFabricType(''); setArchived(false); };
   // The Overview fabric chart opens this tab with a type; `at` changes on every tap.
   const link = useLocalSearchParams<{ type?: string; at?: string }>();
   useEffect(() => {
@@ -73,7 +75,7 @@ export default function FabricStashScreen() {
       <HomeSwitcher />
       <View style={[styles.searchWrap, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <Feather name="search" size={16} color={colors.mutedForeground} />
-        <TextInput value={search} onChangeText={setSearch} placeholder="Search by type, brand or notes…" placeholderTextColor={colors.mutedForeground} style={[styles.searchInput, { color: colors.foreground }]} accessibilityLabel="Search your fabric" testID="input-fabric-search" />
+        <TextInput value={search} onChangeText={setSearch} placeholder="Search by type or notes…" placeholderTextColor={colors.mutedForeground} style={[styles.searchInput, { color: colors.foreground }]} accessibilityLabel="Search your fabric" testID="input-fabric-search" />
         {search ? <Pressable accessibilityLabel="Clear search" onPress={() => setSearch('')}><Feather name="x" size={16} color={colors.mutedForeground} /></Pressable> : null}
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
@@ -91,6 +93,7 @@ export default function FabricStashScreen() {
         </View>
       ) : null}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
+        <Pressable accessibilityRole="button" accessibilityState={{ selected: archived }} onPress={() => setArchived(!archived)} style={[chip(archived), styles.archiveChip]} testID="button-archive-filter"><Feather name="archive" size={12} color={archived ? colors.accentForeground : colors.mutedForeground} /><LoomText style={{ color: archived ? colors.accentForeground : colors.mutedForeground, fontSize: 14, fontFamily: fonts.semibold }}>Archive</LoomText></Pressable>
         <Pressable onPress={() => setPrint('')} style={chip(!print)}><LoomText style={{ color: !print ? colors.accentForeground : colors.mutedForeground, fontSize: 14, fontFamily: fonts.semibold }}>Every print</LoomText></Pressable>
         {fabricPrints.map((item) => {
           const active = print === item.value;
@@ -99,9 +102,11 @@ export default function FabricStashScreen() {
       </ScrollView>
       {query.isLoading ? <LoadingState label="Gathering your fabric…" /> : query.isError ? <ErrorState onRetry={() => void query.refetch()} /> : query.data?.length ? (
         <>
-          <LoomText style={[styles.count, { color: colors.mutedForeground }]}>{query.data.length} {query.data.length === 1 ? 'fabric' : 'fabrics'}</LoomText>
+          <LoomText style={[styles.count, { color: colors.mutedForeground }]}>{query.data.length} {archived ? 'in your Archive' : query.data.length === 1 ? 'fabric' : 'fabrics'}</LoomText>
           <View style={styles.grid}>{query.data.map((fabric) => <FabricCard key={fabric.id} fabric={fabric} />)}</View>
         </>
+      ) : archived && !filtered ? (
+        <EmptyState title="Nothing in your Archive" body="Fabric you’ve used up can be moved here." actionTitle="Back to stash" onAction={() => setArchived(false)} />
       ) : filtered ? (
         <EmptyState title="No fabric matches" body="Try a different search or clear a filter." actionTitle="Clear filters" onAction={clearFilters} />
       ) : (
@@ -120,6 +125,7 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, paddingVertical: 10, fontSize: 16, fontFamily: fonts.body },
   filterRow: { gap: 7, paddingBottom: 8, alignItems: 'center' },
   filterChip: { borderWidth: 1, paddingHorizontal: 12, minHeight: 31, borderRadius: 99, justifyContent: 'center' },
+  archiveChip: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   typeChip: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start' },
   colorFilter: { width: 32, height: 32, borderRadius: 16, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   count: { fontSize: 13, marginVertical: 10, fontFamily: fonts.medium },

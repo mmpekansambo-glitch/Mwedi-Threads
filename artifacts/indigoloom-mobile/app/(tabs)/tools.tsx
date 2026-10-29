@@ -38,9 +38,11 @@ export default function ToolsScreen() {
   const insets = useSafeAreaInsets();
   const [search, setSearch] = useState('');
   const [section, setSection] = useState<SewingToolSection | ''>('');
-  const params = useMemo(() => (search.trim() ? { search: search.trim() } : {}), [search]);
+  const [archived, setArchived] = useState(false);
+  const params = useMemo(() => ({ ...(search.trim() ? { search: search.trim() } : {}), ...(archived ? { archived: true } : {}) }), [search, archived]);
   const query = useGetSewingTools(params, { query: { queryKey: getGetSewingToolsQueryKey(params) } });
-  const shown = toolSections.filter((item) => !section || item.value === section);
+  // Only notions go in the Archive.
+  const shown = toolSections.filter((item) => (!section || item.value === section) && (!archived || item.value === 'notions'));
   const chip = (active: boolean) => [styles.filterChip, { backgroundColor: active ? colors.accent : colors.card, borderColor: active ? colors.accent : colors.border }];
   const addTool = (value?: SewingToolSection) => router.push({ pathname: '/tools/new', params: value ? { section: value } : {} });
   return (
@@ -65,6 +67,7 @@ export default function ToolsScreen() {
           const active = section === item.value;
           return <Pressable key={item.label} accessibilityRole="button" accessibilityState={{ selected: active }} onPress={() => setSection(item.value)} style={chip(active)} testID={`button-tools-filter-${item.value || 'all'}`}><LoomText style={{ color: active ? colors.accentForeground : colors.mutedForeground, fontSize: 14, fontFamily: fonts.semibold }}>{item.label}</LoomText></Pressable>;
         })}
+        <Pressable accessibilityRole="button" accessibilityState={{ selected: archived }} onPress={() => setArchived(!archived)} style={[chip(archived), styles.archiveChip]} testID="button-archive-filter"><Feather name="archive" size={12} color={archived ? colors.accentForeground : colors.mutedForeground} /><LoomText style={{ color: archived ? colors.accentForeground : colors.mutedForeground, fontSize: 14, fontFamily: fonts.semibold }}>Archive</LoomText></Pressable>
       </View>
       {query.isLoading ? <LoadingState label="Gathering your tools…" /> : query.isError ? <ErrorState onRetry={() => void query.refetch()} /> : search && !query.data?.length ? (
         <EmptyState title="No tools match" body="Try a different search." actionTitle="Clear search" onAction={() => setSearch('')} />
@@ -77,7 +80,9 @@ export default function ToolsScreen() {
               <LoomText serif style={{ color: colors.foreground, fontSize: 22 }}>{item.label}</LoomText>
               <LoomText style={{ color: colors.mutedForeground, fontFamily: fonts.semibold, fontSize: 14 }}>{tools.length}</LoomText>
             </View>
-            {tools.length ? <View style={styles.list}>{tools.map((tool) => <ToolRow key={tool.id} tool={tool} />)}</View> : (
+            {tools.length ? <View style={styles.list}>{tools.map((tool) => <ToolRow key={tool.id} tool={tool} />)}</View> : archived ? (
+              <LoomText style={{ color: colors.mutedForeground, fontSize: 15 }}>Nothing in your Archive. Notions you’ve used up can be moved here.</LoomText>
+            ) : (
               <Pressable accessibilityRole="button" onPress={() => addTool(item.value)} style={[styles.empty, { borderColor: colors.border }]} testID={`button-add-first-${item.value}`}>
                 <LoomText style={{ color: colors.mutedForeground, fontSize: 15 }}>No {item.label.toLowerCase()} yet. <LoomText style={{ color: colors.primaryText, fontFamily: fonts.semibold, fontSize: 15 }}>Add {item.value === 'kit' ? 'kit' : 'a notion'}</LoomText></LoomText>
               </Pressable>
@@ -97,6 +102,7 @@ const styles = StyleSheet.create({
   searchWrap: { minHeight: 46, borderWidth: 1, borderRadius: 11, flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: 12, marginBottom: 10 },
   searchInput: { flex: 1, paddingVertical: 10, fontSize: 16, fontFamily: fonts.body },
   filterRow: { flexDirection: 'row', gap: 7, paddingBottom: 4 },
+  archiveChip: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   filterChip: { borderWidth: 1, paddingHorizontal: 14, minHeight: 33, borderRadius: 99, justifyContent: 'center' },
   section: { marginTop: 18 },
   sectionHead: { flexDirection: 'row', alignItems: 'baseline', gap: 8, marginBottom: 10 },

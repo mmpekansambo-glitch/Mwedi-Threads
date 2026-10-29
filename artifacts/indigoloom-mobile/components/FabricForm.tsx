@@ -11,9 +11,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   getGetMyCraftsQueryKey, getGetStashFabricQueryKey, getGetStashFabricsQueryKey,
   requestFabricPhotoUpload, useCreateStashFabric, useDeleteStashFabric, useUpdateStashFabric,
-  refreshPaths, showRemoved, showSaved,
+  refreshPaths, showRemoved, showSaved, skeinsLeftAfter,
 } from '@workspace/api-client-react';
-import type { FabricConstruction, FabricPrint, FabricType, FabricUnit, GeneralColor, StashFabric } from '@workspace/api-client-react';
+import type { CreateStashFabric, FabricConstruction, FabricPrint, FabricType, FabricUnit, GeneralColor, StashFabric } from '@workspace/api-client-react';
+import { ArchivedNote, UsedUpNudge, fabricArchive, fabricUsedUp } from '@/components/ArchiveNudge';
+import { showSignpost } from '@/components/Signpost';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import { FormFieldLabel, LoomButton, LoomText, fonts } from '@/components/loom';
 import { GeneralColorPicker } from '@/components/YarnFields';
@@ -116,7 +118,24 @@ export function FabricForm({ fabric }: { fabric?: StashFabric }) {
   const [amount, setAmount] = useState(fabric?.amount === null || !fabric ? '' : String(fabric.amount));
   const [width, setWidth] = useState(fabric?.width === null || !fabric ? '' : String(fabric.width));
   const [preWashed, setPreWashed] = useState<boolean | null>(fabric?.preWashed ?? null);
-  const [brand, setBrand] = useState(fabric?.brand ?? '');
+  const [amountLeft, setAmountLeft] = useState(fabric?.amountLeft === null || !fabric ? '' : String(fabric.amountLeft));
+  // Amount left follows a change to amount bought until the maker types
+  // their own number, with a gentle note saying what changed.
+  const [leftTouched, setLeftTouched] = useState(false);
+  const [leftNudge, setLeftNudge] = useState<{ from: number; to: number } | null>(null);
+  const changeAmount = (value: string) => {
+    setAmount(value);
+    if (!fabric || leftTouched) return;
+    const bought = sizeForApi(value);
+    const after = typeof bought === 'number' ? skeinsLeftAfter(fabric.amount, fabric.amountLeft, bought) : null;
+    const rounded = after === null ? null : Math.round(after * 100) / 100;
+    setAmountLeft(rounded === null ? (fabric.amountLeft === null ? '' : String(fabric.amountLeft)) : String(rounded));
+    setLeftNudge(rounded === null || fabric.amountLeft === null ? null : { from: fabric.amountLeft, to: rounded });
+  };
+  const [archiveOffer, setArchiveOffer] = useState<StashFabric | null>(null);
+  // An archived fabric that looks like the one being added, waiting for the
+  // maker to say whether it's the same piece.
+  const [sameFabric, setSameFabric] = useState<{ match: StashFabric; similarPhoto: boolean | null; data: CreateStashFabric } | null>(null);
   const [notes, setNotes] = useState(fabric?.notes ?? '');
   const [photos, setPhotos] = useState<PhotoSlot[]>(() => Array.from({ length: fabric?.photoCount ?? 0 }, (_, index) => ({ kind: 'kept', index })));
   const [message, setMessage] = useState('');
@@ -151,11 +170,24 @@ export function FabricForm({ fabric }: { fabric?: StashFabric }) {
   };
 
   const done = (saved?: StashFabric | void) => {
-    if (saved) showSaved(client, { list: getGetStashFabricsQueryKey(), item: getGetStashFabricQueryKey(saved.id) }, saved);
+    // Archived fabric isn't added to the stash list, only updated where it's shown.
+    if (saved) showSaved(client, { list: getGetStashFabricsQueryKey(), item: getGetStashFabricQueryKey(saved.id) }, saved, { insert: !saved.archivedAt });
     else if (fabric) showRemoved(client, getGetStashFabricsQueryKey(), fabric.id);
+    if (saved?.restored) showSignpost(`Welcome back: your ${fabricName(saved).toLowerCase()} was in your Archive, so it’s back in your stash with your new details.`);
     void client.invalidateQueries({ queryKey: getGetMyCraftsQueryKey() });
     refreshPaths(client, '/api/sewing-projects', '/api/sewing-overview');
+    // Offer the Archive when this edit used the last of the fabric.
+    if (fabric && saved && !saved.archivedAt && fabricUsedUp(saved) && !fabricUsedUp(fabric)) { setArchiveOffer(saved); return; }
     router.back();
+  };
+  const saveError = (error: unknown) => setMessage((error as { data?: { error?: string } })?.data?.error ?? 'We could not save this fabric just now. Please try again.');
+  const answerSame = (same: boolean) => {
+    if (!sameFabric) return;
+    setSaving(true);
+    create.mutate(
+      { data: { ...sameFabric.data, ...(same ? { restoreId: sameFabric.match.id } : { addAsNew: true }) } },
+      { onSuccess: done, onError: (error) => { setSameFabric(null); saveError(error); }, onSettled: () => setSaving(false) },
+    );
   };
 
   const uploadPhoto = async (asset: ImagePicker.ImagePickerAsset) => {
@@ -173,10 +205,13 @@ export function FabricForm({ fabric }: { fabric?: StashFabric }) {
   const save = async () => {
     setMessage('');
     const amountForSave = sizeForApi(amount);
+    const leftForSave = sizeForApi(amountLeft);
     const widthForSave = sizeForApi(width);
     if (!photos.length) return setMessage('Add a photo of the print.');
     if (!fabricType) return setMessage('Choose the fabric type.');
-    if (amountForSave === 'invalid' || widthForSave === 'invalid') return setMessage('Enter amounts between 0 and 999, like 2.5.');
+    if (amountForSave === 'invalid' || widthForSave === 'invalid' || leftForSave === 'invalid') return setMessage('Enter amounts between 0 and 999, like 2.5.');
+    if (leftForSave !== null && amountForSave === null) return setMessage('Enter how much you bought first.');
+    if (leftForSave !== null && amountForSave !== null && leftForSave > amountForSave) return setMessage('Amount left can’t be more than amount bought.');
 
     setSaving(true);
     let photoPaths: string[];
@@ -188,16 +223,23 @@ export function FabricForm({ fabric }: { fabric?: StashFabric }) {
       return;
     }
     const data = {
-      fabricType, construction, print, generalColor, unit, amount: amountForSave, width: widthForSave, preWashed,
-      brand: brand.trim() || null, notes: notes.trim() || null, photoPaths,
+      fabricType, construction, print, generalColor, unit, amount: amountForSave, amountLeft: leftForSave, width: widthForSave, preWashed,
+      notes: notes.trim() || null, photoPaths,
     };
-    const options = {
+    if (fabric) {
+      update.mutate({ fabricId: fabric.id, data }, { onSuccess: done, onError: saveError, onSettled: () => setSaving(false) });
+      return;
+    }
+    create.mutate({ data }, {
       onSuccess: done,
-      onError: (error: unknown) => setMessage((error as { data?: { error?: string } })?.data?.error ?? 'We could not save this fabric just now. Please try again.'),
+      onError: (error) => {
+        // A fabric in the Archive looks like this one: ask before adding.
+        const found = (error as { data?: { match?: StashFabric; similarPhoto?: boolean | null } })?.data;
+        if (found?.match) setSameFabric({ match: found.match, similarPhoto: found.similarPhoto ?? null, data });
+        else saveError(error);
+      },
       onSettled: () => setSaving(false),
-    };
-    if (fabric) update.mutate({ fabricId: fabric.id, data }, options);
-    else create.mutate({ data }, options);
+    });
   };
 
   const deleteFabric = () => fabric && remove.mutate({ fabricId: fabric.id }, {
@@ -228,7 +270,24 @@ export function FabricForm({ fabric }: { fabric?: StashFabric }) {
             </View>
           </View>
         ) : null}
-        <View style={[styles.formCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        {archiveOffer ? <UsedUpNudge item={archiveOffer} kind={fabricArchive} onDone={() => router.back()} /> : null}
+        {sameFabric ? (
+          <View accessibilityRole="summary" style={[styles.same, { backgroundColor: colors.card, borderColor: colors.border, borderLeftColor: colors.primary }]} testID="same-fabric-check">
+            <View style={styles.samePhotos}>
+              {main ? <View style={styles.samePhoto}><View style={styles.samePhotoBox}>{photoView(main, styles.photo)}</View><LoomText style={[styles.sameCaption, { color: colors.mutedForeground }]}>Adding</LoomText></View> : null}
+              <View style={styles.samePhoto}><View style={styles.samePhotoBox}><FabricPhoto fabric={sameFabric.match} index={0} style={styles.photo} /></View><LoomText style={[styles.sameCaption, { color: colors.mutedForeground }]}>In your Archive</LoomText></View>
+            </View>
+            <LoomText style={{ color: colors.foreground, fontSize: 15, lineHeight: 22 }}>
+              <LoomText style={{ fontFamily: fonts.semibold, fontSize: 15 }}>Same fabric? </LoomText>{sameFabric.similarPhoto ? 'This looks like' : 'This matches'} the {fabricName(sameFabric.match).toLowerCase()} in your Archive. If it’s the same, we’ll bring it back with these details instead of adding a copy.
+            </LoomText>
+            <View style={styles.confirmActions}>
+              <LoomButton title="No, add it as new" variant="quiet" disabled={saving} onPress={() => answerSame(false)} testID="button-different-fabric" />
+              <LoomButton title="Yes, bring it back" busy={saving} onPress={() => answerSame(true)} testID="button-same-fabric" />
+            </View>
+          </View>
+        ) : null}
+        {fabric?.archivedAt && !archiveOffer ? <ArchivedNote item={fabric} kind={fabricArchive} text="This fabric is all used up. Bring it back if you have more." onRestored={() => router.back()} /> : null}
+        {archiveOffer || sameFabric ? null : <View style={[styles.formCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <FormFieldLabel>Print close-up *</FormFieldLabel>
           <Pressable accessibilityRole="button" accessibilityLabel={main ? 'Change the print close-up' : 'Add a close-up of the print'} onPress={() => { void pickPhotos(Boolean(main)); }} style={[styles.mainPhoto, { borderColor: colors.input, backgroundColor: colors.selectedWash }]} testID="button-fabric-photo-main">
             {main ? photoView(main, styles.photo) : <View style={styles.photoEmpty}><Feather name="camera" size={24} color={colors.primaryText} /><LoomText style={{ color: colors.primaryText, fontFamily: fonts.semibold, textAlign: 'center' }}>Add a close-up of the print</LoomText></View>}
@@ -271,21 +330,27 @@ export function FabricForm({ fabric }: { fabric?: StashFabric }) {
           </View>
           <View style={styles.sizeRow}>
             <View style={{ flex: 1 }}>
-              <FormFieldLabel>Amount ({unitLabels.amount})</FormFieldLabel>
-              <TextInput {...inputProps} value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder="e.g. 2.5" style={inputStyle} testID="input-fabric-amount" />
+              <FormFieldLabel>Bought ({unitLabels.amount})</FormFieldLabel>
+              <TextInput {...inputProps} value={amount} onChangeText={changeAmount} keyboardType="decimal-pad" placeholder="e.g. 2.5" style={inputStyle} testID="input-fabric-amount" />
             </View>
             <View style={{ flex: 1 }}>
-              <FormFieldLabel>Width ({unitLabels.width})</FormFieldLabel>
-              <TextInput {...inputProps} value={width} onChangeText={setWidth} keyboardType="decimal-pad" placeholder={unit === 'meters' ? 'e.g. 145' : 'e.g. 58'} style={inputStyle} testID="input-fabric-width" />
+              <FormFieldLabel>Left ({unitLabels.amount})</FormFieldLabel>
+              <TextInput {...inputProps} value={amountLeft} onChangeText={(value) => { setLeftTouched(true); setLeftNudge(null); setAmountLeft(value); }} keyboardType="decimal-pad" placeholder={amount || 'Same'} style={inputStyle} testID="input-fabric-amount-left" />
             </View>
           </View>
-          <FormFieldLabel>Brand</FormFieldLabel>
-          <TextInput {...inputProps} value={brand} onChangeText={setBrand} maxLength={80} placeholder="Optional" style={inputStyle} testID="input-fabric-brand" />
+          {leftNudge ? (
+            <View style={[styles.nudge, { backgroundColor: colors.selectedWash }]} testID="fabric-left-nudge">
+              <LoomText style={{ color: colors.foreground, fontSize: 14, lineHeight: 20, flex: 1 }}>Amount left is now {leftNudge.to} {unitLabels.amount} (was {leftNudge.from}). Look right?</LoomText>
+              <Pressable accessibilityRole="button" onPress={() => setLeftNudge(null)} testID="button-fabric-left-ok"><LoomText style={{ color: colors.primaryText, fontFamily: fonts.semibold, fontSize: 14, textDecorationLine: 'underline' }}>Looks right</LoomText></Pressable>
+            </View>
+          ) : null}
+          <FormFieldLabel>Width ({unitLabels.width})</FormFieldLabel>
+          <TextInput {...inputProps} value={width} onChangeText={setWidth} keyboardType="decimal-pad" placeholder={unit === 'meters' ? 'e.g. 145' : 'e.g. 58'} style={inputStyle} testID="input-fabric-width" />
           <FormFieldLabel>Notes</FormFieldLabel>
           <TextInput {...inputProps} value={notes} onChangeText={setNotes} maxLength={1000} multiline placeholder="Where it's from, what it's for…" style={[inputStyle, styles.notes]} testID="input-fabric-notes" />
           {message ? <LoomText accessibilityRole="alert" style={[styles.error, { color: colors.destructive }]}>{message}</LoomText> : null}
           <LoomButton title={fabric ? 'Save changes' : 'Add to stash'} icon="arrow-right" onPress={() => { void save(); }} busy={saving} testID="button-save-fabric" />
-        </View>
+        </View>}
       </KeyboardAwareScrollViewCompat>
     </View>
   );
@@ -323,4 +388,10 @@ const styles = StyleSheet.create({
   error: { fontSize: 15, lineHeight: 22, marginBottom: 12 },
   confirm: { borderWidth: 1, borderRadius: 14, padding: 14, marginBottom: 14 },
   confirmActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 10 },
+  nudge: { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9, marginTop: -6, marginBottom: 14 },
+  same: { borderWidth: 1, borderLeftWidth: 4, borderRadius: 12, padding: 13, gap: 10, marginBottom: 14 },
+  samePhotos: { flexDirection: 'row', gap: 10 },
+  samePhoto: { width: 120 },
+  samePhotoBox: { width: 120, height: 120, borderRadius: 10, overflow: 'hidden' },
+  sameCaption: { fontSize: 13, marginTop: 4 },
 });

@@ -78,10 +78,14 @@ export function fabricName(fabric: Pick<StashFabric, 'fabricType' | 'print'>): s
   return [labelFor(fabricTypes, fabric.fabricType), print].filter(Boolean).join(', ');
 }
 
-export function fabricSize(fabric: Pick<StashFabric, 'amount' | 'width' | 'unit'>): string {
+// Shows what's left once some has been used, like "1.5 of 3 m left".
+export function fabricSize(fabric: Pick<StashFabric, 'amount' | 'width' | 'unit'> & { amountLeft?: number | null }): string {
   const unit = fabricUnits.find((item) => item.value === fabric.unit) ?? fabricUnits[0];
+  const left = fabric.amountLeft ?? null;
   return [
-    fabric.amount !== null ? `${fabric.amount} ${unit.amount}` : '',
+    fabric.amount !== null
+      ? left !== null && left !== fabric.amount ? `${left} of ${fabric.amount} ${unit.amount} left` : `${fabric.amount} ${unit.amount}`
+      : '',
     fabric.width !== null ? `${fabric.width} ${unit.width} wide` : '',
   ].filter(Boolean).join(' · ');
 }
