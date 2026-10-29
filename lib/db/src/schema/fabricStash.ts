@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  boolean,
   doublePrecision,
   pgEnum,
   pgTable,
@@ -80,6 +81,9 @@ export const stashFabricsTable = pgTable("stash_fabrics", {
   unit: fabricUnitEnum("unit").notNull().default("meters"),
   amount: doublePrecision("amount"),
   width: doublePrecision("width"),
+  // Left empty when the maker hasn't said; washing shrinks fabric, so this
+  // tells them whether the amount and width are before or after.
+  preWashed: boolean("pre_washed"),
   brand: text("brand"),
   notes: text("notes"),
   photoPaths: text("photo_paths").array().notNull().default(sql`'{}'::text[]`),

@@ -53,3 +53,19 @@ export function stashLength(pieces: { unit: FabricUnit; amount: number | null }[
   const length = unit === "yards" ? meters / metersPerYard : meters;
   return { length: Math.round(length * 100) / 100, unit };
 }
+
+// Each tool appears once on a project.
+export function checkToolIds(ids: string[]): { ok: true; ids: string[] } | { ok: false; error: string } {
+  if (new Set(ids).size !== ids.length) return { ok: false, error: "That tool is already on this project." };
+  return { ok: true, ids };
+}
+
+// Pieces of each fabric type in the stash, most first (A to Z on a tie).
+// Types the maker has none of are left out.
+export function fabricTypeCounts<T extends string>(pieces: { fabricType: T }[]): { fabricType: T; count: number }[] {
+  const counts = new Map<T, number>();
+  for (const piece of pieces) counts.set(piece.fabricType, (counts.get(piece.fabricType) ?? 0) + 1);
+  return [...counts]
+    .map(([fabricType, count]) => ({ fabricType, count }))
+    .sort((a, b) => b.count - a.count || a.fabricType.localeCompare(b.fabricType));
+}

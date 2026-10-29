@@ -811,6 +811,32 @@ a.stat-card:active { transform: scale(.98); box-shadow: none; }
 .fabric-pick span { display: grid; gap: 2px; min-width: 0; }
 .fabric-pick small { color: var(--slate); font-size: 12px; }
 .fabric-picker-note { margin: 0; color: var(--slate-deep); font-size: 14px; }
+.sewing-tool-row { display: flex; align-items: center; gap: 12px; padding: 8px; border: 1px solid var(--sew-line); border-radius: 10px; background: var(--white); }
+.sewing-tool-row .tool-thumb { width: 46px; height: 46px; }
+.tool-picker-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; max-height: 320px; overflow: auto; }
+.tool-pick { display: flex; align-items: center; gap: 10px; padding: 7px; border: 1px solid var(--sew-line); border-radius: 9px; background: var(--white); color: var(--evergreen); font: inherit; text-align: left; cursor: pointer; }
+.tool-pick:hover { border-color: var(--sew-accent); }
+.tool-pick .tool-thumb { width: 46px; height: 46px; }
+.tool-pick span { display: grid; gap: 2px; min-width: 0; }
+.tool-pick small { color: var(--slate); font-size: 12px; }
+.tap-rows { max-width: 460px; border: 1px solid var(--sew-line); border-radius: 10px; background: var(--white); }
+.tap-row { display: flex; align-items: center; gap: 6px; padding: 0 8px 0 0; }
+.tap-row + .tap-row { border-top: 1px solid var(--sew-line); }
+.tap-row-trigger { flex: 1; display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 50px; padding: 0 14px; border: 0; background: none; color: var(--evergreen); font: inherit; font-size: 15px; cursor: pointer; text-align: left; }
+.tap-row-trigger b { font-weight: 600; }
+.tap-row-add { display: inline-flex; align-items: center; gap: 2px; color: var(--sew-accent); font-weight: 700; }
+.tap-row-value, .sewing-thread { display: inline-flex; align-items: center; gap: 7px; }
+.tap-row .date-wheel-clear { width: 34px; height: 34px; }
+.fabric-type-chart { margin: 0 0 26px; padding: 20px 23px; }
+.fabric-type-chart h2 { margin: 0 0 12px; font-size: 20px; color: var(--evergreen); }
+.fabric-type-chart ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.fabric-type-bar { display: grid; grid-template-columns: 130px 1fr 32px; align-items: center; gap: 12px; padding: 6px 8px; border-radius: 8px; color: var(--evergreen); text-decoration: none; transition: background .15s ease; }
+.fabric-type-bar:hover, .fabric-type-bar:focus-visible { background: var(--sew-soft); outline: none; }
+.fabric-type-name { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fabric-type-track { height: 12px; border-radius: 99px; background: var(--sew-soft); overflow: hidden; }
+.fabric-type-track i { display: block; height: 100%; min-width: 6px; border-radius: 99px; background: var(--sew-accent); }
+.fabric-type-bar strong { text-align: right; font-size: 15px; }
+@media (max-width: 700px) { .fabric-type-bar { grid-template-columns: 92px 1fr 28px; gap: 8px; } .tool-list { grid-template-columns: 1fr; } }
 @media (max-width: 1080px) { .sewing-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 767px) {
   .sewing-card-grid { grid-template-columns: 1fr; gap: 12px; }

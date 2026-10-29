@@ -11,7 +11,9 @@ import {
 import type { ProjectStatus, SewingProject, SewingStage } from '@workspace/api-client-react';
 import { ErrorState, LoadingState, LoomButton, LoomText, SignedInGate, StatusChip, fonts } from '@/components/loom';
 import { FabricPhoto, fabricName } from '@/components/FabricFields';
-import { amountLeft, fabricAmount, sewingStages, stageIndex } from '@/components/SewingFields';
+import { amountLeft, fabricAmount, needleLabel, sewingStages, stageIndex } from '@/components/SewingFields';
+import { ToolThumb, toolDetails } from '@/components/SewingTools';
+import { ColorDot, generalColors } from '@/components/YarnFields';
 import { useSewingColors } from '@/hooks/useColors';
 
 // After a project is finished, offers to take the fabric it used off the stash.
@@ -87,7 +89,8 @@ function SewingProjectView({ project }: { project: SewingProject }) {
     },
   });
   const current = stageIndex(project.stage);
-  const facts = [['Pattern', project.patternName], ['Designer', project.patternDesigner], ['Size made', project.sizeMade]].filter(([, value]) => value);
+  const facts = [['Pattern', project.patternName], ['Designer', project.patternDesigner], ['Size made', project.sizeMade], ['Needle', needleLabel(project)]].filter(([, value]) => value);
+  const threadLabel = generalColors.find((item) => item.value === project.threadColor)?.label;
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
@@ -135,7 +138,7 @@ function SewingProjectView({ project }: { project: SewingProject }) {
             ? <LoomButton title="Reopen project" variant="secondary" onPress={() => change({ status: 'in_progress' })} busy={update.isPending} testID="button-reopen-sewing-project" />
             : <LoomButton title="Mark finished" icon="check" onPress={() => change({ status: 'completed' })} busy={update.isPending} testID="button-finish-sewing-project" />}
           {update.isError ? <LoomText accessibilityRole="alert" style={{ color: colors.destructive, fontSize: 14, marginTop: 8 }}>We could not save that just now. Please try again.</LoomText> : null}
-          {facts.length ? (
+          {facts.length || threadLabel ? (
             <View style={styles.facts}>
               {facts.map(([label, value]) => (
                 <View key={label}>
@@ -143,6 +146,12 @@ function SewingProjectView({ project }: { project: SewingProject }) {
                   <LoomText style={{ color: colors.foreground, fontSize: 16 }}>{value}</LoomText>
                 </View>
               ))}
+              {threadLabel ? (
+                <View>
+                  <LoomText style={{ color: colors.mutedForeground, fontSize: 13, fontFamily: fonts.bold }}>Thread color</LoomText>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><ColorDot color={project.threadColor} noun="thread" /><LoomText style={{ color: colors.foreground, fontSize: 16 }}>{threadLabel}</LoomText></View>
+                </View>
+              ) : null}
             </View>
           ) : null}
           {([['Fit changes', project.fitChanges], ['Notes', project.notes]] as const).map(([label, value]) => value ? (
@@ -163,6 +172,17 @@ function SewingProjectView({ project }: { project: SewingProject }) {
             <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
           </Pressable>
         )) : <LoomText style={{ color: colors.mutedForeground, fontSize: 15 }}>No fabric on this project yet.</LoomText>}
+        {project.tools.length ? <LoomText serif style={[styles.section, { color: colors.foreground, marginTop: 18 }]}>Tools</LoomText> : null}
+        {project.tools.map((tool) => (
+          <Pressable key={tool.id} accessibilityRole="button" onPress={() => router.push({ pathname: '/tools/[id]', params: { id: tool.id } })} style={[styles.fabric, { backgroundColor: colors.card, borderColor: colors.border }]} testID={`project-tool-${tool.id}`}>
+            <ToolThumb tool={tool} size={52} />
+            <View style={{ flex: 1 }}>
+              <LoomText style={{ color: colors.foreground, fontFamily: fonts.semibold, fontSize: 16 }}>{tool.name}</LoomText>
+              {toolDetails(tool) ? <LoomText style={{ color: colors.mutedForeground, fontSize: 13 }}>{toolDetails(tool)}</LoomText> : null}
+            </View>
+            <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
+          </Pressable>
+        ))}
       </ScrollView>
     </View>
   );

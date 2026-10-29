@@ -11,9 +11,24 @@ import {
 import { usersTable } from "./users";
 import { projectStatusEnum } from "./projects";
 import { stashFabricsTable } from "./fabricStash";
+import { generalColorEnum } from "./yarnStash";
+import { sewingToolsTable } from "./sewingTools";
 
 // The stage a sewing project has reached, in the order they happen.
 export const sewingStageEnum = pgEnum("sewing_stage", ["prep", "cut", "sew", "fit", "finish"]);
+
+export const sewingNeedleTypeEnum = pgEnum("sewing_needle_type", [
+  "universal",
+  "ballpoint",
+  "stretch",
+  "jeans",
+  "microtex",
+  "quilting",
+  "leather",
+  "topstitch",
+  "embroidery",
+  "metallic",
+]);
 
 // Sewing projects live in the Sewing room, apart from yarn projects, so yarn
 // pages never have to filter them out.
@@ -29,6 +44,10 @@ export const sewingProjectsTable = pgTable("sewing_projects", {
   patternDesigner: text("pattern_designer"),
   sizeMade: text("size_made"),
   fitChanges: text("fit_changes"),
+  needleType: sewingNeedleTypeEnum("needle_type"),
+  // Metric/US pair such as "75/11"; the API keeps it to the listed sizes.
+  needleSize: text("needle_size"),
+  threadColor: generalColorEnum("thread_color"),
   notes: text("notes"),
   // Set when the project is marked finished, cleared if it is reopened.
   completedAt: date("completed_at", { mode: "string" }),
@@ -52,6 +71,18 @@ export const sewingProjectFabricsTable = pgTable("sewing_project_fabrics", {
     .notNull()
     .references(() => stashFabricsTable.id, { onDelete: "cascade" }),
   amountUsed: doublePrecision("amount_used"),
+  position: integer("position").notNull().default(0),
+});
+
+// Tools (notions or kit) a project uses. Just a list: nothing is counted.
+export const sewingProjectToolsTable = pgTable("sewing_project_tools", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  projectId: uuid("project_id")
+    .notNull()
+    .references(() => sewingProjectsTable.id, { onDelete: "cascade" }),
+  sewingToolId: uuid("sewing_tool_id")
+    .notNull()
+    .references(() => sewingToolsTable.id, { onDelete: "cascade" }),
   position: integer("position").notNull().default(0),
 });
 

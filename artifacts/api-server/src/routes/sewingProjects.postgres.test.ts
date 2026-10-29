@@ -1,11 +1,12 @@
+import { eq } from "drizzle-orm";
 import express, { type Request } from "express";
 import { randomUUID } from "node:crypto";
 import pg from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import * as schema from "@workspace/db/schema";
-import { usersTable } from "@workspace/db/schema";
-import { sewingTablesSql, stashTablesSql } from "../test/stashTablesSql";
+import { sewingToolsTable, usersTable } from "@workspace/db/schema";
+import { sewingProjectToolsSql, sewingTablesSql, sewingToolsSql, stashTablesSql } from "../test/stashTablesSql";
 
 vi.mock("@clerk/express", () => ({
   getAuth: (req: Request) => ({
@@ -94,6 +95,8 @@ describe.skipIf(!databaseUrl)("sewing projects against PostgreSQL", () => {
       CREATE TYPE ${isolatedSchema}.project_status AS ENUM ('planning', 'in_progress', 'paused', 'completed');
       ${stashTablesSql(isolatedSchema)}
       ${sewingTablesSql(isolatedSchema)}
+      ${sewingToolsSql(isolatedSchema)}
+      ${sewingProjectToolsSql(isolatedSchema)}
     `);
 
     testPool = new pg.Pool({
@@ -220,6 +223,51 @@ describe.skipIf(!databaseUrl)("sewing projects against PostgreSQL", () => {
     expect((await request(`/sewing-projects/${project.id}`, { user: ownerB })).status).toBe(404);
   });
 
+  it("keeps the needle, thread color and the maker's own tools on a project", async () => {
+    const [zip, foot, theirs] = await getTestDb()
+      .insert(sewingToolsTable)
+      .values([
+        { ownerId: ownerA, section: "notions", category: "zip", name: "Invisible zip" },
+        { ownerId: ownerA, section: "kit", category: "presser_foot", name: "Walking foot" },
+        { ownerId: ownerB, section: "notions", category: "button", name: "Shell buttons" },
+      ])
+      .returning();
+    const created = await request("/sewing-projects", {
+      method: "POST",
+      user: ownerA,
+      body: { title: "Tee", needleType: "stretch", needleSize: "75/11", threadColor: "blue", toolIds: [foot!.id, zip!.id] },
+    });
+    expect(created.status).toBe(201);
+    const project = await read(created);
+    expect(project).toMatchObject({ needleType: "stretch", needleSize: "75/11", threadColor: "blue" });
+    expect(project.tools.map((tool: { name: string }) => tool.name)).toEqual(["Walking foot", "Invisible zip"]);
+    expect(project.tools[0].photoPath).toBeUndefined();
+
+    const notMine = await request(`/sewing-projects/${project.id}`, { method: "PATCH", user: ownerA, body: { toolIds: [theirs!.id] } });
+    expect((await read(notMine)).error).toBe("Choose tools from your Sewing room.");
+    expect((await request(`/sewing-projects/${project.id}`, { method: "PATCH", user: ownerA, body: { toolIds: [zip!.id, zip!.id] } })).status).toBe(400);
+    expect((await request("/sewing-projects", { method: "POST", user: ownerA, body: { title: "Tee", needleSize: "75" } })).status).toBe(400);
+
+    const cleared = await read(await request(`/sewing-projects/${project.id}`, {
+      method: "PATCH", user: ownerA, body: { needleType: null, threadColor: null, toolIds: [zip!.id] },
+    }));
+    expect(cleared).toMatchObject({ needleType: null, needleSize: "75/11", threadColor: null });
+    expect(cleared.tools.map((tool: { id: string }) => tool.id)).toEqual([zip!.id]);
+
+    // A tool that leaves the Sewing room leaves the project too.
+    await getTestDb().delete(sewingToolsTable).where(eq(sewingToolsTable.id, zip!.id));
+    expect((await read(await request(`/sewing-projects/${project.id}`, { user: ownerA }))).tools).toEqual([]);
+    await request(`/sewing-projects/${project.id}`, { method: "DELETE", user: ownerA });
+  });
+
+  it("keeps whether a fabric is pre-washed", async () => {
+    const washed = await addFabric(ownerB, { preWashed: true });
+    expect(washed.preWashed).toBe(true);
+    expect((await addFabric(ownerB)).preWashed).toBeNull();
+    const changed = await read(await request(`/fabric-stash/${washed.id}`, { method: "PATCH", user: ownerB, body: { preWashed: false } }));
+    expect(changed.preWashed).toBe(false);
+  });
+
   it("sums up the Sewing room for the Overview", async () => {
     const overview = await read(await request("/sewing-overview", { user: ownerA }));
     // ownerA has the dress (planning), the reopened shirt (in progress, still at Finish) and three 3 m pieces.
@@ -232,6 +280,7 @@ describe.skipIf(!databaseUrl)("sewing projects against PostgreSQL", () => {
     });
     expect(overview.stages.map((entry: { stage: string }) => entry.stage)).toEqual(["prep", "cut", "sew", "fit", "finish"]);
     expect(overview.stages.map((entry: { count: number }) => entry.count)).toEqual([0, 0, 0, 0, 1]);
+    expect(overview.fabricTypes).toEqual([{ fabricType: "linen", count: 2 }, { fabricType: "cotton", count: 1 }]);
     expect(overview.recentProjects[0].title).toBe("Shirt");
     expect((await request("/sewing-overview")).status).toBe(401);
   });

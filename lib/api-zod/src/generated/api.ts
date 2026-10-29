@@ -1277,6 +1277,7 @@ export const GetStashFabricsResponseItem = zod.object({
   "unit": zod.enum(['meters', 'yards']).describe('Meters go with centimetre widths, yards with inch widths'),
   "amount": zod.number().nullable(),
   "width": zod.number().nullable(),
+  "preWashed": zod.boolean().nullable().describe('Null when the maker hasn\'t said'),
   "brand": zod.string().nullable(),
   "notes": zod.string().nullable(),
   "photoCount": zod.number().int().describe('The first photo is the print close-up'),
@@ -1311,6 +1312,7 @@ export const CreateStashFabricBody = zod.object({
   "unit": zod.enum(['meters', 'yards']).describe('Meters go with centimetre widths, yards with inch widths'),
   "amount": zod.number().min(createStashFabricBodyAmountMin).max(createStashFabricBodyAmountMax).nullish(),
   "width": zod.number().min(createStashFabricBodyWidthMin).max(createStashFabricBodyWidthMax).nullish(),
+  "preWashed": zod.boolean().nullish(),
   "brand": zod.string().max(createStashFabricBodyBrandMax).nullish(),
   "notes": zod.string().max(createStashFabricBodyNotesMax).nullish(),
   "photoPaths": zod.array(zod.string()).min(1).max(createStashFabricBodyPhotoPathsMax).describe('The print close-up first, then up to three more')
@@ -1325,6 +1327,7 @@ export const CreateStashFabricResponse = zod.object({
   "unit": zod.enum(['meters', 'yards']).describe('Meters go with centimetre widths, yards with inch widths'),
   "amount": zod.number().nullable(),
   "width": zod.number().nullable(),
+  "preWashed": zod.boolean().nullable().describe('Null when the maker hasn\'t said'),
   "brand": zod.string().nullable(),
   "notes": zod.string().nullable(),
   "photoCount": zod.number().int().describe('The first photo is the print close-up'),
@@ -1370,6 +1373,7 @@ export const GetStashFabricResponse = zod.object({
   "unit": zod.enum(['meters', 'yards']).describe('Meters go with centimetre widths, yards with inch widths'),
   "amount": zod.number().nullable(),
   "width": zod.number().nullable(),
+  "preWashed": zod.boolean().nullable().describe('Null when the maker hasn\'t said'),
   "brand": zod.string().nullable(),
   "notes": zod.string().nullable(),
   "photoCount": zod.number().int().describe('The first photo is the print close-up'),
@@ -1407,6 +1411,7 @@ export const UpdateStashFabricBody = zod.object({
   "unit": zod.enum(['meters', 'yards']).optional().describe('Meters go with centimetre widths, yards with inch widths'),
   "amount": zod.number().min(updateStashFabricBodyAmountMin).max(updateStashFabricBodyAmountMax).nullish(),
   "width": zod.number().min(updateStashFabricBodyWidthMin).max(updateStashFabricBodyWidthMax).nullish(),
+  "preWashed": zod.boolean().nullish(),
   "brand": zod.string().max(updateStashFabricBodyBrandMax).nullish(),
   "notes": zod.string().max(updateStashFabricBodyNotesMax).nullish(),
   "photoPaths": zod.array(zod.string()).min(1).max(updateStashFabricBodyPhotoPathsMax).optional().describe('The full photo list in order. Keep an existing photo by sending "keep:<index>"; new photos are paths from the upload URL.')
@@ -1421,6 +1426,7 @@ export const UpdateStashFabricResponse = zod.object({
   "unit": zod.enum(['meters', 'yards']).describe('Meters go with centimetre widths, yards with inch widths'),
   "amount": zod.number().nullable(),
   "width": zod.number().nullable(),
+  "preWashed": zod.boolean().nullable().describe('Null when the maker hasn\'t said'),
   "brand": zod.string().nullable(),
   "notes": zod.string().nullable(),
   "photoCount": zod.number().int().describe('The first photo is the print close-up'),
@@ -1472,6 +1478,9 @@ export const GetSewingProjectsResponseItem = zod.object({
   "patternDesigner": zod.string().nullable(),
   "sizeMade": zod.string().nullable(),
   "fitChanges": zod.string().nullable(),
+  "needleType": zod.union([zod.enum(['universal', 'ballpoint', 'stretch', 'jeans', 'microtex', 'quilting', 'leather', 'topstitch', 'embroidery', 'metallic']),zod.null()]),
+  "needleSize": zod.union([zod.enum(['60/8', '65/9', '70/10', '75/11', '80/12', '90/14', '100/16', '110/18']).describe('Metric/US machine needle size, finest first'),zod.null()]),
+  "threadColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]),
   "notes": zod.string().nullable(),
   "completedAt": zod.coerce.date().nullable(),
   "fabrics": zod.array(zod.object({
@@ -1486,6 +1495,7 @@ export const GetSewingProjectsResponseItem = zod.object({
   "unit": zod.enum(['meters', 'yards']).describe('Meters go with centimetre widths, yards with inch widths'),
   "amount": zod.number().nullable(),
   "width": zod.number().nullable(),
+  "preWashed": zod.boolean().nullable().describe('Null when the maker hasn\'t said'),
   "brand": zod.string().nullable(),
   "notes": zod.string().nullable(),
   "photoCount": zod.number().int().describe('The first photo is the print close-up'),
@@ -1493,6 +1503,20 @@ export const GetSewingProjectsResponseItem = zod.object({
   "updatedAt": zod.coerce.date()
 })
 })),
+  "tools": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "section": zod.enum(['notions', 'kit']).describe('Notions get used up; kit stays'),
+  "category": zod.enum(['zip', 'button', 'snap', 'hook_and_eye', 'hook_and_loop', 'magnetic_clasp', 'toggle', 'elastic', 'bias_tape', 'ribbon', 'lace', 'piping', 'cord', 'twill_tape', 'buckle', 'd_ring', 'eyelet', 'rivet', 'interfacing', 'boning', 'batting', 'stabilizer', 'fusible_web', 'thread', 'label', 'machine', 'presser_foot', 'needle', 'scissors', 'ruler', 'other']).describe('Notions are closures, trims and tapes, hardware, shaping and backing, thread and labels; machine, presser_foot, needle, scissors and ruler are kit; other fits either'),
+  "name": zod.string(),
+  "quantity": zod.number().int().nullable(),
+  "size": zod.string().nullable(),
+  "color": zod.string().nullable(),
+  "brand": zod.string().nullable(),
+  "notes": zod.string().nullable(),
+  "hasPhoto": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})).describe('Tools from the maker\'s Sewing room the project uses, in the order listed'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -1519,6 +1543,8 @@ export const createSewingProjectBodyFabricsItemAmountUsedMax = 999;
 
 export const createSewingProjectBodyFabricsMax = 12;
 
+export const createSewingProjectBodyToolIdsMax = 30;
+
 
 
 export const CreateSewingProjectBody = zod.object({
@@ -1529,11 +1555,15 @@ export const CreateSewingProjectBody = zod.object({
   "patternDesigner": zod.string().max(createSewingProjectBodyPatternDesignerMax).nullish(),
   "sizeMade": zod.string().max(createSewingProjectBodySizeMadeMax).nullish(),
   "fitChanges": zod.string().max(createSewingProjectBodyFitChangesMax).nullish(),
+  "needleType": zod.union([zod.enum(['universal', 'ballpoint', 'stretch', 'jeans', 'microtex', 'quilting', 'leather', 'topstitch', 'embroidery', 'metallic']),zod.null()]).optional(),
+  "needleSize": zod.union([zod.enum(['60/8', '65/9', '70/10', '75/11', '80/12', '90/14', '100/16', '110/18']).describe('Metric/US machine needle size, finest first'),zod.null()]).optional(),
+  "threadColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]).optional(),
   "notes": zod.string().max(createSewingProjectBodyNotesMax).nullish(),
   "fabrics": zod.array(zod.object({
   "stashFabricId": zod.string().uuid(),
   "amountUsed": zod.number().min(createSewingProjectBodyFabricsItemAmountUsedMin).max(createSewingProjectBodyFabricsItemAmountUsedMax).nullish()
-})).max(createSewingProjectBodyFabricsMax).optional()
+})).max(createSewingProjectBodyFabricsMax).optional(),
+  "toolIds": zod.array(zod.string().uuid()).max(createSewingProjectBodyToolIdsMax).optional()
 })
 
 export const CreateSewingProjectResponse = zod.object({
@@ -1545,6 +1575,9 @@ export const CreateSewingProjectResponse = zod.object({
   "patternDesigner": zod.string().nullable(),
   "sizeMade": zod.string().nullable(),
   "fitChanges": zod.string().nullable(),
+  "needleType": zod.union([zod.enum(['universal', 'ballpoint', 'stretch', 'jeans', 'microtex', 'quilting', 'leather', 'topstitch', 'embroidery', 'metallic']),zod.null()]),
+  "needleSize": zod.union([zod.enum(['60/8', '65/9', '70/10', '75/11', '80/12', '90/14', '100/16', '110/18']).describe('Metric/US machine needle size, finest first'),zod.null()]),
+  "threadColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]),
   "notes": zod.string().nullable(),
   "completedAt": zod.coerce.date().nullable(),
   "fabrics": zod.array(zod.object({
@@ -1559,6 +1592,7 @@ export const CreateSewingProjectResponse = zod.object({
   "unit": zod.enum(['meters', 'yards']).describe('Meters go with centimetre widths, yards with inch widths'),
   "amount": zod.number().nullable(),
   "width": zod.number().nullable(),
+  "preWashed": zod.boolean().nullable().describe('Null when the maker hasn\'t said'),
   "brand": zod.string().nullable(),
   "notes": zod.string().nullable(),
   "photoCount": zod.number().int().describe('The first photo is the print close-up'),
@@ -1566,6 +1600,20 @@ export const CreateSewingProjectResponse = zod.object({
   "updatedAt": zod.coerce.date()
 })
 })),
+  "tools": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "section": zod.enum(['notions', 'kit']).describe('Notions get used up; kit stays'),
+  "category": zod.enum(['zip', 'button', 'snap', 'hook_and_eye', 'hook_and_loop', 'magnetic_clasp', 'toggle', 'elastic', 'bias_tape', 'ribbon', 'lace', 'piping', 'cord', 'twill_tape', 'buckle', 'd_ring', 'eyelet', 'rivet', 'interfacing', 'boning', 'batting', 'stabilizer', 'fusible_web', 'thread', 'label', 'machine', 'presser_foot', 'needle', 'scissors', 'ruler', 'other']).describe('Notions are closures, trims and tapes, hardware, shaping and backing, thread and labels; machine, presser_foot, needle, scissors and ruler are kit; other fits either'),
+  "name": zod.string(),
+  "quantity": zod.number().int().nullable(),
+  "size": zod.string().nullable(),
+  "color": zod.string().nullable(),
+  "brand": zod.string().nullable(),
+  "notes": zod.string().nullable(),
+  "hasPhoto": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})).describe('Tools from the maker\'s Sewing room the project uses, in the order listed'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -1587,6 +1635,9 @@ export const GetSewingProjectResponse = zod.object({
   "patternDesigner": zod.string().nullable(),
   "sizeMade": zod.string().nullable(),
   "fitChanges": zod.string().nullable(),
+  "needleType": zod.union([zod.enum(['universal', 'ballpoint', 'stretch', 'jeans', 'microtex', 'quilting', 'leather', 'topstitch', 'embroidery', 'metallic']),zod.null()]),
+  "needleSize": zod.union([zod.enum(['60/8', '65/9', '70/10', '75/11', '80/12', '90/14', '100/16', '110/18']).describe('Metric/US machine needle size, finest first'),zod.null()]),
+  "threadColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]),
   "notes": zod.string().nullable(),
   "completedAt": zod.coerce.date().nullable(),
   "fabrics": zod.array(zod.object({
@@ -1601,6 +1652,7 @@ export const GetSewingProjectResponse = zod.object({
   "unit": zod.enum(['meters', 'yards']).describe('Meters go with centimetre widths, yards with inch widths'),
   "amount": zod.number().nullable(),
   "width": zod.number().nullable(),
+  "preWashed": zod.boolean().nullable().describe('Null when the maker hasn\'t said'),
   "brand": zod.string().nullable(),
   "notes": zod.string().nullable(),
   "photoCount": zod.number().int().describe('The first photo is the print close-up'),
@@ -1608,6 +1660,20 @@ export const GetSewingProjectResponse = zod.object({
   "updatedAt": zod.coerce.date()
 })
 })),
+  "tools": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "section": zod.enum(['notions', 'kit']).describe('Notions get used up; kit stays'),
+  "category": zod.enum(['zip', 'button', 'snap', 'hook_and_eye', 'hook_and_loop', 'magnetic_clasp', 'toggle', 'elastic', 'bias_tape', 'ribbon', 'lace', 'piping', 'cord', 'twill_tape', 'buckle', 'd_ring', 'eyelet', 'rivet', 'interfacing', 'boning', 'batting', 'stabilizer', 'fusible_web', 'thread', 'label', 'machine', 'presser_foot', 'needle', 'scissors', 'ruler', 'other']).describe('Notions are closures, trims and tapes, hardware, shaping and backing, thread and labels; machine, presser_foot, needle, scissors and ruler are kit; other fits either'),
+  "name": zod.string(),
+  "quantity": zod.number().int().nullable(),
+  "size": zod.string().nullable(),
+  "color": zod.string().nullable(),
+  "brand": zod.string().nullable(),
+  "notes": zod.string().nullable(),
+  "hasPhoto": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})).describe('Tools from the maker\'s Sewing room the project uses, in the order listed'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -1637,6 +1703,8 @@ export const updateSewingProjectBodyFabricsItemAmountUsedMax = 999;
 
 export const updateSewingProjectBodyFabricsMax = 12;
 
+export const updateSewingProjectBodyToolIdsMax = 30;
+
 
 
 export const UpdateSewingProjectBody = zod.object({
@@ -1647,11 +1715,15 @@ export const UpdateSewingProjectBody = zod.object({
   "patternDesigner": zod.string().max(updateSewingProjectBodyPatternDesignerMax).nullish(),
   "sizeMade": zod.string().max(updateSewingProjectBodySizeMadeMax).nullish(),
   "fitChanges": zod.string().max(updateSewingProjectBodyFitChangesMax).nullish(),
+  "needleType": zod.union([zod.enum(['universal', 'ballpoint', 'stretch', 'jeans', 'microtex', 'quilting', 'leather', 'topstitch', 'embroidery', 'metallic']),zod.null()]).optional(),
+  "needleSize": zod.union([zod.enum(['60/8', '65/9', '70/10', '75/11', '80/12', '90/14', '100/16', '110/18']).describe('Metric/US machine needle size, finest first'),zod.null()]).optional(),
+  "threadColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]).optional(),
   "notes": zod.string().max(updateSewingProjectBodyNotesMax).nullish(),
   "fabrics": zod.array(zod.object({
   "stashFabricId": zod.string().uuid(),
   "amountUsed": zod.number().min(updateSewingProjectBodyFabricsItemAmountUsedMin).max(updateSewingProjectBodyFabricsItemAmountUsedMax).nullish()
-})).max(updateSewingProjectBodyFabricsMax).optional().describe('The full list of fabric on the project, replacing what was there')
+})).max(updateSewingProjectBodyFabricsMax).optional().describe('The full list of fabric on the project, replacing what was there'),
+  "toolIds": zod.array(zod.string().uuid()).max(updateSewingProjectBodyToolIdsMax).optional().describe('The full list of tools on the project, replacing what was there')
 })
 
 export const UpdateSewingProjectResponse = zod.object({
@@ -1663,6 +1735,9 @@ export const UpdateSewingProjectResponse = zod.object({
   "patternDesigner": zod.string().nullable(),
   "sizeMade": zod.string().nullable(),
   "fitChanges": zod.string().nullable(),
+  "needleType": zod.union([zod.enum(['universal', 'ballpoint', 'stretch', 'jeans', 'microtex', 'quilting', 'leather', 'topstitch', 'embroidery', 'metallic']),zod.null()]),
+  "needleSize": zod.union([zod.enum(['60/8', '65/9', '70/10', '75/11', '80/12', '90/14', '100/16', '110/18']).describe('Metric/US machine needle size, finest first'),zod.null()]),
+  "threadColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]),
   "notes": zod.string().nullable(),
   "completedAt": zod.coerce.date().nullable(),
   "fabrics": zod.array(zod.object({
@@ -1677,6 +1752,7 @@ export const UpdateSewingProjectResponse = zod.object({
   "unit": zod.enum(['meters', 'yards']).describe('Meters go with centimetre widths, yards with inch widths'),
   "amount": zod.number().nullable(),
   "width": zod.number().nullable(),
+  "preWashed": zod.boolean().nullable().describe('Null when the maker hasn\'t said'),
   "brand": zod.string().nullable(),
   "notes": zod.string().nullable(),
   "photoCount": zod.number().int().describe('The first photo is the print close-up'),
@@ -1684,6 +1760,20 @@ export const UpdateSewingProjectResponse = zod.object({
   "updatedAt": zod.coerce.date()
 })
 })),
+  "tools": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "section": zod.enum(['notions', 'kit']).describe('Notions get used up; kit stays'),
+  "category": zod.enum(['zip', 'button', 'snap', 'hook_and_eye', 'hook_and_loop', 'magnetic_clasp', 'toggle', 'elastic', 'bias_tape', 'ribbon', 'lace', 'piping', 'cord', 'twill_tape', 'buckle', 'd_ring', 'eyelet', 'rivet', 'interfacing', 'boning', 'batting', 'stabilizer', 'fusible_web', 'thread', 'label', 'machine', 'presser_foot', 'needle', 'scissors', 'ruler', 'other']).describe('Notions are closures, trims and tapes, hardware, shaping and backing, thread and labels; machine, presser_foot, needle, scissors and ruler are kit; other fits either'),
+  "name": zod.string(),
+  "quantity": zod.number().int().nullable(),
+  "size": zod.string().nullable(),
+  "color": zod.string().nullable(),
+  "brand": zod.string().nullable(),
+  "notes": zod.string().nullable(),
+  "hasPhoto": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})).describe('Tools from the maker\'s Sewing room the project uses, in the order listed'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -1712,6 +1802,10 @@ export const GetSewingOverviewResponse = zod.object({
   "stage": zod.enum(['prep', 'cut', 'sew', 'fit', 'finish']).describe('Prep, Cut, Sew, Fit, Finish, in that order'),
   "count": zod.number().int()
 })).describe('Projects in progress at each stage, Prep to Finish'),
+  "fabricTypes": zod.array(zod.object({
+  "fabricType": zod.enum(['cotton', 'linen', 'jersey', 'denim', 'silk', 'wool', 'polyester', 'blend', 'other', 'canvas', 'chambray', 'chiffon', 'corduroy', 'crepe', 'flannel', 'fleece', 'french_terry', 'rib_knit', 'satin', 'tulle', 'velvet', 'viscose']),
+  "count": zod.number().int()
+})).describe('Stash pieces of each fabric type the maker owns, most first'),
   "recentProjects": zod.array(zod.object({
   "id": zod.string().uuid(),
   "title": zod.string(),
@@ -1721,6 +1815,9 @@ export const GetSewingOverviewResponse = zod.object({
   "patternDesigner": zod.string().nullable(),
   "sizeMade": zod.string().nullable(),
   "fitChanges": zod.string().nullable(),
+  "needleType": zod.union([zod.enum(['universal', 'ballpoint', 'stretch', 'jeans', 'microtex', 'quilting', 'leather', 'topstitch', 'embroidery', 'metallic']),zod.null()]),
+  "needleSize": zod.union([zod.enum(['60/8', '65/9', '70/10', '75/11', '80/12', '90/14', '100/16', '110/18']).describe('Metric/US machine needle size, finest first'),zod.null()]),
+  "threadColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]),
   "notes": zod.string().nullable(),
   "completedAt": zod.coerce.date().nullable(),
   "fabrics": zod.array(zod.object({
@@ -1735,6 +1832,7 @@ export const GetSewingOverviewResponse = zod.object({
   "unit": zod.enum(['meters', 'yards']).describe('Meters go with centimetre widths, yards with inch widths'),
   "amount": zod.number().nullable(),
   "width": zod.number().nullable(),
+  "preWashed": zod.boolean().nullable().describe('Null when the maker hasn\'t said'),
   "brand": zod.string().nullable(),
   "notes": zod.string().nullable(),
   "photoCount": zod.number().int().describe('The first photo is the print close-up'),
@@ -1742,6 +1840,20 @@ export const GetSewingOverviewResponse = zod.object({
   "updatedAt": zod.coerce.date()
 })
 })),
+  "tools": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "section": zod.enum(['notions', 'kit']).describe('Notions get used up; kit stays'),
+  "category": zod.enum(['zip', 'button', 'snap', 'hook_and_eye', 'hook_and_loop', 'magnetic_clasp', 'toggle', 'elastic', 'bias_tape', 'ribbon', 'lace', 'piping', 'cord', 'twill_tape', 'buckle', 'd_ring', 'eyelet', 'rivet', 'interfacing', 'boning', 'batting', 'stabilizer', 'fusible_web', 'thread', 'label', 'machine', 'presser_foot', 'needle', 'scissors', 'ruler', 'other']).describe('Notions are closures, trims and tapes, hardware, shaping and backing, thread and labels; machine, presser_foot, needle, scissors and ruler are kit; other fits either'),
+  "name": zod.string(),
+  "quantity": zod.number().int().nullable(),
+  "size": zod.string().nullable(),
+  "color": zod.string().nullable(),
+  "brand": zod.string().nullable(),
+  "notes": zod.string().nullable(),
+  "hasPhoto": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})).describe('Tools from the maker\'s Sewing room the project uses, in the order listed'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 }))

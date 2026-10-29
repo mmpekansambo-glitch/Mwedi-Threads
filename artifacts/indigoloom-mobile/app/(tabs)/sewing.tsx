@@ -7,6 +7,7 @@ import { StatDoodle } from '@/components/StatDoodle';
 import { EmptyState, ErrorState, LoadingState, LoomButton, LoomText, fonts } from '@/components/loom';
 import { HomeSwitcher, ProfileMenu } from '@/components/Crafts';
 import { SewingProjectCard, fabricAmount, sewingStages } from '@/components/SewingFields';
+import { fabricTypes, labelFor } from '@/components/FabricFields';
 import { useSewingColors } from '@/hooks/useColors';
 
 // Opens Projects filtered to one status.
@@ -59,6 +60,27 @@ export default function SewingOverviewScreen() {
               ))}
             </View>
           </View>
+          {data.fabricTypes.length ? (
+            <View style={[styles.stageBoard, { backgroundColor: colors.card, borderColor: colors.border, marginTop: 0 }]}>
+              <LoomText serif style={[styles.sectionTitle, { color: colors.foreground, fontSize: 21, marginBottom: 6 }]}>Fabric by type</LoomText>
+              {data.fabricTypes.map((entry) => (
+                <Pressable
+                  key={entry.fabricType}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${labelFor(fabricTypes, entry.fabricType)}: ${entry.count} ${entry.count === 1 ? 'piece' : 'pieces'}`}
+                  onPress={() => router.navigate({ pathname: '/(tabs)/fabric', params: { type: entry.fabricType, at: String(Date.now()) } })}
+                  style={({ pressed }) => [styles.typeBar, pressed && { opacity: 0.7 }]}
+                  testID={`button-fabric-type-${entry.fabricType}`}
+                >
+                  <LoomText numberOfLines={1} style={[styles.typeName, { color: colors.foreground }]}>{labelFor(fabricTypes, entry.fabricType)}</LoomText>
+                  <View style={[styles.typeTrack, { backgroundColor: colors.selectedWash }]}>
+                    <View style={[styles.typeFill, { backgroundColor: colors.primary, width: `${(entry.count / data.fabricTypes[0].count) * 100}%` }]} />
+                  </View>
+                  <LoomText style={[styles.typeCount, { color: colors.foreground }]}>{entry.count}</LoomText>
+                </Pressable>
+              ))}
+            </View>
+          ) : null}
           <View style={styles.sectionHeading}>
             <LoomText serif style={[styles.sectionTitle, { color: colors.foreground }]}>Recent projects</LoomText>
             <Link href="/(tabs)/sewing-projects" style={{ color: colors.primaryText, fontFamily: fonts.semibold, fontSize: 15 }}>All projects</Link>
@@ -87,6 +109,11 @@ const styles = StyleSheet.create({
   stageBoard: { borderWidth: 1, borderRadius: 16, padding: 14, marginBottom: 22, marginTop: 8 },
   stageRow: { flexDirection: 'row', gap: 6 },
   stage: { flex: 1, borderWidth: 1, borderRadius: 10, paddingVertical: 9, alignItems: 'center' },
+  typeBar: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 36 },
+  typeName: { width: 92, fontSize: 14, fontFamily: fonts.semibold },
+  typeTrack: { flex: 1, height: 10, borderRadius: 5, overflow: 'hidden' },
+  typeFill: { height: '100%', minWidth: 6, borderRadius: 5 },
+  typeCount: { width: 24, textAlign: 'right', fontSize: 15, fontFamily: fonts.semibold },
   sectionHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 13 },
   sectionTitle: { fontSize: 26 },
 });

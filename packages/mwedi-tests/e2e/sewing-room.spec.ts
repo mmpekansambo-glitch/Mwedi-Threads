@@ -15,7 +15,7 @@ const prints: Record<string, string> = {
 function fabric(id: string, overrides: Record<string, unknown> = {}) {
   return {
     id, fabricType: "cotton", construction: "woven", print: "floral", generalColor: "blue", unit: "meters",
-    amount: 2.5, width: 145, brand: "Liberty", notes: "Lawn for a summer dress", photoCount: 2,
+    amount: 2.5, width: 145, preWashed: null, brand: "Liberty", notes: "Lawn for a summer dress", photoCount: 2,
     createdAt: "2026-10-20T12:00:00.000Z", updatedAt: "2026-10-20T12:00:00.000Z",
     ...overrides,
   };
@@ -35,12 +35,25 @@ type ProjectFabric = { stashFabricId: string; amountUsed: number | null };
 function sewingProject(id: string, overrides: Record<string, unknown> = {}) {
   return {
     id, title: "Linen shirt", status: "in_progress", stage: "cut", patternName: "Camp shirt", patternDesigner: "Maker Example",
-    sizeMade: "M", fitChanges: "Shortened the sleeves 3 cm", notes: null, completedAt: null,
-    fabrics: [{ stashFabricId: stash[0].id, amountUsed: 1.75, fabric: stash[0] }],
+    sizeMade: "M", fitChanges: "Shortened the sleeves 3 cm", needleType: null, needleSize: null, threadColor: null, notes: null, completedAt: null,
+    fabrics: [{ stashFabricId: stash[0].id, amountUsed: 1.75, fabric: stash[0] }], tools: [],
     createdAt: "2026-10-21T12:00:00.000Z", updatedAt: "2026-10-22T12:00:00.000Z",
     ...overrides,
   };
 }
+
+function sewingTool(id: string, overrides: Record<string, unknown> = {}) {
+  return {
+    id, section: "notions", category: "zip", name: "Invisible zip", quantity: 4, size: "22 cm", color: "Navy", brand: null, notes: null, hasPhoto: false,
+    createdAt: "2026-10-20T12:00:00.000Z", updatedAt: "2026-10-20T12:00:00.000Z",
+    ...overrides,
+  };
+}
+
+const tools = [
+  sewingTool("dddddddd-0000-4000-8000-000000000001"),
+  sewingTool("dddddddd-0000-4000-8000-000000000002", { section: "kit", category: "presser_foot", name: "Walking foot", quantity: null, size: null, color: null }),
+];
 
 const itemMatchPatch = (pathname: string) => pathname.match(/^\/api\/fabric-stash\/([^/]+)$/)?.[1];
 
@@ -57,6 +70,7 @@ async function mockApi(page: Page, crafts: { yarn: boolean; sewing: boolean; nee
   const withFabric = (body: Record<string, unknown>) => ({
     ...body,
     ...(body.fabrics ? { fabrics: (body.fabrics as ProjectFabric[]).map((item) => ({ ...item, fabric: stash.find((entry) => entry.id === item.stashFabricId) })) } : {}),
+    ...(body.toolIds ? { tools: (body.toolIds as string[]).map((id) => tools.find((entry) => entry.id === id)) } : {}),
   });
   await page.route("**/storage.test/**", (route) => route.fulfill({ status: 200, body: "" }));
   await page.route("**/api/**", async (route) => {
@@ -86,7 +100,8 @@ async function mockApi(page: Page, crafts: { yarn: boolean; sewing: boolean; nee
     }
     if (pathname === "/api/fabric-stash") {
       const print = url.searchParams.get("print");
-      return route.fulfill({ json: stash.filter((item) => !print || item.print === print) });
+      const type = url.searchParams.get("fabricType");
+      return route.fulfill({ json: stash.filter((item) => (!print || item.print === print) && (!type || item.fabricType === type)) });
     }
     const itemMatch = pathname.match(/^\/api\/fabric-stash\/([^/]+)$/);
     if (itemMatch && request.method() === "GET") return route.fulfill({ json: stash.find((entry) => entry.id === itemMatch[1]) });
@@ -94,6 +109,7 @@ async function mockApi(page: Page, crafts: { yarn: boolean; sewing: boolean; nee
       return route.fulfill({ json: {
         inProgress: 1, finished: 0, fabricPieces: 3, fabricLength: 7.37, fabricUnit: "meters",
         stages: [{ stage: "prep", count: 0 }, { stage: "cut", count: 1 }, { stage: "sew", count: 0 }, { stage: "fit", count: 0 }, { stage: "finish", count: 0 }],
+        fabricTypes: [{ fabricType: "cotton", count: 1 }, { fabricType: "jersey", count: 1 }, { fabricType: "wool", count: 1 }],
         recentProjects: projects,
       } });
     }
@@ -123,6 +139,7 @@ async function mockApi(page: Page, crafts: { yarn: boolean; sewing: boolean; nee
       sent.fabricUpdates.push({ id: itemMatchPatch(pathname), ...(request.postDataJSON() as object) });
       return route.fulfill({ json: stash.find((entry) => entry.id === itemMatchPatch(pathname)) });
     }
+    if (pathname === "/api/sewing-tools") return route.fulfill({ json: tools });
     if (pathname === "/api/dashboard") {
       return route.fulfill({ json: { totalProjects: 0, activeProjects: 0, completedProjects: 0, recentProjects: [], recentProgress: [], mostUsedYarnBrands: [], mostUsedYarnBrandProjects: 0, averageDaysToFinish: null, charts: { projectsByStatus: [], completedPerMonth: [], completedWithoutDate: 0, progressPerWeek: [] } } });
     }
@@ -186,6 +203,8 @@ test("adds a fabric with a print close-up and an extra photo", async ({ page }) 
   await page.getByTestId("input-fabric-amount").fill("2.75");
   await page.getByTestId("input-fabric-width").fill("54");
   await page.getByTestId("button-general-color-green").click();
+  await page.getByTestId("button-prewashed-yes").click();
+  await expect(page.getByTestId("button-prewashed-yes")).toHaveAttribute("aria-checked", "true");
   await page.getByTestId("input-fabric-notes").fill("For a shirt");
   if (shots) await page.screenshot({ path: `${shots}/fabric-form-web.png` });
   await page.getByTestId("button-save-fabric").click();
@@ -194,7 +213,7 @@ test("adds a fabric with a print close-up and an extra photo", async ({ page }) 
   expect(sent.uploads).toBe(2);
   expect(sent.create).toMatchObject({
     fabricType: "linen", construction: "woven", print: "check", generalColor: "green", unit: "yards",
-    amount: 2.75, width: 54, brand: null, notes: "For a shirt",
+    amount: 2.75, width: 54, preWashed: true, brand: null, notes: "For a shirt",
     photoPaths: ["/objects/fabric/user/bbbbbbbb-0000-4000-8000-0000000000f1", "/objects/fabric/user/bbbbbbbb-0000-4000-8000-0000000000f2"],
   });
 });
@@ -243,9 +262,55 @@ test("shows the Sewing room Overview with stages and recent projects", async ({ 
   await expect(page.getByTestId("card-sewing-project-cccccccc-0000-4000-8000-000000000001")).toContainText("Camp shirt · Size M");
   if (shots) await page.screenshot({ path: `${shots}/sewing-overview-web.png`, fullPage: true });
 
+  await expect(page.getByTestId("link-fabric-type-wool")).toContainText("Wool");
   await page.getByTestId("link-sewing-stat-in-progress").click();
   await expect(page).toHaveURL(/\/sewing\/projects\?status=in_progress$/);
   await expect(page.getByText("1 project", { exact: true })).toBeVisible();
+});
+
+test("opens the fabric stash filtered to a type from the Overview chart", async ({ page }) => {
+  await mockApi(page, { yarn: false, sewing: true, needsChoice: false }, newSent());
+  await page.goto("/sewing");
+  await page.getByTestId("link-fabric-type-jersey").click();
+  await expect(page).toHaveURL(/\/sewing\/fabric\?type=jersey$/);
+  await expect(page.getByTestId("select-fabric-type-filter")).toHaveValue("jersey");
+  await expect(page.getByText("1 fabric", { exact: true })).toBeVisible();
+});
+
+test("adds tools, a needle and a thread color to a sewing project", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 1500 });
+  const sent = newSent();
+  await mockApi(page, { yarn: false, sewing: true, needsChoice: false }, sent);
+  await page.goto("/sewing/projects/cccccccc-0000-4000-8000-000000000001/edit");
+  await expect(page.getByTestId("row-sewing-needle")).toContainText("Add");
+  await expect(page.getByTestId("row-sewing-thread")).toContainText("Add");
+
+  await page.getByTestId("button-add-sewing-tool").click();
+  await page.getByTestId(`button-pick-tool-${tools[1].id}`).click();
+  await page.getByTestId("button-add-sewing-tool").click();
+  await page.getByTestId(`button-pick-tool-${tools[0].id}`).click();
+  await expect(page.getByTestId(`sewing-tool-${tools[1].id}`)).toContainText("Walking foot");
+
+  await page.getByTestId("row-sewing-needle").click();
+  await page.getByTestId("row-sewing-needle-wheel-0").getByRole("option", { name: "Stretch" }).click();
+  await page.getByTestId("row-sewing-needle-wheel-1").getByRole("option", { name: "75/11" }).click();
+  if (shots) await page.screenshot({ path: `${shots}/needle-wheel-web.png`, fullPage: true });
+  await page.getByTestId("row-sewing-needle-done").click();
+  await expect(page.getByTestId("row-sewing-needle")).toContainText("Stretch 75/11");
+  await page.getByTestId("row-sewing-thread").click();
+  await page.getByTestId("row-sewing-thread-wheel-0").getByRole("option", { name: "Blue" }).click();
+  await page.getByTestId("row-sewing-thread-done").click();
+  await expect(page.getByTestId("row-sewing-thread")).toContainText("Blue");
+  if (shots) await page.screenshot({ path: `${shots}/project-form-tools-web.png`, fullPage: true });
+  await page.getByTestId("button-save-sewing-project").click();
+
+  await expect(page).toHaveURL(/\/sewing\/projects\/cccccccc-0000-4000-8000-000000000001$/);
+  expect(sent.projectSaves[0]).toMatchObject({
+    needleType: "stretch", needleSize: "75/11", threadColor: "blue", toolIds: [tools[1].id, tools[0].id],
+  });
+  await expect(page.getByText("Stretch 75/11")).toBeVisible();
+  await expect(page.getByTestId(`card-tool-${tools[0].id}`)).toContainText("Invisible zip");
+  if (shots) await page.screenshot({ path: `${shots}/project-page-tools-web.png`, fullPage: true });
 });
 
 test("starts a sewing project with fabric from the stash", async ({ page }) => {

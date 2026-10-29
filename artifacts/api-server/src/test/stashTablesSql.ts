@@ -102,6 +102,7 @@ export function stashTablesSql(isolatedSchema: string): string {
       unit ${isolatedSchema}.fabric_unit NOT NULL DEFAULT 'meters',
       amount double precision,
       width double precision,
+      pre_washed boolean,
       brand text,
       notes text,
       photo_paths text[] NOT NULL DEFAULT '{}'::text[],
@@ -115,6 +116,7 @@ export function stashTablesSql(isolatedSchema: string): string {
 export function sewingTablesSql(isolatedSchema: string): string {
   return `
     CREATE TYPE ${isolatedSchema}.sewing_stage AS ENUM ('prep', 'cut', 'sew', 'fit', 'finish');
+    CREATE TYPE ${isolatedSchema}.sewing_needle_type AS ENUM ('universal', 'ballpoint', 'stretch', 'jeans', 'microtex', 'quilting', 'leather', 'topstitch', 'embroidery', 'metallic');
     CREATE TABLE ${isolatedSchema}.sewing_projects (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       owner_id text NOT NULL REFERENCES ${isolatedSchema}.users(id) ON DELETE CASCADE,
@@ -125,6 +127,9 @@ export function sewingTablesSql(isolatedSchema: string): string {
       pattern_designer text,
       size_made text,
       fit_changes text,
+      needle_type ${isolatedSchema}.sewing_needle_type,
+      needle_size text,
+      thread_color ${isolatedSchema}.general_color,
       notes text,
       completed_at date,
       created_at timestamptz NOT NULL DEFAULT now(),
@@ -160,6 +165,18 @@ export function sewingToolsSql(isolatedSchema: string): string {
       photo_path text,
       created_at timestamptz NOT NULL DEFAULT now(),
       updated_at timestamptz NOT NULL DEFAULT now()
+    );
+  `;
+}
+
+// Tools listed on sewing projects. Needs sewing_projects and sewing_tools.
+export function sewingProjectToolsSql(isolatedSchema: string): string {
+  return `
+    CREATE TABLE ${isolatedSchema}.sewing_project_tools (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      project_id uuid NOT NULL REFERENCES ${isolatedSchema}.sewing_projects(id) ON DELETE CASCADE,
+      sewing_tool_id uuid NOT NULL REFERENCES ${isolatedSchema}.sewing_tools(id) ON DELETE CASCADE,
+      position integer NOT NULL DEFAULT 0
     );
   `;
 }

@@ -699,6 +699,11 @@ export interface StashFabric {
   amount: number | null;
   /** @nullable */
   width: number | null;
+  /**
+     * Null when the maker hasn't said
+     * @nullable
+     */
+  preWashed: boolean | null;
   /** @nullable */
   brand: string | null;
   /** @nullable */
@@ -727,6 +732,8 @@ export interface CreateStashFabric {
      * @nullable
      */
   width?: number | null;
+  /** @nullable */
+  preWashed?: boolean | null;
   /**
      * @maxLength 80
      * @nullable
@@ -763,6 +770,8 @@ export interface UpdateStashFabric {
      * @nullable
      */
   width?: number | null;
+  /** @nullable */
+  preWashed?: boolean | null;
   /**
      * @maxLength 80
      * @nullable
@@ -1092,6 +1101,39 @@ export const SewingStage = {
   finish: 'finish',
 } as const;
 
+export type SewingNeedleType = typeof SewingNeedleType[keyof typeof SewingNeedleType];
+
+
+export const SewingNeedleType = {
+  universal: 'universal',
+  ballpoint: 'ballpoint',
+  stretch: 'stretch',
+  jeans: 'jeans',
+  microtex: 'microtex',
+  quilting: 'quilting',
+  leather: 'leather',
+  topstitch: 'topstitch',
+  embroidery: 'embroidery',
+  metallic: 'metallic',
+} as const;
+
+/**
+ * Metric/US machine needle size, finest first
+ */
+export type SewingNeedleSize = typeof SewingNeedleSize[keyof typeof SewingNeedleSize];
+
+
+export const SewingNeedleSize = {
+  '60/8': '60/8',
+  '65/9': '65/9',
+  '70/10': '70/10',
+  '75/11': '75/11',
+  '80/12': '80/12',
+  '90/14': '90/14',
+  '100/16': '100/16',
+  '110/18': '110/18',
+} as const;
+
 export interface SewingProjectFabric {
   stashFabricId: string;
   /**
@@ -1125,11 +1167,16 @@ export interface SewingProject {
   sizeMade: string | null;
   /** @nullable */
   fitChanges: string | null;
+  needleType: SewingNeedleType | null;
+  needleSize: SewingNeedleSize | null;
+  threadColor: GeneralColor | null;
   /** @nullable */
   notes: string | null;
   /** @nullable */
   completedAt: string | null;
   fabrics: SewingProjectFabric[];
+  /** Tools from the maker's Sewing room the project uses, in the order listed */
+  tools: SewingTool[];
   createdAt: string;
   updatedAt: string;
 }
@@ -1162,6 +1209,9 @@ export interface CreateSewingProject {
      * @nullable
      */
   fitChanges?: string | null;
+  needleType?: SewingNeedleType | null;
+  needleSize?: SewingNeedleSize | null;
+  threadColor?: GeneralColor | null;
   /**
      * @maxLength 2000
      * @nullable
@@ -1169,6 +1219,8 @@ export interface CreateSewingProject {
   notes?: string | null;
   /** @maxItems 12 */
   fabrics?: SewingProjectFabricInput[];
+  /** @maxItems 30 */
+  toolIds?: string[];
 }
 
 export interface UpdateSewingProject {
@@ -1199,6 +1251,9 @@ export interface UpdateSewingProject {
      * @nullable
      */
   fitChanges?: string | null;
+  needleType?: SewingNeedleType | null;
+  needleSize?: SewingNeedleSize | null;
+  threadColor?: GeneralColor | null;
   /**
      * @maxLength 2000
      * @nullable
@@ -1209,10 +1264,20 @@ export interface UpdateSewingProject {
      * @maxItems 12
      */
   fabrics?: SewingProjectFabricInput[];
+  /**
+     * The full list of tools on the project, replacing what was there
+     * @maxItems 30
+     */
+  toolIds?: string[];
 }
 
 export interface SewingStageCount {
   stage: SewingStage;
+  count: number;
+}
+
+export interface FabricTypeCount {
+  fabricType: FabricType;
   count: number;
 }
 
@@ -1226,6 +1291,8 @@ export interface SewingOverview {
   fabricUnit: FabricUnit;
   /** Projects in progress at each stage, Prep to Finish */
   stages: SewingStageCount[];
+  /** Stash pieces of each fabric type the maker owns, most first */
+  fabricTypes: FabricTypeCount[];
   recentProjects: SewingProject[];
 }
 

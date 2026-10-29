@@ -13,13 +13,16 @@ import {
 import {
   db,
   sewingProjectFabricsTable,
+  sewingProjectToolsTable,
   sewingProjectsTable,
+  sewingToolsTable,
   stashFabricsTable,
   type SewingProject,
 } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
-import { checkFabricLinks, sewingStages, stashLength, statusChanges } from "../lib/sewingProjects";
+import { checkFabricLinks, checkToolIds, fabricTypeCounts, sewingStages, stashLength, statusChanges } from "../lib/sewingProjects";
 import { serializeFabric } from "./fabricStash";
+import { serializeTool } from "./sewingTools";
 
 const router: IRouter = Router();
 
@@ -31,9 +34,17 @@ function tidyText(value: string | null | undefined): string | null {
   return value?.trim() || null;
 }
 
-// Adds each project's stash fabric, in the order the maker listed it.
+// Adds each project's stash fabric and tools, in the order the maker listed them.
 async function withFabrics(projects: SewingProject[]) {
   const ids = projects.map((project) => project.id);
+  const tools = ids.length
+    ? await db
+        .select({ projectId: sewingProjectToolsTable.projectId, tool: sewingToolsTable })
+        .from(sewingProjectToolsTable)
+        .innerJoin(sewingToolsTable, eq(sewingToolsTable.id, sewingProjectToolsTable.sewingToolId))
+        .where(inArray(sewingProjectToolsTable.projectId, ids))
+        .orderBy(asc(sewingProjectToolsTable.position))
+    : [];
   const links = ids.length
     ? await db
         .select({ link: sewingProjectFabricsTable, fabric: stashFabricsTable })
@@ -53,6 +64,7 @@ async function withFabrics(projects: SewingProject[]) {
           amountUsed: link.amountUsed,
           fabric: serializeFabric(fabric),
         })),
+      tools: tools.filter((row) => row.projectId === project.id).map((row) => serializeTool(row.tool)),
     });
     // The schema reads dates as Date; send the plain YYYY-MM-DD date back.
     return { ...parsed, completedAt: project.completedAt };
@@ -74,6 +86,29 @@ async function checkLinks(ownerId: string, sent: { stashFabricId: string; amount
     ));
   if (owned.length !== checked.links.length) return { ok: false, error: "Choose fabric from your stash." };
   return checked;
+}
+
+type ToolsResult = { ok: true; ids: string[] } | { ok: false; error: string };
+
+// A project can only list tools from its owner's own Sewing room.
+async function checkTools(ownerId: string, sent: string[]): Promise<ToolsResult> {
+  const checked = checkToolIds(sent);
+  if (!checked.ok || checked.ids.length === 0) return checked;
+  const owned = await db
+    .select({ id: sewingToolsTable.id })
+    .from(sewingToolsTable)
+    .where(and(eq(sewingToolsTable.ownerId, ownerId), inArray(sewingToolsTable.id, checked.ids)));
+  if (owned.length !== checked.ids.length) return { ok: false, error: "Choose tools from your Sewing room." };
+  return checked;
+}
+
+async function saveTools(projectId: string, toolIds: string[]) {
+  await db.delete(sewingProjectToolsTable).where(eq(sewingProjectToolsTable.projectId, projectId));
+  if (toolIds.length) {
+    await db
+      .insert(sewingProjectToolsTable)
+      .values(toolIds.map((sewingToolId, position) => ({ projectId, sewingToolId, position })));
+  }
 }
 
 async function saveLinks(projectId: string, links: { stashFabricId: string; amountUsed: number | null }[]) {
@@ -133,6 +168,11 @@ router.post("/sewing-projects", requireAuth, async (req, res): Promise<void> => 
     res.status(400).json({ error: links.error });
     return;
   }
+  const tools = await checkTools(ownerId, parsed.data.toolIds ?? []);
+  if (!tools.ok) {
+    res.status(400).json({ error: tools.error });
+    return;
+  }
 
   const status = parsed.data.status ?? "planning";
   const [created] = await db
@@ -146,11 +186,15 @@ router.post("/sewing-projects", requireAuth, async (req, res): Promise<void> => 
       patternDesigner: tidyText(parsed.data.patternDesigner),
       sizeMade: tidyText(parsed.data.sizeMade),
       fitChanges: tidyText(parsed.data.fitChanges),
+      needleType: parsed.data.needleType ?? null,
+      needleSize: parsed.data.needleSize ?? null,
+      threadColor: parsed.data.threadColor ?? null,
       notes: tidyText(parsed.data.notes),
       ...statusChanges({ status: "planning", completedAt: null }, status),
     })
     .returning();
   await saveLinks(created!.id, links.links);
+  await saveTools(created!.id, tools.ids);
   res.status(201).json((await withFabrics([created!]))[0]);
 });
 
@@ -188,6 +232,11 @@ router.patch("/sewing-projects/:sewingProjectId", requireAuth, async (req, res):
     res.status(400).json({ error: links.error });
     return;
   }
+  const tools = changes.toolIds ? await checkTools(ownerId, changes.toolIds) : undefined;
+  if (tools && !tools.ok) {
+    res.status(400).json({ error: tools.error });
+    return;
+  }
 
   const text = (value: string | null | undefined, existing: string | null) =>
     value !== undefined ? tidyText(value) : existing;
@@ -201,6 +250,9 @@ router.patch("/sewing-projects/:sewingProjectId", requireAuth, async (req, res):
       patternDesigner: text(changes.patternDesigner, current.patternDesigner),
       sizeMade: text(changes.sizeMade, current.sizeMade),
       fitChanges: text(changes.fitChanges, current.fitChanges),
+      needleType: changes.needleType !== undefined ? changes.needleType : current.needleType,
+      needleSize: changes.needleSize !== undefined ? changes.needleSize : current.needleSize,
+      threadColor: changes.threadColor !== undefined ? changes.threadColor : current.threadColor,
       notes: text(changes.notes, current.notes),
       ...statusChanges(current, changes.status),
     })
@@ -211,6 +263,7 @@ router.patch("/sewing-projects/:sewingProjectId", requireAuth, async (req, res):
     return;
   }
   if (links?.ok) await saveLinks(updated.id, links.links);
+  if (tools?.ok) await saveTools(updated.id, tools.ids);
   res.json((await withFabrics([updated]))[0]);
 });
 
@@ -240,7 +293,7 @@ router.get("/sewing-overview", requireAuth, async (_req, res): Promise<void> => 
       .where(eq(sewingProjectsTable.ownerId, ownerId))
       .orderBy(desc(sewingProjectsTable.updatedAt)),
     db
-      .select({ unit: stashFabricsTable.unit, amount: stashFabricsTable.amount })
+      .select({ unit: stashFabricsTable.unit, amount: stashFabricsTable.amount, fabricType: stashFabricsTable.fabricType })
       .from(stashFabricsTable)
       .where(eq(stashFabricsTable.ownerId, ownerId)),
   ]);
@@ -256,6 +309,7 @@ router.get("/sewing-overview", requireAuth, async (_req, res): Promise<void> => 
       stage,
       count: inProgress.filter((project) => project.stage === stage).length,
     })),
+    fabricTypes: fabricTypeCounts(pieces),
     recentProjects: await withFabrics(projects.slice(0, 4)),
   }));
 });

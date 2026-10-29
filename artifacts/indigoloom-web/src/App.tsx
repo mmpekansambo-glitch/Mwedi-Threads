@@ -23,7 +23,7 @@ import {
   getGetYarnToolQueryKey, getGetYarnToolsQueryKey,
 } from '@workspace/api-client-react';
 import { CrochetHookSize, KnittingNeedleSize, NeedleCableLength } from '@workspace/api-client-react';
-import type { CatalogField, CatalogReview, CreateProject, CreateProgress, Crafts, FabricConstruction, FabricPrint, FabricType, FabricUnit, GeneralColor, Project, ProjectStatus, SewingProject, SewingStage, SewingTool, SewingToolCategory, SewingToolSection, StashFabric, StashYarn, UpdateProject, YarnNotionType, YarnTool, YarnToolMaterial, YarnToolSection, YarnWeight, KnittingNeedleType } from '@workspace/api-client-react';
+import type { CatalogField, CatalogReview, CreateProject, CreateProgress, Crafts, FabricConstruction, FabricPrint, FabricType, FabricUnit, GeneralColor, Project, ProjectStatus, SewingNeedleSize, SewingNeedleType, SewingProject, SewingStage, SewingTool, SewingToolCategory, SewingToolSection, StashFabric, StashYarn, UpdateProject, YarnNotionType, YarnTool, YarnToolMaterial, YarnToolSection, YarnWeight, KnittingNeedleType } from '@workspace/api-client-react';
 import { FormProvider as Form, useForm, type UseFormReturn } from 'react-hook-form';
 import {
   ArrowLeft, ArrowRight, ArrowUpDown, ArrowUpRight, BookOpen, Check,
@@ -58,7 +58,7 @@ import { ErrorBoundary } from '@/components/error-boundary';
 import {
   fabricConstructions, fabricName, fabricPhotoUrl, fabricPrints, fabricSize, fabricTypes, fabricUnits, labelFor, maxFabricPhotos, sizeForApi, OptionWheelField,
 } from '@/components/fabric-fields';
-import { StageTrack, amountLeft, fabricAmount, sewingStages, stageIndex } from '@/components/sewing-fields';
+import { StageTrack, TapWheelRow, amountLeft, fabricAmount, machineNeedleSizes, machineNeedleTypes, needleLabel, sewingStages, stageIndex } from '@/components/sewing-fields';
 import { ToolThumb, ToolTypeWheelField, categoryFor, quantityForApi, toolDetails, toolPhotoUrl, toolSections } from '@/components/sewing-tools';
 import { NeedleIcon, YarnToolThumb, hookSizes, notionFor, sortYarnTools, yarnNeedleTypes, yarnNotionTypes, yarnToolDetails, yarnToolMaterials, yarnToolPhotoUrl, yarnToolSections, yarnToolTitle } from '@/components/yarn-tools';
 import { trackEvent, trackSuccessfulAction } from '@/lib/analytics';
@@ -1341,7 +1341,8 @@ function FabricCard({ fabric }: { fabric: StashFabric }) {
 
 function FabricStashPage() {
   const [search, setSearch] = useState('');
-  const [fabricType, setFabricType] = useState('');
+  const urlType = new URLSearchParams(useSearch()).get('type') ?? '';
+  const [fabricType, setFabricType] = useState(fabricTypes.some((item) => item.value === urlType) ? urlType : '');
   const [print, setPrint] = useState('');
   const [color, setColor] = useState('');
   const params = {
@@ -1377,14 +1378,14 @@ type FabricPhotoSlot = { kind: 'kept'; index: number } | { kind: 'new'; file: Fi
 
 type FabricDraft = {
   fabricType: FabricType | ''; construction: FabricConstruction | null; print: FabricPrint | ''; generalColor: GeneralColor | null;
-  unit: FabricUnit; amount: string; width: string; brand: string; notes: string;
+  unit: FabricUnit; amount: string; width: string; preWashed: boolean | null; brand: string; notes: string;
 };
 
 function draftFromFabric(fabric?: StashFabric): FabricDraft {
   return {
     fabricType: fabric?.fabricType ?? '', construction: fabric?.construction ?? null, print: fabric?.print ?? '', generalColor: fabric?.generalColor ?? null,
     unit: fabric?.unit ?? 'meters', amount: fabric?.amount === null || !fabric ? '' : String(fabric.amount),
-    width: fabric?.width === null || !fabric ? '' : String(fabric.width), brand: fabric?.brand ?? '', notes: fabric?.notes ?? '',
+    width: fabric?.width === null || !fabric ? '' : String(fabric.width), preWashed: fabric?.preWashed ?? null, brand: fabric?.brand ?? '', notes: fabric?.notes ?? '',
   };
 }
 
@@ -1471,7 +1472,7 @@ function FabricForm({ fabric }: { fabric?: StashFabric }) {
     }
     const data = {
       fabricType: draft.fabricType, construction: draft.construction, print: draft.print || null, generalColor: draft.generalColor,
-      unit: draft.unit, amount, width, brand: draft.brand.trim() || null, notes: draft.notes.trim() || null, photoPaths,
+      unit: draft.unit, amount, width, preWashed: draft.preWashed, brand: draft.brand.trim() || null, notes: draft.notes.trim() || null, photoPaths,
     };
     const options = {
       onSuccess: done,
@@ -1514,12 +1515,13 @@ function FabricForm({ fabric }: { fabric?: StashFabric }) {
         <OptionWheelField id="fabric-type" label="Fabric type" required options={fabricTypes} value={draft.fabricType} onChange={(fabricType) => { set({ fabricType }); setErrors(({ type: _type, ...rest }) => rest); }} icon={Layers3} placeholder="Choose a type" testId="select-fabric-type" error={errors.type}/>
         <div className="field-block"><label id="fabric-construction-label">Woven or knit</label><div className="segmented" role="radiogroup" aria-labelledby="fabric-construction-label">{fabricConstructions.map((item) => <button key={item.value} type="button" role="radio" aria-checked={draft.construction === item.value} className={draft.construction === item.value ? 'selected' : ''} onClick={() => set({ construction: draft.construction === item.value ? null : item.value })} data-testid={`button-construction-${item.value}`}>{item.label}</button>)}</div></div>
         <OptionWheelField id="fabric-print" label="Print" options={fabricPrints} value={draft.print} onChange={(print) => set({ print })} icon={Sparkles} placeholder="Choose a print" testId="select-fabric-print"/>
-        <div className="field-block"><label id="fabric-unit-label">Measured in</label><div className="segmented" role="radiogroup" aria-labelledby="fabric-unit-label">{fabricUnits.map((item) => <button key={item.value} type="button" role="radio" aria-checked={draft.unit === item.value} className={draft.unit === item.value ? 'selected' : ''} onClick={() => set({ unit: item.value })} data-testid={`button-unit-${item.value}`}>{item.label}</button>)}</div></div>
+        <div className="field-block"><label htmlFor="fabric-brand">Brand</label><input id="fabric-brand" maxLength={80} placeholder="Optional" value={draft.brand} onChange={(event) => set({ brand: event.target.value })} data-testid="input-fabric-brand"/></div>
         <GeneralColorPicker value={draft.generalColor} onChange={(generalColor) => set({ generalColor })}/>
+        <div className="field-block"><label id="fabric-unit-label">Measured in</label><div className="segmented" role="radiogroup" aria-labelledby="fabric-unit-label">{fabricUnits.map((item) => <button key={item.value} type="button" role="radio" aria-checked={draft.unit === item.value} className={draft.unit === item.value ? 'selected' : ''} onClick={() => set({ unit: item.value })} data-testid={`button-unit-${item.value}`}>{item.label}</button>)}</div></div>
+        <div className="field-block"><label id="fabric-washed-label">Pre-washed</label><div className="segmented" role="radiogroup" aria-labelledby="fabric-washed-label">{([[true, 'Yes'], [false, 'No']] as const).map(([value, label]) => <button key={label} type="button" role="radio" aria-checked={draft.preWashed === value} className={draft.preWashed === value ? 'selected' : ''} onClick={() => set({ preWashed: draft.preWashed === value ? null : value })} data-testid={`button-prewashed-${label.toLowerCase()}`}>{label}</button>)}</div></div>
         <div className="field-block"><label htmlFor="fabric-amount">Amount</label><span className="input-with-unit"><input id="fabric-amount" inputMode="decimal" placeholder="e.g. 2.5" value={draft.amount} onChange={(event) => { set({ amount: event.target.value }); setErrors(({ size: _size, ...rest }) => rest); }} data-testid="input-fabric-amount"/><i>{unit.amount}</i></span></div>
         <div className="field-block"><label htmlFor="fabric-width">Width</label><span className="input-with-unit"><input id="fabric-width" inputMode="decimal" placeholder={draft.unit === 'meters' ? 'e.g. 145' : 'e.g. 58'} value={draft.width} onChange={(event) => { set({ width: event.target.value }); setErrors(({ size: _size, ...rest }) => rest); }} data-testid="input-fabric-width"/><i>{unit.width}</i></span></div>
         {errors.size && <span className="field-error field-wide">{errors.size}</span>}
-        <div className="field-block"><label htmlFor="fabric-brand">Brand</label><input id="fabric-brand" maxLength={80} placeholder="Optional" value={draft.brand} onChange={(event) => set({ brand: event.target.value })} data-testid="input-fabric-brand"/></div>
         <div className="field-block field-wide"><label htmlFor="fabric-notes">Notes</label><textarea id="fabric-notes" rows={3} maxLength={1000} placeholder="Where it's from, what it's for…" value={draft.notes} onChange={(event) => set({ notes: event.target.value })} data-testid="input-fabric-notes"/></div>
       </div>
       {errors.save && <p className="mutation-error" role="alert">{errors.save}</p>}
@@ -1564,6 +1566,16 @@ function SewingOverviewPage() {
           {data.stages.map((entry) => <li key={entry.stage} className={entry.count ? 'has-projects' : ''} data-testid={`stage-count-${entry.stage}`}><strong>{entry.count}</strong><span>{labelFor(sewingStages, entry.stage)}</span></li>)}
         </ol>
       </section>
+      {data.fabricTypes.length > 0 && <section className="fabric-type-chart loom-card" aria-labelledby="fabric-type-chart-title">
+        <h2 className="serif" id="fabric-type-chart-title">Fabric by type</h2>
+        <ul>{data.fabricTypes.map((entry) => <li key={entry.fabricType}>
+          <Link href={`/sewing/fabric?type=${entry.fabricType}`} className="fabric-type-bar" data-testid={`link-fabric-type-${entry.fabricType}`}>
+            <span className="fabric-type-name">{labelFor(fabricTypes, entry.fabricType)}</span>
+            <span className="fabric-type-track"><i style={{ width: `${(entry.count / data.fabricTypes[0]!.count) * 100}%` }}/></span>
+            <strong>{entry.count}</strong>
+          </Link>
+        </li>)}</ul>
+      </section>}
       <section className="dashboard-work">
         <div className="section-heading"><div><h2 className="serif">Recent projects</h2></div><Link href="/sewing/projects" className="quiet-link" data-testid="link-view-all-sewing-projects">All projects <ArrowRight size={15}/></Link></div>
         {data.recentProjects.length ? <div className="sewing-card-grid">{data.recentProjects.slice(0, 3).map((project) => <SewingProjectCard key={project.id} project={project}/>)}</div> : <EmptySewingProjects compact/>}
@@ -1604,6 +1616,7 @@ type SewingFabricDraft = { fabric: StashFabric; amountUsed: string };
 type SewingDraft = {
   title: string; status: ProjectStatus; patternName: string; patternDesigner: string; sizeMade: string;
   fitChanges: string; notes: string; fabrics: SewingFabricDraft[];
+  needleType: SewingNeedleType | null; needleSize: SewingNeedleSize | null; threadColor: GeneralColor | null; tools: SewingTool[];
 };
 
 function draftFromSewingProject(project?: SewingProject): SewingDraft {
@@ -1612,6 +1625,8 @@ function draftFromSewingProject(project?: SewingProject): SewingDraft {
     patternDesigner: project?.patternDesigner ?? '', sizeMade: project?.sizeMade ?? '', fitChanges: project?.fitChanges ?? '',
     notes: project?.notes ?? '',
     fabrics: project?.fabrics.map((item) => ({ fabric: item.fabric, amountUsed: item.amountUsed === null ? '' : String(item.amountUsed) })) ?? [],
+    needleType: project?.needleType ?? null, needleSize: project?.needleSize ?? null, threadColor: project?.threadColor ?? null,
+    tools: project?.tools ?? [],
   };
 }
 
@@ -1636,6 +1651,20 @@ function StashFabricPicker({ chosen, onPick, onClose }: { chosen: string[]; onPi
   </div>;
 }
 
+// Shows a maker's Sewing room tools to pick from, leaving out tools already chosen.
+function SewingToolPicker({ chosen, onPick, onClose }: { chosen: string[]; onPick: (tool: SewingTool) => void; onClose: () => void }) {
+  const tools = useGetSewingTools({}, { query: { queryKey: getGetSewingToolsQueryKey({}) } });
+  const available = tools.data?.filter((tool) => !chosen.includes(tool.id)) ?? [];
+  return <div className="fabric-picker" role="group" aria-label="Choose from your tools">
+    <div className="fabric-picker-head"><b>Your tools</b><button type="button" className="icon-button" onClick={onClose} aria-label="Close tools list"><X size={16}/></button></div>
+    {tools.isLoading ? <p className="fabric-picker-note">Loading your tools…</p>
+      : available.length ? <div className="tool-picker-list">{available.map((tool) => <button key={tool.id} type="button" className="tool-pick" onClick={() => onPick(tool)} data-testid={`button-pick-tool-${tool.id}`}>
+        <ToolThumb tool={tool}/><span><b>{tool.name}</b><small>{toolDetails(tool)}</small></span>
+      </button>)}</div>
+      : <p className="fabric-picker-note">{tools.data?.length ? 'All your tools are on this project.' : 'You haven’t saved any tools yet.'} <Link href="/sewing/tools/new">Add a tool</Link></p>}
+  </div>;
+}
+
 function SewingProjectForm({ project }: { project?: SewingProject }) {
   const client = useQueryClient();
   const [, setLocation] = useLocation();
@@ -1643,6 +1672,7 @@ function SewingProjectForm({ project }: { project?: SewingProject }) {
   const update = useUpdateSewingProject();
   const [draft, setDraft] = useState<SewingDraft>(() => draftFromSewingProject(project));
   const [picking, setPicking] = useState(false);
+  const [pickingTools, setPickingTools] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const set = (change: Partial<SewingDraft>) => setDraft((current) => ({ ...current, ...change }));
   const setFabric = (index: number, change: Partial<SewingFabricDraft>) => set({ fabrics: draft.fabrics.map((item, place) => (place === index ? { ...item, ...change } : item)) });
@@ -1661,6 +1691,8 @@ function SewingProjectForm({ project }: { project?: SewingProject }) {
       title: draft.title.trim(), status: draft.status, patternName: draft.patternName || null, patternDesigner: draft.patternDesigner || null,
       sizeMade: draft.sizeMade || null, fitChanges: draft.fitChanges || null, notes: draft.notes || null,
       fabrics: fabrics as Array<{ stashFabricId: string; amountUsed: number | null }>,
+      needleType: draft.needleType, needleSize: draft.needleSize, threadColor: draft.threadColor,
+      toolIds: draft.tools.map((tool) => tool.id),
     };
     const finishing = draft.status === 'completed' && project?.status !== 'completed';
     const options = {
@@ -1704,6 +1736,33 @@ function SewingProjectForm({ project }: { project?: SewingProject }) {
         {picking
           ? <StashFabricPicker chosen={draft.fabrics.map((item) => item.fabric.id)} onPick={(fabric) => { set({ fabrics: [...draft.fabrics, { fabric, amountUsed: '' }] }); setPicking(false); }} onClose={() => setPicking(false)}/>
           : draft.fabrics.length < 12 && <button type="button" className="button button-outline" onClick={() => setPicking(true)} data-testid="button-add-sewing-fabric"><Plus size={16}/> Add fabric from your stash</button>}
+      </fieldset>
+      <fieldset className="sewing-fabric-field">
+        <legend>Tools</legend>
+        {draft.tools.map((tool) => <div key={tool.id} className="sewing-tool-row" data-testid={`sewing-tool-${tool.id}`}>
+          <ToolThumb tool={tool}/>
+          <span className="sewing-fabric-name"><b>{tool.name}</b><small>{toolDetails(tool)}</small></span>
+          <button type="button" className="icon-button" aria-label={`Remove ${tool.name}`} onClick={() => set({ tools: draft.tools.filter((item) => item.id !== tool.id) })} data-testid={`button-remove-sewing-tool-${tool.id}`}><X size={15}/></button>
+        </div>)}
+        {pickingTools
+          ? <SewingToolPicker chosen={draft.tools.map((tool) => tool.id)} onPick={(tool) => { set({ tools: [...draft.tools, tool] }); setPickingTools(false); }} onClose={() => setPickingTools(false)}/>
+          : draft.tools.length < 30 && <button type="button" className="button button-outline" onClick={() => setPickingTools(true)} data-testid="button-add-sewing-tool"><Plus size={16}/> Add tools</button>}
+      </fieldset>
+      <fieldset className="sewing-fabric-field">
+        <legend>Needle and thread</legend>
+        <div className="tap-rows">
+          <TapWheelRow label="Needle" shown={needleLabel(draft)} testId="row-sewing-needle"
+            wheels={[
+              { label: 'Needle type', items: machineNeedleTypes.map((item) => item.label), index: Math.max(0, machineNeedleTypes.findIndex((item) => item.value === draft.needleType)) },
+              { label: 'Needle size', items: machineNeedleSizes, index: Math.max(0, machineNeedleSizes.indexOf(draft.needleSize ?? '80/12')) },
+            ]}
+            onDone={([type, size]) => set({ needleType: machineNeedleTypes[type!]!.value, needleSize: machineNeedleSizes[size!]! })}
+            onClear={() => set({ needleType: null, needleSize: null })}/>
+          <TapWheelRow label="Thread color" shown={draft.threadColor && <><ColorDot color={draft.threadColor} noun="thread"/>{labelFor(generalColors, draft.threadColor)}</>} testId="row-sewing-thread"
+            wheels={[{ label: 'Thread color', items: generalColors.map((item) => item.label), index: Math.max(0, generalColors.findIndex((item) => item.value === draft.threadColor)) }]}
+            onDone={([color]) => set({ threadColor: generalColors[color!]!.value })}
+            onClear={() => set({ threadColor: null })}/>
+        </div>
       </fieldset>
       {errors.save && <p className="mutation-error" role="alert">{errors.save}</p>}
       <div className="form-actions"><Link href={back} className="button button-quiet">Cancel</Link><button type="submit" className="button button-primary" disabled={saving} data-testid="button-save-sewing-project">{saving ? 'Saving…' : project ? 'Save changes' : 'Start project'}{!saving && <ArrowRight size={16}/>}</button></div>
@@ -1798,6 +1857,8 @@ function SewingProjectDetailPage({ projectId }: { projectId: string }) {
         {project.patternName && <div><dt>Pattern</dt><dd>{project.patternName}</dd></div>}
         {project.patternDesigner && <div><dt>Designer</dt><dd>{project.patternDesigner}</dd></div>}
         {project.sizeMade && <div><dt>Size made</dt><dd>{project.sizeMade}</dd></div>}
+        {needleLabel(project) && <div><dt>Needle</dt><dd>{needleLabel(project)}</dd></div>}
+        {project.threadColor && <div><dt>Thread color</dt><dd className="sewing-thread"><ColorDot color={project.threadColor} noun="thread"/>{labelFor(generalColors, project.threadColor)}</dd></div>}
       </dl>
       {project.fitChanges && <div className="sewing-text"><h2>Fit changes</h2><p>{project.fitChanges}</p></div>}
       {project.notes && <div className="sewing-text"><h2>Notes</h2><p>{project.notes}</p></div>}
@@ -1809,6 +1870,10 @@ function SewingProjectDetailPage({ projectId }: { projectId: string }) {
         <span className="fabric-card-body"><h3>{fabricName(item.fabric)}</h3>{item.amountUsed !== null && <span className="fabric-card-size">Uses {fabricAmount(item.amountUsed, item.fabric.unit)}</span>}</span>
       </Link>)}</div> : <p className="notes-empty">No fabric on this project yet. <Link href={`/sewing/projects/${project.id}/edit`}>Add fabric</Link></p>}
     </section>
+    {project.tools.length > 0 && <section className="sewing-detail-fabric">
+      <div className="section-heading"><div><h2 className="serif">Tools</h2></div></div>
+      <div className="tool-list">{project.tools.map((tool) => <ToolRow key={tool.id} tool={tool}/>)}</div>
+    </section>}
   </PortalLayout>;
 }
 
