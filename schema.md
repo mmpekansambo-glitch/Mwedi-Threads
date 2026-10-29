@@ -282,12 +282,14 @@ One row per piece of fabric in a maker's Sewing room stash. There is no shared c
 | print | fabric_print | no | | |
 | general_color | general_color | no | | Shown as a color dot on the photo. |
 | unit | fabric_unit | yes | `meters` | Meters go with centimeter widths, yards with inch widths. |
-| amount | double precision | no | | How much is left, to two decimals. |
+| amount | double precision | no | | How much was bought, to two decimals. |
+| amount_left | double precision | no | | How much is still in the stash. Empty means all of it. Can't be more than `amount`. |
 | width | double precision | no | | |
 | pre_washed | boolean | no | | Empty when the maker hasn't said. Washing shrinks fabric, so this tells them whether the amount and width are before or after. |
-| brand | text | no | | |
+| brand | text | no | | No longer asked for. A brand saved before is moved into the notes ("Brand: …") the first time the maker's fabric loads; the column can be dropped once that's done. |
 | notes | text | no | | |
 | photo_paths | text[] | yes | `{}` | Private photos, only shown to their owner. The first is the print close-up (required), then up to three more. |
+| archived_at | timestamp with time zone | no | | Set when the maker moves used-up fabric to their Archive. Archived fabric stays linked to its projects but is left out of the Overview's stash counts. |
 | created_at | timestamp with time zone | yes | now | |
 | updated_at | timestamp with time zone | yes | now | Updated on every change. |
 
@@ -341,6 +343,7 @@ One row per notion or piece of kit in a maker's Sewing room.
 | brand | text | no | | |
 | notes | text | no | | |
 | photo_path | text | no | | Private photo, only shown to its owner. |
+| archived_at | timestamp with time zone | no | | Set when the maker moves a used-up notion to their Archive. Kit is never archived. |
 | created_at | timestamp with time zone | yes | now | |
 | updated_at | timestamp with time zone | yes | now | Updated on every change. |
 
