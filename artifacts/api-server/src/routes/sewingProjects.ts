@@ -1,23 +1,30 @@
 import { and, asc, desc, eq, ilike, inArray, isNull, or } from "drizzle-orm";
 import { Router, type IRouter, type Response } from "express";
 import {
+  AddSewingProjectEntryBody,
+  AddSewingProjectEntryParams,
   CreateSewingProjectBody,
+  DeleteSewingProjectEntryParams,
   DeleteSewingProjectParams,
   GetSewingOverviewResponse,
   GetSewingProjectParams,
   GetSewingProjectResponse,
   GetSewingProjectsQueryParams,
   UpdateSewingProjectBody,
+  UpdateSewingProjectEntryBody,
+  UpdateSewingProjectEntryParams,
   UpdateSewingProjectParams,
 } from "@workspace/api-zod";
 import {
   db,
+  sewingProjectEntriesTable,
   sewingProjectFabricsTable,
   sewingProjectToolsTable,
   sewingProjectsTable,
   sewingToolsTable,
   stashFabricsTable,
   type SewingProject,
+  type SewingProjectEntry,
 } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
 import { checkFabricLinks, checkToolIds, fabricTypeCounts, sewingStages, stashLength, statusChanges } from "../lib/sewingProjects";
@@ -34,9 +41,27 @@ function tidyText(value: string | null | undefined): string | null {
   return value?.trim() || null;
 }
 
-// Adds each project's stash fabric and tools, in the order the maker listed them.
+function serializeEntry(entry: SewingProjectEntry) {
+  const { projectId: _projectId, ...rest } = entry;
+  return rest;
+}
+
+// A day of leeway so a maker ahead of the server's clock can still pick today.
+function inFuture(date: Date | undefined): boolean {
+  return !!date && date.getTime() > Date.now() + 24 * 60 * 60 * 1000;
+}
+
+// Adds each project's stash fabric, tools and notes, in the order the maker
+// listed them (notes newest first).
 async function withFabrics(projects: SewingProject[]) {
   const ids = projects.map((project) => project.id);
+  const entries = ids.length
+    ? await db
+        .select()
+        .from(sewingProjectEntriesTable)
+        .where(inArray(sewingProjectEntriesTable.projectId, ids))
+        .orderBy(desc(sewingProjectEntriesTable.createdAt))
+    : [];
   const tools = ids.length
     ? await db
         .select({ projectId: sewingProjectToolsTable.projectId, tool: sewingToolsTable })
@@ -65,6 +90,7 @@ async function withFabrics(projects: SewingProject[]) {
           fabric: serializeFabric(fabric),
         })),
       tools: tools.filter((row) => row.projectId === project.id).map((row) => serializeTool(row.tool)),
+      entries: entries.filter((entry) => entry.projectId === project.id).map(serializeEntry),
     });
     // The schema reads dates as Date; send the plain YYYY-MM-DD date back.
     return { ...parsed, completedAt: project.completedAt };
@@ -281,6 +307,80 @@ router.delete("/sewing-projects/:sewingProjectId", requireAuth, async (req, res)
     res.status(404).json({ error: "Project not found." });
     return;
   }
+  res.sendStatus(204);
+});
+
+router.post("/sewing-projects/:sewingProjectId/entries", requireAuth, async (req, res): Promise<void> => {
+  const params = AddSewingProjectEntryParams.safeParse(req.params);
+  const parsed = AddSewingProjectEntryBody.safeParse(req.body);
+  const notes = parsed.success ? parsed.data.notes.trim() : "";
+  if (!params.success || !parsed.success || !notes) {
+    res.status(400).json({ error: "Write a note first." });
+    return;
+  }
+  if (inFuture(parsed.data.createdAt)) {
+    res.status(400).json({ error: "The date can't be in the future." });
+    return;
+  }
+  const project = await findOwn(getOwnerId(res), params.data.sewingProjectId);
+  if (!project) {
+    res.status(404).json({ error: "Project not found." });
+    return;
+  }
+  const [entry] = await db
+    .insert(sewingProjectEntriesTable)
+    .values({ projectId: project.id, notes, ...(parsed.data.createdAt ? { createdAt: parsed.data.createdAt } : {}) })
+    .returning();
+  res.status(201).json(serializeEntry(entry));
+});
+
+async function findOwnEntry(ownerId: string, projectId: string, entryId: string) {
+  const project = await findOwn(ownerId, projectId);
+  if (!project) return undefined;
+  const [entry] = await db
+    .select()
+    .from(sewingProjectEntriesTable)
+    .where(and(eq(sewingProjectEntriesTable.id, entryId), eq(sewingProjectEntriesTable.projectId, project.id)));
+  return entry;
+}
+
+router.patch("/sewing-projects/:sewingProjectId/entries/:entryId", requireAuth, async (req, res): Promise<void> => {
+  const params = UpdateSewingProjectEntryParams.safeParse(req.params);
+  const parsed = UpdateSewingProjectEntryBody.safeParse(req.body);
+  const notes = parsed.success ? parsed.data.notes.trim() : "";
+  if (!params.success || !parsed.success || !notes) {
+    res.status(400).json({ error: "Write a note first." });
+    return;
+  }
+  if (inFuture(parsed.data.createdAt)) {
+    res.status(400).json({ error: "The date can't be in the future." });
+    return;
+  }
+  const entry = await findOwnEntry(getOwnerId(res), params.data.sewingProjectId, params.data.entryId);
+  if (!entry) {
+    res.status(404).json({ error: "Note not found." });
+    return;
+  }
+  const [updated] = await db
+    .update(sewingProjectEntriesTable)
+    .set({ notes, ...(parsed.data.createdAt ? { createdAt: parsed.data.createdAt } : {}) })
+    .where(eq(sewingProjectEntriesTable.id, entry.id))
+    .returning();
+  res.json(serializeEntry(updated));
+});
+
+router.delete("/sewing-projects/:sewingProjectId/entries/:entryId", requireAuth, async (req, res): Promise<void> => {
+  const params = DeleteSewingProjectEntryParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: "Invalid note ID." });
+    return;
+  }
+  const entry = await findOwnEntry(getOwnerId(res), params.data.sewingProjectId, params.data.entryId);
+  if (!entry) {
+    res.status(404).json({ error: "Note not found." });
+    return;
+  }
+  await db.delete(sewingProjectEntriesTable).where(eq(sewingProjectEntriesTable.id, entry.id));
   res.sendStatus(204);
 });
 

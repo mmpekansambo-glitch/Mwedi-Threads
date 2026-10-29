@@ -9,6 +9,7 @@ import type { GeneralColor } from './generalColor';
 import type { ProjectStatus } from './projectStatus';
 import type { SewingNeedleSize } from './sewingNeedleSize';
 import type { SewingNeedleType } from './sewingNeedleType';
+import type { SewingProjectEntry } from './sewingProjectEntry';
 import type { SewingProjectFabric } from './sewingProjectFabric';
 import type { SewingStage } from './sewingStage';
 import type { SewingTool } from './sewingTool';
@@ -36,6 +37,8 @@ export interface SewingProject {
   fabrics: SewingProjectFabric[];
   /** Tools from the maker's Sewing room the project uses, in the order listed */
   tools: SewingTool[];
+  /** The project's notes journal, newest first */
+  entries: SewingProjectEntry[];
   createdAt: Date;
   updatedAt: Date;
 }
