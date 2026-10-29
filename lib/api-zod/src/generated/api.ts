@@ -956,6 +956,29 @@ export const RequestStashPhotoUploadResponse = zod.object({
 
 
 /**
+ * @summary Rename a brand or sub brand on every yarn in the stash that still has the old name
+ */
+export const renameStashYarnsBodyFromMax = 80;
+
+export const renameStashYarnsBodyToMax = 80;
+
+export const renameStashYarnsBodyBrandMax = 80;
+
+
+
+export const RenameStashYarnsBody = zod.object({
+  "field": zod.enum(['brand', 'subBrand']),
+  "from": zod.string().min(1).max(renameStashYarnsBodyFromMax),
+  "to": zod.string().min(1).max(renameStashYarnsBodyToMax),
+  "brand": zod.string().max(renameStashYarnsBodyBrandMax).nullish().describe('For a sub brand, only yarn from this brand is renamed.')
+})
+
+export const RenameStashYarnsResponse = zod.object({
+  "renamed": zod.number().int()
+})
+
+
+/**
  * @summary Get one yarn from the stash
  */
 export const GetStashYarnParams = zod.object({

@@ -15,12 +15,15 @@ import {
   GetYarnCatalogQueryParams,
   GetYarnCatalogResponse,
   RequestStashPhotoUploadBody,
+  RenameStashYarnsBody,
+  RenameStashYarnsResponse,
   RequestStashPhotoUploadResponse,
   UpdateStashYarnBody,
   UpdateStashYarnParams,
 } from "@workspace/api-zod";
 import {
   db,
+  projectYarnsTable,
   projectsTable,
   skeinSuggestionsTable,
   stashYarnsTable,
@@ -31,7 +34,13 @@ import {
 } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
 import { deleteStoredObject, signedObjectUrl, storageLocation } from "../lib/objectStorage";
-import { addToCatalog, type CatalogInput } from "../lib/yarnCatalogStore";
+import {
+  addToCatalog,
+  fixCatalogSpelling,
+  pruneUnusedCatalog,
+  type CatalogInput,
+  type Transaction,
+} from "../lib/yarnCatalogStore";
 import { skeinsAfter } from "../lib/projectYarns";
 import {
   checkBlend,
@@ -113,34 +122,64 @@ async function checkDetails(ownerId: string, details: YarnDetails): Promise<Deta
   };
 }
 
-async function saveYarn(
+// Saves the whole edit in one transaction: the stash row, the catalog links,
+// and the names on every project yarn linked to it. The row the edit was
+// checked against is passed in, already locked, so nothing else can slip a
+// change in between.
+async function writeYarn(
+  tx: Transaction,
   ownerId: string,
-  details: YarnDetails,
-  yarnId?: string,
+  details: Omit<YarnDetails, "photoPath"> & { photoPath: string | null },
+  current?: StashYarn,
 ): Promise<StashYarn | undefined> {
-  return db.transaction(async (tx) => {
-    const catalog = await addToCatalog(tx, details);
-    const values = {
-      ...catalog,
-      generalColor: details.generalColor,
-      weight: details.weight,
-      blend: details.blend,
-      brandLink: details.brandLink,
-      photoPath: details.photoPath,
-      skeinsPurchased: details.skeinsPurchased,
-      skeinsLeft: details.skeinsLeft,
-    };
-    if (!yarnId) {
-      const [created] = await tx.insert(stashYarnsTable).values({ ...values, ownerId }).returning();
-      return created;
-    }
-    const [updated] = await tx
-      .update(stashYarnsTable)
-      .set(values)
-      .where(and(eq(stashYarnsTable.id, yarnId), eq(stashYarnsTable.ownerId, ownerId)))
-      .returning();
-    return updated;
-  });
+  const linked = await addToCatalog(tx, details);
+  const catalogNames = { brand: linked.brand, subBrand: linked.subBrand, color: linked.color };
+  // Only a name the maker changed in this edit counts as a spelling fix.
+  const changed = (typed: string | null, saved: string | null, catalog: string | null) =>
+    typed && tidyName(typed) !== saved ? typed : catalog;
+  const names = current
+    ? await fixCatalogSpelling(tx, linked, catalogNames, {
+      brand: changed(details.brand, current.brand, linked.brand)!,
+      subBrand: changed(details.subBrand, current.subBrand, linked.subBrand),
+      color: changed(details.color, current.color, linked.color),
+    })
+    : catalogNames;
+  const values = {
+    ...linked,
+    ...names,
+    generalColor: details.generalColor,
+    weight: details.weight,
+    blend: details.blend,
+    brandLink: details.brandLink,
+    photoPath: details.photoPath,
+    skeinsPurchased: details.skeinsPurchased,
+    skeinsLeft: details.skeinsLeft,
+  };
+  if (!current) {
+    const [created] = await tx.insert(stashYarnsTable).values({ ...values, ownerId }).returning();
+    return created;
+  }
+  const [updated] = await tx
+    .update(stashYarnsTable)
+    .set(values)
+    .where(and(eq(stashYarnsTable.id, current.id), eq(stashYarnsTable.ownerId, ownerId)))
+    .returning();
+  if (!updated) return undefined;
+  await tx
+    .update(projectYarnsTable)
+    .set({ brand: updated.brand, subBrand: updated.subBrand, color: updated.color })
+    .where(eq(projectYarnsTable.stashYarnId, updated.id));
+  await pruneUnusedCatalog(tx, [current]);
+  return updated;
+}
+
+async function lockedYarn(tx: Transaction, ownerId: string, yarnId: string): Promise<StashYarn | undefined> {
+  const [yarn] = await tx
+    .select()
+    .from(stashYarnsTable)
+    .where(and(eq(stashYarnsTable.id, yarnId), eq(stashYarnsTable.ownerId, ownerId)))
+    .for("update");
+  return yarn;
 }
 
 // The database row is already gone or changed, so removing the stored file
@@ -396,8 +435,52 @@ router.post("/yarn-stash", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
-  const created = await saveYarn(ownerId, checked.details);
+  const created = await db.transaction((tx) => writeYarn(tx, ownerId, checked.details));
   res.status(201).json(serializeStashYarn(created!));
+});
+
+// Renames a brand or sub brand on every other yarn in the maker's stash that
+// still has the old name. Each yarn keeps its own color.
+router.post("/yarn-stash/rename-all", requireAuth, async (req, res): Promise<void> => {
+  const parsed = RenameStashYarnsBody.safeParse(req.body);
+  if (!parsed.success || !matchKey(parsed.data.from) || !matchKey(parsed.data.to)) {
+    res.status(400).json({ error: "Check the names and try again." });
+    return;
+  }
+
+  const ownerId = getOwnerId(res);
+  const { field } = parsed.data;
+  const fromKey = matchKey(parsed.data.from);
+  const to = tidyName(parsed.data.to);
+  const brandKey = parsed.data.brand ? matchKey(parsed.data.brand) : null;
+  const renamed = await db.transaction(async (tx) => {
+    const yarns = await tx
+      .select()
+      .from(stashYarnsTable)
+      .where(eq(stashYarnsTable.ownerId, ownerId))
+      .for("update");
+    const targets = yarns.filter((yarn) => {
+      const name = field === "brand" ? yarn.brand : yarn.subBrand;
+      if (!name || matchKey(name) !== fromKey || name === to) return false;
+      return field === "brand" || !brandKey || matchKey(yarn.brand) === brandKey;
+    });
+    for (const yarn of targets) {
+      await writeYarn(tx, ownerId, {
+        brand: field === "brand" ? to : yarn.brand,
+        subBrand: field === "subBrand" ? to : yarn.subBrand,
+        color: yarn.color,
+        generalColor: yarn.generalColor,
+        weight: yarn.weight,
+        blend: yarn.blend,
+        brandLink: yarn.brandLink,
+        photoPath: yarn.photoPath,
+        skeinsPurchased: yarn.skeinsPurchased,
+        skeinsLeft: yarn.skeinsLeft,
+      }, yarn);
+    }
+    return targets.length;
+  });
+  res.json(RenameStashYarnsResponse.parse({ renamed }));
 });
 
 router.get("/yarn-stash/:yarnId", requireAuth, async (req, res): Promise<void> => {
@@ -427,40 +510,33 @@ router.patch("/yarn-stash/:yarnId", requireAuth, async (req, res): Promise<void>
   }
 
   const ownerId = getOwnerId(res);
-  const [current] = await db
-    .select()
-    .from(stashYarnsTable)
-    .where(and(eq(stashYarnsTable.id, params.data.yarnId), eq(stashYarnsTable.ownerId, ownerId)));
-  if (!current) {
-    res.status(404).json({ error: "Yarn not found." });
-    return;
-  }
-
   const changes = parsed.data;
-  const checked = await checkDetails(ownerId, {
-    brand: changes.brand ?? current.brand,
-    subBrand: changes.subBrand !== undefined ? changes.subBrand : current.subBrand,
-    color: changes.color !== undefined ? changes.color : current.color,
-    generalColor: changes.generalColor !== undefined ? changes.generalColor : current.generalColor,
-    weight: changes.weight !== undefined ? changes.weight : current.weight,
-    blend: changes.blend ?? current.blend,
-    brandLink: changes.brandLink !== undefined ? changes.brandLink : current.brandLink,
-    photoPath: changes.photoPath ?? current.photoPath ?? "",
-    skeinsPurchased: changes.skeinsPurchased !== undefined ? changes.skeinsPurchased : current.skeinsPurchased,
-    skeinsLeft: changes.skeinsLeft !== undefined ? changes.skeinsLeft : current.skeinsLeft,
+  type Outcome = { status: 200; yarn: StashYarn; oldPhoto: string | null } | { status: 400 | 404; error: string };
+  const outcome = await db.transaction(async (tx): Promise<Outcome> => {
+    const current = await lockedYarn(tx, ownerId, params.data.yarnId);
+    if (!current) return { status: 404, error: "Yarn not found." };
+    const checked = await checkDetails(ownerId, {
+      brand: changes.brand ?? current.brand,
+      subBrand: changes.subBrand !== undefined ? changes.subBrand : current.subBrand,
+      color: changes.color !== undefined ? changes.color : current.color,
+      generalColor: changes.generalColor !== undefined ? changes.generalColor : current.generalColor,
+      weight: changes.weight !== undefined ? changes.weight : current.weight,
+      blend: changes.blend ?? current.blend,
+      brandLink: changes.brandLink !== undefined ? changes.brandLink : current.brandLink,
+      photoPath: changes.photoPath ?? current.photoPath ?? "",
+      skeinsPurchased: changes.skeinsPurchased !== undefined ? changes.skeinsPurchased : current.skeinsPurchased,
+      skeinsLeft: changes.skeinsLeft !== undefined ? changes.skeinsLeft : current.skeinsLeft,
+    });
+    if (!checked.ok) return { status: 400, error: checked.error };
+    const yarn = await writeYarn(tx, ownerId, checked.details, current);
+    return yarn ? { status: 200, yarn, oldPhoto: current.photoPath } : { status: 404, error: "Yarn not found." };
   });
-  if (!checked.ok) {
-    res.status(400).json({ error: checked.error });
+  if (outcome.status !== 200) {
+    res.status(outcome.status).json({ error: outcome.error });
     return;
   }
-
-  const updated = await saveYarn(ownerId, checked.details, current.id);
-  if (!updated) {
-    res.status(404).json({ error: "Yarn not found." });
-    return;
-  }
-  if (updated.photoPath !== current.photoPath) await removeStashPhoto(req.log, current.photoPath);
-  res.json(serializeStashYarn(updated));
+  if (outcome.yarn.photoPath !== outcome.oldPhoto) await removeStashPhoto(req.log, outcome.oldPhoto);
+  res.json(serializeStashYarn(outcome.yarn));
 });
 
 router.delete("/yarn-stash/:yarnId", requireAuth, async (req, res): Promise<void> => {
@@ -470,10 +546,14 @@ router.delete("/yarn-stash/:yarnId", requireAuth, async (req, res): Promise<void
     return;
   }
 
-  const [deleted] = await db
-    .delete(stashYarnsTable)
-    .where(and(eq(stashYarnsTable.id, params.data.yarnId), eq(stashYarnsTable.ownerId, getOwnerId(res))))
-    .returning({ photoPath: stashYarnsTable.photoPath });
+  const deleted = await db.transaction(async (tx) => {
+    const [row] = await tx
+      .delete(stashYarnsTable)
+      .where(and(eq(stashYarnsTable.id, params.data.yarnId), eq(stashYarnsTable.ownerId, getOwnerId(res))))
+      .returning();
+    if (row) await pruneUnusedCatalog(tx, [row]);
+    return row;
+  });
   if (!deleted) {
     res.status(404).json({ error: "Yarn not found." });
     return;

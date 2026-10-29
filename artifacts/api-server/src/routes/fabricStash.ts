@@ -168,55 +168,53 @@ router.patch("/fabric-stash/:fabricId", requireAuth, async (req, res): Promise<v
   }
 
   const ownerId = getOwnerId(res);
-  const [current] = await db
-    .select()
-    .from(stashFabricsTable)
-    .where(and(eq(stashFabricsTable.id, params.data.fabricId), eq(stashFabricsTable.ownerId, ownerId)));
-  if (!current) {
-    res.status(404).json({ error: "Fabric not found." });
-    return;
-  }
-
   const changes = parsed.data;
-  const photos = changes.photoPaths
-    ? checkFabricPhotos(ownerId, changes.photoPaths, current.photoPaths)
-    : { ok: true as const, photoPaths: current.photoPaths };
-  if (!photos.ok) {
-    res.status(400).json({ error: photos.error });
-    return;
-  }
-  const sizes = checkFabricSizes(
-    changes.amount !== undefined ? changes.amount : current.amount,
-    changes.width !== undefined ? changes.width : current.width,
-  );
-  if (!sizes.ok) {
-    res.status(400).json({ error: sizes.error });
-    return;
-  }
+  // The row is locked while the edit is checked and written, so the whole
+  // edit lands together or not at all.
+  type Outcome = { status: 200; fabric: StashFabric; oldPhotos: string[] } | { status: 400 | 404; error: string };
+  const outcome = await db.transaction(async (tx): Promise<Outcome> => {
+    const [current] = await tx
+      .select()
+      .from(stashFabricsTable)
+      .where(and(eq(stashFabricsTable.id, params.data.fabricId), eq(stashFabricsTable.ownerId, ownerId)))
+      .for("update");
+    if (!current) return { status: 404, error: "Fabric not found." };
 
-  const [updated] = await db
-    .update(stashFabricsTable)
-    .set({
-      fabricType: changes.fabricType ?? current.fabricType,
-      construction: changes.construction !== undefined ? changes.construction : current.construction,
-      print: changes.print !== undefined ? changes.print : current.print,
-      generalColor: changes.generalColor !== undefined ? changes.generalColor : current.generalColor,
-      unit: changes.unit ?? current.unit,
-      amount: sizes.amount,
-      width: sizes.width,
-      preWashed: changes.preWashed !== undefined ? changes.preWashed : current.preWashed,
-      brand: changes.brand !== undefined ? tidyText(changes.brand) : current.brand,
-      notes: changes.notes !== undefined ? tidyText(changes.notes) : current.notes,
-      photoPaths: photos.photoPaths,
-    })
-    .where(and(eq(stashFabricsTable.id, current.id), eq(stashFabricsTable.ownerId, ownerId)))
-    .returning();
-  if (!updated) {
-    res.status(404).json({ error: "Fabric not found." });
+    const photos = changes.photoPaths
+      ? checkFabricPhotos(ownerId, changes.photoPaths, current.photoPaths)
+      : { ok: true as const, photoPaths: current.photoPaths };
+    if (!photos.ok) return { status: 400, error: photos.error };
+    const sizes = checkFabricSizes(
+      changes.amount !== undefined ? changes.amount : current.amount,
+      changes.width !== undefined ? changes.width : current.width,
+    );
+    if (!sizes.ok) return { status: 400, error: sizes.error };
+
+    const [updated] = await tx
+      .update(stashFabricsTable)
+      .set({
+        fabricType: changes.fabricType ?? current.fabricType,
+        construction: changes.construction !== undefined ? changes.construction : current.construction,
+        print: changes.print !== undefined ? changes.print : current.print,
+        generalColor: changes.generalColor !== undefined ? changes.generalColor : current.generalColor,
+        unit: changes.unit ?? current.unit,
+        amount: sizes.amount,
+        width: sizes.width,
+        preWashed: changes.preWashed !== undefined ? changes.preWashed : current.preWashed,
+        brand: changes.brand !== undefined ? tidyText(changes.brand) : current.brand,
+        notes: changes.notes !== undefined ? tidyText(changes.notes) : current.notes,
+        photoPaths: photos.photoPaths,
+      })
+      .where(and(eq(stashFabricsTable.id, current.id), eq(stashFabricsTable.ownerId, ownerId)))
+      .returning();
+    return updated ? { status: 200, fabric: updated, oldPhotos: current.photoPaths } : { status: 404, error: "Fabric not found." };
+  });
+  if (outcome.status !== 200) {
+    res.status(outcome.status).json({ error: outcome.error });
     return;
   }
-  await removeFabricPhotos(req.log, current.photoPaths.filter((path) => !updated.photoPaths.includes(path)));
-  res.json(serializeFabric(updated));
+  await removeFabricPhotos(req.log, outcome.oldPhotos.filter((path) => !outcome.fabric.photoPaths.includes(path)));
+  res.json(serializeFabric(outcome.fabric));
 });
 
 router.delete("/fabric-stash/:fabricId", requireAuth, async (req, res): Promise<void> => {

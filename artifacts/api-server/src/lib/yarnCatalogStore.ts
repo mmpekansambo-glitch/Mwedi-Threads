@@ -1,6 +1,7 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import {
   db,
+  stashYarnsTable,
   yarnBrandsTable,
   yarnColorsTable,
   yarnLinesTable,
@@ -95,4 +96,62 @@ export async function addToCatalog(tx: Transaction, input: CatalogInput) {
     colorId: color?.id ?? null,
     color: color?.name ?? (matchKey(colorName) ? colorName : null),
   };
+}
+
+type CatalogLinks = { brandId: string; lineId: string | null; colorId: string | null };
+type CatalogNames = { brand: string; subBrand: string | null; color: string | null };
+
+// A maker who retypes a name with only spelling changes (capitals, spaces,
+// punctuation) is fixing it, so the catalog takes their spelling and every
+// maker's suggestions show the fixed name from then on.
+export async function fixCatalogSpelling(
+  tx: Transaction,
+  links: CatalogLinks,
+  catalog: CatalogNames,
+  typed: CatalogNames,
+): Promise<CatalogNames> {
+  const fixed = { ...catalog };
+  const brand = tidyName(typed.brand);
+  if (brand !== catalog.brand && matchKey(brand) === matchKey(catalog.brand)) {
+    await tx.update(yarnBrandsTable).set({ name: brand }).where(eq(yarnBrandsTable.id, links.brandId));
+    fixed.brand = brand;
+  }
+  const subBrand = typed.subBrand ? tidyName(typed.subBrand) : null;
+  if (links.lineId && catalog.subBrand && subBrand && subBrand !== catalog.subBrand && matchKey(subBrand) === matchKey(catalog.subBrand)) {
+    await tx.update(yarnLinesTable).set({ name: subBrand }).where(eq(yarnLinesTable.id, links.lineId));
+    fixed.subBrand = subBrand;
+  }
+  const color = typed.color ? tidyName(typed.color) : null;
+  if (links.colorId && catalog.color && color && color !== catalog.color && matchKey(color) === matchKey(catalog.color)) {
+    await tx.update(yarnColorsTable).set({ name: color }).where(eq(yarnColorsTable.id, links.colorId));
+    fixed.color = color;
+  }
+  return fixed;
+}
+
+// Removes catalog names that no stash yarn uses any more, so a name a maker
+// renamed away from stops being suggested to anyone. Names other makers
+// still own stay.
+export async function pruneUnusedCatalog(tx: Transaction, links: Partial<CatalogLinks>[]) {
+  const colorIds = links.map((link) => link.colorId).filter((id): id is string => Boolean(id));
+  const lineIds = links.map((link) => link.lineId).filter((id): id is string => Boolean(id));
+  const brandIds = links.map((link) => link.brandId).filter((id): id is string => Boolean(id));
+  if (colorIds.length) {
+    await tx.delete(yarnColorsTable).where(and(
+      inArray(yarnColorsTable.id, colorIds),
+      sql`not exists (select 1 from ${stashYarnsTable} where ${stashYarnsTable.colorId} = ${yarnColorsTable.id})`,
+    ));
+  }
+  if (lineIds.length) {
+    await tx.delete(yarnLinesTable).where(and(
+      inArray(yarnLinesTable.id, lineIds),
+      sql`not exists (select 1 from ${stashYarnsTable} where ${stashYarnsTable.lineId} = ${yarnLinesTable.id})`,
+    ));
+  }
+  if (brandIds.length) {
+    await tx.delete(yarnBrandsTable).where(and(
+      inArray(yarnBrandsTable.id, brandIds),
+      sql`not exists (select 1 from ${stashYarnsTable} where ${stashYarnsTable.brandId} = ${yarnBrandsTable.id})`,
+    ));
+  }
 }

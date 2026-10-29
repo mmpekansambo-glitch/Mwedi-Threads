@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Layers, Plus, Trash2, X } from 'lucide-react';
+import { nameKey } from '@workspace/api-client-react';
 import type { GeneralColor, YarnBlendPart, YarnWeight } from '@workspace/api-client-react';
 import { Wheel } from '@/components/date-wheel-field';
 
@@ -165,7 +166,9 @@ export function useSettledValue(value: string, delay = 300): string {
 }
 
 // Hidden once the field already holds the suggested name.
-export function DidYouMean({ suggestion, typed, onAccept, testId }: { suggestion: string | null | undefined; typed: string; onAccept: (value: string) => void; testId: string }) {
+// A maker renaming a yarn away from its old name isn't nudged back to it.
+export function DidYouMean({ suggestion, typed, renamingFrom, onAccept, testId }: { suggestion: string | null | undefined; typed: string; renamingFrom?: string | null; onAccept: (value: string) => void; testId: string }) {
   if (!suggestion || suggestion === typed.trim()) return null;
+  if (renamingFrom && nameKey(suggestion) === nameKey(renamingFrom) && nameKey(typed) !== nameKey(renamingFrom)) return null;
   return <button type="button" className="did-you-mean" onClick={() => onAccept(suggestion)} data-testid={testId}>Did you mean <b>{suggestion}</b>?</button>;
 }

@@ -233,4 +233,24 @@ describe.skipIf(!databaseUrl)("crafts and fabric stash against PostgreSQL", () =
     expect((await request(`/fabric-stash/${fabric.id}`, { method: "DELETE", user: ownerB })).status).toBe(204);
     expect(deletedPhotos).toContain(only.slice("/objects/".length));
   });
+  it("saves every field of an edit, or none of them", async () => {
+    const fabric = await read(await request("/fabric-stash", {
+      method: "POST", user: ownerA, body: { fabricType: "linen", unit: "meters", amount: 3, photoPaths: [photo(ownerA)] },
+    }));
+    // Two saves landing together both keep their changes.
+    const [notes, print] = await Promise.all([
+      request(`/fabric-stash/${fabric.id}`, { method: "PATCH", user: ownerA, body: { notes: "For the summer dress" } }),
+      request(`/fabric-stash/${fabric.id}`, { method: "PATCH", user: ownerA, body: { print: "floral", width: 140 } }),
+    ]);
+    expect([notes.status, print.status]).toEqual([200, 200]);
+    const saved = await read(await request(`/fabric-stash/${fabric.id}`, { user: ownerA }));
+    expect(saved).toMatchObject({ notes: "For the summer dress", print: "floral", width: 140, amount: 3 });
+
+    // A save that fails a check changes nothing, not even its valid fields.
+    const bad = await request(`/fabric-stash/${fabric.id}`, {
+      method: "PATCH", user: ownerA, body: { notes: "Changed", photoPaths: [photo(ownerB)] },
+    });
+    expect(bad.status).toBe(400);
+    expect(await read(await request(`/fabric-stash/${fabric.id}`, { user: ownerA }))).toMatchObject({ notes: "For the summer dress" });
+  });
 });

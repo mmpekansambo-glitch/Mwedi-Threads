@@ -1321,6 +1321,38 @@ export interface StashYarn {
   updatedAt: string;
 }
 
+export type RenameStashYarnsField = typeof RenameStashYarnsField[keyof typeof RenameStashYarnsField];
+
+
+export const RenameStashYarnsField = {
+  brand: 'brand',
+  subBrand: 'subBrand',
+} as const;
+
+export interface RenameStashYarns {
+  field: RenameStashYarnsField;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  from: string;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  to: string;
+  /**
+     * For a sub brand, only yarn from this brand is renamed.
+     * @maxLength 80
+     * @nullable
+     */
+  brand?: string | null;
+}
+
+export interface RenameStashYarnsResult {
+  renamed: number;
+}
+
 export interface CreateStashYarn {
   /**
      * @minLength 1

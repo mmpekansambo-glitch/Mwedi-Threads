@@ -181,50 +181,53 @@ router.patch("/yarn-tools/:yarnToolId", requireAuth, async (req, res): Promise<v
   }
 
   const ownerId = getOwnerId(res);
-  const current = await findOwn(ownerId, params.data.yarnToolId);
-  if (!current) {
-    res.status(404).json({ error: "Tool not found." });
-    return;
-  }
-  const changes = parsed.data;
-  const pick = <T>(value: T | undefined, existing: T) => (value !== undefined ? value : existing);
-  const shaped = shapeYarnTool({
-    section: changes.section ?? current.section,
-    size: pick(changes.size, current.size),
-    needleType: pick(changes.needleType, current.needleType),
-    cableLength: pick(changes.cableLength, current.cableLength),
-    material: pick(changes.material, current.material),
-    notionType: pick(changes.notionType, current.notionType),
-  });
-  if (typeof shaped === "string") {
-    res.status(400).json({ error: shaped });
-    return;
-  }
-  if (changes.photoPath && changes.photoPath !== current.photoPath && !isOwnYarnToolPhoto(ownerId, changes.photoPath)) {
-    res.status(400).json({ error: "The photo didn't upload. Please add it again." });
-    return;
-  }
+  // The row is locked while the edit is checked and written, so the whole
+  // edit lands together or not at all.
+  type Outcome = { status: 200; tool: YarnTool; oldPhoto: string | null } | { status: 400 | 404; error: string };
+  const outcome = await db.transaction(async (tx): Promise<Outcome> => {
+    const [current] = await tx
+      .select()
+      .from(yarnToolsTable)
+      .where(and(eq(yarnToolsTable.id, params.data.yarnToolId), eq(yarnToolsTable.ownerId, ownerId)))
+      .for("update");
+    if (!current) return { status: 404, error: "Tool not found." };
+    const changes = parsed.data;
+    const pick = <T>(value: T | undefined, existing: T) => (value !== undefined ? value : existing);
+    const shaped = shapeYarnTool({
+      section: changes.section ?? current.section,
+      size: pick(changes.size, current.size),
+      needleType: pick(changes.needleType, current.needleType),
+      cableLength: pick(changes.cableLength, current.cableLength),
+      material: pick(changes.material, current.material),
+      notionType: pick(changes.notionType, current.notionType),
+    });
+    if (typeof shaped === "string") return { status: 400, error: shaped };
+    if (changes.photoPath && changes.photoPath !== current.photoPath && !isOwnYarnToolPhoto(ownerId, changes.photoPath)) {
+      return { status: 400, error: "The photo didn't upload. Please add it again." };
+    }
 
-  const text = (value: string | null | undefined, existing: string | null) =>
-    value !== undefined ? tidyText(value) : existing;
-  const [updated] = await db
-    .update(yarnToolsTable)
-    .set({
-      ...shapedColumns(shaped),
-      name: text(changes.name, current.name),
-      quantity: pick(changes.quantity, current.quantity),
-      brand: text(changes.brand, current.brand),
-      notes: text(changes.notes, current.notes),
-      photoPath: pick(changes.photoPath, current.photoPath),
-    })
-    .where(and(eq(yarnToolsTable.id, current.id), eq(yarnToolsTable.ownerId, ownerId)))
-    .returning();
-  if (!updated) {
-    res.status(404).json({ error: "Tool not found." });
+    const text = (value: string | null | undefined, existing: string | null) =>
+      value !== undefined ? tidyText(value) : existing;
+    const [updated] = await tx
+      .update(yarnToolsTable)
+      .set({
+        ...shapedColumns(shaped),
+        name: text(changes.name, current.name),
+        quantity: pick(changes.quantity, current.quantity),
+        brand: text(changes.brand, current.brand),
+        notes: text(changes.notes, current.notes),
+        photoPath: pick(changes.photoPath, current.photoPath),
+      })
+      .where(and(eq(yarnToolsTable.id, current.id), eq(yarnToolsTable.ownerId, ownerId)))
+      .returning();
+    return updated ? { status: 200, tool: updated, oldPhoto: current.photoPath } : { status: 404, error: "Tool not found." };
+  });
+  if (outcome.status !== 200) {
+    res.status(outcome.status).json({ error: outcome.error });
     return;
   }
-  if (current.photoPath !== updated.photoPath) await removeToolPhoto(req.log, current.photoPath);
-  res.json(serializeTool(updated));
+  if (outcome.oldPhoto !== outcome.tool.photoPath) await removeToolPhoto(req.log, outcome.oldPhoto);
+  res.json(serializeTool(outcome.tool));
 });
 
 router.delete("/yarn-tools/:yarnToolId", requireAuth, async (req, res): Promise<void> => {

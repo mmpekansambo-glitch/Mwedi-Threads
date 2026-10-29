@@ -534,6 +534,28 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+  /yarn-stash/rename-all:
+    post:
+      operationId: renameStashYarns
+      tags: [stash]
+      summary: Rename a brand or sub brand on every yarn in the stash that still has the old name
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RenameStashYarns"
+      responses:
+        "200":
+          description: Yarn renamed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RenameStashYarnsResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
   /yarn-stash/{yarnId}:
     parameters:
       - in: path
@@ -2740,6 +2762,31 @@ components:
           type: string
           format: date-time
       required: [id, brand, subBrand, color, generalColor, weight, blend, brandLink, photoPath, skeinsPurchased, skeinsLeft, createdAt, updatedAt]
+    RenameStashYarns:
+      type: object
+      properties:
+        field:
+          type: string
+          enum: [brand, subBrand]
+        from:
+          type: string
+          minLength: 1
+          maxLength: 80
+        to:
+          type: string
+          minLength: 1
+          maxLength: 80
+        brand:
+          type: [string, "null"]
+          maxLength: 80
+          description: For a sub brand, only yarn from this brand is renamed.
+      required: [field, from, to]
+    RenameStashYarnsResult:
+      type: object
+      properties:
+        renamed:
+          type: integer
+      required: [renamed]
     CreateStashYarn:
       type: object
       properties:

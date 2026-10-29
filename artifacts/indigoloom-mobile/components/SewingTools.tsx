@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   getGetMyCraftsQueryKey, getGetSewingToolQueryKey, getGetSewingToolsQueryKey,
   requestSewingToolPhotoUpload, useCreateSewingTool, useDeleteSewingTool, useUpdateSewingTool,
+  refreshPaths, showRemoved, showSaved,
 } from '@workspace/api-client-react';
 import type { SewingTool, SewingToolCategory, SewingToolSection } from '@workspace/api-client-react';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
@@ -278,10 +279,11 @@ export function SewingToolForm({ tool, section: startSection }: { tool?: SewingT
     return upload.photoPath;
   };
 
-  const done = () => {
-    void client.invalidateQueries({ queryKey: getGetSewingToolsQueryKey() });
+  const done = (saved?: SewingTool | void) => {
+    if (saved) showSaved(client, { list: getGetSewingToolsQueryKey(), item: getGetSewingToolQueryKey(saved.id) }, saved);
+    else if (tool) showRemoved(client, getGetSewingToolsQueryKey(), tool.id);
     void client.invalidateQueries({ queryKey: getGetMyCraftsQueryKey() });
-    if (tool) void client.invalidateQueries({ queryKey: getGetSewingToolQueryKey(tool.id) });
+    refreshPaths(client, '/api/sewing-projects');
     router.back();
   };
 
@@ -318,7 +320,7 @@ export function SewingToolForm({ tool, section: startSection }: { tool?: SewingT
   };
 
   const deleteTool = () => tool && remove.mutate({ sewingToolId: tool.id }, {
-    onSuccess: done,
+    onSuccess: () => done(),
     onError: () => setMessage('We could not remove this tool. Please try again.'),
   });
 

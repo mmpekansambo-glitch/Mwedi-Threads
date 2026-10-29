@@ -11,7 +11,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   requestStashPhotoUpload, useCreateStashYarn, useDeleteStashYarn, useGetStashYarnReviews, useGetYarnCatalog, useUpdateStashYarn,
   getGetStashYarnQueryKey, getGetStashYarnReviewsQueryKey, getGetStashYarnsQueryKey, getGetYarnCatalogQueryKey,
+  acceptRenameOffer, findRenameOffer, getStashYarns, refreshPaths, renameOfferText, showRemoved, showSaved,
 } from '@workspace/api-client-react';
+import type { RenameOffer } from '@workspace/api-client-react';
 import type { CatalogField, GeneralColor, StashYarn, YarnWeight } from '@workspace/api-client-react';
 import { NameReviewForm, NameReviewList, ReviewableLabel } from '@/components/NameReview';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
@@ -102,9 +104,28 @@ export function StashYarnForm({ yarn }: { yarn?: StashYarn }) {
     }
   };
 
-  const done = () => {
-    void client.invalidateQueries({ queryKey: getGetStashYarnsQueryKey() });
-    if (yarn) void client.invalidateQueries({ queryKey: getGetStashYarnQueryKey(yarn.id) });
+  const [offer, setOffer] = useState<RenameOffer | null>(null);
+  const [renaming, setRenaming] = useState(false);
+  // A changed yarn name shows on its projects and the Overview too.
+  const refreshLinked = () => refreshPaths(client, '/api/projects', '/api/dashboard', '/api/yarn-catalog');
+  const done = async (saved?: StashYarn) => {
+    if (saved) showSaved(client, { list: getGetStashYarnsQueryKey(), item: getGetStashYarnQueryKey(saved.id) }, saved);
+    else if (yarn) showRemoved(client, getGetStashYarnsQueryKey(), yarn.id);
+    refreshLinked();
+    if (yarn && saved && (yarn.brand !== saved.brand || yarn.subBrand !== saved.subBrand)) {
+      const next = await getStashYarns().then((stash) => findRenameOffer(yarn, saved, stash)).catch(() => null);
+      if (next) { setOffer(next); return; }
+    }
+    router.back();
+  };
+  const answerOffer = async (rename: boolean) => {
+    if (rename && offer) {
+      setRenaming(true);
+      try { await acceptRenameOffer(offer); } catch { setRenaming(false); setMessage('We could not rename the other yarns just now. Please try again.'); return; }
+      void client.invalidateQueries({ queryKey: getGetStashYarnsQueryKey() });
+      refreshPaths(client, '/api/yarn-stash/');
+      refreshLinked();
+    }
     router.back();
   };
 
@@ -147,7 +168,7 @@ export function StashYarnForm({ yarn }: { yarn?: StashYarn }) {
       blend: blendForSave, brandLink: link || null, photoPath: photoPath!, skeinsPurchased: purchased, skeinsLeft: left,
     };
     const options = {
-      onSuccess: done,
+      onSuccess: (saved: StashYarn) => { void done(saved); },
       onError: (error: unknown) => setMessage((error as { data?: { error?: string } })?.data?.error ?? 'We could not save this yarn just now. Please try again.'),
       onSettled: () => setSaving(false),
     };
@@ -156,7 +177,7 @@ export function StashYarnForm({ yarn }: { yarn?: StashYarn }) {
   };
 
   const deleteYarn = () => yarn && remove.mutate({ yarnId: yarn.id }, {
-    onSuccess: done,
+    onSuccess: () => { void done(); },
     onError: () => setMessage('We could not remove this yarn. Please try again.'),
   });
 
@@ -178,7 +199,17 @@ export function StashYarnForm({ yarn }: { yarn?: StashYarn }) {
             </View>
           </View>
         ) : null}
-        <View style={[styles.formCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        {offer ? (
+          <View style={[styles.offer, { backgroundColor: colors.card, borderLeftColor: colors.primary, borderColor: colors.border }]} testID="rename-offer">
+            <LoomText style={{ color: colors.foreground, fontSize: 15, lineHeight: 22 }}><LoomText style={{ fontFamily: fonts.semibold, fontSize: 15, color: colors.foreground }}>Saved. </LoomText>{renameOfferText(offer)}</LoomText>
+            {message ? <LoomText accessibilityRole="alert" style={[styles.error, { color: colors.destructive, marginTop: 8 }]}>{message}</LoomText> : null}
+            <View style={styles.confirmActions}>
+              <LoomButton title="Keep as they are" variant="quiet" onPress={() => { void answerOffer(false); }} disabled={renaming} testID="button-keep-other-names" />
+              <LoomButton title="Rename them too" onPress={() => { void answerOffer(true); }} busy={renaming} testID="button-rename-others" />
+            </View>
+          </View>
+        ) : null}
+        {offer ? null : <View style={[styles.formCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <FormFieldLabel>Photo *</FormFieldLabel>
           <Pressable accessibilityRole="button" accessibilityLabel={photo || yarn?.photoPath ? 'Change photo' : 'Add a photo'} onPress={pickPhoto} style={[styles.photoPicker, { borderColor: colors.input, backgroundColor: colors.selectedWash }]} testID="button-stash-photo">
             {photo ? <Image source={{ uri: photo.uri }} style={styles.photo} contentFit="cover" accessibilityLabel="Chosen yarn photo" />
@@ -191,16 +222,16 @@ export function StashYarnForm({ yarn }: { yarn?: StashYarn }) {
           <ReviewableLabel field="brand" canReview={Boolean(yarn)} open={reviewing === 'brand'} onToggle={() => toggleReview('brand')}>Brand *</ReviewableLabel>
           {yarn && reviewing === 'brand' ? <NameReviewForm yarnId={yarn.id} field="brand" currentName={yarn.brand} onDone={() => setReviewing(null)} /> : null}
           <TextInput {...inputProps} value={brand} onChangeText={setBrand} onFocus={() => setFocused('brand')} maxLength={80} placeholder="e.g. Lion Brand" style={inputStyle} autoCorrect={false} testID="input-stash-brand" />
-          <CatalogChoices options={focused === 'brand' ? catalog?.brands ?? [] : []} typed={brand} suggestion={catalog?.suggestions.brand} onPick={setBrand} testID="stash-brand" />
+          <CatalogChoices options={focused === 'brand' ? catalog?.brands ?? [] : []} typed={brand} suggestion={catalog?.suggestions.brand} renamingFrom={yarn?.brand} onPick={setBrand} testID="stash-brand" />
           <ReviewableLabel field="sub_brand" canReview={Boolean(yarn?.subBrand)} open={reviewing === 'sub_brand'} onToggle={() => toggleReview('sub_brand')}>Sub brand</ReviewableLabel>
           {yarn?.subBrand && reviewing === 'sub_brand' ? <NameReviewForm yarnId={yarn.id} field="sub_brand" currentName={yarn.subBrand} onDone={() => setReviewing(null)} /> : null}
           <TextInput {...inputProps} value={subBrand} onChangeText={setSubBrand} onFocus={() => setFocused('subBrand')} maxLength={80} placeholder="e.g. Wool-Ease" style={inputStyle} autoCorrect={false} testID="input-stash-sub-brand" />
-          <CatalogChoices options={focused === 'subBrand' ? catalog?.subBrands.map((line) => line.name) ?? [] : []} typed={subBrand} suggestion={catalog?.suggestions.subBrand} onPick={setSubBrand} testID="stash-sub-brand" />
+          <CatalogChoices options={focused === 'subBrand' ? catalog?.subBrands.map((line) => line.name) ?? [] : []} typed={subBrand} suggestion={catalog?.suggestions.subBrand} renamingFrom={yarn?.subBrand} onPick={setSubBrand} testID="stash-sub-brand" />
           <ReviewableLabel field="color" canReview={Boolean(yarn?.color)} open={reviewing === 'color'} onToggle={() => toggleReview('color')}>Color</ReviewableLabel>
           {yarn?.color && reviewing === 'color' ? <NameReviewForm yarnId={yarn.id} field="color" currentName={yarn.color} onDone={() => setReviewing(null)} /> : null}
           <NameReviewList reviews={reviews.data ?? []} />
           <TextInput {...inputProps} value={color} onChangeText={setColor} onFocus={() => setFocused('color')} maxLength={80} placeholder="e.g. Fisherman" style={inputStyle} autoCorrect={false} testID="input-stash-color" />
-          <CatalogChoices options={focused === 'color' ? catalog?.colors.map((item) => item.name) ?? [] : []} typed={color} suggestion={catalog?.suggestions.color} onPick={setColor} testID="stash-color" />
+          <CatalogChoices options={focused === 'color' ? catalog?.colors.map((item) => item.name) ?? [] : []} typed={color} suggestion={catalog?.suggestions.color} renamingFrom={yarn?.color} onPick={setColor} testID="stash-color" />
 
           <GeneralColorPicker value={generalColor} onChange={setGeneralColor} />
           <WeightWheelField value={weight} onChange={setWeight} />
@@ -219,7 +250,7 @@ export function StashYarnForm({ yarn }: { yarn?: StashYarn }) {
           </View>
           {message ? <LoomText accessibilityRole="alert" style={[styles.error, { color: colors.destructive }]}>{message}</LoomText> : null}
           <LoomButton title={yarn ? 'Save changes' : 'Add to stash'} icon="arrow-right" onPress={() => { void save(); }} busy={saving} testID="button-save-yarn" />
-        </View>
+        </View>}
       </KeyboardAwareScrollViewCompat>
     </View>
   );
@@ -242,4 +273,5 @@ const styles = StyleSheet.create({
   error: { fontSize: 15, lineHeight: 22, marginBottom: 12 },
   confirm: { borderWidth: 1, borderRadius: 14, padding: 14, marginBottom: 14 },
   confirmActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 10 },
+  offer: { borderWidth: 1, borderLeftWidth: 4, borderRadius: 14, padding: 14, marginBottom: 14 },
 });
