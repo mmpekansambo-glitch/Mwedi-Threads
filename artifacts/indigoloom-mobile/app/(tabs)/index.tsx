@@ -21,10 +21,16 @@ function searchProjects(search: string) {
 }
 
 // "Big Twist & Lion Brand", or "A, B & C" for three or more.
-// Two tied brands fit side by side; more than that shows the first and a count.
+// Two tied brands fit side by side; with more, the card names the first and
+// counts the rest in the line below.
 function joinBrands(brands: string[]) {
-  if (brands.length > 2) return `${brands[0]} + ${brands.length - 1} more`;
+  if (brands.length > 2) return brands[0];
   return brands.length < 2 ? brands[0] ?? '' : `${brands[0]} & ${brands[1]}`;
+}
+
+function brandDetail(brands: string[], projects: number) {
+  const on = `On ${projects} ${projects === 1 ? 'project' : 'projects'}${brands.length > 1 ? ' each' : ''}`;
+  return brands.length > 2 ? `${on}, tied with ${brands.length - 1} more` : on;
 }
 
 export default function DashboardScreen() {
@@ -84,7 +90,7 @@ export default function DashboardScreen() {
               <LoomText serif numberOfLines={3} style={[styles.statBrand, { color: colors.foreground }]}>{data.mostUsedYarnBrands.length ? joinBrands(data.mostUsedYarnBrands) : '—'}</LoomText>
               {data.mostUsedYarnBrands.length > 0 && (
                 <LoomText style={[styles.statDetail, { color: colors.mutedForeground }]}>
-                  On {data.mostUsedYarnBrandProjects} {data.mostUsedYarnBrandProjects === 1 ? 'project' : 'projects'}{data.mostUsedYarnBrands.length > 1 ? ' each' : ''}
+                  {brandDetail(data.mostUsedYarnBrands, data.mostUsedYarnBrandProjects)}
                 </LoomText>
               )}
             </Pressable>

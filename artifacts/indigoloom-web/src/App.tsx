@@ -471,14 +471,20 @@ function ProjectCard({ project }: { project: Project }) {
 }
 
 // "Big Twist & Lion Brand", or "A, B & C" for three or more.
-// Two tied brands fit side by side; more than that shows the first and a count.
+// Two tied brands fit side by side; with more, the card names the first and
+// counts the rest in the line below.
 function joinBrands(brands: string[]) {
-  if (brands.length > 2) return `${brands[0]} + ${brands.length - 1} more`;
+  if (brands.length > 2) return brands[0];
   return brands.length < 2 ? brands[0] ?? '' : `${brands[0]} & ${brands[1]}`;
 }
 
+function brandDetail(brands: string[], projects: number) {
+  const on = `On ${projects} ${projects === 1 ? 'project' : 'projects'}${brands.length > 1 ? ' each' : ''}`;
+  return brands.length > 2 ? `${on}, tied with ${brands.length - 1} more` : on;
+}
+
 function YarnStats({ brands, brandProjects, averageDays }: { brands: string[]; brandProjects: number; averageDays: number | null }) {
-  const brandBody = <><span className="stat-label">Most-used yarn brand</span><strong data-testid="text-top-yarn-brand" title={brands.join(', ')}>{brands.length ? joinBrands(brands) : '—'}</strong>{brands.length > 0 && <span className="stat-detail">On {brandProjects} {brandProjects === 1 ? 'project' : 'projects'}{brands.length > 1 ? ' each' : ''}</span>}</>;
+  const brandBody = <><span className="stat-label">Most-used yarn brand</span><strong data-testid="text-top-yarn-brand" title={brands.join(', ')}>{brands.length ? joinBrands(brands) : '—'}</strong>{brands.length > 0 && <span className="stat-detail">{brandDetail(brands, brandProjects)}</span>}</>;
   return <section className="stat-row stat-row-second" aria-label="Yarn and finishing stats">
     {/* A single brand opens My projects searched for it; a tie has no one brand to search. */}
     {brands.length === 1
