@@ -86,5 +86,23 @@ export const sewingProjectToolsTable = pgTable("sewing_project_tools", {
   position: integer("position").notNull().default(0),
 });
 
+// Dated notes in a sewing project's journal, newest first on the page.
+export const sewingProjectEntriesTable = pgTable("sewing_project_entries", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  projectId: uuid("project_id")
+    .notNull()
+    .references(() => sewingProjectsTable.id, { onDelete: "cascade" }),
+  notes: text("notes").notNull(),
+  // When the note was written; the maker can move it to another day.
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+});
+
 export type SewingProject = typeof sewingProjectsTable.$inferSelect;
 export type SewingProjectFabric = typeof sewingProjectFabricsTable.$inferSelect;
+export type SewingProjectEntry = typeof sewingProjectEntriesTable.$inferSelect;

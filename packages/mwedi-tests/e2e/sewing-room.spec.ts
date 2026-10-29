@@ -36,7 +36,7 @@ function sewingProject(id: string, overrides: Record<string, unknown> = {}) {
   return {
     id, title: "Linen shirt", status: "in_progress", stage: "cut", patternName: "Camp shirt", patternDesigner: "Maker Example",
     sizeMade: "M", fitChanges: "Shortened the sleeves 3 cm", needleType: null, needleSize: null, threadColor: null, notes: null, completedAt: null,
-    fabrics: [{ stashFabricId: stash[0].id, amountUsed: 1.75, fabric: stash[0] }], tools: [],
+    fabrics: [{ stashFabricId: stash[0].id, amountUsed: 1.75, fabric: stash[0] }], tools: [], entries: [],
     createdAt: "2026-10-21T12:00:00.000Z", updatedAt: "2026-10-22T12:00:00.000Z",
     ...overrides,
   };

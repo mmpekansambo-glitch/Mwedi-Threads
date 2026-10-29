@@ -1204,6 +1204,14 @@ export interface SewingProjectFabricInput {
   amountUsed?: number | null;
 }
 
+export interface SewingProjectEntry {
+  id: string;
+  notes: string;
+  /** When the note was written */
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface SewingProject {
   id: string;
   title: string;
@@ -1227,8 +1235,20 @@ export interface SewingProject {
   fabrics: SewingProjectFabric[];
   /** Tools from the maker's Sewing room the project uses, in the order listed */
   tools: SewingTool[];
+  /** The project's notes journal, newest first */
+  entries: SewingProjectEntry[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface SaveSewingProjectEntry {
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  notes: string;
+  /** When the note was written. Leave out for now (new notes) or to keep the date. */
+  createdAt?: string;
 }
 
 export interface CreateSewingProject {

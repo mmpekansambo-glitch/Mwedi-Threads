@@ -767,6 +767,12 @@ a.stat-card:active { transform: scale(.98); box-shadow: none; }
 /* Sewing room Overview and Projects. Colors come from the --sew-* tokens so
    the Sewing room accent can change in one place. */
 .home-sewing { --sew-accent: var(--granite); --sew-line: var(--sewing-line); --sew-soft: var(--sewing-wash); }
+.sewing-journal { margin-top: 26px; }
+.home-sewing .sewing-journal .timeline::before { background: var(--sewing-dash); }
+.home-sewing .sewing-journal .timeline-marker { color: var(--granite); background: var(--sewing-wash); border-color: var(--sewing-line); }
+.home-sewing .sewing-journal .note-menu-bubble { background: var(--sewing-line); color: var(--granite-deep); box-shadow: 0 0 0 3px var(--sewing-wash); }
+.home-sewing .sewing-journal .note-menu-bubble:hover { background: var(--sewing-dash); }
+.home-sewing .sewing-journal .note-menu-bubble.open { background: var(--granite); color: var(--white); box-shadow: 0 0 0 3px var(--sewing-dash); }
 .stat-detail { display: block; margin-top: 6px; color: var(--slate-deep); font-size: 13px; font-weight: 600; position: relative; z-index: 1; }
 .stage-board { margin: 18px 0 26px; padding: 20px 23px; }
 .stage-board h2 { margin: 0 0 14px; font-size: 20px; color: var(--evergreen); }

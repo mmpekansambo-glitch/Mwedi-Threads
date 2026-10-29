@@ -1570,6 +1570,12 @@ export const GetSewingProjectsResponseItem = zod.object({
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })).describe('Tools from the maker\'s Sewing room the project uses, in the order listed'),
+  "entries": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "notes": zod.string(),
+  "createdAt": zod.coerce.date().describe('When the note was written'),
+  "updatedAt": zod.coerce.date()
+})).describe('The project\'s notes journal, newest first'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -1670,6 +1676,12 @@ export const CreateSewingProjectResponse = zod.object({
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })).describe('Tools from the maker\'s Sewing room the project uses, in the order listed'),
+  "entries": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "notes": zod.string(),
+  "createdAt": zod.coerce.date().describe('When the note was written'),
+  "updatedAt": zod.coerce.date()
+})).describe('The project\'s notes journal, newest first'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -1733,6 +1745,12 @@ export const GetSewingProjectResponse = zod.object({
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })).describe('Tools from the maker\'s Sewing room the project uses, in the order listed'),
+  "entries": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "notes": zod.string(),
+  "createdAt": zod.coerce.date().describe('When the note was written'),
+  "updatedAt": zod.coerce.date()
+})).describe('The project\'s notes journal, newest first'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -1836,6 +1854,12 @@ export const UpdateSewingProjectResponse = zod.object({
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })).describe('Tools from the maker\'s Sewing room the project uses, in the order listed'),
+  "entries": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "notes": zod.string(),
+  "createdAt": zod.coerce.date().describe('When the note was written'),
+  "updatedAt": zod.coerce.date()
+})).describe('The project\'s notes journal, newest first'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -1849,6 +1873,66 @@ export const DeleteSewingProjectParams = zod.object({
 })
 
 export const DeleteSewingProjectResponse = zod.void()
+
+
+/**
+ * @summary Add a dated note to a sewing project's journal
+ */
+export const AddSewingProjectEntryParams = zod.object({
+  "sewingProjectId": zod.coerce.string().uuid()
+})
+
+export const addSewingProjectEntryBodyNotesMax = 2000;
+
+
+
+export const AddSewingProjectEntryBody = zod.object({
+  "notes": zod.string().min(1).max(addSewingProjectEntryBodyNotesMax),
+  "createdAt": zod.coerce.date().optional().describe('When the note was written. Leave out for now (new notes) or to keep the date.')
+})
+
+export const AddSewingProjectEntryResponse = zod.object({
+  "id": zod.string().uuid(),
+  "notes": zod.string(),
+  "createdAt": zod.coerce.date().describe('When the note was written'),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Change a note in a sewing project's journal
+ */
+export const UpdateSewingProjectEntryParams = zod.object({
+  "sewingProjectId": zod.coerce.string().uuid(),
+  "entryId": zod.coerce.string().uuid()
+})
+
+export const updateSewingProjectEntryBodyNotesMax = 2000;
+
+
+
+export const UpdateSewingProjectEntryBody = zod.object({
+  "notes": zod.string().min(1).max(updateSewingProjectEntryBodyNotesMax),
+  "createdAt": zod.coerce.date().optional().describe('When the note was written. Leave out for now (new notes) or to keep the date.')
+})
+
+export const UpdateSewingProjectEntryResponse = zod.object({
+  "id": zod.string().uuid(),
+  "notes": zod.string(),
+  "createdAt": zod.coerce.date().describe('When the note was written'),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Delete a note from a sewing project's journal
+ */
+export const DeleteSewingProjectEntryParams = zod.object({
+  "sewingProjectId": zod.coerce.string().uuid(),
+  "entryId": zod.coerce.string().uuid()
+})
+
+export const DeleteSewingProjectEntryResponse = zod.void()
 
 
 /**
@@ -1919,6 +2003,12 @@ export const GetSewingOverviewResponse = zod.object({
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })).describe('Tools from the maker\'s Sewing room the project uses, in the order listed'),
+  "entries": zod.array(zod.object({
+  "id": zod.string().uuid(),
+  "notes": zod.string(),
+  "createdAt": zod.coerce.date().describe('When the note was written'),
+  "updatedAt": zod.coerce.date()
+})).describe('The project\'s notes journal, newest first'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 }))

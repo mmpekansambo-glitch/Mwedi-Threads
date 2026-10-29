@@ -185,6 +185,19 @@ export function sewingProjectToolsSql(isolatedSchema: string): string {
   `;
 }
 
+// Dated notes on sewing projects. Needs sewing_projects.
+export function sewingProjectEntriesSql(isolatedSchema: string): string {
+  return `
+    CREATE TABLE ${isolatedSchema}.sewing_project_entries (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      project_id uuid NOT NULL REFERENCES ${isolatedSchema}.sewing_projects(id) ON DELETE CASCADE,
+      notes text NOT NULL,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now()
+    );
+  `;
+}
+
 export function yarnToolsSql(isolatedSchema: string): string {
   return `
     CREATE TYPE ${isolatedSchema}.yarn_tool_section AS ENUM ('hooks', 'needles', 'notions');

@@ -35,6 +35,13 @@ async function mockApi(page: Page, calls: { method: string; path: string; body?:
       notes = notes.filter(({ id }) => id !== entry.id);
       return route.fulfill({ status: 204 });
     }
+    if (pathname === `/api/projects/${projectId}/progress` && request.method() === "POST") {
+      const body = request.postDataJSON() as Record<string, unknown>;
+      calls.push({ method: "POST", path: pathname, body });
+      const added = { ...older, id: "33333333-3333-4333-8333-333333333333", photoPath: null, progressValue: null, completionPercent: 62, createdAt: "2026-10-28T18:00:00.000Z", ...body };
+      notes = [added as typeof newer, ...notes];
+      return route.fulfill({ status: 201, json: added });
+    }
     if (pathname === `/api/projects/${projectId}`) return route.fulfill({ json: project(notes) });
     return route.fulfill({ json: [] });
   });
@@ -83,4 +90,56 @@ test("asks before deleting a note", async ({ page }) => {
   await page.getByTestId(`button-confirm-delete-note-${older.id}`).click();
   await expect.poll(() => calls).toEqual([{ method: "DELETE", path: `/api/projects/${projectId}/progress/${older.id}` }]);
   await expect(page.getByTestId(`entry-progress-${older.id}`)).toHaveCount(0);
+});
+
+test("opening another note saves and closes the one being edited", async ({ page }) => {
+  const calls: { method: string; path: string; body?: unknown }[] = [];
+  await mockApi(page, calls);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(`/projects/${projectId}`);
+
+  await page.getByTestId(`button-note-menu-${newer.id}`).click();
+  await page.getByTestId(`button-edit-note-${newer.id}`).click();
+  await page.getByTestId("input-edit-note").fill("Finished both sleeves.");
+  await page.getByTestId(`button-note-menu-${older.id}`).click();
+  await page.getByTestId(`button-edit-note-${older.id}`).click();
+
+  await expect.poll(() => calls).toEqual([
+    { method: "PATCH", path: `/api/projects/${projectId}/progress/${newer.id}`, body: { notes: "Finished both sleeves." } },
+  ]);
+  await expect(page.getByTestId("signpost")).toContainText("Changes saved");
+  await expect(page.getByTestId(`form-edit-note-${older.id}`)).toBeVisible();
+  await expect(page.getByTestId(`form-edit-note-${newer.id}`)).toHaveCount(0);
+  await expect(page.getByTestId("input-edit-note")).toHaveCount(1);
+  await expect(page.getByTestId(`entry-progress-${newer.id}`)).toContainText("Finished both sleeves.");
+
+  // Opening a note with no changes just switches, with nothing saved.
+  await page.getByTestId("button-add-progress").click();
+  await expect(page.getByTestId("input-progress-notes")).toBeVisible();
+  await expect(page.getByTestId("input-edit-note")).toHaveCount(0);
+  expect(calls).toHaveLength(1);
+
+  // A half-written new note is saved when a note is opened for editing.
+  await page.getByTestId("input-progress-notes").fill("Blocked the body.");
+  await page.getByTestId(`button-note-menu-${older.id}`).click();
+  await page.getByTestId(`button-edit-note-${older.id}`).click();
+  await expect.poll(() => calls.at(-1)).toMatchObject({ method: "POST", path: `/api/projects/${projectId}/progress`, body: { notes: "Blocked the body." } });
+  await expect(page.getByTestId("input-progress-notes")).toHaveCount(0);
+  await expect(page.getByTestId(`form-edit-note-${older.id}`)).toBeVisible();
+  await expect(page.getByText("Blocked the body.")).toBeVisible();
+});
+
+test("keeps a note open when its changes can't be saved", async ({ page }) => {
+  const calls: { method: string; path: string; body?: unknown }[] = [];
+  await mockApi(page, calls);
+  await page.goto(`/projects/${projectId}`);
+
+  await page.getByTestId(`button-note-menu-${newer.id}`).click();
+  await page.getByTestId(`button-edit-note-${newer.id}`).click();
+  await page.getByTestId("input-edit-note").fill("");
+  await page.getByTestId(`button-note-menu-${older.id}`).click();
+  await page.getByTestId(`button-edit-note-${older.id}`).click();
+  await expect(page.getByTestId(`form-edit-note-${newer.id}`)).toContainText("Add a note about this session.");
+  await expect(page.getByTestId(`form-edit-note-${older.id}`)).toHaveCount(0);
+  expect(calls).toEqual([]);
 });
