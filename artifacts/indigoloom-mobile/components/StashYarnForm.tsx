@@ -11,11 +11,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   requestStashPhotoUpload, useCreateStashYarn, useDeleteStashYarn, useGetStashYarnReviews, useGetYarnCatalog, useUpdateStashYarn,
   getGetStashYarnQueryKey, getGetStashYarnReviewsQueryKey, getGetStashYarnsQueryKey, getGetYarnCatalogQueryKey,
-  acceptRenameOffer, findRenameOffer, getStashYarns, refreshPaths, renameOfferText, showRemoved, showSaved,
+  acceptRenameOffer, findRenameOffer, getStashYarns, refreshPaths, renameOfferText, showRemoved, showSaved, skeinsLeftAfter,
 } from '@workspace/api-client-react';
 import type { RenameOffer } from '@workspace/api-client-react';
 import type { CatalogField, GeneralColor, StashYarn, YarnWeight } from '@workspace/api-client-react';
 import { NameReviewForm, NameReviewList, ReviewableLabel } from '@/components/NameReview';
+import { ArchiveNudge, usedUp, useYarnArchive } from '@/components/ArchiveNudge';
+import { showSignpost } from '@/components/Signpost';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import { FormFieldLabel, LoomButton, LoomText, fonts } from '@/components/loom';
 import {
@@ -109,14 +111,37 @@ export function StashYarnForm({ yarn }: { yarn?: StashYarn }) {
   // A changed yarn name shows on its projects and the Overview too.
   const refreshLinked = () => refreshPaths(client, '/api/projects', '/api/dashboard', '/api/yarn-catalog');
   const done = async (saved?: StashYarn) => {
-    if (saved) showSaved(client, { list: getGetStashYarnsQueryKey(), item: getGetStashYarnQueryKey(saved.id) }, saved);
+    // Archived yarn isn't added to the stash list, only updated where it's shown.
+    if (saved) showSaved(client, { list: getGetStashYarnsQueryKey(), item: getGetStashYarnQueryKey(saved.id) }, saved, { insert: !saved.archivedAt });
     else if (yarn) showRemoved(client, getGetStashYarnsQueryKey(), yarn.id);
+    if (saved?.restored) showSignpost(`Welcome back: ${[saved.brand, saved.subBrand, saved.color].filter(Boolean).join(' ')} was in your Archive, so it’s back in your stash with your new details.`);
     refreshLinked();
-    if (yarn && saved && (yarn.brand !== saved.brand || yarn.subBrand !== saved.subBrand)) {
-      const next = await getStashYarns().then((stash) => findRenameOffer(yarn, saved, stash)).catch(() => null);
-      if (next) { setOffer(next); return; }
-    }
+    const rename = yarn && saved && (yarn.brand !== saved.brand || yarn.subBrand !== saved.subBrand)
+      ? await getStashYarns().then((stash) => findRenameOffer(yarn, saved, stash)).catch(() => null)
+      : null;
+    // Offer the Archive when this edit used the last of the yarn.
+    const finished = yarn && saved && !saved.archivedAt && usedUp(saved) && !usedUp(yarn) ? saved : null;
+    if (rename || finished) { setOffer(rename); setArchiveOffer(finished); return; }
     router.back();
+  };
+  const [archiveOffer, setArchiveOffer] = useState<StashYarn | null>(null);
+  const answerArchive = () => {
+    setArchiveOffer(null);
+    if (!offer) router.back();
+  };
+  const { restore } = useYarnArchive();
+  const [restoring, setRestoring] = useState(false);
+  // Skeins left follows a change to skeins purchased until the maker types
+  // their own number, with a gentle note saying what changed.
+  const [leftTouched, setLeftTouched] = useState(false);
+  const [leftNudge, setLeftNudge] = useState<{ from: number; to: number } | null>(null);
+  const changePurchased = (value: string) => {
+    setSkeinsPurchased(value);
+    if (!yarn || leftTouched) return;
+    const purchased = skeinsForApi(value);
+    const after = typeof purchased === 'number' ? skeinsLeftAfter(yarn.skeinsPurchased, yarn.skeinsLeft, purchased) : null;
+    setSkeinsLeft(after === null ? (yarn.skeinsLeft === null ? '' : String(yarn.skeinsLeft)) : String(after));
+    setLeftNudge(after === null || yarn.skeinsLeft === null ? null : { from: yarn.skeinsLeft, to: after });
   };
   const answerOffer = async (rename: boolean) => {
     if (rename && offer) {
@@ -126,7 +151,8 @@ export function StashYarnForm({ yarn }: { yarn?: StashYarn }) {
       refreshPaths(client, '/api/yarn-stash/');
       refreshLinked();
     }
-    router.back();
+    setOffer(null);
+    if (!archiveOffer) router.back();
   };
 
   const save = async () => {
@@ -209,7 +235,16 @@ export function StashYarnForm({ yarn }: { yarn?: StashYarn }) {
             </View>
           </View>
         ) : null}
-        {offer ? null : <View style={[styles.formCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        {archiveOffer ? <ArchiveNudge yarn={archiveOffer} onDone={answerArchive} /> : null}
+        {yarn?.archivedAt && !offer && !archiveOffer ? (
+          <View style={[styles.offer, { backgroundColor: colors.card, borderLeftColor: colors.primary, borderColor: colors.border }]} testID="archived-note">
+            <LoomText style={{ color: colors.foreground, fontSize: 15, lineHeight: 22 }}><LoomText style={{ fontFamily: fonts.semibold, fontSize: 15, color: colors.foreground }}>In your Archive. </LoomText>This yarn is all used up. Bring it back if you have more.</LoomText>
+            <View style={styles.confirmActions}>
+              <LoomButton title="Move back to stash" variant="quiet" busy={restoring} onPress={() => { setRestoring(true); void restore(yarn).then(() => router.back()).catch(() => setRestoring(false)); }} testID="button-unarchive" />
+            </View>
+          </View>
+        ) : null}
+        {offer || archiveOffer ? null : <View style={[styles.formCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <FormFieldLabel>Photo *</FormFieldLabel>
           <Pressable accessibilityRole="button" accessibilityLabel={photo || yarn?.photoPath ? 'Change photo' : 'Add a photo'} onPress={pickPhoto} style={[styles.photoPicker, { borderColor: colors.input, backgroundColor: colors.selectedWash }]} testID="button-stash-photo">
             {photo ? <Image source={{ uri: photo.uri }} style={styles.photo} contentFit="cover" accessibilityLabel="Chosen yarn photo" />
@@ -241,13 +276,19 @@ export function StashYarnForm({ yarn }: { yarn?: StashYarn }) {
           <View style={styles.skeinRow}>
             <View style={{ flex: 1 }}>
               <FormFieldLabel>Skeins purchased</FormFieldLabel>
-              <TextInput {...inputProps} value={skeinsPurchased} onChangeText={setSkeinsPurchased} keyboardType="decimal-pad" placeholder="e.g. 4" style={inputStyle} testID="input-skeins-purchased" />
+              <TextInput {...inputProps} value={skeinsPurchased} onChangeText={changePurchased} keyboardType="decimal-pad" placeholder="e.g. 4" style={inputStyle} testID="input-skeins-purchased" />
             </View>
             <View style={{ flex: 1 }}>
               <FormFieldLabel>Skeins left</FormFieldLabel>
-              <TextInput {...inputProps} value={skeinsLeft} onChangeText={setSkeinsLeft} keyboardType="decimal-pad" placeholder={skeinsPurchased || 'Same'} style={inputStyle} testID="input-skeins-left" />
+              <TextInput {...inputProps} value={skeinsLeft} onChangeText={(value) => { setLeftTouched(true); setLeftNudge(null); setSkeinsLeft(value); }} keyboardType="decimal-pad" placeholder={skeinsPurchased || 'Same'} style={inputStyle} testID="input-skeins-left" />
             </View>
           </View>
+          {leftNudge ? (
+            <View style={[styles.nudge, { backgroundColor: colors.selectedWash }]} testID="skeins-left-nudge">
+              <LoomText style={{ color: colors.foreground, fontSize: 14, lineHeight: 20, flex: 1 }}>Skeins left is now {leftNudge.to} (was {leftNudge.from}). Look right?</LoomText>
+              <LoomText accessibilityRole="button" onPress={() => setLeftNudge(null)} style={{ color: colors.primary, fontFamily: fonts.semibold, fontSize: 14 }} testID="button-skeins-left-ok">Looks right</LoomText>
+            </View>
+          ) : null}
           {message ? <LoomText accessibilityRole="alert" style={[styles.error, { color: colors.destructive }]}>{message}</LoomText> : null}
           <LoomButton title={yarn ? 'Save changes' : 'Add to stash'} icon="arrow-right" onPress={() => { void save(); }} busy={saving} testID="button-save-yarn" />
         </View>}
@@ -274,4 +315,5 @@ const styles = StyleSheet.create({
   confirm: { borderWidth: 1, borderRadius: 14, padding: 14, marginBottom: 14 },
   confirmActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 10 },
   offer: { borderWidth: 1, borderLeftWidth: 4, borderRadius: 14, padding: 14, marginBottom: 14 },
+  nudge: { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9, marginTop: -4, marginBottom: 14 },
 });

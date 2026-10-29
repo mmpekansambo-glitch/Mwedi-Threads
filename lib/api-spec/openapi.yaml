@@ -416,6 +416,11 @@ paths:
           name: generalColor
           schema:
             $ref: "#/components/schemas/GeneralColor"
+        - in: query
+          name: archived
+          description: true lists the Archive instead of the stash
+          schema:
+            type: boolean
       responses:
         "200":
           description: Matching stash yarn
@@ -2755,13 +2760,20 @@ components:
           type: [number, "null"]
         skeinsLeft:
           type: [number, "null"]
+        archivedAt:
+          type: [string, "null"]
+          format: date-time
+          description: When the yarn was moved to the Archive; empty while it's in the stash.
+        restored:
+          type: boolean
+          description: Only on add. True when the yarn matched one in the Archive, which was brought back with the new details instead of adding a copy.
         createdAt:
           type: string
           format: date-time
         updatedAt:
           type: string
           format: date-time
-      required: [id, brand, subBrand, color, generalColor, weight, blend, brandLink, photoPath, skeinsPurchased, skeinsLeft, createdAt, updatedAt]
+      required: [id, brand, subBrand, color, generalColor, weight, blend, brandLink, photoPath, skeinsPurchased, skeinsLeft, archivedAt, createdAt, updatedAt]
     RenameStashYarns:
       type: object
       properties:
@@ -2866,6 +2878,9 @@ components:
           type: [number, "null"]
           minimum: 0
           maximum: 999
+        archived:
+          type: boolean
+          description: Moves the yarn to the Archive, or back to the stash.
     ProjectYarn:
       type: object
       properties:

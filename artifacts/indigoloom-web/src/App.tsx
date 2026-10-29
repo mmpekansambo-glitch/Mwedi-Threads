@@ -21,14 +21,14 @@ import {
   getGetSewingToolQueryKey, getGetSewingToolsQueryKey,
   requestYarnToolPhotoUpload, useCreateYarnTool, useDeleteYarnTool, useGetYarnTool, useGetYarnTools, useUpdateYarnTool,
   getGetYarnToolQueryKey, getGetYarnToolsQueryKey,
-  acceptRenameOffer, findRenameOffer, getStashYarns, nameKey, refreshPaths, renameOfferText, showRemoved, showSaved,
+  acceptRenameOffer, findRenameOffer, getStashYarns, nameKey, refreshPaths, renameOfferText, showRemoved, showSaved, skeinsLeftAfter,
 } from '@workspace/api-client-react';
 import { CrochetHookSize, KnittingNeedleSize, NeedleCableLength } from '@workspace/api-client-react';
 import type { RenameOffer } from '@workspace/api-client-react';
 import type { CatalogField, CatalogReview, CreateProject, CreateProgress, Crafts, FabricConstruction, FabricPrint, FabricType, FabricUnit, GeneralColor, Project, ProjectStatus, SewingNeedleSize, SewingNeedleType, SewingProject, SewingStage, SewingTool, SewingToolCategory, SewingToolSection, StashFabric, StashYarn, UpdateProject, YarnNotionType, YarnTool, YarnToolMaterial, YarnToolSection, YarnWeight, KnittingNeedleType } from '@workspace/api-client-react';
 import { FormProvider as Form, useForm, type UseFormReturn } from 'react-hook-form';
 import {
-  ArrowLeft, ArrowRight, ArrowUpDown, ArrowUpRight, BookOpen, Check,
+  Archive, ArrowLeft, ArrowRight, ArrowUpDown, ArrowUpRight, BookOpen, Check,
   Camera, ChevronDown, ChevronUp, CircleHelp, Feather, Filter, Flower2,
   Box, Layers3, LogOut, Menu, Palette, Plus, Ruler, Scissors, Search, Sparkles, Spool, Star, Trash2, Wrench,
   X,
@@ -54,6 +54,7 @@ import {
   ProjectYarnsField, describeProjectYarn, yarnDraftsFromProject, yarnsForApi, type YarnDraft,
 } from '@/components/project-yarns';
 import { SkeinSuggestions } from '@/components/skein-suggestions';
+import { ArchiveNudge, usedUp, useYarnArchive } from '@/components/archive-nudge';
 import { ProjectCounter } from '@/components/project-counter';
 import { NameReviewButton, NameReviewForm, NameReviewList, catalogFieldLabels } from '@/components/name-review';
 import { ErrorBoundary } from '@/components/error-boundary';
@@ -65,6 +66,7 @@ import { ToolThumb, ToolTypeWheelField, categoryFor, quantityForApi, toolDetails
 import { NeedleIcon, YarnToolThumb, hookSizes, notionFor, sortYarnTools, yarnNeedleTypes, yarnNotionTypes, yarnToolDetails, yarnToolMaterials, yarnToolPhotoUrl, yarnToolSections, yarnToolTitle } from '@/components/yarn-tools';
 import { trackEvent, trackSuccessfulAction } from '@/lib/analytics';
 import { Toaster } from '@/components/ui/toaster';
+import { SignpostHost, showSignpost } from '@/components/signpost';
 import { useAppearance, type AppearanceChoice } from '@/hooks/use-appearance';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
@@ -1129,12 +1131,14 @@ function StashPage() {
   const [weight, setWeight] = useState('');
   const [color, setColor] = useState('');
   const [sort, setSort] = useSavedSort('mwedi:stash-sort', stashSorts);
+  const [archived, setArchived] = useState(false);
   const params = {
     ...(search.trim() ? { search: search.trim() } : {}),
     ...(weight ? { weight: weight as YarnWeight } : {}),
     ...(color ? { generalColor: color as GeneralColor } : {}),
+    ...(archived ? { archived: true } : {}),
   };
-  const clearFilters = () => { setSearch(''); setWeight(''); setColor(''); };
+  const clearFilters = () => { setSearch(''); setWeight(''); setColor(''); setArchived(false); };
   const query = useGetStashYarns(params, { query: { queryKey: getGetStashYarnsQueryKey(params) } });
   const filtered = Boolean(search || weight || color);
   return <PortalLayout active="stash">
@@ -1145,12 +1149,14 @@ function StashPage() {
       <label className="select-wrap"><Filter size={15}/><select aria-label="Filter by weight" value={weight} onChange={(event) => setWeight(event.target.value)} data-testid="select-weight-filter"><option value="">Every weight</option>{yarnWeights.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select><ChevronDown size={14}/></label>
       <label className="select-wrap">{color ? <ColorDot color={color as GeneralColor}/> : <Palette size={15}/>}<select aria-label="Filter by color" value={color} onChange={(event) => setColor(event.target.value)} data-testid="select-color-filter"><option value="">Every color</option>{generalColors.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select><ChevronDown size={14}/></label>
       <label className="select-wrap"><ArrowUpDown size={15}/><select aria-label="Sort your stash" value={sort} onChange={(event) => setSort(event.target.value as typeof sort)} data-testid="select-stash-sort">{stashSorts.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select><ChevronDown size={14}/></label>
-      {filtered && <button className="clear-filters" onClick={clearFilters} data-testid="button-clear-stash-filters">Clear filters</button>}
+      <button type="button" className={`starred-filter${archived ? ' is-active' : ''}`} aria-pressed={archived} onClick={() => setArchived(!archived)} data-testid="button-archive-filter"><Archive size={14}/> Archive</button>
+      {(filtered || archived) && <button className="clear-filters" onClick={clearFilters} data-testid="button-clear-stash-filters">Clear filters</button>}
     </div>
-    <div className="catalog-result-caption">{query.data ? <><b>{query.data.length}</b> {query.data.length === 1 ? 'yarn' : 'yarns'}</> : null}</div>
+    <div className="catalog-result-caption">{query.data ? <><b>{query.data.length}</b> {archived ? 'in your Archive' : query.data.length === 1 ? 'yarn' : 'yarns'}</> : null}</div>
     {query.isLoading ? <div className="stash-grid">{[0, 1, 2, 3].map((item) => <div className="card-skeleton" key={item}/>)}</div>
       : query.isError ? <QueryProblem retry={() => query.refetch()}/>
       : query.data?.length ? <div className="stash-grid">{sortStash(query.data, sort).map((yarn) => <StashYarnCard key={yarn.id} yarn={yarn}/>)}</div>
+      : archived && !filtered ? <div className="no-results"><Archive size={23}/><h3>Nothing in your Archive</h3><p>Yarn you’ve used up can be moved here.</p></div>
       : filtered ? <div className="no-results"><Search size={23}/><h3>No yarn matches</h3><p>Try a different search or clear a filter.</p><button className="button button-outline" onClick={clearFilters}>Reset filters</button></div>
       : <div className="empty-projects"><h3>No yarn yet</h3><p>Add your first yarn to start your stash.</p><Link href="/stash/new" className="button button-primary" data-testid="link-add-first-yarn"><Plus size={16}/> Add yarn</Link></div>}
   </PortalLayout>;
@@ -1183,6 +1189,19 @@ function StashYarnFormPage({ yarnId }: { yarnId?: string }) {
   if (yarnId && existing.isLoading) return <PortalLayout active="stash"><LoadingScreen label="Finding this yarn…"/></PortalLayout>;
   if (yarnId && (existing.isError || !existing.data)) return <PortalLayout active="stash"><QueryProblem retry={() => existing.refetch()} message="We couldn’t find this yarn."/></PortalLayout>;
   return <StashYarnForm yarn={existing.data} key={existing.data?.id ?? 'new'}/>;
+}
+
+// Shown on a yarn that's in the Archive, with a way to bring it back.
+function ArchivedNote({ yarn }: { yarn: StashYarn }) {
+  const { restore } = useYarnArchive();
+  const [, setLocation] = useLocation();
+  const [busy, setBusy] = useState(false);
+  return <div className="skein-suggestion loom-card" role="status" data-testid="archived-note">
+    <p><b>In your Archive.</b> This yarn is all used up. Bring it back if you have more.</p>
+    <div className="skein-suggestion-actions">
+      <button type="button" className="button button-outline button-small" disabled={busy} onClick={() => { setBusy(true); void restore(yarn).then(() => setLocation('/stash')).catch(() => setBusy(false)); }} data-testid="button-unarchive">Move back to stash</button>
+    </div>
+  </div>;
 }
 
 function StashYarnForm({ yarn }: { yarn?: StashYarn }) {
@@ -1237,19 +1256,42 @@ function StashYarnForm({ yarn }: { yarn?: StashYarn }) {
     if (color?.generalColor) setDraft((current) => current.generalColor ? current : { ...current, generalColor: color.generalColor });
   }, [catalog.data?.colors, draft.color]);
 
+  // Skeins left follows a change to skeins purchased until the maker types
+  // their own number, with a gentle note saying what changed.
+  const [leftTouched, setLeftTouched] = useState(false);
+  const [leftNudge, setLeftNudge] = useState<{ from: number; to: number } | null>(null);
+  const changePurchased = (value: string) => {
+    const change: Partial<StashDraft> = { skeinsPurchased: value };
+    if (yarn && !leftTouched) {
+      const purchased = skeinsForApi(value);
+      const after = typeof purchased === 'number' ? skeinsLeftAfter(yarn.skeinsPurchased, yarn.skeinsLeft, purchased) : null;
+      change.skeinsLeft = after === null ? (yarn.skeinsLeft === null ? '' : String(yarn.skeinsLeft)) : String(after);
+      setLeftNudge(after === null || yarn.skeinsLeft === null ? null : { from: yarn.skeinsLeft, to: after });
+    }
+    set(change);
+  };
   const [offer, setOffer] = useState<RenameOffer | null>(null);
   const [renaming, setRenaming] = useState(false);
   // A changed yarn name shows on its projects and the Overview too.
   const refreshLinked = () => refreshPaths(client, '/api/projects', '/api/dashboard', '/api/yarn-catalog');
   const done = async (saved?: StashYarn) => {
-    if (saved) showSaved(client, { list: getGetStashYarnsQueryKey(), item: getGetStashYarnQueryKey(saved.id) }, saved);
+    // Archived yarn isn't added to the stash list, only updated where it's shown.
+    if (saved) showSaved(client, { list: getGetStashYarnsQueryKey(), item: getGetStashYarnQueryKey(saved.id) }, saved, { insert: !saved.archivedAt });
     else if (yarn) showRemoved(client, getGetStashYarnsQueryKey(), yarn.id);
+    if (saved?.restored) showSignpost(`Welcome back: ${[saved.brand, saved.subBrand, saved.color].filter(Boolean).join(' ')} was in your Archive, so it’s back in your stash with your new details.`);
     refreshLinked();
-    if (yarn && saved && (yarn.brand !== saved.brand || yarn.subBrand !== saved.subBrand)) {
-      const next = await getStashYarns().then((stash) => findRenameOffer(yarn, saved, stash)).catch(() => null);
-      if (next) { setOffer(next); return; }
-    }
+    const rename = yarn && saved && (yarn.brand !== saved.brand || yarn.subBrand !== saved.subBrand)
+      ? await getStashYarns().then((stash) => findRenameOffer(yarn, saved, stash)).catch(() => null)
+      : null;
+    // Offer the Archive when this edit used the last of the yarn.
+    const finished = yarn && saved && !saved.archivedAt && usedUp(saved) && !usedUp(yarn) ? saved : null;
+    if (rename || finished) { setOffer(rename); setArchiveOffer(finished); return; }
     setLocation('/stash');
+  };
+  const [archiveOffer, setArchiveOffer] = useState<StashYarn | null>(null);
+  const answerArchive = () => {
+    setArchiveOffer(null);
+    if (!offer) setLocation('/stash');
   };
   const answerOffer = async (rename: boolean) => {
     if (rename && offer) {
@@ -1259,7 +1301,8 @@ function StashYarnForm({ yarn }: { yarn?: StashYarn }) {
       refreshPaths(client, '/api/yarn-stash/');
       refreshLinked();
     }
-    setLocation('/stash');
+    setOffer(null);
+    if (!archiveOffer) setLocation('/stash');
   };
 
   const save = async (event: React.FormEvent) => {
@@ -1329,8 +1372,10 @@ function StashYarnForm({ yarn }: { yarn?: StashYarn }) {
         <button type="button" className="button button-primary button-small" disabled={renaming} onClick={() => void answerOffer(true)} data-testid="button-rename-others">{renaming ? 'Renaming…' : 'Rename them too'}</button>
       </div>
     </div>}
+    {archiveOffer && <ArchiveNudge yarn={archiveOffer} onDone={answerArchive}/>}
+    {yarn?.archivedAt && !offer && !archiveOffer && <ArchivedNote yarn={yarn}/>}
     {confirmDelete && <div className="confirm-banner"><div><b>Remove this yarn from your stash?</b><span>Its photo will be deleted too.</span></div><button className="button button-quiet" onClick={() => setConfirmDelete(false)}>Cancel</button><button className="button button-danger" onClick={deleteYarn} disabled={remove.isPending} data-testid="button-confirm-delete-yarn">{remove.isPending ? 'Removing…' : 'Remove yarn'}</button></div>}
-    {!offer && <form className="project-form loom-card" onSubmit={save} noValidate>
+    {!offer && !archiveOffer && <form className="project-form loom-card" onSubmit={save} noValidate>
       <div className="stash-form-top">
         <div className="field-block stash-photo-field">
           <label htmlFor="stash-photo">Photo <b>*</b></label>
@@ -1353,8 +1398,10 @@ function StashYarnForm({ yarn }: { yarn?: StashYarn }) {
         <WeightWheelField value={draft.weight} onChange={(weight) => set({ weight })}/>
         <div className="field-block"><label htmlFor="stash-link">Brand page link</label><input id="stash-link" type="url" placeholder="https://" value={draft.brandLink} onChange={(event) => set({ brandLink: event.target.value })} data-testid="input-stash-link"/>{errors.link && <span className="field-error">{errors.link}</span>}</div>
         <BlendFields value={draft.blend} onChange={(blend) => set({ blend })} fibers={fibers} error={errors.blend ?? ''}/>
-        <div className="field-block"><label htmlFor="stash-skeins-purchased">Skeins purchased</label><input id="stash-skeins-purchased" inputMode="decimal" placeholder="e.g. 4" value={draft.skeinsPurchased} onChange={(event) => set({ skeinsPurchased: event.target.value })} data-testid="input-skeins-purchased"/></div>
-        <div className="field-block"><label htmlFor="stash-skeins-left">Skeins left</label><input id="stash-skeins-left" inputMode="decimal" placeholder={draft.skeinsPurchased || 'Same as purchased'} value={draft.skeinsLeft} onChange={(event) => set({ skeinsLeft: event.target.value })} data-testid="input-skeins-left"/></div>
+        <div className="field-block"><label htmlFor="stash-skeins-purchased">Skeins purchased</label><input id="stash-skeins-purchased" inputMode="decimal" placeholder="e.g. 4" value={draft.skeinsPurchased} onChange={(event) => changePurchased(event.target.value)} data-testid="input-skeins-purchased"/></div>
+        <div className="field-block"><label htmlFor="stash-skeins-left">Skeins left</label><input id="stash-skeins-left" inputMode="decimal" placeholder={draft.skeinsPurchased || 'Same as purchased'} value={draft.skeinsLeft} onChange={(event) => { setLeftTouched(true); setLeftNudge(null); set({ skeinsLeft: event.target.value }); }} data-testid="input-skeins-left"/>
+          {leftNudge && <span className="gentle-nudge" role="status" data-testid="skeins-left-nudge">Skeins left is now {leftNudge.to} (was {leftNudge.from}). Look right? <button type="button" onClick={() => setLeftNudge(null)} data-testid="button-skeins-left-ok">Looks right</button></span>}
+        </div>
         {errors.skeins && <span className="field-error field-wide">{errors.skeins}</span>}
       </div>
       <NameReviewList reviews={reviews.data ?? []}/>
@@ -2364,6 +2411,7 @@ function AuthCacheRouter() {
         <Route component={NotFound}/>
       </Switch>
       <Toaster/>
+      <SignpostHost/>
     </TooltipProvider></QueryClientProvider>
   </ClerkProvider>;
 }

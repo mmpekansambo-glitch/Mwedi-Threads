@@ -51,13 +51,15 @@ export default function StashScreen() {
   const [weight, setWeight] = useState<YarnWeight | ''>('');
   const [generalColor, setGeneralColor] = useState<GeneralColor | ''>('');
   const [sort, setSort] = useSavedSort('mwedi:stash-sort', stashSorts);
+  const [archived, setArchived] = useState(false);
   const params = useMemo(() => ({
     ...(search.trim() ? { search: search.trim() } : {}),
     ...(weight ? { weight } : {}),
     ...(generalColor ? { generalColor } : {}),
-  }), [search, weight, generalColor]);
+    ...(archived ? { archived: true } : {}),
+  }), [search, weight, generalColor, archived]);
   const filtered = Boolean(search || weight || generalColor);
-  const clearFilters = () => { setSearch(''); setWeight(''); setGeneralColor(''); };
+  const clearFilters = () => { setSearch(''); setWeight(''); setGeneralColor(''); setArchived(false); };
   const query = useGetStashYarns(params);
   const chip = (active: boolean) => [styles.filterChip, { backgroundColor: active ? colors.accent : colors.card, borderColor: active ? colors.accent : colors.border }];
   return (
@@ -81,6 +83,7 @@ export default function StashScreen() {
         })}
       </ScrollView>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
+        <Pressable accessibilityRole="button" accessibilityState={{ selected: archived }} onPress={() => setArchived(!archived)} style={[chip(archived), styles.archiveChip]} testID="button-archive-filter"><Feather name="archive" size={12} color={archived ? colors.accentForeground : colors.mutedForeground} /><LoomText style={{ color: archived ? colors.accentForeground : colors.mutedForeground, fontSize: 14, fontFamily: fonts.semibold }}>Archive</LoomText></Pressable>
         <Pressable onPress={() => setWeight('')} style={chip(!weight)}><LoomText style={{ color: !weight ? colors.accentForeground : colors.mutedForeground, fontSize: 14, fontFamily: fonts.semibold }}>Every weight</LoomText></Pressable>
         {yarnWeights.map((item) => {
           const active = weight === item.value;
@@ -90,9 +93,11 @@ export default function StashScreen() {
       <SortRow options={stashSorts} value={sort} onChange={setSort} testID="stash-sort" />
       {query.isLoading ? <LoadingState label="Gathering your yarn…" /> : query.isError ? <ErrorState onRetry={() => void query.refetch()} /> : query.data?.length ? (
         <>
-          <LoomText style={[styles.count, { color: colors.mutedForeground }]}>{query.data.length} {query.data.length === 1 ? 'yarn' : 'yarns'}</LoomText>
+          <LoomText style={[styles.count, { color: colors.mutedForeground }]}>{query.data.length} {archived ? 'in your Archive' : query.data.length === 1 ? 'yarn' : 'yarns'}</LoomText>
           <View style={styles.grid}>{sortStash(query.data, sort).map((yarn) => <StashCard key={yarn.id} yarn={yarn} />)}</View>
         </>
+      ) : archived && !filtered ? (
+        <EmptyState title="Nothing in your Archive" body="Yarn you’ve used up can be moved here." actionTitle="Back to stash" onAction={() => setArchived(false)} />
       ) : filtered ? (
         <EmptyState title="No yarn matches" body="Try a different search or clear a filter." actionTitle="Clear filters" onAction={clearFilters} />
       ) : (
@@ -110,6 +115,7 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, paddingVertical: 10, fontSize: 16, fontFamily: fonts.body },
   filterRow: { gap: 7, paddingBottom: 8, alignItems: 'center' },
   filterChip: { borderWidth: 1, paddingHorizontal: 12, minHeight: 31, borderRadius: 99, justifyContent: 'center' },
+  archiveChip: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   colorFilter: { width: 32, height: 32, borderRadius: 16, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   count: { fontSize: 13, marginVertical: 10, fontFamily: fonts.medium },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },

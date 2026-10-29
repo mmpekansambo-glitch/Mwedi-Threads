@@ -774,7 +774,8 @@ export const DeleteProgressPhotoResponse = zod.void()
 export const GetStashYarnsQueryParams = zod.object({
   "search": zod.coerce.string().optional().describe('Matches brand, sub brand, color or fiber'),
   "weight": zod.enum(['lace', 'fingering', 'sport', 'dk', 'worsted', 'bulky', 'super_bulky', 'jumbo']).optional(),
-  "generalColor": zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']).optional()
+  "generalColor": zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']).optional(),
+  "archived": zod.coerce.boolean().optional().describe('true lists the Archive instead of the stash')
 })
 
 export const getStashYarnsResponseBlendItemFiberMax = 40;
@@ -798,6 +799,8 @@ export const GetStashYarnsResponseItem = zod.object({
   "photoPath": zod.string().nullable().describe('Empty for yarn added from a project that still needs a photo.'),
   "skeinsPurchased": zod.number().nullable(),
   "skeinsLeft": zod.number().nullable(),
+  "archivedAt": zod.coerce.date().nullable().describe('When the yarn was moved to the Archive; empty while it\'s in the stash.'),
+  "restored": zod.boolean().optional().describe('Only on add. True when the yarn matched one in the Archive, which was brought back with the new details instead of adding a copy.'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -866,6 +869,8 @@ export const CreateStashYarnResponse = zod.object({
   "photoPath": zod.string().nullable().describe('Empty for yarn added from a project that still needs a photo.'),
   "skeinsPurchased": zod.number().nullable(),
   "skeinsLeft": zod.number().nullable(),
+  "archivedAt": zod.coerce.date().nullable().describe('When the yarn was moved to the Archive; empty while it\'s in the stash.'),
+  "restored": zod.boolean().optional().describe('Only on add. True when the yarn matched one in the Archive, which was brought back with the new details instead of adding a copy.'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -919,6 +924,8 @@ export const AcceptSkeinSuggestionResponse = zod.object({
   "photoPath": zod.string().nullable().describe('Empty for yarn added from a project that still needs a photo.'),
   "skeinsPurchased": zod.number().nullable(),
   "skeinsLeft": zod.number().nullable(),
+  "archivedAt": zod.coerce.date().nullable().describe('When the yarn was moved to the Archive; empty while it\'s in the stash.'),
+  "restored": zod.boolean().optional().describe('Only on add. True when the yarn matched one in the Archive, which was brought back with the new details instead of adding a copy.'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -1006,6 +1013,8 @@ export const GetStashYarnResponse = zod.object({
   "photoPath": zod.string().nullable().describe('Empty for yarn added from a project that still needs a photo.'),
   "skeinsPurchased": zod.number().nullable(),
   "skeinsLeft": zod.number().nullable(),
+  "archivedAt": zod.coerce.date().nullable().describe('When the yarn was moved to the Archive; empty while it\'s in the stash.'),
+  "restored": zod.boolean().optional().describe('Only on add. True when the yarn matched one in the Archive, which was brought back with the new details instead of adding a copy.'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -1053,7 +1062,8 @@ export const UpdateStashYarnBody = zod.object({
   "brandLink": zod.string().max(updateStashYarnBodyBrandLinkMax).nullish(),
   "photoPath": zod.string().optional(),
   "skeinsPurchased": zod.number().min(updateStashYarnBodySkeinsPurchasedMin).max(updateStashYarnBodySkeinsPurchasedMax).nullish(),
-  "skeinsLeft": zod.number().min(updateStashYarnBodySkeinsLeftMin).max(updateStashYarnBodySkeinsLeftMax).nullish()
+  "skeinsLeft": zod.number().min(updateStashYarnBodySkeinsLeftMin).max(updateStashYarnBodySkeinsLeftMax).nullish(),
+  "archived": zod.boolean().optional().describe('Moves the yarn to the Archive, or back to the stash.')
 })
 
 export const updateStashYarnResponseBlendItemFiberMax = 40;
@@ -1077,6 +1087,8 @@ export const UpdateStashYarnResponse = zod.object({
   "photoPath": zod.string().nullable().describe('Empty for yarn added from a project that still needs a photo.'),
   "skeinsPurchased": zod.number().nullable(),
   "skeinsLeft": zod.number().nullable(),
+  "archivedAt": zod.coerce.date().nullable().describe('When the yarn was moved to the Archive; empty while it\'s in the stash.'),
+  "restored": zod.boolean().optional().describe('Only on add. True when the yarn matched one in the Archive, which was brought back with the new details instead of adding a copy.'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })

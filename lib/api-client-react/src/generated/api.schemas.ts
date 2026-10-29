@@ -1317,6 +1317,13 @@ export interface StashYarn {
   skeinsPurchased: number | null;
   /** @nullable */
   skeinsLeft: number | null;
+  /**
+     * When the yarn was moved to the Archive; empty while it's in the stash.
+     * @nullable
+     */
+  archivedAt: string | null;
+  /** Only on add. True when the yarn matched one in the Archive, which was brought back with the new details instead of adding a copy. */
+  restored?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -1431,6 +1438,8 @@ export interface UpdateStashYarn {
      * @nullable
      */
   skeinsLeft?: number | null;
+  /** Moves the yarn to the Archive, or back to the stash. */
+  archived?: boolean;
 }
 
 export interface SkeinSuggestion {
@@ -1588,6 +1597,10 @@ export type GetStashYarnsParams = {
 search?: string;
 weight?: YarnWeight;
 generalColor?: GeneralColor;
+/**
+ * true lists the Archive instead of the stash
+ */
+archived?: boolean;
 };
 
 export type GetSkeinSuggestionsParams = {

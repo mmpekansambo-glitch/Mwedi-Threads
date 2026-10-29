@@ -30,6 +30,13 @@ export interface StashYarn {
   skeinsPurchased: number | null;
   /** @nullable */
   skeinsLeft: number | null;
+  /**
+     * When the yarn was moved to the Archive; empty while it's in the stash.
+     * @nullable
+     */
+  archivedAt: Date | null;
+  /** Only on add. True when the yarn matched one in the Archive, which was brought back with the new details instead of adding a copy. */
+  restored?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

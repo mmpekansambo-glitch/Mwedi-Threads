@@ -7,6 +7,7 @@ export function showSaved<T extends { id: string }>(
   client: QueryClient,
   keys: { list: QueryKey; item: QueryKey },
   saved: T,
+  options: { insert?: boolean } = {},
 ) {
   client.setQueryData(keys.item, saved);
   for (const [key, list] of client.getQueriesData<T[]>({ queryKey: keys.list })) {
@@ -15,7 +16,7 @@ export function showSaved<T extends { id: string }>(
     // A new item only goes straight into the unfiltered list; filtered
     // lists wait for the refetch to decide whether it belongs.
     const filtered = key.slice(1).some((part) => part && typeof part === "object" && Object.keys(part).length > 0);
-    if (!known && filtered) continue;
+    if (!known && (filtered || options.insert === false)) continue;
     client.setQueryData<T[]>(key, known ? list.map((item) => (item.id === saved.id ? saved : item)) : [saved, ...list]);
   }
   void client.invalidateQueries({ queryKey: keys.list });
