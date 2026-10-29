@@ -50,6 +50,7 @@ export function stashTablesSql(isolatedSchema: string): string {
       photo_path text,
       skeins_purchased double precision,
       skeins_left double precision,
+      archived_at timestamptz,
       created_at timestamptz NOT NULL DEFAULT now(),
       updated_at timestamptz NOT NULL DEFAULT now()
     );

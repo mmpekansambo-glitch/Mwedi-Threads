@@ -118,6 +118,9 @@ export const stashYarnsTable = pgTable("stash_yarns", {
   photoPath: text("photo_path"),
   skeinsPurchased: doublePrecision("skeins_purchased"),
   skeinsLeft: doublePrecision("skeins_left"),
+  // Set when a used-up yarn is moved to the maker's Archive. Archived yarn
+  // stays linked to its projects and still counts for names and the Overview.
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

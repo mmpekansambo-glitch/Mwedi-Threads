@@ -265,6 +265,7 @@ One row per yarn in a maker's stash. The brand, sub brand and color names are co
 | photo_path | text | no | | Private photo, only shown to its owner. Empty for yarn added from a project until the maker adds a photo ("Needs a photo"). |
 | skeins_purchased | double precision | no | | Halves allowed. |
 | skeins_left | double precision | no | | Starts at skeins purchased. Can't be more than that. |
+| archived_at | timestamp with time zone | no | | Set when the maker moves used-up yarn to their Archive; empty while it's in the stash. Archived yarn stays linked to its projects and still counts on the Overview. |
 | created_at | timestamp with time zone | yes | now | |
 | updated_at | timestamp with time zone | yes | now | Updated on every change. |
 

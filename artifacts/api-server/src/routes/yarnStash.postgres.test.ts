@@ -236,4 +236,46 @@ describe.skipIf(!databaseUrl)("yarn stash against PostgreSQL", () => {
     expect((await request(`/yarn-stash/${yarn.id}`, { method: "DELETE", user: ownerA })).status).toBe(204);
     expect(await read(await request("/yarn-stash", { user: ownerA }))).toEqual([]);
   });
+  it("moves a used-up yarn to the Archive and back", async () => {
+    const owner = ownerB;
+    const added = await read(await request("/yarn-stash", {
+      method: "POST", user: owner, body: { ...woolEase, color: "Archive Grey", photoPath: photoB, skeinsPurchased: 2, skeinsLeft: 0 },
+    }));
+    expect(added.archivedAt).toBeNull();
+    const moved = await request(`/yarn-stash/${added.id}`, { method: "PATCH", user: owner, body: { archived: true } });
+    expect((await read(moved)).archivedAt).toBeTruthy();
+    const stash = await read(await request("/yarn-stash", { user: owner }));
+    expect(stash.map((yarn: { id: string }) => yarn.id)).not.toContain(added.id);
+    const archive = await read(await request("/yarn-stash?archived=true", { user: owner }));
+    expect(archive.map((yarn: { id: string }) => yarn.id)).toEqual([added.id]);
+    expect(await read(await request("/yarn-stash?archived=false", { user: owner }))).toEqual(stash);
+    // Archived yarn still counts for names.
+    expect((await read(await request("/yarn-catalog?brand=Lion%20Brand&subBrand=Wool-Ease", { user: ownerA }))).colors.map((color: { name: string }) => color.name)).toContain("Archive Grey");
+
+    const back = await request(`/yarn-stash/${added.id}`, { method: "PATCH", user: owner, body: { archived: false } });
+    expect((await read(back)).archivedAt).toBeNull();
+  });
+
+  it("brings an archived yarn back with the new details instead of adding a copy", async () => {
+    const owner = ownerB;
+    const old = await read(await request("/yarn-stash", {
+      method: "POST", user: owner, body: { ...woolEase, color: "Sea Glass", photoPath: photoB, skeinsPurchased: 1, skeinsLeft: 0 },
+    }));
+    await request(`/yarn-stash/${old.id}`, { method: "PATCH", user: owner, body: { archived: true } });
+    const newPhoto = `/objects/stash/${owner}/${randomUUID()}`;
+    const again = await request("/yarn-stash", {
+      method: "POST", user: owner, body: { ...woolEase, brand: "lion brand", color: "sea glass", photoPath: newPhoto, skeinsPurchased: 3 },
+    });
+    expect(again.status).toBe(200);
+    const restored = await read(again);
+    expect(restored).toMatchObject({ id: old.id, restored: true, archivedAt: null, skeinsPurchased: 3, skeinsLeft: 3, photoPath: newPhoto });
+    expect(await read(await request("/yarn-stash?archived=true", { user: owner }))).toEqual([]);
+
+    // A different color is a new yarn.
+    const other = await request("/yarn-stash", {
+      method: "POST", user: owner, body: { ...woolEase, color: "Coral", photoPath: newPhoto, skeinsPurchased: 1 },
+    });
+    expect(other.status).toBe(201);
+    expect((await read(other)).restored).toBeUndefined();
+  });
 });

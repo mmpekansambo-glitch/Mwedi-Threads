@@ -15,4 +15,8 @@ export type GetStashYarnsParams = {
 search?: string;
 weight?: YarnWeight;
 generalColor?: GeneralColor;
+/**
+ * true lists the Archive instead of the stash
+ */
+archived?: boolean;
 };

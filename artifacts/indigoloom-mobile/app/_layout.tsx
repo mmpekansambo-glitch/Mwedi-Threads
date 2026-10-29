@@ -5,6 +5,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { SignpostHost } from '@/components/Signpost';
 import {
   Figtree_400Regular,
   Figtree_500Medium,
@@ -70,6 +71,7 @@ function RootLayoutNav() {
       <Stack.Screen name="yarn-tools/new" options={{ presentation: 'modal' }} />
       <Stack.Screen name="yarn-tools/[id]" />
     </Stack>
+    <SignpostHost />
     </>
   );
 }

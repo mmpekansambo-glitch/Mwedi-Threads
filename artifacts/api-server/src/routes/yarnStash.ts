@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, ilike, like, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, isNotNull, isNull, like, or, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { Router, type IRouter, type Response } from "express";
 import {
@@ -129,7 +129,7 @@ async function checkDetails(ownerId: string, details: YarnDetails): Promise<Deta
 async function writeYarn(
   tx: Transaction,
   ownerId: string,
-  details: Omit<YarnDetails, "photoPath"> & { photoPath: string | null },
+  details: Omit<YarnDetails, "photoPath"> & { photoPath: string | null; archivedAt?: Date | null },
   current?: StashYarn,
 ): Promise<StashYarn | undefined> {
   const linked = await addToCatalog(tx, details);
@@ -154,6 +154,7 @@ async function writeYarn(
     photoPath: details.photoPath,
     skeinsPurchased: details.skeinsPurchased,
     skeinsLeft: details.skeinsLeft,
+    ...(details.archivedAt !== undefined ? { archivedAt: details.archivedAt } : {}),
   };
   if (!current) {
     const [created] = await tx.insert(stashYarnsTable).values({ ...values, ownerId }).returning();
@@ -251,7 +252,12 @@ router.get("/yarn-stash", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
-  const filters = [eq(stashYarnsTable.ownerId, getOwnerId(res))];
+  // The query parser reads any value as true, so look at the text itself.
+  const archived = req.query.archived === "true";
+  const filters = [
+    eq(stashYarnsTable.ownerId, getOwnerId(res)),
+    archived ? isNotNull(stashYarnsTable.archivedAt) : isNull(stashYarnsTable.archivedAt),
+  ];
   const search = parsed.data.search?.trim();
   if (search) {
     filters.push(
@@ -435,8 +441,31 @@ router.post("/yarn-stash", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
-  const created = await db.transaction((tx) => writeYarn(tx, ownerId, checked.details));
-  res.status(201).json(serializeStashYarn(created!));
+  // The same brand, sub brand and color as a yarn in the Archive brings that
+  // yarn back with the new details instead of adding a copy.
+  const outcome = await db.transaction(async (tx) => {
+    const archived = await tx
+      .select()
+      .from(stashYarnsTable)
+      .where(and(eq(stashYarnsTable.ownerId, ownerId), isNotNull(stashYarnsTable.archivedAt)))
+      .for("update");
+    const key = (name: string | null) => matchKey(name ?? "");
+    const match = archived.find((yarn) =>
+      key(yarn.brand) === key(checked.details.brand)
+      && key(yarn.subBrand) === key(checked.details.subBrand)
+      && key(yarn.color) === key(checked.details.color));
+    if (!match) return { yarn: await writeYarn(tx, ownerId, checked.details), restored: undefined };
+    const yarn = await writeYarn(tx, ownerId, { ...checked.details, archivedAt: null }, match);
+    return { yarn, restored: match };
+  });
+  if (outcome.restored) {
+    if (outcome.restored.photoPath && outcome.restored.photoPath !== outcome.yarn!.photoPath) {
+      await removeStashPhoto(req.log, outcome.restored.photoPath);
+    }
+    res.status(200).json(GetStashYarnResponse.parse({ ...outcome.yarn, restored: true }));
+    return;
+  }
+  res.status(201).json(serializeStashYarn(outcome.yarn!));
 });
 
 // Renames a brand or sub brand on every other yarn in the maker's stash that
@@ -515,6 +544,17 @@ router.patch("/yarn-stash/:yarnId", requireAuth, async (req, res): Promise<void>
   const outcome = await db.transaction(async (tx): Promise<Outcome> => {
     const current = await lockedYarn(tx, ownerId, params.data.yarnId);
     if (!current) return { status: 404, error: "Yarn not found." };
+    const archivedAt = changes.archived === undefined ? undefined : changes.archived ? current.archivedAt ?? new Date() : null;
+    // Moving a yarn in or out of the Archive changes nothing else, so it
+    // doesn't need a photo or any other detail checked.
+    if (Object.keys(changes).every((key) => key === "archived")) {
+      const [yarn] = await tx
+        .update(stashYarnsTable)
+        .set({ archivedAt: archivedAt ?? null })
+        .where(eq(stashYarnsTable.id, current.id))
+        .returning();
+      return { status: 200, yarn: yarn!, oldPhoto: current.photoPath };
+    }
     const checked = await checkDetails(ownerId, {
       brand: changes.brand ?? current.brand,
       subBrand: changes.subBrand !== undefined ? changes.subBrand : current.subBrand,
@@ -528,7 +568,7 @@ router.patch("/yarn-stash/:yarnId", requireAuth, async (req, res): Promise<void>
       skeinsLeft: changes.skeinsLeft !== undefined ? changes.skeinsLeft : current.skeinsLeft,
     });
     if (!checked.ok) return { status: 400, error: checked.error };
-    const yarn = await writeYarn(tx, ownerId, checked.details, current);
+    const yarn = await writeYarn(tx, ownerId, { ...checked.details, archivedAt }, current);
     return yarn ? { status: 200, yarn, oldPhoto: current.photoPath } : { status: 404, error: "Yarn not found." };
   });
   if (outcome.status !== 200) {
