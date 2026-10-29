@@ -523,10 +523,12 @@ a.stat-card:active { transform: scale(.98); box-shadow: none; }
   .page-heading p { max-width: 400px; line-height: 1.55; }
   .stat-row { grid-template-columns: 1fr 1fr; gap: 10px; }
   .stat-row-second { margin-top: 10px; }
-  .stat-card-brand > strong { font-size: 24px; }
   .chart-row { grid-template-columns: 1fr; gap: 10px; margin-top: 10px; }
   .stat-card { height: 138px; padding: 16px; }
   .stat-card > strong { font-size: 37px; margin-top: 14px; }
+  /* A long brand name wraps and the card grows, instead of being cut off. */
+  .stat-row-second .stat-card { height: auto; min-height: 138px; }
+  .stat-card-brand > strong { font-size: 21px; line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
   .stat-doodle { width: 52px; height: 52px; right: 10px; bottom: 10px; }
   .stat-label { font-size: 13px; }
   .dashboard-grid { margin-top: 33px; gap: 25px; }

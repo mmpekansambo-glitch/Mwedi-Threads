@@ -14,6 +14,7 @@ import { CrochetHookSize, KnittingNeedleSize, NeedleCableLength } from '@workspa
 import {
   getGetMyCraftsQueryKey, getGetYarnToolQueryKey, getGetYarnToolsQueryKey,
   requestYarnToolPhotoUpload, useCreateYarnTool, useDeleteYarnTool, useUpdateYarnTool,
+  showRemoved, showSaved,
 } from '@workspace/api-client-react';
 import type { KnittingNeedleType, YarnNotionType, YarnTool, YarnToolMaterial, YarnToolSection } from '@workspace/api-client-react';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
@@ -221,10 +222,10 @@ export function YarnToolForm({ tool, section: startSection }: { tool?: YarnTool;
     return upload.photoPath;
   };
 
-  const done = () => {
-    void client.invalidateQueries({ queryKey: getGetYarnToolsQueryKey() });
+  const done = (saved?: YarnTool | void) => {
+    if (saved) showSaved(client, { list: getGetYarnToolsQueryKey(), item: getGetYarnToolQueryKey(saved.id) }, saved);
+    else if (tool) showRemoved(client, getGetYarnToolsQueryKey(), tool.id);
     void client.invalidateQueries({ queryKey: getGetMyCraftsQueryKey() });
-    if (tool) void client.invalidateQueries({ queryKey: getGetYarnToolQueryKey(tool.id) });
     router.back();
   };
 
@@ -267,7 +268,7 @@ export function YarnToolForm({ tool, section: startSection }: { tool?: YarnTool;
   };
 
   const deleteTool = () => tool && remove.mutate({ yarnToolId: tool.id }, {
-    onSuccess: done,
+    onSuccess: () => done(),
     onError: () => setMessage('We could not remove this tool. Please try again.'),
   });
 

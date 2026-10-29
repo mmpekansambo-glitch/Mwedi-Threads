@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   getGetMyCraftsQueryKey, getGetStashFabricQueryKey, getGetStashFabricsQueryKey,
   requestFabricPhotoUpload, useCreateStashFabric, useDeleteStashFabric, useUpdateStashFabric,
+  refreshPaths, showRemoved, showSaved,
 } from '@workspace/api-client-react';
 import type { FabricConstruction, FabricPrint, FabricType, FabricUnit, GeneralColor, StashFabric } from '@workspace/api-client-react';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
@@ -149,10 +150,11 @@ export function FabricForm({ fabric }: { fabric?: StashFabric }) {
     }
   };
 
-  const done = () => {
-    void client.invalidateQueries({ queryKey: getGetStashFabricsQueryKey() });
+  const done = (saved?: StashFabric | void) => {
+    if (saved) showSaved(client, { list: getGetStashFabricsQueryKey(), item: getGetStashFabricQueryKey(saved.id) }, saved);
+    else if (fabric) showRemoved(client, getGetStashFabricsQueryKey(), fabric.id);
     void client.invalidateQueries({ queryKey: getGetMyCraftsQueryKey() });
-    if (fabric) void client.invalidateQueries({ queryKey: getGetStashFabricQueryKey(fabric.id) });
+    refreshPaths(client, '/api/sewing-projects', '/api/sewing-overview');
     router.back();
   };
 
@@ -199,7 +201,7 @@ export function FabricForm({ fabric }: { fabric?: StashFabric }) {
   };
 
   const deleteFabric = () => fabric && remove.mutate({ fabricId: fabric.id }, {
-    onSuccess: done,
+    onSuccess: () => done(),
     onError: () => setMessage('We could not remove this fabric. Please try again.'),
   });
 

@@ -386,4 +386,97 @@ describe.skipIf(!databaseUrl)("project yarn, stash links and catalog reviews aga
     const kept = await request(`/catalog-reviews/${brandReview.id}/resolve`, { method: "POST", user: reviewer, body: { action: "keep", reviewerNote: "Lion Brand is right." } });
     expect(await read(kept)).toMatchObject({ status: "kept" });
   });
+  it("keeps a renamed brand, fixes its spelling for everyone and carries it to linked projects", async () => {
+    const renamer = "links-test-renamer";
+    await getTestDb().insert(usersTable).values({ id: renamer, email: "renamer@example.test" });
+    const photo = `/objects/stash/${renamer}/${randomUUID()}`;
+    const project = await createProject(renamer, {
+      title: "Granny squares",
+      yarns: [
+        { brand: "Carron", subBrand: "Simply Soft", color: "Grape" },
+        { brand: "Carron", subBrand: "Simply Soft", color: "Lemonade" },
+      ],
+    });
+    expect(project.status).toBe(201);
+    const stash = await read(await request("/yarn-stash", { user: renamer }));
+    const grape = stash.find((yarn: { color: string }) => yarn.color === "Grape");
+    const lemonade = stash.find((yarn: { color: string }) => yarn.color === "Lemonade");
+
+    // Only capitals change, so the maker's spelling sticks and the catalog takes it.
+    const fixed = await request(`/yarn-stash/${grape.id}`, {
+      method: "PATCH",
+      user: renamer,
+      body: { subBrand: "simply soft", photoPath: photo, skeinsPurchased: 3 },
+    });
+    expect(await read(fixed)).toMatchObject({ subBrand: "simply soft", skeinsPurchased: 3, photoPath: photo });
+    const catalog = await read(await request("/yarn-catalog?brand=Carron", { user: otherMaker }));
+    expect(catalog.subBrands.map((line: { name: string }) => line.name)).toEqual(["simply soft"]);
+
+    // A real rename moves the yarn and its project yarn to the new name.
+    const renamed = await request(`/yarn-stash/${grape.id}`, { method: "PATCH", user: renamer, body: { brand: "Caron" } });
+    expect(await read(renamed)).toMatchObject({ brand: "Caron", color: "Grape" });
+    const [saved] = await read(await request(`/projects?search=granny`, { user: renamer }));
+    expect(saved.yarns.map((yarn: { brand: string; color: string }) => `${yarn.brand} ${yarn.color}`)).toEqual(["Caron Grape", "Carron Lemonade"]);
+
+    // Lemonade still uses Carron, so it is still suggested.
+    expect((await read(await request("/yarn-catalog?brand=carr", { user: otherMaker }))).brands).toContain("Carron");
+
+    // Renaming the rest keeps each yarn's own color, and the old name leaves everyone's suggestions.
+    const all = await request("/yarn-stash/rename-all", {
+      method: "POST",
+      user: renamer,
+      body: { field: "brand", from: "Carron", to: "Caron" },
+    });
+    expect(await read(all)).toEqual({ renamed: 1 });
+    expect(await read(await request(`/yarn-stash/${lemonade.id}`, { user: renamer }))).toMatchObject({ brand: "Caron", color: "Lemonade" });
+    const [after] = await read(await request(`/projects?search=granny`, { user: renamer }));
+    expect(after.yarns.map((yarn: { brand: string }) => yarn.brand)).toEqual(["Caron", "Caron"]);
+    const suggestions = await read(await request("/yarn-catalog?brand=Carron", { user: otherMaker }));
+    expect(suggestions.brands).toEqual([]);
+    expect(suggestions.suggestions.brand).toBe("Caron");
+
+    // Another maker's yarn under a name is never renamed or pruned.
+    const otherStash = await read(await request("/yarn-stash", { user: otherMaker }));
+    const untouched = await request("/yarn-stash/rename-all", {
+      method: "POST",
+      user: otherMaker,
+      body: { field: "brand", from: "Caron", to: "Carron" },
+    });
+    expect(await read(untouched)).toEqual({ renamed: 0 });
+    expect(await read(await request("/yarn-stash", { user: otherMaker }))).toEqual(otherStash);
+  });
+
+  it("renames a sub brand only within its brand", async () => {
+    const maker2 = "links-test-sub-renamer";
+    await getTestDb().insert(usersTable).values({ id: maker2, email: "sub@example.test" });
+    await createProject(maker2, {
+      yarns: [
+        { brand: "Red Heart", subBrand: "Super Saver", color: "Cherry" },
+        { brand: "Red Heart", subBrand: "Super Saver", color: "Navy" },
+        { brand: "Other Brand", subBrand: "Super Saver", color: "Navy" },
+      ],
+    });
+    const result = await request("/yarn-stash/rename-all", {
+      method: "POST",
+      user: maker2,
+      body: { field: "subBrand", from: "Super Saver", to: "Super Saver Jumbo", brand: "Red Heart" },
+    });
+    expect(await read(result)).toEqual({ renamed: 2 });
+    const stash = await read(await request("/yarn-stash", { user: maker2 }));
+    expect(stash.map((yarn: { brand: string; subBrand: string; color: string }) => `${yarn.brand}/${yarn.subBrand}/${yarn.color}`).sort()).toEqual([
+      "Other Brand/Super Saver/Navy",
+      "Red Heart/Super Saver Jumbo/Cherry",
+      "Red Heart/Super Saver Jumbo/Navy",
+    ]);
+  });
+
+  it("forgets a name nobody uses once the last yarn with it is removed", async () => {
+    const maker3 = "links-test-remover";
+    await getTestDb().insert(usersTable).values({ id: maker3, email: "remover@example.test" });
+    await createProject(maker3, { yarns: [{ brand: "Typo Yarnz", color: "Teal" }] });
+    const [yarn] = await read(await request("/yarn-stash", { user: maker3 }));
+    expect((await read(await request("/yarn-catalog?brand=typo", { user: maker3 }))).brands).toEqual(["Typo Yarnz"]);
+    expect((await request(`/yarn-stash/${yarn.id}`, { method: "DELETE", user: maker3 })).status).toBe(204);
+    expect((await read(await request("/yarn-catalog?brand=typo", { user: maker3 }))).brands).toEqual([]);
+  });
 });

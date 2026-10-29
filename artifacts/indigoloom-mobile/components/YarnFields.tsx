@@ -4,6 +4,7 @@ import { useAuth } from '@clerk/expo';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Modal, Pressable, StyleSheet, TextInput, View, type ImageStyle, type StyleProp, type ViewStyle } from 'react-native';
+import { nameKey } from '@workspace/api-client-react';
 import type { GeneralColor, StashYarn, YarnBlendPart, YarnWeight } from '@workspace/api-client-react';
 import { FormFieldLabel, LoomText, fonts } from '@/components/loom';
 import { OptionPicker } from '@/components/HookSizePicker';
@@ -218,16 +219,19 @@ export function BlendFields({ value, onChange, fibers, error }: { value: BlendDr
 
 // Catalog names that match what was typed, offered as tappable chips, plus
 // a "Did you mean …?" chip when the text looks like a typo.
-export function CatalogChoices({ options, typed, suggestion, onPick, testID }: {
+export function CatalogChoices({ options, typed, suggestion, renamingFrom, onPick, testID }: {
   options: string[];
   typed: string;
   suggestion: string | null | undefined;
+  // A maker renaming a yarn away from its old name isn't nudged back to it.
+  renamingFrom?: string | null;
   onPick: (value: string) => void;
   testID: string;
 }) {
   const colors = useColors();
   const lower = typed.trim().toLowerCase();
   if (suggestion === typed.trim()) suggestion = null;
+  if (suggestion && renamingFrom && nameKey(suggestion) === nameKey(renamingFrom) && nameKey(typed) !== nameKey(renamingFrom)) suggestion = null;
   const matches = options.filter((option) => option.toLowerCase() !== lower && (!lower || option.toLowerCase().includes(lower))).slice(0, 5);
   if (!suggestion && !matches.length) return null;
   return (

@@ -21,8 +21,16 @@ function searchProjects(search: string) {
 }
 
 // "Big Twist & Lion Brand", or "A, B & C" for three or more.
+// Two tied brands fit side by side; with more, the card names the first and
+// counts the rest in the line below.
 function joinBrands(brands: string[]) {
-  return brands.length < 2 ? brands[0] ?? '' : `${brands.slice(0, -1).join(', ')} & ${brands[brands.length - 1]}`;
+  if (brands.length > 2) return brands[0];
+  return brands.length < 2 ? brands[0] ?? '' : `${brands[0]} & ${brands[1]}`;
+}
+
+function brandDetail(brands: string[], projects: number) {
+  const on = `On ${projects} ${projects === 1 ? 'project' : 'projects'}${brands.length > 1 ? ' each' : ''}`;
+  return brands.length > 2 ? `${on}, tied with ${brands.length - 1} more` : on;
 }
 
 export default function DashboardScreen() {
@@ -79,10 +87,10 @@ export default function DashboardScreen() {
               testID="button-stat-top-brand"
             >
               <LoomText style={[styles.statLabel, { color: colors.mutedForeground }]}>Most-used yarn brand</LoomText>
-              <LoomText serif style={[styles.statBrand, { color: colors.foreground }]}>{data.mostUsedYarnBrands.length ? joinBrands(data.mostUsedYarnBrands) : '—'}</LoomText>
+              <LoomText serif numberOfLines={3} style={[styles.statBrand, { color: colors.foreground }]}>{data.mostUsedYarnBrands.length ? joinBrands(data.mostUsedYarnBrands) : '—'}</LoomText>
               {data.mostUsedYarnBrands.length > 0 && (
                 <LoomText style={[styles.statDetail, { color: colors.mutedForeground }]}>
-                  On {data.mostUsedYarnBrandProjects} {data.mostUsedYarnBrandProjects === 1 ? 'project' : 'projects'}{data.mostUsedYarnBrands.length > 1 ? ' each' : ''}
+                  {brandDetail(data.mostUsedYarnBrands, data.mostUsedYarnBrandProjects)}
                 </LoomText>
               )}
             </Pressable>
@@ -133,7 +141,7 @@ const styles = StyleSheet.create({
   statDoodle: { position: 'absolute', right: 6, bottom: 6 },
   statLabel: { fontFamily: fonts.semibold, fontSize: 14 },
   statValue: { fontSize: 34, lineHeight: 39 },
-  statBrand: { fontSize: 22, lineHeight: 27, marginTop: 6 },
+  statBrand: { fontSize: 19, lineHeight: 24, marginTop: 6 },
   statDetail: { fontSize: 13, marginTop: 4 },
   sectionHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 13, marginTop: 3 },
   sectionTitle: { fontSize: 26 },

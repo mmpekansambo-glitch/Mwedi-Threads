@@ -165,46 +165,51 @@ router.patch("/sewing-tools/:sewingToolId", requireAuth, async (req, res): Promi
   }
 
   const ownerId = getOwnerId(res);
-  const current = await findOwn(ownerId, params.data.sewingToolId);
-  if (!current) {
-    res.status(404).json({ error: "Tool not found." });
-    return;
-  }
-  const changes = parsed.data;
-  const section = changes.section ?? current.section;
-  const category = changes.category ?? current.category;
-  if (!categoryFits(section, category)) {
-    res.status(400).json({ error: "Choose a type that fits this section." });
-    return;
-  }
-  if (changes.photoPath && changes.photoPath !== current.photoPath && !isOwnToolPhoto(ownerId, changes.photoPath)) {
-    res.status(400).json({ error: "The photo didn't upload. Please add it again." });
-    return;
-  }
+  // The row is locked while the edit is checked and written, so the whole
+  // edit lands together or not at all.
+  type Outcome = { status: 200; tool: SewingTool; oldPhoto: string | null } | { status: 400 | 404; error: string };
+  const outcome = await db.transaction(async (tx): Promise<Outcome> => {
+    const [current] = await tx
+      .select()
+      .from(sewingToolsTable)
+      .where(and(eq(sewingToolsTable.id, params.data.sewingToolId), eq(sewingToolsTable.ownerId, ownerId)))
+      .for("update");
+    if (!current) return { status: 404, error: "Tool not found." };
+    const changes = parsed.data;
+    const section = changes.section ?? current.section;
+    const category = changes.category ?? current.category;
+    if (!categoryFits(section, category)) {
+      return { status: 400, error: "Choose a type that fits this section." };
+    }
+    if (changes.photoPath && changes.photoPath !== current.photoPath && !isOwnToolPhoto(ownerId, changes.photoPath)) {
+      return { status: 400, error: "The photo didn't upload. Please add it again." };
+    }
 
-  const text = (value: string | null | undefined, existing: string | null) =>
-    value !== undefined ? tidyText(value) : existing;
-  const [updated] = await db
-    .update(sewingToolsTable)
-    .set({
-      section,
-      category,
-      name: changes.name?.trim() ?? current.name,
-      quantity: changes.quantity !== undefined ? changes.quantity : current.quantity,
-      size: text(changes.size, current.size),
-      color: text(changes.color, current.color),
-      brand: text(changes.brand, current.brand),
-      notes: text(changes.notes, current.notes),
-      photoPath: changes.photoPath !== undefined ? changes.photoPath : current.photoPath,
-    })
-    .where(and(eq(sewingToolsTable.id, current.id), eq(sewingToolsTable.ownerId, ownerId)))
-    .returning();
-  if (!updated) {
-    res.status(404).json({ error: "Tool not found." });
+    const text = (value: string | null | undefined, existing: string | null) =>
+      value !== undefined ? tidyText(value) : existing;
+    const [updated] = await tx
+      .update(sewingToolsTable)
+      .set({
+        section,
+        category,
+        name: changes.name?.trim() ?? current.name,
+        quantity: changes.quantity !== undefined ? changes.quantity : current.quantity,
+        size: text(changes.size, current.size),
+        color: text(changes.color, current.color),
+        brand: text(changes.brand, current.brand),
+        notes: text(changes.notes, current.notes),
+        photoPath: changes.photoPath !== undefined ? changes.photoPath : current.photoPath,
+      })
+      .where(and(eq(sewingToolsTable.id, current.id), eq(sewingToolsTable.ownerId, ownerId)))
+      .returning();
+    return updated ? { status: 200, tool: updated, oldPhoto: current.photoPath } : { status: 404, error: "Tool not found." };
+  });
+  if (outcome.status !== 200) {
+    res.status(outcome.status).json({ error: outcome.error });
     return;
   }
-  if (current.photoPath !== updated.photoPath) await removeToolPhoto(req.log, current.photoPath);
-  res.json(serializeTool(updated));
+  if (outcome.oldPhoto !== outcome.tool.photoPath) await removeToolPhoto(req.log, outcome.oldPhoto);
+  res.json(serializeTool(outcome.tool));
 });
 
 router.delete("/sewing-tools/:sewingToolId", requireAuth, async (req, res): Promise<void> => {

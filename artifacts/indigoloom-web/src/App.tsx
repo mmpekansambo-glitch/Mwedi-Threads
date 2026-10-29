@@ -21,8 +21,10 @@ import {
   getGetSewingToolQueryKey, getGetSewingToolsQueryKey,
   requestYarnToolPhotoUpload, useCreateYarnTool, useDeleteYarnTool, useGetYarnTool, useGetYarnTools, useUpdateYarnTool,
   getGetYarnToolQueryKey, getGetYarnToolsQueryKey,
+  acceptRenameOffer, findRenameOffer, getStashYarns, nameKey, refreshPaths, renameOfferText, showRemoved, showSaved,
 } from '@workspace/api-client-react';
 import { CrochetHookSize, KnittingNeedleSize, NeedleCableLength } from '@workspace/api-client-react';
+import type { RenameOffer } from '@workspace/api-client-react';
 import type { CatalogField, CatalogReview, CreateProject, CreateProgress, Crafts, FabricConstruction, FabricPrint, FabricType, FabricUnit, GeneralColor, Project, ProjectStatus, SewingNeedleSize, SewingNeedleType, SewingProject, SewingStage, SewingTool, SewingToolCategory, SewingToolSection, StashFabric, StashYarn, UpdateProject, YarnNotionType, YarnTool, YarnToolMaterial, YarnToolSection, YarnWeight, KnittingNeedleType } from '@workspace/api-client-react';
 import { FormProvider as Form, useForm, type UseFormReturn } from 'react-hook-form';
 import {
@@ -469,12 +471,20 @@ function ProjectCard({ project }: { project: Project }) {
 }
 
 // "Big Twist & Lion Brand", or "A, B & C" for three or more.
+// Two tied brands fit side by side; with more, the card names the first and
+// counts the rest in the line below.
 function joinBrands(brands: string[]) {
-  return brands.length < 2 ? brands[0] ?? '' : `${brands.slice(0, -1).join(', ')} & ${brands[brands.length - 1]}`;
+  if (brands.length > 2) return brands[0];
+  return brands.length < 2 ? brands[0] ?? '' : `${brands[0]} & ${brands[1]}`;
+}
+
+function brandDetail(brands: string[], projects: number) {
+  const on = `On ${projects} ${projects === 1 ? 'project' : 'projects'}${brands.length > 1 ? ' each' : ''}`;
+  return brands.length > 2 ? `${on}, tied with ${brands.length - 1} more` : on;
 }
 
 function YarnStats({ brands, brandProjects, averageDays }: { brands: string[]; brandProjects: number; averageDays: number | null }) {
-  const brandBody = <><span className="stat-label">Most-used yarn brand</span><strong data-testid="text-top-yarn-brand">{brands.length ? joinBrands(brands) : '—'}</strong>{brands.length > 0 && <span className="stat-detail">On {brandProjects} {brandProjects === 1 ? 'project' : 'projects'}{brands.length > 1 ? ' each' : ''}</span>}</>;
+  const brandBody = <><span className="stat-label">Most-used yarn brand</span><strong data-testid="text-top-yarn-brand" title={brands.join(', ')}>{brands.length ? joinBrands(brands) : '—'}</strong>{brands.length > 0 && <span className="stat-detail">{brandDetail(brands, brandProjects)}</span>}</>;
   return <section className="stat-row stat-row-second" aria-label="Yarn and finishing stats">
     {/* A single brand opens My projects searched for it; a tie has no one brand to search. */}
     {brands.length === 1
@@ -1227,9 +1237,28 @@ function StashYarnForm({ yarn }: { yarn?: StashYarn }) {
     if (color?.generalColor) setDraft((current) => current.generalColor ? current : { ...current, generalColor: color.generalColor });
   }, [catalog.data?.colors, draft.color]);
 
-  const done = () => {
-    void client.invalidateQueries({ queryKey: getGetStashYarnsQueryKey() });
-    if (yarn) void client.invalidateQueries({ queryKey: getGetStashYarnQueryKey(yarn.id) });
+  const [offer, setOffer] = useState<RenameOffer | null>(null);
+  const [renaming, setRenaming] = useState(false);
+  // A changed yarn name shows on its projects and the Overview too.
+  const refreshLinked = () => refreshPaths(client, '/api/projects', '/api/dashboard', '/api/yarn-catalog');
+  const done = async (saved?: StashYarn) => {
+    if (saved) showSaved(client, { list: getGetStashYarnsQueryKey(), item: getGetStashYarnQueryKey(saved.id) }, saved);
+    else if (yarn) showRemoved(client, getGetStashYarnsQueryKey(), yarn.id);
+    refreshLinked();
+    if (yarn && saved && (yarn.brand !== saved.brand || yarn.subBrand !== saved.subBrand)) {
+      const next = await getStashYarns().then((stash) => findRenameOffer(yarn, saved, stash)).catch(() => null);
+      if (next) { setOffer(next); return; }
+    }
+    setLocation('/stash');
+  };
+  const answerOffer = async (rename: boolean) => {
+    if (rename && offer) {
+      setRenaming(true);
+      try { await acceptRenameOffer(offer); } catch { setRenaming(false); setErrors({ save: 'We couldn’t rename the other yarns just now. Please try again.' }); return; }
+      void client.invalidateQueries({ queryKey: getGetStashYarnsQueryKey() });
+      refreshPaths(client, '/api/yarn-stash/');
+      refreshLinked();
+    }
     setLocation('/stash');
   };
 
@@ -1267,7 +1296,7 @@ function StashYarnForm({ yarn }: { yarn?: StashYarn }) {
         photoPath: photoPath!, skeinsPurchased, skeinsLeft,
       };
       const options = {
-        onSuccess: done,
+        onSuccess: (saved: StashYarn) => void done(saved),
         onError: (error: unknown) => setErrors({ save: (error as { data?: { error?: string } })?.data?.error ?? 'We couldn’t save this yarn just now. Please try again.' }),
         onSettled: () => setSaving(false),
       };
@@ -1279,7 +1308,7 @@ function StashYarnForm({ yarn }: { yarn?: StashYarn }) {
     }
   };
 
-  const deleteYarn = () => yarn && remove.mutate({ yarnId: yarn.id }, { onSuccess: done });
+  const deleteYarn = () => yarn && remove.mutate({ yarnId: yarn.id }, { onSuccess: () => void done() });
   const photoShown = photoPreview || (yarn?.photoPath ? stashPhotoUrl(yarn) : '');
   // Only names the catalog saved can be reviewed, so the button appears once
   // a yarn is in the stash.
@@ -1293,8 +1322,15 @@ function StashYarnForm({ yarn }: { yarn?: StashYarn }) {
   return <PortalLayout active="stash">
     <Link href="/stash" className="back-link" data-testid="link-back-stash"><ArrowLeft size={16}/> Back to stash</Link>
     <PageHeading title={yarn ? yarnName(yarn) : 'Add yarn'} action={yarn ? <button className="icon-button danger-icon" aria-label="Delete yarn" title="Delete yarn" onClick={() => setConfirmDelete(true)} data-testid="button-delete-yarn"><Trash2 size={17}/></button> : undefined}/>
+    {offer && <div className="skein-suggestion loom-card rename-offer" role="status" data-testid="rename-offer">
+      <p><b>Saved.</b> {renameOfferText(offer)}{errors.save && <span className="field-error" role="alert"> {errors.save}</span>}</p>
+      <div className="skein-suggestion-actions">
+        <button type="button" className="button button-quiet button-small" disabled={renaming} onClick={() => void answerOffer(false)} data-testid="button-keep-other-names">Keep as they are</button>
+        <button type="button" className="button button-primary button-small" disabled={renaming} onClick={() => void answerOffer(true)} data-testid="button-rename-others">{renaming ? 'Renaming…' : 'Rename them too'}</button>
+      </div>
+    </div>}
     {confirmDelete && <div className="confirm-banner"><div><b>Remove this yarn from your stash?</b><span>Its photo will be deleted too.</span></div><button className="button button-quiet" onClick={() => setConfirmDelete(false)}>Cancel</button><button className="button button-danger" onClick={deleteYarn} disabled={remove.isPending} data-testid="button-confirm-delete-yarn">{remove.isPending ? 'Removing…' : 'Remove yarn'}</button></div>}
-    <form className="project-form loom-card" onSubmit={save} noValidate>
+    {!offer && <form className="project-form loom-card" onSubmit={save} noValidate>
       <div className="stash-form-top">
         <div className="field-block stash-photo-field">
           <label htmlFor="stash-photo">Photo <b>*</b></label>
@@ -1307,9 +1343,9 @@ function StashYarnForm({ yarn }: { yarn?: StashYarn }) {
           {errors.photo && <span className="field-error">{errors.photo}</span>}
         </div>
         <div className="stash-names">
-          <div className="field-block"><span className="label-row"><label htmlFor="stash-brand">Brand <b>*</b></label>{reviewButton('brand')}</span>{reviewForm('brand', yarn?.brand ?? null)}<input id="stash-brand" list="stash-brand-options" maxLength={80} placeholder="e.g. Lion Brand" value={draft.brand} onChange={(event) => set({ brand: event.target.value })} autoComplete="off" data-testid="input-stash-brand"/><datalist id="stash-brand-options">{catalog.data?.brands.map((name) => <option key={name} value={name}/>)}</datalist><DidYouMean suggestion={catalog.data?.suggestions.brand} typed={draft.brand} onAccept={(brand) => set({ brand })} testId="button-did-you-mean-brand"/>{errors.brand && <span className="field-error">{errors.brand}</span>}</div>
-          <div className="field-block"><span className="label-row"><label htmlFor="stash-sub-brand">Sub brand</label>{reviewButton('sub_brand')}</span>{reviewForm('sub_brand', yarn?.subBrand ?? null)}<input id="stash-sub-brand" list="stash-sub-brand-options" maxLength={80} placeholder="e.g. Wool-Ease" value={draft.subBrand} onChange={(event) => set({ subBrand: event.target.value })} autoComplete="off" data-testid="input-stash-sub-brand"/><datalist id="stash-sub-brand-options">{catalog.data?.subBrands.map((line) => <option key={line.name} value={line.name}/>)}</datalist><DidYouMean suggestion={catalog.data?.suggestions.subBrand} typed={draft.subBrand} onAccept={(subBrand) => set({ subBrand })} testId="button-did-you-mean-sub-brand"/></div>
-          <div className="field-block"><span className="label-row"><label htmlFor="stash-color">Color</label>{reviewButton('color')}</span>{reviewForm('color', yarn?.color ?? null)}<input id="stash-color" list="stash-color-options" maxLength={80} placeholder="e.g. Fisherman" value={draft.color} onChange={(event) => set({ color: event.target.value })} autoComplete="off" data-testid="input-stash-color"/><datalist id="stash-color-options">{catalog.data?.colors.map((item) => <option key={item.name} value={item.name}/>)}</datalist><DidYouMean suggestion={catalog.data?.suggestions.color} typed={draft.color} onAccept={(color) => set({ color })} testId="button-did-you-mean-color"/></div>
+          <div className="field-block"><span className="label-row"><label htmlFor="stash-brand">Brand <b>*</b></label>{reviewButton('brand')}</span>{reviewForm('brand', yarn?.brand ?? null)}<input id="stash-brand" list="stash-brand-options" maxLength={80} placeholder="e.g. Lion Brand" value={draft.brand} onChange={(event) => set({ brand: event.target.value })} autoComplete="off" data-testid="input-stash-brand"/><datalist id="stash-brand-options">{catalog.data?.brands.map((name) => <option key={name} value={name}/>)}</datalist><DidYouMean suggestion={catalog.data?.suggestions.brand} typed={draft.brand} renamingFrom={yarn?.brand} onAccept={(brand) => set({ brand })} testId="button-did-you-mean-brand"/>{errors.brand && <span className="field-error">{errors.brand}</span>}</div>
+          <div className="field-block"><span className="label-row"><label htmlFor="stash-sub-brand">Sub brand</label>{reviewButton('sub_brand')}</span>{reviewForm('sub_brand', yarn?.subBrand ?? null)}<input id="stash-sub-brand" list="stash-sub-brand-options" maxLength={80} placeholder="e.g. Wool-Ease" value={draft.subBrand} onChange={(event) => set({ subBrand: event.target.value })} autoComplete="off" data-testid="input-stash-sub-brand"/><datalist id="stash-sub-brand-options">{catalog.data?.subBrands.map((line) => <option key={line.name} value={line.name}/>)}</datalist><DidYouMean suggestion={catalog.data?.suggestions.subBrand} typed={draft.subBrand} renamingFrom={yarn?.subBrand} onAccept={(subBrand) => set({ subBrand })} testId="button-did-you-mean-sub-brand"/></div>
+          <div className="field-block"><span className="label-row"><label htmlFor="stash-color">Color</label>{reviewButton('color')}</span>{reviewForm('color', yarn?.color ?? null)}<input id="stash-color" list="stash-color-options" maxLength={80} placeholder="e.g. Fisherman" value={draft.color} onChange={(event) => set({ color: event.target.value })} autoComplete="off" data-testid="input-stash-color"/><datalist id="stash-color-options">{catalog.data?.colors.map((item) => <option key={item.name} value={item.name}/>)}</datalist><DidYouMean suggestion={catalog.data?.suggestions.color} typed={draft.color} renamingFrom={yarn?.color} onAccept={(color) => set({ color })} testId="button-did-you-mean-color"/></div>
         </div>
       </div>
       <div className="form-grid stash-form-grid">
@@ -1324,7 +1360,7 @@ function StashYarnForm({ yarn }: { yarn?: StashYarn }) {
       <NameReviewList reviews={reviews.data ?? []}/>
       {errors.save && <p className="mutation-error" role="alert">{errors.save}</p>}
       <div className="form-actions"><Link href="/stash" className="button button-quiet">Cancel</Link><button type="submit" className="button button-primary" disabled={saving} data-testid="button-save-yarn">{saving ? 'Saving…' : yarn ? 'Save changes' : 'Add to stash'}{!saving && <ArrowRight size={16}/>}</button></div>
-    </form>
+    </form>}
   </PortalLayout>;
 }
 
@@ -1436,10 +1472,11 @@ function FabricForm({ fabric }: { fabric?: StashFabric }) {
   });
   const photoSrc = (slot: FabricPhotoSlot) => slot.kind === 'new' ? slot.preview : fabric ? fabricPhotoUrl(fabric, slot.index) : '';
 
-  const done = () => {
-    void client.invalidateQueries({ queryKey: getGetStashFabricsQueryKey() });
+  const done = (saved?: StashFabric | void) => {
+    if (saved) showSaved(client, { list: getGetStashFabricsQueryKey(), item: getGetStashFabricQueryKey(saved.id) }, saved);
+    else if (fabric) showRemoved(client, getGetStashFabricsQueryKey(), fabric.id);
     void client.invalidateQueries({ queryKey: getGetMyCraftsQueryKey() });
-    if (fabric) void client.invalidateQueries({ queryKey: getGetStashFabricQueryKey(fabric.id) });
+    refreshPaths(client, '/api/sewing-projects', '/api/sewing-overview');
     setLocation('/sewing/fabric');
   };
 
@@ -1483,7 +1520,7 @@ function FabricForm({ fabric }: { fabric?: StashFabric }) {
     else create.mutate({ data }, options);
   };
 
-  const deleteFabric = () => fabric && remove.mutate({ fabricId: fabric.id }, { onSuccess: done });
+  const deleteFabric = () => fabric && remove.mutate({ fabricId: fabric.id }, { onSuccess: () => done() });
   const [main, ...extras] = photos;
 
   return <PortalLayout active="fabric">
@@ -1964,10 +2001,11 @@ function SewingToolForm({ tool }: { tool?: SewingTool }) {
     setPhoto({ kind: 'new', file, preview: URL.createObjectURL(file) });
   };
 
-  const done = () => {
-    void client.invalidateQueries({ queryKey: getGetSewingToolsQueryKey() });
+  const done = (saved?: SewingTool | void) => {
+    if (saved) showSaved(client, { list: getGetSewingToolsQueryKey(), item: getGetSewingToolQueryKey(saved.id) }, saved);
+    else if (tool) showRemoved(client, getGetSewingToolsQueryKey(), tool.id);
     void client.invalidateQueries({ queryKey: getGetMyCraftsQueryKey() });
-    if (tool) void client.invalidateQueries({ queryKey: getGetSewingToolQueryKey(tool.id) });
+    refreshPaths(client, '/api/sewing-projects');
     setLocation(`/sewing/tools?section=${draft.section}`);
   };
 
@@ -2011,7 +2049,7 @@ function SewingToolForm({ tool }: { tool?: SewingTool }) {
     else create.mutate({ data }, options);
   };
 
-  const deleteTool = () => tool && remove.mutate({ sewingToolId: tool.id }, { onSuccess: done });
+  const deleteTool = () => tool && remove.mutate({ sewingToolId: tool.id }, { onSuccess: () => done() });
   const photoSrc = photo?.kind === 'new' ? photo.preview : photo?.kind === 'kept' && tool ? toolPhotoUrl(tool) : '';
 
   return <PortalLayout active="tools">
@@ -2142,10 +2180,10 @@ function YarnToolForm({ tool }: { tool?: YarnTool }) {
     setErrors({});
   };
 
-  const done = () => {
-    void client.invalidateQueries({ queryKey: getGetYarnToolsQueryKey() });
+  const done = (saved?: YarnTool | void) => {
+    if (saved) showSaved(client, { list: getGetYarnToolsQueryKey(), item: getGetYarnToolQueryKey(saved.id) }, saved);
+    else if (tool) showRemoved(client, getGetYarnToolsQueryKey(), tool.id);
     void client.invalidateQueries({ queryKey: getGetMyCraftsQueryKey() });
-    if (tool) void client.invalidateQueries({ queryKey: getGetYarnToolQueryKey(tool.id) });
     setLocation(`/tools?section=${draft.section}`);
   };
 
@@ -2195,7 +2233,7 @@ function YarnToolForm({ tool }: { tool?: YarnTool }) {
     else create.mutate({ data }, options);
   };
 
-  const deleteTool = () => tool && remove.mutate({ yarnToolId: tool.id }, { onSuccess: done });
+  const deleteTool = () => tool && remove.mutate({ yarnToolId: tool.id }, { onSuccess: () => done() });
   const photoSrc = photo?.kind === 'new' ? photo.preview : photo?.kind === 'kept' && tool ? yarnToolPhotoUrl(tool) : '';
   const example = isNotion ? notionFor(draft.notionType || null)?.example ?? 'Locking stitch markers' : draft.section === 'hooks' ? 'My favourite hook' : 'Sock set';
 

@@ -116,3 +116,20 @@ test("shows the most-used yarn brand and average days, and a single brand opens 
   await expect(page).toHaveURL(/\/projects\?search=Lion%20Brand$/);
   await expect(page.getByRole("searchbox").or(page.getByPlaceholder("Search by name, pattern or yarn…"))).toHaveValue("Lion Brand");
 });
+
+test("fits a long brand name and caps ties on a phone screen", async ({ page }) => {
+  await mockDashboard(page, dashboard({}, { brands: ["Caron Simply Soft Collection", "Lion Brand", "Red Heart"], brandProjects: 2, averageDays: 12 }));
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/dashboard");
+
+  const brand = page.getByTestId("text-top-yarn-brand");
+  await expect(brand).toHaveText("Caron Simply Soft Collection");
+  await expect(page.getByTestId("card-stat-top-brand")).toContainText("On 2 projects each, tied with 2 more");
+  // Nothing is cut off: the name sits inside the card.
+  const card = await page.getByTestId("card-stat-top-brand").boundingBox();
+  const text = await brand.boundingBox();
+  expect(text!.y + text!.height).toBeLessThanOrEqual(card!.y + card!.height);
+  if (process.env.DASHBOARD_PHONE_SCREENSHOT) {
+    await page.locator(".stat-row-second").screenshot({ path: process.env.DASHBOARD_PHONE_SCREENSHOT });
+  }
+});
