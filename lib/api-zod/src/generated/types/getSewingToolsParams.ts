@@ -13,6 +13,10 @@ export type GetSewingToolsParams = {
  * Matches name, brand, size, color or notes
  */
 search?: string;
+/**
+ * true lists the notions in the Archive instead
+ */
+archived?: boolean;
 section?: SewingToolSection;
 category?: SewingToolCategory;
 };

@@ -36,6 +36,9 @@ import type {
   DesignerWebsiteTitlePreviewRequest,
   DesignerWebsiteTitlePreviewResponse,
   Error,
+  FabricArchiveMatch,
+  FabricSuggestion,
+  GetFabricSuggestionsParams,
   GetProjectsParams,
   GetSewingProjectsParams,
   GetSewingToolsParams,
@@ -52,6 +55,7 @@ import type {
   Project,
   ProjectCounter,
   ProjectDetail,
+  RenameSewingToolBrands,
   RenameStashYarns,
   RenameStashYarnsResult,
   ResolveCatalogReview,
@@ -3144,6 +3148,7 @@ export const getCreateStashFabricUrl = () => {
 }
 
 /**
+ * When every detail matches a fabric in the Archive and the print photos look alike (or can't be compared), answers 409 with that fabric so the maker can say whether it's the same one. Send restoreId to bring it back with the new details, or addAsNew to add a separate piece.
  * @summary Add a fabric to the stash
  */
 export const createStashFabric = async (createStashFabricBody: CreateStashFabric, options?: Parameters<typeof customFetch>[1]): Promise<StashFabric> => {
@@ -3177,7 +3182,7 @@ return customFetch<StashFabric>(getCreateStashFabricUrl(),
 
 export const getCreateStashFabricMutationKey = () => ['createStashFabric'] as const;
 
-export const getCreateStashFabricMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse>,
+export const getCreateStashFabricMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | FabricArchiveMatch>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStashFabric>>, TError,CreateStashFabricMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createStashFabric>>, TError,CreateStashFabricMutationVariables, TContext> => {
 
@@ -3206,13 +3211,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type CreateStashFabricMutationResult = NonNullable<Awaited<ReturnType<typeof createStashFabric>>>
     export type CreateStashFabricMutationBody = BodyType<CreateStashFabric>
-    export type CreateStashFabricMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse>
+    export type CreateStashFabricMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | FabricArchiveMatch>
     export type CreateStashFabricMutationVariables = {data: BodyType<CreateStashFabric>}
 
     /**
  * @summary Add a fabric to the stash
  */
-export const useCreateStashFabric = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse>,
+export const useCreateStashFabric = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | FabricArchiveMatch>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStashFabric>>, TError,CreateStashFabricMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof createStashFabric>>,
@@ -3221,6 +3226,238 @@ export const useCreateStashFabric = <TError = ErrorType<BadRequestResponse | Una
         TContext
       > => {
       return useMutation(getCreateStashFabricMutationOptions(options));
+    }
+
+export const getGetFabricSuggestionsUrl = (params?: GetFabricSuggestionsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/fabric-stash/fabric-suggestions?${stringifiedParams}` : `/api/fabric-stash/fabric-suggestions`
+}
+
+/**
+ * @summary Fabric-left suggestions waiting for the maker to confirm
+ */
+export const getFabricSuggestions = async (params?: GetFabricSuggestionsParams, options?: Parameters<typeof customFetch>[1]): Promise<FabricSuggestion[]> => {
+
+  return customFetch<FabricSuggestion[]>(getGetFabricSuggestionsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFabricSuggestionsQueryKey = (params?: GetFabricSuggestionsParams,) => {
+    return [
+    `/api/fabric-stash/fabric-suggestions`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetFabricSuggestionsQueryOptions = <TData = Awaited<ReturnType<typeof getFabricSuggestions>>, TError = ErrorType<UnauthorizedResponse>>(params?: GetFabricSuggestionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFabricSuggestions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFabricSuggestionsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFabricSuggestions>>> = ({ signal }) => getFabricSuggestions(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFabricSuggestions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetFabricSuggestionsQueryResult = NonNullable<Awaited<ReturnType<typeof getFabricSuggestions>>>
+export type GetFabricSuggestionsQueryError = ErrorType<UnauthorizedResponse>
+
+
+/**
+ * @summary Fabric-left suggestions waiting for the maker to confirm
+ */
+
+export function useGetFabricSuggestions<TData = Awaited<ReturnType<typeof getFabricSuggestions>>, TError = ErrorType<UnauthorizedResponse>>(
+ params?: GetFabricSuggestionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFabricSuggestions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetFabricSuggestionsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAcceptFabricSuggestionUrl = (suggestionId: string,) => {
+
+
+
+
+  return `/api/fabric-stash/fabric-suggestions/${suggestionId}/accept`
+}
+
+/**
+ * @summary Take the project's fabric off what's left of the stash fabric
+ */
+export const acceptFabricSuggestion = async (suggestionId: string, options?: Parameters<typeof customFetch>[1]): Promise<StashFabric> => {
+
+  return customFetch<StashFabric>(getAcceptFabricSuggestionUrl(suggestionId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getAcceptFabricSuggestionMutationKey = () => ['acceptFabricSuggestion'] as const;
+
+export const getAcceptFabricSuggestionMutationOptions = <TError = ErrorType<UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptFabricSuggestion>>, TError,AcceptFabricSuggestionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof acceptFabricSuggestion>>, TError,AcceptFabricSuggestionMutationVariables, TContext> => {
+
+const mutationKey = getAcceptFabricSuggestionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof acceptFabricSuggestion>>, AcceptFabricSuggestionMutationVariables> = (props) => {
+          const {suggestionId} = props ?? {};
+
+          return  acceptFabricSuggestion(suggestionId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AcceptFabricSuggestionMutationResult = NonNullable<Awaited<ReturnType<typeof acceptFabricSuggestion>>>
+
+    export type AcceptFabricSuggestionMutationError = ErrorType<UnauthorizedResponse | NotFoundResponse>
+    export type AcceptFabricSuggestionMutationVariables = {suggestionId: string}
+
+    /**
+ * @summary Take the project's fabric off what's left of the stash fabric
+ */
+export const useAcceptFabricSuggestion = <TError = ErrorType<UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptFabricSuggestion>>, TError,AcceptFabricSuggestionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof acceptFabricSuggestion>>,
+        TError,
+        AcceptFabricSuggestionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAcceptFabricSuggestionMutationOptions(options));
+    }
+
+export const getDismissFabricSuggestionUrl = (suggestionId: string,) => {
+
+
+
+
+  return `/api/fabric-stash/fabric-suggestions/${suggestionId}/dismiss`
+}
+
+/**
+ * @summary Leave the stash fabric's amount as it is
+ */
+export const dismissFabricSuggestion = async (suggestionId: string, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getDismissFabricSuggestionUrl(suggestionId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getDismissFabricSuggestionMutationKey = () => ['dismissFabricSuggestion'] as const;
+
+export const getDismissFabricSuggestionMutationOptions = <TError = ErrorType<UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof dismissFabricSuggestion>>, TError,DismissFabricSuggestionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof dismissFabricSuggestion>>, TError,DismissFabricSuggestionMutationVariables, TContext> => {
+
+const mutationKey = getDismissFabricSuggestionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof dismissFabricSuggestion>>, DismissFabricSuggestionMutationVariables> = (props) => {
+          const {suggestionId} = props ?? {};
+
+          return  dismissFabricSuggestion(suggestionId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DismissFabricSuggestionMutationResult = NonNullable<Awaited<ReturnType<typeof dismissFabricSuggestion>>>
+
+    export type DismissFabricSuggestionMutationError = ErrorType<UnauthorizedResponse | NotFoundResponse>
+    export type DismissFabricSuggestionMutationVariables = {suggestionId: string}
+
+    /**
+ * @summary Leave the stash fabric's amount as it is
+ */
+export const useDismissFabricSuggestion = <TError = ErrorType<UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof dismissFabricSuggestion>>, TError,DismissFabricSuggestionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof dismissFabricSuggestion>>,
+        TError,
+        DismissFabricSuggestionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDismissFabricSuggestionMutationOptions(options));
     }
 
 export const getRequestFabricPhotoUploadUrl = () => {
@@ -4292,6 +4529,94 @@ export const useCreateSewingTool = <TError = ErrorType<BadRequestResponse | Unau
         TContext
       > => {
       return useMutation(getCreateSewingToolMutationOptions(options));
+    }
+
+export const getRenameSewingToolBrandsUrl = () => {
+
+
+
+
+  return `/api/sewing-tools/rename-brand`
+}
+
+/**
+ * @summary Rename a brand on every tool that still has the old name
+ */
+export const renameSewingToolBrands = async (renameSewingToolBrandsBody: RenameSewingToolBrands, options?: Parameters<typeof customFetch>[1]): Promise<RenameStashYarnsResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<RenameStashYarnsResult>(getRenameSewingToolBrandsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(renameSewingToolBrandsBody)
+  }
+);}
+
+
+
+
+
+export const getRenameSewingToolBrandsMutationKey = () => ['renameSewingToolBrands'] as const;
+
+export const getRenameSewingToolBrandsMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof renameSewingToolBrands>>, TError,RenameSewingToolBrandsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof renameSewingToolBrands>>, TError,RenameSewingToolBrandsMutationVariables, TContext> => {
+
+const mutationKey = getRenameSewingToolBrandsMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof renameSewingToolBrands>>, RenameSewingToolBrandsMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  renameSewingToolBrands(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RenameSewingToolBrandsMutationResult = NonNullable<Awaited<ReturnType<typeof renameSewingToolBrands>>>
+    export type RenameSewingToolBrandsMutationBody = BodyType<RenameSewingToolBrands>
+    export type RenameSewingToolBrandsMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse>
+    export type RenameSewingToolBrandsMutationVariables = {data: BodyType<RenameSewingToolBrands>}
+
+    /**
+ * @summary Rename a brand on every tool that still has the old name
+ */
+export const useRenameSewingToolBrands = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof renameSewingToolBrands>>, TError,RenameSewingToolBrandsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof renameSewingToolBrands>>,
+        TError,
+        RenameSewingToolBrandsMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRenameSewingToolBrandsMutationOptions(options));
     }
 
 export const getRequestSewingToolPhotoUploadUrl = () => {

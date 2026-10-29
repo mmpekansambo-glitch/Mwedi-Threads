@@ -268,6 +268,41 @@ describe.skipIf(!databaseUrl)("sewing projects against PostgreSQL", () => {
     expect(changed.preWashed).toBe(false);
   });
 
+  it("offers to take a finished project's fabric off what's left, and withdraws it on reopening", async () => {
+    const fabric = await addFabric(ownerB, { fabricType: "cotton", print: "floral", amount: 3 });
+    const plain = await addFabric(ownerB, { fabricType: "denim" });
+    const project = await read(await request("/sewing-projects", {
+      method: "POST", user: ownerB,
+      body: { title: "Sundress", fabrics: [{ stashFabricId: fabric.id, amountUsed: 1.25 }, { stashFabricId: plain.id }] },
+    }));
+    await request(`/sewing-projects/${project.id}`, { method: "PATCH", user: ownerB, body: { status: "completed" } });
+    const suggestions = await read(await request(`/fabric-stash/fabric-suggestions?projectId=${project.id}`, { user: ownerB }));
+    // Only fabric with an amount used is offered.
+    expect(suggestions).toEqual([expect.objectContaining({
+      stashFabricId: fabric.id, projectTitle: "Sundress", fabricName: "Floral cotton", unit: "meters", amountUsed: 1.25, amountLeft: 3, suggestedLeft: 1.75,
+    })]);
+    expect(await read(await request("/fabric-stash/fabric-suggestions", { user: ownerA }))).toHaveLength(0);
+
+    // Reopening withdraws the offer; finishing again brings it back.
+    await request(`/sewing-projects/${project.id}`, { method: "PATCH", user: ownerB, body: { status: "in_progress" } });
+    expect(await read(await request("/fabric-stash/fabric-suggestions", { user: ownerB }))).toHaveLength(0);
+    await request(`/sewing-projects/${project.id}`, { method: "PATCH", user: ownerB, body: { status: "completed" } });
+    const [again] = await read(await request("/fabric-stash/fabric-suggestions", { user: ownerB }));
+
+    expect((await request(`/fabric-stash/fabric-suggestions/${again.id}/accept`, { method: "POST", user: ownerA })).status).toBe(404);
+    const accepted = await request(`/fabric-stash/fabric-suggestions/${again.id}/accept`, { method: "POST", user: ownerB });
+    expect(await read(accepted)).toMatchObject({ id: fabric.id, amount: 3, amountLeft: 1.75 });
+    expect(await read(await request("/fabric-stash/fabric-suggestions", { user: ownerB }))).toHaveLength(0);
+    expect((await request(`/fabric-stash/fabric-suggestions/${again.id}/dismiss`, { method: "POST", user: ownerB })).status).toBe(404);
+
+    // Fabric in the Archive is left out of the Overview's stash counts.
+    const before = await read(await request("/sewing-overview", { user: ownerB }));
+    await request(`/fabric-stash/${plain.id}`, { method: "PATCH", user: ownerB, body: { archived: true } });
+    const after = await read(await request("/sewing-overview", { user: ownerB }));
+    expect(after.fabricPieces).toBe(before.fabricPieces - 1);
+    expect(after.fabricLength).toBe(before.fabricLength - 3);
+  });
+
   it("sums up the Sewing room for the Overview", async () => {
     const overview = await read(await request("/sewing-overview", { user: ownerA }));
     // ownerA has the dress (planning), the reopened shirt (in progress, still at Finish) and three 3 m pieces.

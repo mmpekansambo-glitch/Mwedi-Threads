@@ -11,9 +11,13 @@ import type { GeneralColor } from './generalColor';
 
 export type GetStashFabricsParams = {
 /**
- * Matches fabric type, brand or notes
+ * Matches fabric type or notes
  */
 search?: string;
+/**
+ * true lists the fabric in the Archive instead of the stash
+ */
+archived?: boolean;
 fabricType?: FabricType;
 print?: FabricPrint;
 generalColor?: GeneralColor;

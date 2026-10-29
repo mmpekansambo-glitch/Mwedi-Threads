@@ -1,6 +1,7 @@
 import express, { type Request } from "express";
 import { randomUUID } from "node:crypto";
 import pg from "pg";
+import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import * as schema from "@workspace/db/schema";
@@ -27,6 +28,8 @@ let testDb: ReturnType<typeof drizzle> | undefined;
 let server: ReturnType<express.Express["listen"]> | undefined;
 let baseUrl: string;
 const deletedPhotos: string[] = [];
+// Whether the print photos look alike, as the photo check would answer.
+let printsMatch: boolean | null = true;
 
 function quoteIsolatedSchema(name: string): string {
   if (!/^fabric_test_[0-9]+_[0-9a-f]+$/.test(name)) {
@@ -113,6 +116,7 @@ describe.skipIf(!databaseUrl)("crafts and fabric stash against PostgreSQL", () =
       signedObjectUrl: async () => "https://storage.test/signed",
       storageLocation: () => ({ bucketName: "bucket", objectName: "object" }),
     }));
+    vi.doMock("../lib/printPhoto", () => ({ printsLookAlike: async () => printsMatch }));
     const { default: craftsRouter } = await import("./crafts");
     const { default: fabricStashRouter } = await import("./fabricStash");
     const app = express();
@@ -165,13 +169,14 @@ describe.skipIf(!databaseUrl)("crafts and fabric stash against PostgreSQL", () =
       user: ownerA,
       body: {
         fabricType: "cotton", construction: "woven", print: "floral", generalColor: "blue",
-        unit: "meters", amount: 2.5, width: 145, brand: "  Liberty  ", notes: "Lawn, for a summer dress",
+        unit: "meters", amount: 2.5, width: 145, notes: "Lawn, for a summer dress",
         photoPaths: [photo(ownerA), photo(ownerA)],
       },
     });
     expect(created.status).toBe(201);
     const fabric = await read(created);
-    expect(fabric).toMatchObject({ fabricType: "cotton", brand: "Liberty", amount: 2.5, width: 145, photoCount: 2 });
+    expect(fabric).toMatchObject({ fabricType: "cotton", amount: 2.5, amountLeft: null, width: 145, photoCount: 2, archivedAt: null });
+    expect(fabric.brand).toBeUndefined();
     expect(fabric.photoPaths).toBeUndefined();
 
     await request("/fabric-stash", {
@@ -252,5 +257,90 @@ describe.skipIf(!databaseUrl)("crafts and fabric stash against PostgreSQL", () =
     });
     expect(bad.status).toBe(400);
     expect(await read(await request(`/fabric-stash/${fabric.id}`, { user: ownerA }))).toMatchObject({ notes: "For the summer dress" });
+  });
+
+  it("keeps amount left within what was bought", async () => {
+    const fabric = await read(await request("/fabric-stash", {
+      method: "POST", user: ownerA, body: { fabricType: "wool", unit: "yards", amount: 2, amountLeft: 1.5, photoPaths: [photo(ownerA)] },
+    }));
+    expect(fabric).toMatchObject({ amount: 2, amountLeft: 1.5 });
+    const tooMuch = await request(`/fabric-stash/${fabric.id}`, { method: "PATCH", user: ownerA, body: { amountLeft: 3 } });
+    expect(tooMuch.status).toBe(400);
+    expect((await read(tooMuch)).error).toBe("Amount left can't be more than amount bought.");
+    expect(await read(await request(`/fabric-stash/${fabric.id}`, { method: "PATCH", user: ownerA, body: { amount: 4, amountLeft: 3.5 } })))
+      .toMatchObject({ amount: 4, amountLeft: 3.5 });
+  });
+
+  it("moves used-up fabric to the Archive and back", async () => {
+    const fabric = await read(await request("/fabric-stash", {
+      method: "POST", user: ownerB, body: { fabricType: "velvet", unit: "meters", amount: 1, amountLeft: 0, photoPaths: [photo(ownerB)] },
+    }));
+    const archived = await read(await request(`/fabric-stash/${fabric.id}`, { method: "PATCH", user: ownerB, body: { archived: true } }));
+    expect(archived.archivedAt).toEqual(expect.any(String));
+    const ids = async (path: string) => (await read(await request(path, { user: ownerB }))).map((item: { id: string }) => item.id);
+    expect(await ids("/fabric-stash")).not.toContain(fabric.id);
+    expect(await ids("/fabric-stash?archived=true")).toContain(fabric.id);
+    expect(await ids("/fabric-stash?archived=false")).not.toContain(fabric.id);
+    const back = await read(await request(`/fabric-stash/${fabric.id}`, { method: "PATCH", user: ownerB, body: { archived: false } }));
+    expect(back.archivedAt).toBeNull();
+    expect(await ids("/fabric-stash")).toContain(fabric.id);
+  });
+
+  it("asks before adding a fabric that looks like one in the Archive, and brings it back when it's the same", async () => {
+    const details = { fabricType: "chambray", construction: "woven", print: "check", generalColor: "blue", unit: "meters" };
+    const oldPhoto = photo(ownerA);
+    const old = await read(await request("/fabric-stash", {
+      method: "POST", user: ownerA, body: { ...details, amount: 2, amountLeft: 0, notes: "Old", photoPaths: [oldPhoto] },
+    }));
+    await request(`/fabric-stash/${old.id}`, { method: "PATCH", user: ownerA, body: { archived: true } });
+
+    // A detail that differs isn't a match.
+    printsMatch = true;
+    const otherColor = await request("/fabric-stash", {
+      method: "POST", user: ownerA, body: { ...details, generalColor: "green", photoPaths: [photo(ownerA)] },
+    });
+    expect(otherColor.status).toBe(201);
+
+    // Every detail agrees but the prints clearly differ: a new piece.
+    printsMatch = false;
+    expect((await request("/fabric-stash", { method: "POST", user: ownerA, body: { ...details, photoPaths: [photo(ownerA)] } })).status).toBe(201);
+
+    // Every detail agrees and the photos look alike (or can't be compared): ask.
+    for (const answer of [true, null]) {
+      printsMatch = answer;
+      const asked = await request("/fabric-stash", { method: "POST", user: ownerA, body: { ...details, amount: 3, photoPaths: [photo(ownerA)] } });
+      expect(asked.status).toBe(409);
+      expect(await read(asked)).toMatchObject({ match: { id: old.id }, similarPhoto: answer });
+    }
+    // Another maker's Archive is never matched.
+    expect((await request("/fabric-stash", { method: "POST", user: ownerB, body: { ...details, photoPaths: [photo(ownerB)] } })).status).toBe(201);
+
+    // "No, it's a different piece" adds it.
+    const separate = await request("/fabric-stash", { method: "POST", user: ownerA, body: { ...details, addAsNew: true, photoPaths: [photo(ownerA)] } });
+    expect(separate.status).toBe(201);
+
+    // "Yes, same fabric" brings the old one back with the new details.
+    const newPhoto = photo(ownerA);
+    expect((await request("/fabric-stash", { method: "POST", user: ownerB, body: { ...details, restoreId: old.id, photoPaths: [photo(ownerB)] } })).status).toBe(404);
+    const restored = await request("/fabric-stash", {
+      method: "POST", user: ownerA, body: { ...details, amount: 3, restoreId: old.id, notes: "Bought more", photoPaths: [newPhoto] },
+    });
+    expect(restored.status).toBe(200);
+    expect(await read(restored)).toMatchObject({ id: old.id, restored: true, archivedAt: null, amount: 3, amountLeft: null, notes: "Bought more" });
+    expect(deletedPhotos).toContain(oldPhoto.slice("/objects/".length));
+    printsMatch = true;
+  });
+
+  it("moves a brand saved before fabric lost its brand into the notes", async () => {
+    const maker = "fabric-test-brand-maker";
+    await getTestDb().insert(usersTable).values({ id: maker });
+    await getTestDb().insert(schema.stashFabricsTable).values([
+      { ownerId: maker, fabricType: "silk", unit: "meters", brand: "Liberty", notes: "Tana lawn", photoPaths: [photo(maker)] },
+      { ownerId: maker, fabricType: "linen", unit: "meters", brand: "Merchant", photoPaths: [photo(maker)] },
+    ]);
+    const fabric = await read(await request("/fabric-stash", { user: maker }));
+    expect(fabric.map((item: { notes: string }) => item.notes).sort()).toEqual(["Brand: Liberty\nTana lawn", "Brand: Merchant"]);
+    const rows = await getTestDb().select().from(schema.stashFabricsTable).where(eq(schema.stashFabricsTable.ownerId, maker));
+    expect(rows.every((row) => row.brand === null)).toBe(true);
   });
 });

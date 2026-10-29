@@ -102,11 +102,13 @@ export function stashTablesSql(isolatedSchema: string): string {
       general_color ${isolatedSchema}.general_color,
       unit ${isolatedSchema}.fabric_unit NOT NULL DEFAULT 'meters',
       amount double precision,
+      amount_left double precision,
       width double precision,
       pre_washed boolean,
       brand text,
       notes text,
       photo_paths text[] NOT NULL DEFAULT '{}'::text[],
+      archived_at timestamptz,
       created_at timestamptz NOT NULL DEFAULT now(),
       updated_at timestamptz NOT NULL DEFAULT now()
     );
@@ -143,6 +145,16 @@ export function sewingTablesSql(isolatedSchema: string): string {
       amount_used double precision,
       position integer NOT NULL DEFAULT 0
     );
+    CREATE TABLE ${isolatedSchema}.fabric_suggestions (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL REFERENCES ${isolatedSchema}.users(id) ON DELETE CASCADE,
+      stash_fabric_id uuid NOT NULL REFERENCES ${isolatedSchema}.stash_fabrics(id) ON DELETE CASCADE,
+      project_id uuid NOT NULL REFERENCES ${isolatedSchema}.sewing_projects(id) ON DELETE CASCADE,
+      amount_used double precision NOT NULL,
+      status ${isolatedSchema}.skein_suggestion_status NOT NULL DEFAULT 'pending',
+      created_at timestamptz NOT NULL DEFAULT now()
+    );
+    CREATE UNIQUE INDEX fabric_suggestions_fabric_project ON ${isolatedSchema}.fabric_suggestions (stash_fabric_id, project_id);
   `;
 }
 
@@ -164,6 +176,7 @@ export function sewingToolsSql(isolatedSchema: string): string {
       brand text,
       notes text,
       photo_path text,
+      archived_at timestamptz,
       created_at timestamptz NOT NULL DEFAULT now(),
       updated_at timestamptz NOT NULL DEFAULT now()
     );

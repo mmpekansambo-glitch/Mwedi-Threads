@@ -30,21 +30,41 @@ export function checkFabricPhotos(ownerId: string, sent: string[], current: stri
   return { ok: true, photoPaths };
 }
 
-type SizesCheck = { ok: true; amount: number | null; width: number | null } | { ok: false; error: string };
+type SizesCheck =
+  | { ok: true; amount: number | null; width: number | null; amountLeft: number | null }
+  | { ok: false; error: string };
 
-// Amounts are kept to two decimals, like 1.75 meters.
-export function checkFabricSizes(amount: number | null, width: number | null): SizesCheck {
-  for (const value of [amount, width]) {
+// Amounts are kept to two decimals, like 1.75 meters. What's left can't be
+// more than was bought.
+export function checkFabricSizes(amount: number | null, width: number | null, amountLeft: number | null = null): SizesCheck {
+  for (const value of [amount, width, amountLeft]) {
     if (value !== null && (!Number.isFinite(value) || value < 0 || value > 999)) {
       return { ok: false, error: "Enter amounts between 0 and 999." };
     }
   }
   const round = (value: number | null) => (value === null ? null : Math.round(value * 100) / 100);
-  return { ok: true, amount: round(amount), width: round(width) };
+  if (amountLeft !== null && amount === null) return { ok: false, error: "Enter how much you bought first." };
+  if (amountLeft !== null && amount !== null && round(amountLeft)! > round(amount)!) {
+    return { ok: false, error: "Amount left can't be more than amount bought." };
+  }
+  return { ok: true, amount: round(amount), width: round(width), amountLeft: round(amountLeft) };
 }
 
 // Searching "cotton" or "Jersey" also finds fabric by its type.
 export function fabricTypeSearch(search: string): string[] {
   const typed = search.trim().toLowerCase();
   return typed.length < 3 ? [] : fabricTypes.filter((type) => type.startsWith(typed));
+}
+
+// A short name for a piece, such as "Floral cotton" or "French terry".
+export function fabricName(fabric: { fabricType: string; print: string | null }): string {
+  const words = (value: string) => value.replace(/_/g, " ");
+  const name = fabric.print && fabric.print !== "solid" && fabric.print !== "other"
+    ? `${words(fabric.print)} ${words(fabric.fabricType)}`
+    : words(fabric.fabricType);
+  return name.charAt(0).toUpperCase() + name.slice(1);
+}
+
+export function amountAfter(left: number, used: number): number {
+  return Math.max(0, Math.round((left - used) * 100) / 100);
 }

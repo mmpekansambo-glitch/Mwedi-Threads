@@ -47,4 +47,6 @@ export interface UpdateSewingTool {
      * @nullable
      */
   photoPath?: string | null;
+  /** true moves a notion to the Archive, false brings it back */
+  archived?: boolean;
 }

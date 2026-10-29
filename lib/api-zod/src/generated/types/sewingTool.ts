@@ -24,6 +24,11 @@ export interface SewingTool {
   /** @nullable */
   notes: string | null;
   hasPhoto: boolean;
+  /**
+     * Set while a used-up notion is in the maker's Archive
+     * @nullable
+     */
+  archivedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
