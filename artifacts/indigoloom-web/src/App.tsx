@@ -1925,7 +1925,7 @@ function SewingProjectForm({ project }: { project?: SewingProject }) {
         </div>
       </fieldset>
       <fieldset className="sewing-fabric-field">
-        <legend>Machine settings</legend>
+        <legend>Special machine settings</legend>
         <MachineSettingsField settings={draft.machineSettings} onChange={(machineSettings) => set({ machineSettings })}/>
       </fieldset>
       {errors.save && <p className="mutation-error" role="alert">{errors.save}</p>}
@@ -2041,8 +2041,8 @@ function SewingProjectDetailPage({ projectId }: { projectId: string }) {
         {needleLabel(project) && <div><dt>Needle</dt><dd>{needleLabel(project)}</dd></div>}
         {project.threadColor && <div><dt>Thread color</dt><dd className="sewing-thread"><ColorDot color={project.threadColor} noun="thread"/>{labelFor(generalColors, project.threadColor)}</dd></div>}
       </dl>
-      {project.machineSettings.length > 0 && <div className="machine-settings" data-testid="sewing-machine-settings"><h2>Machine settings</h2>
-        <ul>{project.machineSettings.map((setting, index) => <li key={index}><b>{setting.name || 'Machine settings'}</b>{machineSettingSummary(setting) && <small>{machineSettingSummary(setting)}</small>}{setting.notes && <small>{setting.notes}</small>}</li>)}</ul>
+      {project.machineSettings.length > 0 && <div className="machine-settings" data-testid="sewing-machine-settings"><h2>Special machine settings</h2>
+        <ul>{project.machineSettings.map((setting, index) => <li key={index}><b>{setting.name || 'Special machine settings'}</b>{machineSettingSummary(setting) && <small>{machineSettingSummary(setting)}</small>}{setting.notes && <small>{setting.notes}</small>}</li>)}</ul>
       </div>}
       {project.fitChanges && <div className="sewing-text"><h2>Fit changes</h2><p>{project.fitChanges}</p></div>}
       {project.notes && <div className="sewing-text"><h2>Notes</h2><p>{project.notes}</p></div>}

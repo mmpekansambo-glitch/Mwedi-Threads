@@ -198,10 +198,10 @@ export function MachineSettingsField({ settings, onChange }: { settings: SewingM
         <button type="button" className="button button-outline" onClick={close} data-testid={`button-machine-done-${index}`}>Done</button>
       </div>
       : <div key={index} className="machine-set" data-testid={`machine-set-${index}`}>
-        <span className="sewing-fabric-name"><b>{setting.name || 'Machine settings'}</b><small>{machineSettingSummary(setting) || setting.notes}</small></span>
-        <button type="button" className="icon-button" aria-label={`Edit ${setting.name || 'machine settings'}`} onClick={() => edit(index)} data-testid={`button-edit-machine-${index}`}><Pencil size={15}/></button>
-        <button type="button" className="icon-button" aria-label={`Remove ${setting.name || 'machine settings'}`} onClick={() => remove(index)} data-testid={`button-remove-machine-${index}`}><X size={15}/></button>
+        <span className="sewing-fabric-name"><b>{setting.name || 'Special machine settings'}</b><small>{machineSettingSummary(setting) || setting.notes}</small></span>
+        <button type="button" className="icon-button" aria-label={`Edit ${setting.name || 'special machine settings'}`} onClick={() => edit(index)} data-testid={`button-edit-machine-${index}`}><Pencil size={15}/></button>
+        <button type="button" className="icon-button" aria-label={`Remove ${setting.name || 'special machine settings'}`} onClick={() => remove(index)} data-testid={`button-remove-machine-${index}`}><X size={15}/></button>
       </div>)}
-    {editing === null && settings.length < 10 && <button type="button" className="button button-outline" onClick={() => { onChange([...settings, emptyMachineSetting]); setEditing(settings.length); }} data-testid="button-add-machine-settings"><Plus size={16}/> Add machine settings</button>}
+    {editing === null && settings.length < 10 && <button type="button" className="button button-outline" onClick={() => { onChange([...settings, emptyMachineSetting]); setEditing(settings.length); }} data-testid="button-add-machine-settings"><Plus size={16}/> Add special machine settings</button>}
   </>;
 }

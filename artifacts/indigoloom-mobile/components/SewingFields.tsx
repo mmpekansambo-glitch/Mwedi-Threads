@@ -270,8 +270,8 @@ export function MachineSettingsField({ settings, onChange }: { settings: SewingM
         </View>
       ) : (
         <View key={index} style={[styles.machineSet, styles.machineFolded, { backgroundColor: colors.card, borderColor: colors.border }]} testID={`machine-set-${index}`}>
-          <Pressable accessibilityRole="button" accessibilityLabel={`Edit ${setting.name || 'machine settings'}`} onPress={() => edit(index)} style={{ flex: 1, gap: 2 }} testID={`button-edit-machine-${index}`}>
-            <LoomText style={{ color: colors.foreground, fontFamily: fonts.semibold, fontSize: 16 }}>{setting.name || 'Machine settings'}</LoomText>
+          <Pressable accessibilityRole="button" accessibilityLabel={`Edit ${setting.name || 'special machine settings'}`} onPress={() => edit(index)} style={{ flex: 1, gap: 2 }} testID={`button-edit-machine-${index}`}>
+            <LoomText style={{ color: colors.foreground, fontFamily: fonts.semibold, fontSize: 16 }}>{setting.name || 'Special machine settings'}</LoomText>
             {machineSettingSummary(setting) || setting.notes ? <LoomText style={{ color: colors.mutedForeground, fontSize: 13 }}>{machineSettingSummary(setting) || setting.notes}</LoomText> : null}
           </Pressable>
           <Feather name="chevron-right" size={17} color={colors.mutedForeground} />
@@ -280,7 +280,7 @@ export function MachineSettingsField({ settings, onChange }: { settings: SewingM
       {editing === null && settings.length < 10 ? (
         <Pressable accessibilityRole="button" onPress={() => { onChange([...settings, emptyMachineSetting]); setEditing(settings.length); }} style={[styles.machineAdd, { borderColor: colors.input, backgroundColor: colors.card }]} testID="button-add-machine-settings">
           <Feather name="plus" size={16} color={colors.primaryText} />
-          <LoomText style={{ color: colors.primaryText, fontFamily: fonts.semibold, fontSize: 15 }}>Add machine settings</LoomText>
+          <LoomText style={{ color: colors.primaryText, fontFamily: fonts.semibold, fontSize: 15 }}>Add special machine settings</LoomText>
         </Pressable>
       ) : null}
     </View>
@@ -293,10 +293,10 @@ export function MachineSettingsList({ settings }: { settings: SewingMachineSetti
   if (!settings.length) return null;
   return (
     <View style={{ marginTop: 14, gap: 8 }} testID="sewing-machine-settings">
-      <LoomText style={{ color: colors.mutedForeground, fontSize: 13, fontFamily: fonts.bold }}>Machine settings</LoomText>
+      <LoomText style={{ color: colors.mutedForeground, fontSize: 13, fontFamily: fonts.bold }}>Special machine settings</LoomText>
       {settings.map((setting, index) => (
         <View key={index} style={[styles.machineCard, { backgroundColor: colors.selectedWash, borderColor: colors.border }]}>
-          <LoomText style={{ color: colors.foreground, fontFamily: fonts.semibold, fontSize: 16 }}>{setting.name || 'Machine settings'}</LoomText>
+          <LoomText style={{ color: colors.foreground, fontFamily: fonts.semibold, fontSize: 16 }}>{setting.name || 'Special machine settings'}</LoomText>
           {machineSettingSummary(setting) ? <LoomText style={{ color: colors.mutedForeground, fontSize: 14 }}>{machineSettingSummary(setting)}</LoomText> : null}
           {setting.notes ? <LoomText style={{ color: colors.mutedForeground, fontSize: 14 }}>{setting.notes}</LoomText> : null}
         </View>

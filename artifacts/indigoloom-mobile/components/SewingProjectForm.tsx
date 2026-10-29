@@ -203,7 +203,7 @@ export function SewingProjectForm({ project }: { project?: SewingProject }) {
               testID="row-sewing-thread"
             />
           </View>
-          <FormFieldLabel>Machine settings</FormFieldLabel>
+          <FormFieldLabel>Special machine settings</FormFieldLabel>
           <MachineSettingsField settings={machineSettings} onChange={setMachineSettings} />
           {message ? <LoomText accessibilityRole="alert" style={[styles.error, { color: colors.destructive }]}>{message}</LoomText> : null}
           <LoomButton title={project ? 'Save changes' : 'Start project'} icon="arrow-right" onPress={save} busy={create.isPending || update.isPending} testID="button-save-sewing-project" />
