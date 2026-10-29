@@ -8,6 +8,7 @@
     "test:e2e": "playwright test --config playwright.config.ts",
     "test:types": "pnpm --filter @workspace/mwedi-tests run typecheck && pnpm --filter @workspace/api-server run typecheck && pnpm --filter @workspace/indigoloom-web run typecheck && pnpm --filter @workspace/indigoloom-mobile run typecheck",
     "test:postgres": "pnpm --filter @workspace/api-server run test:postgres",
+    "test:scenarios": "pnpm --filter @workspace/api-server run test:scenarios && playwright test --config playwright.scenarios.config.ts",
     "test:all": "pnpm run test && pnpm run test:types",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
