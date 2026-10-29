@@ -1381,64 +1381,6 @@ export const CreateStashFabricResponse = zod.object({
 
 
 /**
- * @summary Fabric-left suggestions waiting for the maker to confirm
- */
-export const GetFabricSuggestionsQueryParams = zod.object({
-  "projectId": zod.coerce.string().uuid().optional()
-})
-
-export const GetFabricSuggestionsResponseItem = zod.object({
-  "id": zod.string().uuid(),
-  "stashFabricId": zod.string().uuid(),
-  "projectId": zod.string().uuid(),
-  "projectTitle": zod.string(),
-  "fabricName": zod.string(),
-  "unit": zod.enum(['meters', 'yards']).describe('Meters go with centimetre widths, yards with inch widths'),
-  "amountUsed": zod.number(),
-  "amountLeft": zod.number(),
-  "suggestedLeft": zod.number()
-})
-export const GetFabricSuggestionsResponse = zod.array(GetFabricSuggestionsResponseItem)
-
-
-/**
- * @summary Take the project's fabric off what's left of the stash fabric
- */
-export const AcceptFabricSuggestionParams = zod.object({
-  "suggestionId": zod.coerce.string().uuid()
-})
-
-export const AcceptFabricSuggestionResponse = zod.object({
-  "id": zod.string().uuid(),
-  "fabricType": zod.enum(['cotton', 'linen', 'jersey', 'denim', 'silk', 'wool', 'polyester', 'blend', 'other', 'canvas', 'chambray', 'chiffon', 'corduroy', 'crepe', 'flannel', 'fleece', 'french_terry', 'rib_knit', 'satin', 'tulle', 'velvet', 'viscose']),
-  "construction": zod.union([zod.enum(['woven', 'knit']),zod.null()]),
-  "print": zod.union([zod.enum(['solid', 'floral', 'stripe', 'check', 'dots', 'geometric', 'abstract', 'animal', 'novelty', 'ankara', 'batik', 'botanical', 'camo', 'chevron', 'damask', 'houndstooth', 'ikat', 'ombre', 'paisley', 'tie_dye', 'toile', 'other']),zod.null()]),
-  "generalColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]),
-  "unit": zod.enum(['meters', 'yards']).describe('Meters go with centimetre widths, yards with inch widths'),
-  "amount": zod.number().nullable().describe('How much was bought'),
-  "amountLeft": zod.number().nullable().describe('How much is still in the stash; null means all of it'),
-  "width": zod.number().nullable(),
-  "preWashed": zod.boolean().nullable().describe('Null when the maker hasn\'t said'),
-  "notes": zod.string().nullable(),
-  "photoCount": zod.number().int().describe('The first photo is the print close-up'),
-  "archivedAt": zod.coerce.date().nullable().describe('Set while the fabric is in the maker\'s Archive'),
-  "restored": zod.boolean().optional().describe('True when adding this fabric brought it back from the Archive'),
-  "createdAt": zod.coerce.date(),
-  "updatedAt": zod.coerce.date()
-})
-
-
-/**
- * @summary Leave the stash fabric's amount as it is
- */
-export const DismissFabricSuggestionParams = zod.object({
-  "suggestionId": zod.coerce.string().uuid()
-})
-
-export const DismissFabricSuggestionResponse = zod.void()
-
-
-/**
  * @summary Request a private upload URL for a fabric photo
  */
 export const requestFabricPhotoUploadBodyNameMax = 255;

@@ -736,18 +736,6 @@ export interface FabricArchiveMatch {
   similarPhoto: boolean | null;
 }
 
-export interface FabricSuggestion {
-  id: string;
-  stashFabricId: string;
-  projectId: string;
-  projectTitle: string;
-  fabricName: string;
-  unit: FabricUnit;
-  amountUsed: number;
-  amountLeft: number;
-  suggestedLeft: number;
-}
-
 export interface RenameSewingToolBrands {
   /**
      * @minLength 1
@@ -1687,10 +1675,6 @@ archived?: boolean;
 fabricType?: FabricType;
 print?: FabricPrint;
 generalColor?: GeneralColor;
-};
-
-export type GetFabricSuggestionsParams = {
-projectId?: string;
 };
 
 export type GetSewingProjectsParams = {

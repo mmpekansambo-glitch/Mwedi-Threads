@@ -56,15 +56,3 @@ export function fabricTypeSearch(search: string): string[] {
   return typed.length < 3 ? [] : fabricTypes.filter((type) => type.startsWith(typed));
 }
 
-// A short name for a piece, such as "Floral cotton" or "French terry".
-export function fabricName(fabric: { fabricType: string; print: string | null }): string {
-  const words = (value: string) => value.replace(/_/g, " ");
-  const name = fabric.print && fabric.print !== "solid" && fabric.print !== "other"
-    ? `${words(fabric.print)} ${words(fabric.fabricType)}`
-    : words(fabric.fabricType);
-  return name.charAt(0).toUpperCase() + name.slice(1);
-}
-
-export function amountAfter(left: number, used: number): number {
-  return Math.max(0, Math.round((left - used) * 100) / 100);
-}

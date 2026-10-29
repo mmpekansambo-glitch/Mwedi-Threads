@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { amountAfter, checkFabricPhotos, checkFabricSizes, fabricName, fabricTypeSearch } from "./fabricStash";
+import { checkFabricPhotos, checkFabricSizes, fabricTypeSearch } from "./fabricStash";
 
 const owner = "user_123";
 const upload = (id: string) => `/objects/fabric/${owner}/${id.padEnd(36, "0")}`;
@@ -32,22 +32,3 @@ describe("checkFabricSizes", () => {
   });
 });
 
-describe("fabric names and amounts", () => {
-  it("names a piece by its print and type", () => {
-    expect(fabricName({ fabricType: "cotton", print: "floral" })).toBe("Floral cotton");
-    expect(fabricName({ fabricType: "french_terry", print: "solid" })).toBe("French terry");
-    expect(fabricName({ fabricType: "rib_knit", print: null })).toBe("Rib knit");
-  });
-
-  it("takes what was used off what's left, never below zero", () => {
-    expect(amountAfter(3, 1.25)).toBe(1.75);
-    expect(amountAfter(1, 1.5)).toBe(0);
-  });
-});
-
-describe("fabricTypeSearch", () => {
-  it("matches fabric types from three letters", () => {
-    expect(fabricTypeSearch("Jer")).toEqual(["jersey"]);
-    expect(fabricTypeSearch("co")).toEqual([]);
-  });
-});

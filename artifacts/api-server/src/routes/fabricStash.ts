@@ -2,11 +2,7 @@ import { and, desc, eq, ilike, isNotNull, isNull, or, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { Router, type IRouter, type Response } from "express";
 import {
-  AcceptFabricSuggestionParams,
   CreateStashFabricBody,
-  DismissFabricSuggestionParams,
-  GetFabricSuggestionsQueryParams,
-  GetFabricSuggestionsResponse,
   DeleteStashFabricParams,
   GetStashFabricParams,
   GetStashFabricPhotoParams,
@@ -17,10 +13,10 @@ import {
   UpdateStashFabricBody,
   UpdateStashFabricParams,
 } from "@workspace/api-zod";
-import { db, fabricSuggestionsTable, sewingProjectsTable, stashFabricsTable, type StashFabric } from "@workspace/db";
+import { db, stashFabricsTable, type StashFabric } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
 import { deleteStoredObject, signedObjectUrl, storageLocation } from "../lib/objectStorage";
-import { amountAfter, checkFabricPhotos, checkFabricSizes, fabricName, fabricTypeSearch } from "../lib/fabricStash";
+import { checkFabricPhotos, checkFabricSizes, fabricTypeSearch } from "../lib/fabricStash";
 import { printsLookAlike } from "../lib/printPhoto";
 
 const router: IRouter = Router();
@@ -223,121 +219,6 @@ router.post("/fabric-stash", requireAuth, async (req, res): Promise<void> => {
     .values({ ownerId, ...details })
     .returning();
   res.status(201).json(serializeFabric(created!));
-});
-
-router.get("/fabric-stash/fabric-suggestions", requireAuth, async (req, res): Promise<void> => {
-  const parsed = GetFabricSuggestionsQueryParams.safeParse(req.query);
-  if (!parsed.success) {
-    res.status(400).json({ error: "Invalid project ID." });
-    return;
-  }
-
-  const filters = [
-    eq(fabricSuggestionsTable.ownerId, getOwnerId(res)),
-    eq(fabricSuggestionsTable.status, "pending"),
-  ];
-  if (parsed.data.projectId) filters.push(eq(fabricSuggestionsTable.projectId, parsed.data.projectId));
-  const rows = await db
-    .select({
-      id: fabricSuggestionsTable.id,
-      stashFabricId: fabricSuggestionsTable.stashFabricId,
-      projectId: fabricSuggestionsTable.projectId,
-      projectTitle: sewingProjectsTable.title,
-      amountUsed: fabricSuggestionsTable.amountUsed,
-      fabricType: stashFabricsTable.fabricType,
-      print: stashFabricsTable.print,
-      unit: stashFabricsTable.unit,
-      amount: stashFabricsTable.amount,
-      amountLeft: stashFabricsTable.amountLeft,
-    })
-    .from(fabricSuggestionsTable)
-    .innerJoin(stashFabricsTable, eq(fabricSuggestionsTable.stashFabricId, stashFabricsTable.id))
-    .innerJoin(sewingProjectsTable, eq(fabricSuggestionsTable.projectId, sewingProjectsTable.id))
-    .where(and(...filters))
-    .orderBy(desc(fabricSuggestionsTable.createdAt));
-  // A piece with no amount has nothing to take the fabric off.
-  res.json(GetFabricSuggestionsResponse.parse(rows.flatMap((row) => {
-    const left = row.amountLeft ?? row.amount;
-    if (left === null) return [];
-    return [{
-      id: row.id,
-      stashFabricId: row.stashFabricId,
-      projectId: row.projectId,
-      projectTitle: row.projectTitle,
-      fabricName: fabricName(row),
-      unit: row.unit,
-      amountUsed: row.amountUsed,
-      amountLeft: left,
-      suggestedLeft: amountAfter(left, row.amountUsed),
-    }];
-  })));
-});
-
-router.post("/fabric-stash/fabric-suggestions/:suggestionId/accept", requireAuth, async (req, res): Promise<void> => {
-  const params = AcceptFabricSuggestionParams.safeParse(req.params);
-  if (!params.success) {
-    res.status(400).json({ error: "Invalid suggestion ID." });
-    return;
-  }
-
-  const ownerId = getOwnerId(res);
-  const updated = await db.transaction(async (tx) => {
-    const [suggestion] = await tx
-      .select()
-      .from(fabricSuggestionsTable)
-      .where(and(
-        eq(fabricSuggestionsTable.id, params.data.suggestionId),
-        eq(fabricSuggestionsTable.ownerId, ownerId),
-        eq(fabricSuggestionsTable.status, "pending"),
-      ))
-      .for("update");
-    if (!suggestion) return undefined;
-    const [fabric] = await tx
-      .select()
-      .from(stashFabricsTable)
-      .where(and(eq(stashFabricsTable.id, suggestion.stashFabricId), eq(stashFabricsTable.ownerId, ownerId)))
-      .for("update");
-    const left = fabric ? fabric.amountLeft ?? fabric.amount : null;
-    if (!fabric || left === null) return undefined;
-    await tx
-      .update(fabricSuggestionsTable)
-      .set({ status: "accepted" })
-      .where(eq(fabricSuggestionsTable.id, suggestion.id));
-    const [saved] = await tx
-      .update(stashFabricsTable)
-      .set({ amountLeft: amountAfter(left, suggestion.amountUsed) })
-      .where(eq(stashFabricsTable.id, fabric.id))
-      .returning();
-    return saved;
-  });
-  if (!updated) {
-    res.status(404).json({ error: "Suggestion not found." });
-    return;
-  }
-  res.json(serializeFabric(updated));
-});
-
-router.post("/fabric-stash/fabric-suggestions/:suggestionId/dismiss", requireAuth, async (req, res): Promise<void> => {
-  const params = DismissFabricSuggestionParams.safeParse(req.params);
-  if (!params.success) {
-    res.status(400).json({ error: "Invalid suggestion ID." });
-    return;
-  }
-
-  const [dismissed] = await db
-    .update(fabricSuggestionsTable)
-    .set({ status: "dismissed" })
-    .where(and(
-      eq(fabricSuggestionsTable.id, params.data.suggestionId),
-      eq(fabricSuggestionsTable.ownerId, getOwnerId(res)),
-      eq(fabricSuggestionsTable.status, "pending"),
-    ))
-    .returning({ id: fabricSuggestionsTable.id });
-  if (!dismissed) {
-    res.status(404).json({ error: "Suggestion not found." });
-    return;
-  }
-  res.sendStatus(204);
 });
 
 router.get("/fabric-stash/:fabricId", requireAuth, async (req, res): Promise<void> => {

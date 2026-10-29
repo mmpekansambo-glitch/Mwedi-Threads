@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gt, ilike, inArray, isNull, or } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, inArray, isNull, or } from "drizzle-orm";
 import { Router, type IRouter, type Response } from "express";
 import {
   CreateSewingProjectBody,
@@ -12,7 +12,6 @@ import {
 } from "@workspace/api-zod";
 import {
   db,
-  fabricSuggestionsTable,
   sewingProjectFabricsTable,
   sewingProjectToolsTable,
   sewingProjectsTable,
@@ -33,26 +32,6 @@ function getOwnerId(res: Response): string {
 
 function tidyText(value: string | null | undefined): string | null {
   return value?.trim() || null;
-}
-
-// Finishing a project offers to take each linked fabric's amount used off
-// what's left; reopening it withdraws the offers still waiting.
-async function followStatus(ownerId: string, projectId: string, before: string | null, after: string): Promise<void> {
-  if (after === "completed" && before !== "completed") {
-    const used = await db
-      .select({ stashFabricId: sewingProjectFabricsTable.stashFabricId, amountUsed: sewingProjectFabricsTable.amountUsed })
-      .from(sewingProjectFabricsTable)
-      .where(and(eq(sewingProjectFabricsTable.projectId, projectId), gt(sewingProjectFabricsTable.amountUsed, 0)));
-    if (used.length === 0) return;
-    await db
-      .insert(fabricSuggestionsTable)
-      .values(used.map((row) => ({ ownerId, projectId, stashFabricId: row.stashFabricId, amountUsed: row.amountUsed! })))
-      .onConflictDoNothing({ target: [fabricSuggestionsTable.stashFabricId, fabricSuggestionsTable.projectId] });
-  } else if (before === "completed" && after !== "completed") {
-    await db
-      .delete(fabricSuggestionsTable)
-      .where(and(eq(fabricSuggestionsTable.projectId, projectId), eq(fabricSuggestionsTable.status, "pending")));
-  }
 }
 
 // Adds each project's stash fabric and tools, in the order the maker listed them.
@@ -216,7 +195,6 @@ router.post("/sewing-projects", requireAuth, async (req, res): Promise<void> => 
     .returning();
   await saveLinks(created!.id, links.links);
   await saveTools(created!.id, tools.ids);
-  await followStatus(ownerId, created!.id, null, created!.status);
   res.status(201).json((await withFabrics([created!]))[0]);
 });
 
@@ -286,7 +264,6 @@ router.patch("/sewing-projects/:sewingProjectId", requireAuth, async (req, res):
   }
   if (links?.ok) await saveLinks(updated.id, links.links);
   if (tools?.ok) await saveTools(updated.id, tools.ids);
-  await followStatus(ownerId, updated.id, current.status, updated.status);
   res.json((await withFabrics([updated]))[0]);
 });
 

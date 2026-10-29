@@ -893,70 +893,6 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
-  /fabric-stash/fabric-suggestions:
-    get:
-      operationId: getFabricSuggestions
-      tags: [sewing]
-      summary: Fabric-left suggestions waiting for the maker to confirm
-      parameters:
-        - in: query
-          name: projectId
-          schema:
-            type: string
-            format: uuid
-      responses:
-        "200":
-          description: Pending suggestions
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/FabricSuggestion"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-  /fabric-stash/fabric-suggestions/{suggestionId}/accept:
-    parameters:
-      - in: path
-        name: suggestionId
-        required: true
-        schema:
-          type: string
-          format: uuid
-    post:
-      operationId: acceptFabricSuggestion
-      tags: [sewing]
-      summary: Take the project's fabric off what's left of the stash fabric
-      responses:
-        "200":
-          description: Stash fabric updated
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/StashFabric"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "404":
-          $ref: "#/components/responses/NotFound"
-  /fabric-stash/fabric-suggestions/{suggestionId}/dismiss:
-    parameters:
-      - in: path
-        name: suggestionId
-        required: true
-        schema:
-          type: string
-          format: uuid
-    post:
-      operationId: dismissFabricSuggestion
-      tags: [sewing]
-      summary: Leave the stash fabric's amount as it is
-      responses:
-        "204":
-          description: Suggestion dismissed
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "404":
-          $ref: "#/components/responses/NotFound"
   /fabric-stash/photo-upload:
     post:
       operationId: requestFabricPhotoUpload
@@ -2302,31 +2238,6 @@ components:
           type: [boolean, "null"]
           description: Whether the print photos look alike; null when they couldn't be compared
       required: [match, similarPhoto]
-    FabricSuggestion:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        stashFabricId:
-          type: string
-          format: uuid
-        projectId:
-          type: string
-          format: uuid
-        projectTitle:
-          type: string
-        fabricName:
-          type: string
-        unit:
-          $ref: "#/components/schemas/FabricUnit"
-        amountUsed:
-          type: number
-        amountLeft:
-          type: number
-        suggestedLeft:
-          type: number
-      required: [id, stashFabricId, projectId, projectTitle, fabricName, unit, amountUsed, amountLeft, suggestedLeft]
     RenameSewingToolBrands:
       type: object
       properties:

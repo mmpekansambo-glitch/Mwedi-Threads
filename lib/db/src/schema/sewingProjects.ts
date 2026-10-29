@@ -6,7 +6,6 @@ import {
   pgTable,
   text,
   timestamp,
-  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 import { usersTable } from "./users";
@@ -14,7 +13,6 @@ import { projectStatusEnum } from "./projects";
 import { stashFabricsTable } from "./fabricStash";
 import { generalColorEnum } from "./yarnStash";
 import { sewingToolsTable } from "./sewingTools";
-import { skeinSuggestionStatusEnum } from "./projectYarns";
 
 // The stage a sewing project has reached, in the order they happen.
 export const sewingStageEnum = pgEnum("sewing_stage", ["prep", "cut", "sew", "fit", "finish"]);
@@ -88,32 +86,5 @@ export const sewingProjectToolsTable = pgTable("sewing_project_tools", {
   position: integer("position").notNull().default(0),
 });
 
-// When a sewing project is finished, each linked fabric with an amount used
-// gets a suggestion to take it off what's left. The maker confirms or dismisses.
-export const fabricSuggestionsTable = pgTable(
-  "fabric_suggestions",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    ownerId: text("owner_id")
-      .notNull()
-      .references(() => usersTable.id, { onDelete: "cascade" }),
-    stashFabricId: uuid("stash_fabric_id")
-      .notNull()
-      .references(() => stashFabricsTable.id, { onDelete: "cascade" }),
-    projectId: uuid("project_id")
-      .notNull()
-      .references(() => sewingProjectsTable.id, { onDelete: "cascade" }),
-    amountUsed: doublePrecision("amount_used").notNull(),
-    status: skeinSuggestionStatusEnum("status").notNull().default("pending"),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-  },
-  (table) => [
-    uniqueIndex("fabric_suggestions_fabric_project").on(table.stashFabricId, table.projectId),
-  ],
-);
-
 export type SewingProject = typeof sewingProjectsTable.$inferSelect;
 export type SewingProjectFabric = typeof sewingProjectFabricsTable.$inferSelect;
-export type FabricSuggestion = typeof fabricSuggestionsTable.$inferSelect;

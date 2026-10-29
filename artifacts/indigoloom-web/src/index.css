@@ -654,6 +654,12 @@ a.stat-card:active { transform: scale(.98); box-shadow: none; }
 .dark .signpost-close { color: rgba(24,33,38,.75); }
 .gentle-nudge { display: block; margin-top: 8px; padding: 9px 12px; border-radius: 10px; background: var(--lavender-soft); color: var(--slate-deep); font-size: 14px; line-height: 1.45; }
 .gentle-nudge button { margin-left: 6px; border: 0; background: none; padding: 0; color: var(--granite); font: inherit; font-weight: 600; text-decoration: underline; cursor: pointer; }
+.skein-suggestion.same-fabric { flex-direction: column; align-items: stretch; }
+.same-fabric-photos { display: flex; gap: 12px; }
+.same-fabric-photos figure { margin: 0; flex: 0 1 140px; }
+.same-fabric-photos img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 10px; border: 1px solid var(--line, rgba(57, 91, 80, 0.18)); }
+.same-fabric-photos figcaption { margin-top: 5px; font-size: 13px; color: var(--slate-deep); }
+.fabric-left-nudges { display: grid; gap: 10px; margin-bottom: 14px; }
 .skein-suggestion { display: flex; align-items: center; gap: 12px; padding: 13px 16px; border-left: 4px solid var(--powder); }
 .skein-suggestion p { margin: 0; flex: 1; color: var(--slate-deep); line-height: 1.5; }
 .skein-suggestion-actions { display: flex; gap: 8px; }
