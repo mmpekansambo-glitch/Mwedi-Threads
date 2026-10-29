@@ -30,6 +30,7 @@ erDiagram
     sewing_projects ||--o{ sewing_project_tools : uses
     sewing_tools ||--o{ sewing_project_tools : "links"
     sewing_projects ||--o{ sewing_project_entries : "notes"
+    sewing_projects ||--o{ sewing_project_machine_settings : "machine settings"
 
     users {
         text id PK
@@ -75,6 +76,13 @@ erDiagram
         uuid id PK
         uuid project_id FK
         uuid sewing_tool_id FK
+        integer position
+    }
+    sewing_project_machine_settings {
+        uuid id PK
+        uuid project_id FK
+        text name
+        sewing_stitch stitch
         integer position
     }
     sewing_project_entries {
@@ -164,6 +172,7 @@ erDiagram
 - **users → sewing_projects:** one-to-many. Sewing projects live apart from yarn projects.
 - **sewing_projects ↔ stash_fabrics through sewing_project_fabrics:** the fabric a project uses, with how much. Removing the fabric from the stash removes the link.
 - **sewing_projects ↔ sewing_tools through sewing_project_tools:** the notions and kit a project uses. Just a list: nothing is counted, and Tools quantities never change. Removing the tool removes the link.
+- **sewing_projects → sewing_project_machine_settings:** one-to-many. Named sets of machine settings (such as Seams, Topstitch, Hem). Optional; deleting the project deletes them.
 - **sewing_projects → sewing_project_entries:** one-to-many. A sewing project's dated notes journal. Deleting the project deletes its notes.
 - **users → yarn_tools:** one-to-many. The hooks, needles and notions a maker owns, shown on the Yarn studio's Tools page. Not linked to projects.
 
@@ -362,6 +371,23 @@ One row per notion or piece of kit in a maker's Sewing room.
 | id | uuid | yes | random | Primary key. |
 | project_id | uuid | yes | | Links to `sewing_projects.id`. Deleted with the project. |
 | sewing_tool_id | uuid | yes | | Links to `sewing_tools.id`. Deleted with the tool. |
+| position | integer | yes | 0 | Order on the project. |
+
+## sewing_project_machine_settings
+
+One row per named set of machine settings on a sewing project. Every column but the keys is optional; the API drops a set with nothing filled in.
+
+| Column | Type | Required | Default | Notes |
+|---|---|---|---|---|
+| id | uuid | yes | random | Primary key. |
+| project_id | uuid | yes | | Links to `sewing_projects.id`. Deleted with the project. |
+| name | text | no | | Up to 60 characters, such as Seams, Topstitch or Hem. |
+| stitch | sewing_stitch | no | | Straight, zigzag, 3-step zigzag, stretch, overlock, blind hem, buttonhole or decorative. |
+| stitch_length | double precision | no | | mm, 0 to 5 in half steps. |
+| stitch_width | double precision | no | | mm, 0 to 7 in half steps. |
+| tension | double precision | no | | 0 to 9 in half steps. |
+| presser_foot | sewing_presser_foot | no | | All-purpose, zipper, walking, buttonhole, blind hem, rolled hem, 1/4 inch, open toe or non-stick. |
+| notes | text | no | | Up to 500 characters. |
 | position | integer | yes | 0 | Order on the project. |
 
 ## sewing_project_entries

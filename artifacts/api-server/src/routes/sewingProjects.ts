@@ -19,15 +19,18 @@ import {
   db,
   sewingProjectEntriesTable,
   sewingProjectFabricsTable,
+  sewingProjectMachineSettingsTable,
   sewingProjectToolsTable,
+  sewingPresserFootEnum,
   sewingProjectsTable,
+  sewingStitchEnum,
   sewingToolsTable,
   stashFabricsTable,
   type SewingProject,
   type SewingProjectEntry,
 } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
-import { checkFabricLinks, checkToolIds, fabricTypeCounts, sewingStages, stashLength, statusChanges } from "../lib/sewingProjects";
+import { checkFabricLinks, checkMachineSettings, checkToolIds, fabricTypeCounts, sewingStages, stashLength, statusChanges, type MachineSetting } from "../lib/sewingProjects";
 import { serializeFabric } from "./fabricStash";
 import { serializeTool } from "./sewingTools";
 
@@ -51,7 +54,7 @@ function inFuture(date: Date | undefined): boolean {
   return !!date && date.getTime() > Date.now() + 24 * 60 * 60 * 1000;
 }
 
-// Adds each project's stash fabric, tools and notes, in the order the maker
+// Adds each project's stash fabric, tools, machine settings and notes, in the order the maker
 // listed them (notes newest first).
 async function withFabrics(projects: SewingProject[]) {
   const ids = projects.map((project) => project.id);
@@ -69,6 +72,13 @@ async function withFabrics(projects: SewingProject[]) {
         .innerJoin(sewingToolsTable, eq(sewingToolsTable.id, sewingProjectToolsTable.sewingToolId))
         .where(inArray(sewingProjectToolsTable.projectId, ids))
         .orderBy(asc(sewingProjectToolsTable.position))
+    : [];
+  const settings = ids.length
+    ? await db
+        .select()
+        .from(sewingProjectMachineSettingsTable)
+        .where(inArray(sewingProjectMachineSettingsTable.projectId, ids))
+        .orderBy(asc(sewingProjectMachineSettingsTable.position))
     : [];
   const links = ids.length
     ? await db
@@ -90,6 +100,9 @@ async function withFabrics(projects: SewingProject[]) {
           fabric: serializeFabric(fabric),
         })),
       tools: tools.filter((row) => row.projectId === project.id).map((row) => serializeTool(row.tool)),
+      machineSettings: settings
+        .filter((setting) => setting.projectId === project.id)
+        .map(({ id: _id, projectId: _projectId, position: _position, ...setting }) => setting),
       entries: entries.filter((entry) => entry.projectId === project.id).map(serializeEntry),
     });
     // The schema reads dates as Date; send the plain YYYY-MM-DD date back.
@@ -134,6 +147,20 @@ async function saveTools(projectId: string, toolIds: string[]) {
     await db
       .insert(sewingProjectToolsTable)
       .values(toolIds.map((sewingToolId, position) => ({ projectId, sewingToolId, position })));
+  }
+}
+
+type MachineSettings = MachineSetting<
+  (typeof sewingStitchEnum.enumValues)[number],
+  (typeof sewingPresserFootEnum.enumValues)[number]
+>[];
+
+async function saveMachineSettings(projectId: string, sets: MachineSettings) {
+  await db.delete(sewingProjectMachineSettingsTable).where(eq(sewingProjectMachineSettingsTable.projectId, projectId));
+  if (sets.length) {
+    await db
+      .insert(sewingProjectMachineSettingsTable)
+      .values(sets.map((set, position) => ({ ...set, projectId, position })));
   }
 }
 
@@ -199,6 +226,11 @@ router.post("/sewing-projects", requireAuth, async (req, res): Promise<void> => 
     res.status(400).json({ error: tools.error });
     return;
   }
+  const settings = checkMachineSettings(parsed.data.machineSettings ?? []);
+  if (!settings.ok) {
+    res.status(400).json({ error: settings.error });
+    return;
+  }
 
   const status = parsed.data.status ?? "planning";
   const [created] = await db
@@ -221,6 +253,7 @@ router.post("/sewing-projects", requireAuth, async (req, res): Promise<void> => 
     .returning();
   await saveLinks(created!.id, links.links);
   await saveTools(created!.id, tools.ids);
+  await saveMachineSettings(created!.id, settings.sets);
   res.status(201).json((await withFabrics([created!]))[0]);
 });
 
@@ -263,6 +296,11 @@ router.patch("/sewing-projects/:sewingProjectId", requireAuth, async (req, res):
     res.status(400).json({ error: tools.error });
     return;
   }
+  const settings = changes.machineSettings ? checkMachineSettings(changes.machineSettings) : undefined;
+  if (settings && !settings.ok) {
+    res.status(400).json({ error: settings.error });
+    return;
+  }
 
   const text = (value: string | null | undefined, existing: string | null) =>
     value !== undefined ? tidyText(value) : existing;
@@ -290,6 +328,7 @@ router.patch("/sewing-projects/:sewingProjectId", requireAuth, async (req, res):
   }
   if (links?.ok) await saveLinks(updated.id, links.links);
   if (tools?.ok) await saveTools(updated.id, tools.ids);
+  if (settings?.ok) await saveMachineSettings(updated.id, settings.sets);
   res.json((await withFabrics([updated]))[0]);
 });
 

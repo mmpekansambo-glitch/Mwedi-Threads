@@ -185,6 +185,30 @@ export function sewingProjectToolsSql(isolatedSchema: string): string {
   `;
 }
 
+// Machine settings on sewing projects. Needs sewing_projects.
+export function sewingProjectMachineSettingsSql(isolatedSchema: string): string {
+  return `
+    CREATE TYPE ${isolatedSchema}.sewing_stitch AS ENUM (
+      'straight', 'zigzag', 'three_step_zigzag', 'stretch', 'overlock', 'blind_hem', 'buttonhole', 'decorative'
+    );
+    CREATE TYPE ${isolatedSchema}.sewing_presser_foot AS ENUM (
+      'all_purpose', 'zipper', 'walking', 'buttonhole', 'blind_hem', 'rolled_hem', 'quarter_inch', 'open_toe', 'non_stick'
+    );
+    CREATE TABLE ${isolatedSchema}.sewing_project_machine_settings (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      project_id uuid NOT NULL REFERENCES ${isolatedSchema}.sewing_projects(id) ON DELETE CASCADE,
+      name text,
+      stitch ${isolatedSchema}.sewing_stitch,
+      stitch_length double precision,
+      stitch_width double precision,
+      tension double precision,
+      presser_foot ${isolatedSchema}.sewing_presser_foot,
+      notes text,
+      position integer NOT NULL DEFAULT 0
+    );
+  `;
+}
+
 // Dated notes on sewing projects. Needs sewing_projects.
 export function sewingProjectEntriesSql(isolatedSchema: string): string {
   return `

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkFabricLinks, checkToolIds, fabricTypeCounts, stashLength, statusChanges } from "./sewingProjects";
+import { checkFabricLinks, checkMachineSettings, checkToolIds, fabricTypeCounts, stashLength, statusChanges } from "./sewingProjects";
 
 describe("statusChanges", () => {
   it("dates a finished project and moves it to the Finish stage", () => {
@@ -53,5 +53,29 @@ describe("fabricTypeCounts", () => {
       { fabricType: "linen", count: 1 },
     ]);
     expect(fabricTypeCounts([])).toEqual([]);
+  });
+});
+
+describe("checkMachineSettings", () => {
+  it("tidies sets and drops ones with nothing filled in", () => {
+    expect(checkMachineSettings([
+      { name: "  Topstitch ", stitchLength: 3.5, notes: " " },
+      { name: " ", notes: "" },
+      { stitch: "zigzag", stitchWidth: 0 },
+    ])).toEqual({
+      ok: true,
+      sets: [
+        { name: "Topstitch", stitch: null, stitchLength: 3.5, stitchWidth: null, tension: null, presserFoot: null, notes: null },
+        { name: null, stitch: "zigzag", stitchLength: null, stitchWidth: 0, tension: null, presserFoot: null, notes: null },
+      ],
+    });
+  });
+
+  it("keeps lengths, widths and tension to half steps within range", () => {
+    expect(checkMachineSettings([{ stitchLength: 5.5 }]).ok).toBe(false);
+    expect(checkMachineSettings([{ stitchWidth: 7.5 }]).ok).toBe(false);
+    expect(checkMachineSettings([{ tension: 4.2 }]).ok).toBe(false);
+    expect(checkMachineSettings([{ tension: -1 }]).ok).toBe(false);
+    expect(checkMachineSettings([{ stitchLength: 2.5, stitchWidth: 7, tension: 9 }]).ok).toBe(true);
   });
 });

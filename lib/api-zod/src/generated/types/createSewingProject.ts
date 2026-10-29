@@ -7,6 +7,7 @@
  */
 import type { GeneralColor } from './generalColor';
 import type { ProjectStatus } from './projectStatus';
+import type { SewingMachineSettingInput } from './sewingMachineSettingInput';
 import type { SewingNeedleSize } from './sewingNeedleSize';
 import type { SewingNeedleType } from './sewingNeedleType';
 import type { SewingProjectFabricInput } from './sewingProjectFabricInput';
@@ -52,4 +53,6 @@ export interface CreateSewingProject {
   fabrics?: SewingProjectFabricInput[];
   /** @maxItems 30 */
   toolIds?: string[];
+  /** @maxItems 10 */
+  machineSettings?: SewingMachineSettingInput[];
 }

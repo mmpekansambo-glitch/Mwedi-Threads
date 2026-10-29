@@ -1570,6 +1570,15 @@ export const GetSewingProjectsResponseItem = zod.object({
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })).describe('Tools from the maker\'s Sewing room the project uses, in the order listed'),
+  "machineSettings": zod.array(zod.object({
+  "name": zod.string().nullable(),
+  "stitch": zod.union([zod.enum(['straight', 'zigzag', 'three_step_zigzag', 'stretch', 'overlock', 'blind_hem', 'buttonhole', 'decorative']),zod.null()]),
+  "stitchLength": zod.number().nullable().describe('In mm'),
+  "stitchWidth": zod.number().nullable().describe('In mm'),
+  "tension": zod.number().nullable(),
+  "presserFoot": zod.union([zod.enum(['all_purpose', 'zipper', 'walking', 'buttonhole', 'blind_hem', 'rolled_hem', 'quarter_inch', 'open_toe', 'non_stick']),zod.null()]),
+  "notes": zod.string().nullable()
+}).describe('One named set of machine settings, such as Seams or Topstitch')).describe('Named machine settings, in the order listed'),
   "entries": zod.array(zod.object({
   "id": zod.string().uuid(),
   "notes": zod.string(),
@@ -1604,6 +1613,21 @@ export const createSewingProjectBodyFabricsMax = 12;
 
 export const createSewingProjectBodyToolIdsMax = 30;
 
+export const createSewingProjectBodyMachineSettingsItemNameMax = 60;
+
+export const createSewingProjectBodyMachineSettingsItemStitchLengthMin = 0;
+export const createSewingProjectBodyMachineSettingsItemStitchLengthMax = 5;
+
+export const createSewingProjectBodyMachineSettingsItemStitchWidthMin = 0;
+export const createSewingProjectBodyMachineSettingsItemStitchWidthMax = 7;
+
+export const createSewingProjectBodyMachineSettingsItemTensionMin = 0;
+export const createSewingProjectBodyMachineSettingsItemTensionMax = 9;
+
+export const createSewingProjectBodyMachineSettingsItemNotesMax = 500;
+
+export const createSewingProjectBodyMachineSettingsMax = 10;
+
 
 
 export const CreateSewingProjectBody = zod.object({
@@ -1622,7 +1646,16 @@ export const CreateSewingProjectBody = zod.object({
   "stashFabricId": zod.string().uuid(),
   "amountUsed": zod.number().min(createSewingProjectBodyFabricsItemAmountUsedMin).max(createSewingProjectBodyFabricsItemAmountUsedMax).nullish()
 })).max(createSewingProjectBodyFabricsMax).optional(),
-  "toolIds": zod.array(zod.string().uuid()).max(createSewingProjectBodyToolIdsMax).optional()
+  "toolIds": zod.array(zod.string().uuid()).max(createSewingProjectBodyToolIdsMax).optional(),
+  "machineSettings": zod.array(zod.object({
+  "name": zod.string().max(createSewingProjectBodyMachineSettingsItemNameMax).nullish(),
+  "stitch": zod.union([zod.enum(['straight', 'zigzag', 'three_step_zigzag', 'stretch', 'overlock', 'blind_hem', 'buttonhole', 'decorative']),zod.null()]).optional(),
+  "stitchLength": zod.number().min(createSewingProjectBodyMachineSettingsItemStitchLengthMin).max(createSewingProjectBodyMachineSettingsItemStitchLengthMax).nullish().describe('In mm, in half steps'),
+  "stitchWidth": zod.number().min(createSewingProjectBodyMachineSettingsItemStitchWidthMin).max(createSewingProjectBodyMachineSettingsItemStitchWidthMax).nullish().describe('In mm, in half steps'),
+  "tension": zod.number().min(createSewingProjectBodyMachineSettingsItemTensionMin).max(createSewingProjectBodyMachineSettingsItemTensionMax).nullish().describe('In half steps'),
+  "presserFoot": zod.union([zod.enum(['all_purpose', 'zipper', 'walking', 'buttonhole', 'blind_hem', 'rolled_hem', 'quarter_inch', 'open_toe', 'non_stick']),zod.null()]).optional(),
+  "notes": zod.string().max(createSewingProjectBodyMachineSettingsItemNotesMax).nullish()
+}).describe('Every part is optional, but a set needs at least one')).max(createSewingProjectBodyMachineSettingsMax).optional()
 })
 
 export const CreateSewingProjectResponse = zod.object({
@@ -1676,6 +1709,15 @@ export const CreateSewingProjectResponse = zod.object({
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })).describe('Tools from the maker\'s Sewing room the project uses, in the order listed'),
+  "machineSettings": zod.array(zod.object({
+  "name": zod.string().nullable(),
+  "stitch": zod.union([zod.enum(['straight', 'zigzag', 'three_step_zigzag', 'stretch', 'overlock', 'blind_hem', 'buttonhole', 'decorative']),zod.null()]),
+  "stitchLength": zod.number().nullable().describe('In mm'),
+  "stitchWidth": zod.number().nullable().describe('In mm'),
+  "tension": zod.number().nullable(),
+  "presserFoot": zod.union([zod.enum(['all_purpose', 'zipper', 'walking', 'buttonhole', 'blind_hem', 'rolled_hem', 'quarter_inch', 'open_toe', 'non_stick']),zod.null()]),
+  "notes": zod.string().nullable()
+}).describe('One named set of machine settings, such as Seams or Topstitch')).describe('Named machine settings, in the order listed'),
   "entries": zod.array(zod.object({
   "id": zod.string().uuid(),
   "notes": zod.string(),
@@ -1745,6 +1787,15 @@ export const GetSewingProjectResponse = zod.object({
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })).describe('Tools from the maker\'s Sewing room the project uses, in the order listed'),
+  "machineSettings": zod.array(zod.object({
+  "name": zod.string().nullable(),
+  "stitch": zod.union([zod.enum(['straight', 'zigzag', 'three_step_zigzag', 'stretch', 'overlock', 'blind_hem', 'buttonhole', 'decorative']),zod.null()]),
+  "stitchLength": zod.number().nullable().describe('In mm'),
+  "stitchWidth": zod.number().nullable().describe('In mm'),
+  "tension": zod.number().nullable(),
+  "presserFoot": zod.union([zod.enum(['all_purpose', 'zipper', 'walking', 'buttonhole', 'blind_hem', 'rolled_hem', 'quarter_inch', 'open_toe', 'non_stick']),zod.null()]),
+  "notes": zod.string().nullable()
+}).describe('One named set of machine settings, such as Seams or Topstitch')).describe('Named machine settings, in the order listed'),
   "entries": zod.array(zod.object({
   "id": zod.string().uuid(),
   "notes": zod.string(),
@@ -1782,6 +1833,21 @@ export const updateSewingProjectBodyFabricsMax = 12;
 
 export const updateSewingProjectBodyToolIdsMax = 30;
 
+export const updateSewingProjectBodyMachineSettingsItemNameMax = 60;
+
+export const updateSewingProjectBodyMachineSettingsItemStitchLengthMin = 0;
+export const updateSewingProjectBodyMachineSettingsItemStitchLengthMax = 5;
+
+export const updateSewingProjectBodyMachineSettingsItemStitchWidthMin = 0;
+export const updateSewingProjectBodyMachineSettingsItemStitchWidthMax = 7;
+
+export const updateSewingProjectBodyMachineSettingsItemTensionMin = 0;
+export const updateSewingProjectBodyMachineSettingsItemTensionMax = 9;
+
+export const updateSewingProjectBodyMachineSettingsItemNotesMax = 500;
+
+export const updateSewingProjectBodyMachineSettingsMax = 10;
+
 
 
 export const UpdateSewingProjectBody = zod.object({
@@ -1800,7 +1866,16 @@ export const UpdateSewingProjectBody = zod.object({
   "stashFabricId": zod.string().uuid(),
   "amountUsed": zod.number().min(updateSewingProjectBodyFabricsItemAmountUsedMin).max(updateSewingProjectBodyFabricsItemAmountUsedMax).nullish()
 })).max(updateSewingProjectBodyFabricsMax).optional().describe('The full list of fabric on the project, replacing what was there'),
-  "toolIds": zod.array(zod.string().uuid()).max(updateSewingProjectBodyToolIdsMax).optional().describe('The full list of tools on the project, replacing what was there')
+  "toolIds": zod.array(zod.string().uuid()).max(updateSewingProjectBodyToolIdsMax).optional().describe('The full list of tools on the project, replacing what was there'),
+  "machineSettings": zod.array(zod.object({
+  "name": zod.string().max(updateSewingProjectBodyMachineSettingsItemNameMax).nullish(),
+  "stitch": zod.union([zod.enum(['straight', 'zigzag', 'three_step_zigzag', 'stretch', 'overlock', 'blind_hem', 'buttonhole', 'decorative']),zod.null()]).optional(),
+  "stitchLength": zod.number().min(updateSewingProjectBodyMachineSettingsItemStitchLengthMin).max(updateSewingProjectBodyMachineSettingsItemStitchLengthMax).nullish().describe('In mm, in half steps'),
+  "stitchWidth": zod.number().min(updateSewingProjectBodyMachineSettingsItemStitchWidthMin).max(updateSewingProjectBodyMachineSettingsItemStitchWidthMax).nullish().describe('In mm, in half steps'),
+  "tension": zod.number().min(updateSewingProjectBodyMachineSettingsItemTensionMin).max(updateSewingProjectBodyMachineSettingsItemTensionMax).nullish().describe('In half steps'),
+  "presserFoot": zod.union([zod.enum(['all_purpose', 'zipper', 'walking', 'buttonhole', 'blind_hem', 'rolled_hem', 'quarter_inch', 'open_toe', 'non_stick']),zod.null()]).optional(),
+  "notes": zod.string().max(updateSewingProjectBodyMachineSettingsItemNotesMax).nullish()
+}).describe('Every part is optional, but a set needs at least one')).max(updateSewingProjectBodyMachineSettingsMax).optional().describe('The full list of machine settings on the project, replacing what was there')
 })
 
 export const UpdateSewingProjectResponse = zod.object({
@@ -1854,6 +1929,15 @@ export const UpdateSewingProjectResponse = zod.object({
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })).describe('Tools from the maker\'s Sewing room the project uses, in the order listed'),
+  "machineSettings": zod.array(zod.object({
+  "name": zod.string().nullable(),
+  "stitch": zod.union([zod.enum(['straight', 'zigzag', 'three_step_zigzag', 'stretch', 'overlock', 'blind_hem', 'buttonhole', 'decorative']),zod.null()]),
+  "stitchLength": zod.number().nullable().describe('In mm'),
+  "stitchWidth": zod.number().nullable().describe('In mm'),
+  "tension": zod.number().nullable(),
+  "presserFoot": zod.union([zod.enum(['all_purpose', 'zipper', 'walking', 'buttonhole', 'blind_hem', 'rolled_hem', 'quarter_inch', 'open_toe', 'non_stick']),zod.null()]),
+  "notes": zod.string().nullable()
+}).describe('One named set of machine settings, such as Seams or Topstitch')).describe('Named machine settings, in the order listed'),
   "entries": zod.array(zod.object({
   "id": zod.string().uuid(),
   "notes": zod.string(),
@@ -2003,6 +2087,15 @@ export const GetSewingOverviewResponse = zod.object({
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })).describe('Tools from the maker\'s Sewing room the project uses, in the order listed'),
+  "machineSettings": zod.array(zod.object({
+  "name": zod.string().nullable(),
+  "stitch": zod.union([zod.enum(['straight', 'zigzag', 'three_step_zigzag', 'stretch', 'overlock', 'blind_hem', 'buttonhole', 'decorative']),zod.null()]),
+  "stitchLength": zod.number().nullable().describe('In mm'),
+  "stitchWidth": zod.number().nullable().describe('In mm'),
+  "tension": zod.number().nullable(),
+  "presserFoot": zod.union([zod.enum(['all_purpose', 'zipper', 'walking', 'buttonhole', 'blind_hem', 'rolled_hem', 'quarter_inch', 'open_toe', 'non_stick']),zod.null()]),
+  "notes": zod.string().nullable()
+}).describe('One named set of machine settings, such as Seams or Topstitch')).describe('Named machine settings, in the order listed'),
   "entries": zod.array(zod.object({
   "id": zod.string().uuid(),
   "notes": zod.string(),

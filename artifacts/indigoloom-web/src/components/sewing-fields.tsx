@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChevronRight, X } from 'lucide-react';
-import type { SewingNeedleSize, SewingNeedleType, SewingProject, SewingStage } from '@workspace/api-client-react';
+import { ChevronRight, Pencil, Plus, X } from 'lucide-react';
+import type { SewingMachineSetting, SewingNeedleSize, SewingNeedleType, SewingPresserFoot, SewingProject, SewingStage, SewingStitch } from '@workspace/api-client-react';
 import { Wheel } from '@/components/date-wheel-field';
 import { fabricUnits } from '@/components/fabric-fields';
 
@@ -101,4 +101,107 @@ export function TapWheelRow({ label, shown, wheels, onDone, onClear, testId }: {
       </div>
     </div>}
   </div>;
+}
+
+export const machineStitches: Array<{ value: SewingStitch; label: string }> = [
+  { value: 'straight', label: 'Straight' },
+  { value: 'zigzag', label: 'Zigzag' },
+  { value: 'three_step_zigzag', label: '3-step zigzag' },
+  { value: 'stretch', label: 'Stretch' },
+  { value: 'overlock', label: 'Overlock' },
+  { value: 'blind_hem', label: 'Blind hem' },
+  { value: 'buttonhole', label: 'Buttonhole' },
+  { value: 'decorative', label: 'Decorative' },
+];
+
+export const presserFeet: Array<{ value: SewingPresserFoot; label: string }> = [
+  { value: 'all_purpose', label: 'All-purpose' },
+  { value: 'zipper', label: 'Zipper' },
+  { value: 'walking', label: 'Walking' },
+  { value: 'buttonhole', label: 'Buttonhole' },
+  { value: 'blind_hem', label: 'Blind hem' },
+  { value: 'rolled_hem', label: 'Rolled hem' },
+  { value: 'quarter_inch', label: '1/4 inch' },
+  { value: 'open_toe', label: 'Open toe' },
+  { value: 'non_stick', label: 'Non-stick' },
+];
+
+// Half steps from 0 up to the limit: 0, 0.5, 1 ...
+function halfSteps(max: number): number[] {
+  return Array.from({ length: max * 2 + 1 }, (_, index) => index / 2);
+}
+export const stitchLengths = halfSteps(5);
+export const stitchWidths = halfSteps(7);
+export const tensions = halfSteps(9);
+
+export const emptyMachineSetting: SewingMachineSetting = { name: null, stitch: null, stitchLength: null, stitchWidth: null, tension: null, presserFoot: null, notes: null };
+
+export function machineSettingSummary(setting: SewingMachineSetting): string {
+  return [
+    machineStitches.find((item) => item.value === setting.stitch)?.label,
+    setting.stitchLength !== null && `Length ${setting.stitchLength} mm`,
+    setting.stitchWidth !== null && `Width ${setting.stitchWidth} mm`,
+    setting.tension !== null && `Tension ${setting.tension}`,
+    setting.presserFoot && `${presserFeet.find((item) => item.value === setting.presserFoot)?.label} foot`,
+  ].filter(Boolean).join(' · ');
+}
+
+function hasSomething(setting: SewingMachineSetting): boolean {
+  return Object.values(setting).some((value) => value !== null && value !== '');
+}
+
+function NumberRow({ label, unit, items, value, fallback, onChange, testId }: {
+  label: string; unit: string; items: number[]; value: number | null; fallback: number; onChange: (value: number | null) => void; testId: string;
+}) {
+  return <TapWheelRow label={label} shown={value !== null && `${value}${unit}`} testId={testId}
+    wheels={[{ label, items: items.map((item) => `${item}${unit}`), index: Math.max(0, items.indexOf(value ?? fallback)) }]}
+    onDone={([index]) => onChange(items[index ?? 0]!)}
+    onClear={() => onChange(null)}/>;
+}
+
+// Named sets of machine settings (Seams, Topstitch, Hem...). Each set folds
+// down to one line once it's done; every part of a set is optional.
+export function MachineSettingsField({ settings, onChange }: { settings: SewingMachineSetting[]; onChange: (settings: SewingMachineSetting[]) => void }) {
+  const [editing, setEditing] = useState<number | null>(null);
+  const change = (index: number, update: Partial<SewingMachineSetting>) => onChange(settings.map((item, place) => (place === index ? { ...item, ...update } : item)));
+  const remove = (index: number) => { onChange(settings.filter((_, place) => place !== index)); setEditing(null); };
+  // Closing a set with nothing in it drops it.
+  const dropsOpen = () => editing !== null && !hasSomething(settings[editing]!);
+  const close = () => { if (dropsOpen()) remove(editing!); else setEditing(null); };
+  const edit = (index: number) => {
+    const shifts = dropsOpen() && index > editing!;
+    close();
+    setEditing(shifts ? index - 1 : index);
+  };
+
+  return <>
+    {settings.map((setting, index) => editing === index
+      ? <div key={index} className="machine-set machine-set-open" data-testid={`machine-set-${index}`}>
+        <div className="machine-set-name">
+          <input maxLength={60} placeholder="Name, e.g. Seams, Topstitch or Hem" value={setting.name ?? ''} onChange={(event) => change(index, { name: event.target.value || null })} aria-label="Name of these settings" autoFocus data-testid={`input-machine-name-${index}`}/>
+          <button type="button" className="icon-button" aria-label="Remove these settings" onClick={() => remove(index)} data-testid={`button-remove-machine-${index}`}><X size={15}/></button>
+        </div>
+        <div className="tap-rows">
+          <TapWheelRow label="Stitch" shown={machineStitches.find((item) => item.value === setting.stitch)?.label} testId={`row-machine-stitch-${index}`}
+            wheels={[{ label: 'Stitch', items: machineStitches.map((item) => item.label), index: Math.max(0, machineStitches.findIndex((item) => item.value === setting.stitch)) }]}
+            onDone={([stitch]) => change(index, { stitch: machineStitches[stitch ?? 0]!.value })}
+            onClear={() => change(index, { stitch: null })}/>
+          <NumberRow label="Length" unit=" mm" items={stitchLengths} value={setting.stitchLength} fallback={2.5} onChange={(stitchLength) => change(index, { stitchLength })} testId={`row-machine-length-${index}`}/>
+          <NumberRow label="Width" unit=" mm" items={stitchWidths} value={setting.stitchWidth} fallback={0} onChange={(stitchWidth) => change(index, { stitchWidth })} testId={`row-machine-width-${index}`}/>
+          <NumberRow label="Tension" unit="" items={tensions} value={setting.tension} fallback={4} onChange={(tension) => change(index, { tension })} testId={`row-machine-tension-${index}`}/>
+          <TapWheelRow label="Presser foot" shown={presserFeet.find((item) => item.value === setting.presserFoot)?.label} testId={`row-machine-foot-${index}`}
+            wheels={[{ label: 'Presser foot', items: presserFeet.map((item) => item.label), index: Math.max(0, presserFeet.findIndex((item) => item.value === setting.presserFoot)) }]}
+            onDone={([foot]) => change(index, { presserFoot: presserFeet[foot ?? 0]!.value })}
+            onClear={() => change(index, { presserFoot: null })}/>
+        </div>
+        <input className="machine-set-note" maxLength={500} placeholder="Note (optional)" value={setting.notes ?? ''} onChange={(event) => change(index, { notes: event.target.value || null })} aria-label="Note for these settings" data-testid={`input-machine-note-${index}`}/>
+        <button type="button" className="button button-outline" onClick={close} data-testid={`button-machine-done-${index}`}>Done</button>
+      </div>
+      : <div key={index} className="machine-set" data-testid={`machine-set-${index}`}>
+        <span className="sewing-fabric-name"><b>{setting.name || 'Machine settings'}</b><small>{machineSettingSummary(setting) || setting.notes}</small></span>
+        <button type="button" className="icon-button" aria-label={`Edit ${setting.name || 'machine settings'}`} onClick={() => edit(index)} data-testid={`button-edit-machine-${index}`}><Pencil size={15}/></button>
+        <button type="button" className="icon-button" aria-label={`Remove ${setting.name || 'machine settings'}`} onClick={() => remove(index)} data-testid={`button-remove-machine-${index}`}><X size={15}/></button>
+      </div>)}
+    {editing === null && settings.length < 10 && <button type="button" className="button button-outline" onClick={() => { onChange([...settings, emptyMachineSetting]); setEditing(settings.length); }} data-testid="button-add-machine-settings"><Plus size={16}/> Add machine settings</button>}
+  </>;
 }

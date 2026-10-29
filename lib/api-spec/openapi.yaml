@@ -2681,6 +2681,70 @@ components:
       type: string
       description: Metric/US machine needle size, finest first
       enum: ["60/8", "65/9", "70/10", "75/11", "80/12", "90/14", "100/16", "110/18"]
+    SewingStitch:
+      type: string
+      enum: [straight, zigzag, three_step_zigzag, stretch, overlock, blind_hem, buttonhole, decorative]
+    SewingPresserFoot:
+      type: string
+      enum: [all_purpose, zipper, walking, buttonhole, blind_hem, rolled_hem, quarter_inch, open_toe, non_stick]
+    SewingMachineSetting:
+      type: object
+      description: One named set of machine settings, such as Seams or Topstitch
+      properties:
+        name:
+          type: [string, "null"]
+        stitch:
+          oneOf:
+            - $ref: "#/components/schemas/SewingStitch"
+            - type: "null"
+        stitchLength:
+          type: [number, "null"]
+          description: In mm
+        stitchWidth:
+          type: [number, "null"]
+          description: In mm
+        tension:
+          type: [number, "null"]
+        presserFoot:
+          oneOf:
+            - $ref: "#/components/schemas/SewingPresserFoot"
+            - type: "null"
+        notes:
+          type: [string, "null"]
+      required: [name, stitch, stitchLength, stitchWidth, tension, presserFoot, notes]
+    SewingMachineSettingInput:
+      type: object
+      description: Every part is optional, but a set needs at least one
+      properties:
+        name:
+          type: [string, "null"]
+          maxLength: 60
+        stitch:
+          oneOf:
+            - $ref: "#/components/schemas/SewingStitch"
+            - type: "null"
+        stitchLength:
+          type: [number, "null"]
+          minimum: 0
+          maximum: 5
+          description: In mm, in half steps
+        stitchWidth:
+          type: [number, "null"]
+          minimum: 0
+          maximum: 7
+          description: In mm, in half steps
+        tension:
+          type: [number, "null"]
+          minimum: 0
+          maximum: 9
+          description: In half steps
+        presserFoot:
+          oneOf:
+            - $ref: "#/components/schemas/SewingPresserFoot"
+            - type: "null"
+        notes:
+          type: [string, "null"]
+          maxLength: 500
     SewingProjectFabric:
       type: object
       properties:
@@ -2750,6 +2814,11 @@ components:
           description: Tools from the maker's Sewing room the project uses, in the order listed
           items:
             $ref: "#/components/schemas/SewingTool"
+        machineSettings:
+          type: array
+          description: Named machine settings, in the order listed
+          items:
+            $ref: "#/components/schemas/SewingMachineSetting"
         entries:
           type: array
           description: The project's notes journal, newest first
@@ -2761,7 +2830,7 @@ components:
         updatedAt:
           type: string
           format: date-time
-      required: [id, title, status, stage, patternName, patternDesigner, sizeMade, fitChanges, needleType, needleSize, threadColor, notes, completedAt, fabrics, tools, entries, createdAt, updatedAt]
+      required: [id, title, status, stage, patternName, patternDesigner, sizeMade, fitChanges, needleType, needleSize, threadColor, notes, completedAt, fabrics, tools, machineSettings, entries, createdAt, updatedAt]
     SewingProjectEntry:
       type: object
       properties:
@@ -2839,6 +2908,11 @@ components:
           items:
             type: string
             format: uuid
+        machineSettings:
+          type: array
+          maxItems: 10
+          items:
+            $ref: "#/components/schemas/SewingMachineSettingInput"
       required: [title]
     UpdateSewingProject:
       type: object
@@ -2891,6 +2965,12 @@ components:
           items:
             type: string
             format: uuid
+        machineSettings:
+          type: array
+          description: The full list of machine settings on the project, replacing what was there
+          maxItems: 10
+          items:
+            $ref: "#/components/schemas/SewingMachineSettingInput"
     SewingStageCount:
       type: object
       properties:

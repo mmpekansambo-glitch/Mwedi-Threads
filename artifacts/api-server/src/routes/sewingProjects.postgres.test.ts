@@ -6,7 +6,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import * as schema from "@workspace/db/schema";
 import { sewingToolsTable, usersTable } from "@workspace/db/schema";
-import { sewingProjectEntriesSql, sewingProjectToolsSql, sewingTablesSql, sewingToolsSql, stashTablesSql } from "../test/stashTablesSql";
+import { sewingProjectEntriesSql, sewingProjectMachineSettingsSql, sewingProjectToolsSql, sewingTablesSql, sewingToolsSql, stashTablesSql } from "../test/stashTablesSql";
 
 vi.mock("@clerk/express", () => ({
   getAuth: (req: Request) => ({
@@ -98,6 +98,7 @@ describe.skipIf(!databaseUrl)("sewing projects against PostgreSQL", () => {
       ${sewingToolsSql(isolatedSchema)}
       ${sewingProjectToolsSql(isolatedSchema)}
       ${sewingProjectEntriesSql(isolatedSchema)}
+      ${sewingProjectMachineSettingsSql(isolatedSchema)}
     `);
 
     testPool = new pg.Pool({
@@ -258,6 +259,41 @@ describe.skipIf(!databaseUrl)("sewing projects against PostgreSQL", () => {
     // A tool that leaves the Sewing room leaves the project too.
     await getTestDb().delete(sewingToolsTable).where(eq(sewingToolsTable.id, zip!.id));
     expect((await read(await request(`/sewing-projects/${project.id}`, { user: ownerA }))).tools).toEqual([]);
+    await request(`/sewing-projects/${project.id}`, { method: "DELETE", user: ownerA });
+  });
+
+  it("keeps named machine settings on a project, in order", async () => {
+    const created = await request("/sewing-projects", {
+      method: "POST",
+      user: ownerA,
+      body: {
+        title: "Jeans",
+        machineSettings: [
+          { name: " Seams ", stitch: "straight", stitchLength: 2.5, tension: 4, presserFoot: "all_purpose" },
+          { name: "", notes: " " },
+          { name: "Topstitch", stitchLength: 3.5, notes: "Heavy thread on top" },
+        ],
+      },
+    });
+    expect(created.status).toBe(201);
+    const project = await read(created);
+    expect(project.machineSettings).toEqual([
+      { name: "Seams", stitch: "straight", stitchLength: 2.5, stitchWidth: null, tension: 4, presserFoot: "all_purpose", notes: null },
+      { name: "Topstitch", stitch: null, stitchLength: 3.5, stitchWidth: null, tension: null, presserFoot: null, notes: "Heavy thread on top" },
+    ]);
+
+    const tooLong = await request(`/sewing-projects/${project.id}`, { method: "PATCH", user: ownerA, body: { machineSettings: [{ stitchLength: 4.3 }] } });
+    expect((await read(tooLong)).error).toBe("Stitch length goes from 0 to 5 mm.");
+    expect((await request(`/sewing-projects/${project.id}`, { method: "PATCH", user: ownerA, body: { machineSettings: [{ stitch: "chain" }] } })).status).toBe(400);
+
+    // Other edits leave the settings alone; sending a list replaces them.
+    expect((await read(await request(`/sewing-projects/${project.id}`, { method: "PATCH", user: ownerA, body: { title: "Wide-leg jeans" } }))).machineSettings).toHaveLength(2);
+    const replaced = await read(await request(`/sewing-projects/${project.id}`, {
+      method: "PATCH", user: ownerA, body: { machineSettings: [{ name: "Hem", stitch: "blind_hem", stitchWidth: 2, presserFoot: "blind_hem" }] },
+    }));
+    expect(replaced.machineSettings.map((set: { name: string }) => set.name)).toEqual(["Hem"]);
+    expect((await read(await request(`/sewing-projects/${project.id}`, { method: "PATCH", user: ownerA, body: { machineSettings: [] } }))).machineSettings).toEqual([]);
+    expect((await request(`/sewing-projects/${project.id}`, { user: ownerB })).status).toBe(404);
     await request(`/sewing-projects/${project.id}`, { method: "DELETE", user: ownerA });
   });
 

@@ -8,11 +8,11 @@ import {
   getGetSewingOverviewQueryKey, getGetSewingProjectQueryKey, getGetSewingProjectsQueryKey,
   useCreateSewingProject, useGetSewingTools, useGetStashFabrics, useUpdateSewingProject,
 } from '@workspace/api-client-react';
-import type { GeneralColor, ProjectStatus, SewingNeedleSize, SewingNeedleType, SewingProject, SewingTool, StashFabric } from '@workspace/api-client-react';
+import type { GeneralColor, ProjectStatus, SewingMachineSetting, SewingNeedleSize, SewingNeedleType, SewingProject, SewingTool, StashFabric } from '@workspace/api-client-react';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import { FormFieldLabel, LoomButton, LoomText, fonts } from '@/components/loom';
 import { FabricPhoto, fabricName, fabricSize, fabricUnits, sizeForApi } from '@/components/FabricFields';
-import { TapWheelRow, machineNeedleSizes, machineNeedleTypes, needleLabel } from '@/components/SewingFields';
+import { MachineSettingsField, TapWheelRow, machineNeedleSizes, machineNeedleTypes, needleLabel } from '@/components/SewingFields';
 import { ToolThumb, toolDetails } from '@/components/SewingTools';
 import { ColorDot, generalColors } from '@/components/YarnFields';
 import { useSewingColors } from '@/hooks/useColors';
@@ -48,6 +48,7 @@ export function SewingProjectForm({ project }: { project?: SewingProject }) {
   const [needleType, setNeedleType] = useState<SewingNeedleType | null>(project?.needleType ?? null);
   const [needleSize, setNeedleSize] = useState<SewingNeedleSize | null>(project?.needleSize ?? null);
   const [threadColor, setThreadColor] = useState<GeneralColor | null>(project?.threadColor ?? null);
+  const [machineSettings, setMachineSettings] = useState<SewingMachineSetting[]>(project?.machineSettings ?? []);
   const [message, setMessage] = useState('');
   const inputStyle = [styles.input, { color: colors.foreground, backgroundColor: colors.card, borderColor: colors.input }];
   const inputProps = { placeholderTextColor: colors.mutedForeground };
@@ -64,7 +65,7 @@ export function SewingProjectForm({ project }: { project?: SewingProject }) {
       title: title.trim(), status, patternName: patternName.trim() || null, patternDesigner: patternDesigner.trim() || null,
       sizeMade: sizeMade.trim() || null, fitChanges: fitChanges.trim() || null, notes: notes.trim() || null,
       fabrics: links as Array<{ stashFabricId: string; amountUsed: number | null }>,
-      needleType, needleSize, threadColor, toolIds: chosenTools.map((tool) => tool.id),
+      needleType, needleSize, threadColor, toolIds: chosenTools.map((tool) => tool.id), machineSettings,
     };
     const finishing = status === 'completed' && project?.status !== 'completed';
     const options = {
@@ -202,6 +203,8 @@ export function SewingProjectForm({ project }: { project?: SewingProject }) {
               testID="row-sewing-thread"
             />
           </View>
+          <FormFieldLabel>Machine settings</FormFieldLabel>
+          <MachineSettingsField settings={machineSettings} onChange={setMachineSettings} />
           {message ? <LoomText accessibilityRole="alert" style={[styles.error, { color: colors.destructive }]}>{message}</LoomText> : null}
           <LoomButton title={project ? 'Save changes' : 'Start project'} icon="arrow-right" onPress={save} busy={create.isPending || update.isPending} testID="button-save-sewing-project" />
         </View>

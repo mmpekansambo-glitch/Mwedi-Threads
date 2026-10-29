@@ -12,7 +12,7 @@ import type { ProjectStatus, SewingProject, SewingStage, StashFabric } from '@wo
 import { UsedUpNudge, fabricArchive, fabricUsedUp } from '@/components/ArchiveNudge';
 import { ErrorState, LoadingState, LoomButton, LoomText, SignedInGate, StatusChip, fonts } from '@/components/loom';
 import { FabricPhoto, fabricName } from '@/components/FabricFields';
-import { amountLeft, fabricAmount, needleLabel, sewingStages, stageIndex } from '@/components/SewingFields';
+import { MachineSettingsList, amountLeft, fabricAmount, needleLabel, sewingStages, stageIndex } from '@/components/SewingFields';
 import { ToolThumb, toolDetails } from '@/components/SewingTools';
 import { ColorDot, generalColors } from '@/components/YarnFields';
 import { SewingJournal } from '@/components/SewingJournal';
@@ -176,6 +176,7 @@ function SewingProjectView({ project }: { project: SewingProject }) {
               ) : null}
             </View>
           ) : null}
+          <MachineSettingsList settings={project.machineSettings} />
           {([['Fit changes', project.fitChanges], ['Notes', project.notes]] as const).map(([label, value]) => value ? (
             <View key={label} style={{ marginTop: 14 }}>
               <LoomText style={{ color: colors.mutedForeground, fontSize: 13, fontFamily: fonts.bold }}>{label}</LoomText>

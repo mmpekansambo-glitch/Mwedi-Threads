@@ -30,6 +30,29 @@ export const sewingNeedleTypeEnum = pgEnum("sewing_needle_type", [
   "metallic",
 ]);
 
+export const sewingStitchEnum = pgEnum("sewing_stitch", [
+  "straight",
+  "zigzag",
+  "three_step_zigzag",
+  "stretch",
+  "overlock",
+  "blind_hem",
+  "buttonhole",
+  "decorative",
+]);
+
+export const sewingPresserFootEnum = pgEnum("sewing_presser_foot", [
+  "all_purpose",
+  "zipper",
+  "walking",
+  "buttonhole",
+  "blind_hem",
+  "rolled_hem",
+  "quarter_inch",
+  "open_toe",
+  "non_stick",
+]);
+
 // Sewing projects live in the Sewing room, apart from yarn projects, so yarn
 // pages never have to filter them out.
 export const sewingProjectsTable = pgTable("sewing_projects", {
@@ -86,6 +109,24 @@ export const sewingProjectToolsTable = pgTable("sewing_project_tools", {
   position: integer("position").notNull().default(0),
 });
 
+// Named machine settings a project uses, such as Seams, Topstitch or Hem.
+// Every part is optional; the API turns away a set with nothing in it.
+export const sewingProjectMachineSettingsTable = pgTable("sewing_project_machine_settings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  projectId: uuid("project_id")
+    .notNull()
+    .references(() => sewingProjectsTable.id, { onDelete: "cascade" }),
+  name: text("name"),
+  stitch: sewingStitchEnum("stitch"),
+  // In mm, in half steps.
+  stitchLength: doublePrecision("stitch_length"),
+  stitchWidth: doublePrecision("stitch_width"),
+  tension: doublePrecision("tension"),
+  presserFoot: sewingPresserFootEnum("presser_foot"),
+  notes: text("notes"),
+  position: integer("position").notNull().default(0),
+});
+
 // Dated notes in a sewing project's journal, newest first on the page.
 export const sewingProjectEntriesTable = pgTable("sewing_project_entries", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -105,4 +146,5 @@ export const sewingProjectEntriesTable = pgTable("sewing_project_entries", {
 
 export type SewingProject = typeof sewingProjectsTable.$inferSelect;
 export type SewingProjectFabric = typeof sewingProjectFabricsTable.$inferSelect;
+export type SewingProjectMachineSetting = typeof sewingProjectMachineSettingsTable.$inferSelect;
 export type SewingProjectEntry = typeof sewingProjectEntriesTable.$inferSelect;
