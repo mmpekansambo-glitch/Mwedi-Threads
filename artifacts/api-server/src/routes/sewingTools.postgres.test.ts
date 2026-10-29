@@ -186,4 +186,32 @@ describe.skipIf(!databaseUrl)("sewing tools against PostgreSQL", () => {
     expect((await request(`/sewing-tools/${thread.id}`, { method: "DELETE", user: ownerA })).status).toBe(204);
     expect((await request(`/sewing-tools/${thread.id}`, { user: ownerA })).status).toBe(404);
   });
+
+  it("moves a used-up notion to the Archive, but never kit", async () => {
+    const buttons = await read(await addTool(ownerB, { category: "button", name: "Shell buttons", quantity: 0 }));
+    const scissors = await read(await addTool(ownerB, { section: "kit", category: "scissors", name: "Shears" }));
+    const archived = await read(await request(`/sewing-tools/${buttons.id}`, { method: "PATCH", user: ownerB, body: { archived: true } }));
+    expect(archived.archivedAt).toEqual(expect.any(String));
+    const names = async (path: string) => (await read(await request(path, { user: ownerB }))).map((tool: { name: string }) => tool.name);
+    expect(await names("/sewing-tools")).toEqual(["Shears"]);
+    expect(await names("/sewing-tools?archived=true")).toEqual(["Shell buttons"]);
+    const kit = await request(`/sewing-tools/${scissors.id}`, { method: "PATCH", user: ownerB, body: { archived: true } });
+    expect(kit.status).toBe(400);
+    expect((await read(kit)).error).toBe("Only notions can go in the Archive.");
+    const back = await read(await request(`/sewing-tools/${buttons.id}`, { method: "PATCH", user: ownerB, body: { archived: false, quantity: 12 } }));
+    expect(back).toMatchObject({ archivedAt: null, quantity: 12 });
+  });
+
+  it("renames a brand on the maker's other tools", async () => {
+    await addTool(ownerB, { name: "Zip A", brand: "YKK" });
+    await addTool(ownerB, { name: "Zip B", brand: "ykk" });
+    await addTool(ownerB, { name: "Zip C", brand: "Coats" });
+    await addTool(ownerA, { name: "Their zip", brand: "YKK" });
+    const result = await request("/sewing-tools/rename-brand", { method: "POST", user: ownerB, body: { from: "ykk", to: "YKK Zippers" } });
+    expect(await read(result)).toEqual({ renamed: 2 });
+    const brands = (await read(await request("/sewing-tools?search=zip", { user: ownerB }))).map((tool: { brand: string | null }) => tool.brand).sort();
+    expect(brands).toEqual(["Coats", "YKK Zippers", "YKK Zippers"]);
+    expect((await read(await request("/sewing-tools?search=their", { user: ownerA })))[0].brand).toBe("YKK");
+    expect((await request("/sewing-tools/rename-brand", { method: "POST", user: ownerB, body: { from: "  ", to: "X" } })).status).toBe(400);
+  });
 });

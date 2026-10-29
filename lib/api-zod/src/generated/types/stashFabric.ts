@@ -18,8 +18,16 @@ export interface StashFabric {
   print: FabricPrint | null;
   generalColor: GeneralColor | null;
   unit: FabricUnit;
-  /** @nullable */
+  /**
+     * How much was bought
+     * @nullable
+     */
   amount: number | null;
+  /**
+     * How much is still in the stash; null means all of it
+     * @nullable
+     */
+  amountLeft: number | null;
   /** @nullable */
   width: number | null;
   /**
@@ -28,11 +36,16 @@ export interface StashFabric {
      */
   preWashed: boolean | null;
   /** @nullable */
-  brand: string | null;
-  /** @nullable */
   notes: string | null;
   /** The first photo is the print close-up */
   photoCount: number;
+  /**
+     * Set while the fabric is in the maker's Archive
+     * @nullable
+     */
+  archivedAt: Date | null;
+  /** True when adding this fabric brought it back from the Archive */
+  restored?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

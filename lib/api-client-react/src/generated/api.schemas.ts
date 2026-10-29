@@ -695,8 +695,16 @@ export interface StashFabric {
   print: FabricPrint | null;
   generalColor: GeneralColor | null;
   unit: FabricUnit;
-  /** @nullable */
+  /**
+     * How much was bought
+     * @nullable
+     */
   amount: number | null;
+  /**
+     * How much is still in the stash; null means all of it
+     * @nullable
+     */
+  amountLeft: number | null;
   /** @nullable */
   width: number | null;
   /**
@@ -705,13 +713,40 @@ export interface StashFabric {
      */
   preWashed: boolean | null;
   /** @nullable */
-  brand: string | null;
-  /** @nullable */
   notes: string | null;
   /** The first photo is the print close-up */
   photoCount: number;
+  /**
+     * Set while the fabric is in the maker's Archive
+     * @nullable
+     */
+  archivedAt: string | null;
+  /** True when adding this fabric brought it back from the Archive */
+  restored?: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface FabricArchiveMatch {
+  match: StashFabric;
+  /**
+     * Whether the print photos look alike; null when they couldn't be compared
+     * @nullable
+     */
+  similarPhoto: boolean | null;
+}
+
+export interface RenameSewingToolBrands {
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  from: string;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  to: string;
 }
 
 export interface CreateStashFabric {
@@ -731,14 +766,15 @@ export interface CreateStashFabric {
      * @maximum 999
      * @nullable
      */
+  amountLeft?: number | null;
+  /**
+     * @minimum 0
+     * @maximum 999
+     * @nullable
+     */
   width?: number | null;
   /** @nullable */
   preWashed?: boolean | null;
-  /**
-     * @maxLength 80
-     * @nullable
-     */
-  brand?: string | null;
   /**
      * @maxLength 1000
      * @nullable
@@ -750,6 +786,10 @@ export interface CreateStashFabric {
      * @maxItems 4
      */
   photoPaths: string[];
+  /** The archived fabric the maker said is the same one */
+  restoreId?: string;
+  /** The maker said it's a different piece, so don't ask again */
+  addAsNew?: boolean;
 }
 
 export interface UpdateStashFabric {
@@ -769,14 +809,15 @@ export interface UpdateStashFabric {
      * @maximum 999
      * @nullable
      */
+  amountLeft?: number | null;
+  /**
+     * @minimum 0
+     * @maximum 999
+     * @nullable
+     */
   width?: number | null;
   /** @nullable */
   preWashed?: boolean | null;
-  /**
-     * @maxLength 80
-     * @nullable
-     */
-  brand?: string | null;
   /**
      * @maxLength 1000
      * @nullable
@@ -788,6 +829,8 @@ export interface UpdateStashFabric {
      * @maxItems 4
      */
   photoPaths?: string[];
+  /** true moves the fabric to the Archive, false brings it back */
+  archived?: boolean;
 }
 
 /**
@@ -857,6 +900,11 @@ export interface SewingTool {
   /** @nullable */
   notes: string | null;
   hasPhoto: boolean;
+  /**
+     * Set while a used-up notion is in the maker's Archive
+     * @nullable
+     */
+  archivedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -941,6 +989,8 @@ export interface UpdateSewingTool {
      * @nullable
      */
   photoPath?: string | null;
+  /** true moves a notion to the Archive, false brings it back */
+  archived?: boolean;
 }
 
 export type YarnToolSection = typeof YarnToolSection[keyof typeof YarnToolSection];
@@ -1615,9 +1665,13 @@ color?: string;
 
 export type GetStashFabricsParams = {
 /**
- * Matches fabric type, brand or notes
+ * Matches fabric type or notes
  */
 search?: string;
+/**
+ * true lists the fabric in the Archive instead of the stash
+ */
+archived?: boolean;
 fabricType?: FabricType;
 print?: FabricPrint;
 generalColor?: GeneralColor;
@@ -1636,6 +1690,10 @@ export type GetSewingToolsParams = {
  * Matches name, brand, size, color or notes
  */
 search?: string;
+/**
+ * true lists the notions in the Archive instead
+ */
+archived?: boolean;
 section?: SewingToolSection;
 category?: SewingToolCategory;
 };

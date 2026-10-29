@@ -1,4 +1,4 @@
-import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
+import { and, desc, eq, ilike, isNotNull, isNull, or, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { Router, type IRouter, type Response } from "express";
 import {
@@ -17,6 +17,7 @@ import { db, stashFabricsTable, type StashFabric } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
 import { deleteStoredObject, signedObjectUrl, storageLocation } from "../lib/objectStorage";
 import { checkFabricPhotos, checkFabricSizes, fabricTypeSearch } from "../lib/fabricStash";
+import { printsLookAlike } from "../lib/printPhoto";
 
 const router: IRouter = Router();
 const allowedPhotoTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -28,9 +29,26 @@ function getOwnerId(res: Response): string {
 
 // Stored photo paths stay on the server; the app only learns how many there
 // are and asks for each one by its place in the list.
-export function serializeFabric(fabric: StashFabric) {
-  const { photoPaths, ownerId: _ownerId, ...rest } = fabric;
-  return GetStashFabricResponse.parse({ ...rest, photoCount: photoPaths.length });
+export function serializeFabric(fabric: StashFabric, extra: { restored?: boolean } = {}) {
+  const { photoPaths, ownerId: _ownerId, brand: _brand, ...rest } = fabric;
+  return GetStashFabricResponse.parse({ ...rest, ...extra, photoCount: photoPaths.length });
+}
+
+// Fabric no longer has a brand. A brand saved before then is kept by moving
+// it into the notes, the first time the maker's fabric is loaded.
+const brandsMoved = new Set<string>();
+export async function moveFabricBrandsToNotes(ownerId: string): Promise<void> {
+  if (brandsMoved.has(ownerId)) return;
+  await db
+    .update(stashFabricsTable)
+    .set({
+      notes: sql`case when nullif(trim(${stashFabricsTable.notes}), '') is null then 'Brand: ' || ${stashFabricsTable.brand}
+        else 'Brand: ' || ${stashFabricsTable.brand} || E'\n' || ${stashFabricsTable.notes} end`,
+      brand: null,
+      updatedAt: sql`${stashFabricsTable.updatedAt}`,
+    })
+    .where(and(eq(stashFabricsTable.ownerId, ownerId), sql`nullif(trim(${stashFabricsTable.brand}), '') is not null`));
+  brandsMoved.add(ownerId);
 }
 
 function tidyText(value: string | null | undefined): string | null {
@@ -59,13 +77,19 @@ router.get("/fabric-stash", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
-  const filters = [eq(stashFabricsTable.ownerId, getOwnerId(res))];
+  const ownerId = getOwnerId(res);
+  await moveFabricBrandsToNotes(ownerId);
+  // zod reads "false" as true, so the raw query decides.
+  const archived = req.query.archived === "true";
+  const filters = [
+    eq(stashFabricsTable.ownerId, ownerId),
+    archived ? isNotNull(stashFabricsTable.archivedAt) : isNull(stashFabricsTable.archivedAt),
+  ];
   const search = parsed.data.search?.trim();
   if (search) {
     const types = fabricTypeSearch(search);
     filters.push(
       or(
-        ilike(stashFabricsTable.brand, `%${search}%`),
         ilike(stashFabricsTable.notes, `%${search}%`),
         ...(types.length ? [sql`${stashFabricsTable.fabricType}::text = any(${sql.raw(`array[${types.map((type) => `'${type}'`).join(",")}]`)})`] : []),
       )!,
@@ -80,7 +104,7 @@ router.get("/fabric-stash", requireAuth, async (req, res): Promise<void> => {
     .from(stashFabricsTable)
     .where(and(...filters))
     .orderBy(desc(stashFabricsTable.updatedAt));
-  res.json(rows.map(serializeFabric));
+  res.json(rows.map((row) => serializeFabric(row)));
 });
 
 router.post("/fabric-stash/photo-upload", requireAuth, async (req, res): Promise<void> => {
@@ -115,28 +139,84 @@ router.post("/fabric-stash", requireAuth, async (req, res): Promise<void> => {
     res.status(400).json({ error: photos.error });
     return;
   }
-  const sizes = checkFabricSizes(parsed.data.amount ?? null, parsed.data.width ?? null);
+  const sizes = checkFabricSizes(parsed.data.amount ?? null, parsed.data.width ?? null, parsed.data.amountLeft ?? null);
   if (!sizes.ok) {
     res.status(400).json({ error: sizes.error });
     return;
   }
+  const details = {
+    fabricType: parsed.data.fabricType,
+    construction: parsed.data.construction ?? null,
+    print: parsed.data.print ?? null,
+    generalColor: parsed.data.generalColor ?? null,
+    unit: parsed.data.unit,
+    amount: sizes.amount,
+    amountLeft: sizes.amountLeft,
+    width: sizes.width,
+    preWashed: parsed.data.preWashed ?? null,
+    notes: tidyText(parsed.data.notes),
+    photoPaths: photos.photoPaths,
+  };
+
+  // The maker said this is a fabric from their Archive: bring it back with
+  // the new details instead of adding a copy.
+  if (parsed.data.restoreId) {
+    const restoreId = parsed.data.restoreId;
+    const outcome = await db.transaction(async (tx) => {
+      const [archived] = await tx
+        .select()
+        .from(stashFabricsTable)
+        .where(and(eq(stashFabricsTable.id, restoreId), eq(stashFabricsTable.ownerId, ownerId), isNotNull(stashFabricsTable.archivedAt)))
+        .for("update");
+      if (!archived) return undefined;
+      const [restored] = await tx
+        .update(stashFabricsTable)
+        .set({ ...details, archivedAt: null })
+        .where(eq(stashFabricsTable.id, archived.id))
+        .returning();
+      return { restored: restored!, oldPhotos: archived.photoPaths };
+    });
+    if (!outcome) {
+      res.status(404).json({ error: "That fabric isn't in your Archive any more." });
+      return;
+    }
+    await removeFabricPhotos(req.log, outcome.oldPhotos.filter((path) => !outcome.restored.photoPaths.includes(path)));
+    res.status(200).json(serializeFabric(outcome.restored, { restored: true }));
+    return;
+  }
+
+  // Fabric is hard to tell apart, so a match needs every detail to agree and
+  // the print photos not to clearly differ. The maker has the last word.
+  if (!parsed.data.addAsNew) {
+    const same = (column: typeof stashFabricsTable.construction | typeof stashFabricsTable.print | typeof stashFabricsTable.generalColor, value: string | null) =>
+      sql`${column} is not distinct from ${value}`;
+    const candidates = await db
+      .select()
+      .from(stashFabricsTable)
+      .where(and(
+        eq(stashFabricsTable.ownerId, ownerId),
+        isNotNull(stashFabricsTable.archivedAt),
+        eq(stashFabricsTable.fabricType, details.fabricType),
+        eq(stashFabricsTable.unit, details.unit),
+        same(stashFabricsTable.construction, details.construction),
+        same(stashFabricsTable.print, details.print),
+        same(stashFabricsTable.generalColor, details.generalColor),
+      ))
+      .orderBy(desc(stashFabricsTable.archivedAt))
+      .limit(3);
+    for (const candidate of candidates) {
+      const similarPhoto = candidate.photoPaths[0]
+        ? await printsLookAlike(details.photoPaths[0]!, candidate.photoPaths[0])
+        : null;
+      if (similarPhoto === false) continue;
+      res.status(409).json({ match: serializeFabric(candidate), similarPhoto });
+      return;
+    }
+  }
 
   const [created] = await db
     .insert(stashFabricsTable)
-    .values({
-      ownerId,
-      fabricType: parsed.data.fabricType,
-      construction: parsed.data.construction ?? null,
-      print: parsed.data.print ?? null,
-      generalColor: parsed.data.generalColor ?? null,
-      unit: parsed.data.unit,
-      amount: sizes.amount,
-      width: sizes.width,
-      preWashed: parsed.data.preWashed ?? null,
-      brand: tidyText(parsed.data.brand),
-      notes: tidyText(parsed.data.notes),
-      photoPaths: photos.photoPaths,
-    })
+    .values({ ownerId, ...details })
     .returning();
   res.status(201).json(serializeFabric(created!));
 });
@@ -148,6 +228,7 @@ router.get("/fabric-stash/:fabricId", requireAuth, async (req, res): Promise<voi
     return;
   }
 
+  await moveFabricBrandsToNotes(getOwnerId(res));
   const [fabric] = await db
     .select()
     .from(stashFabricsTable)
@@ -168,6 +249,7 @@ router.patch("/fabric-stash/:fabricId", requireAuth, async (req, res): Promise<v
   }
 
   const ownerId = getOwnerId(res);
+  await moveFabricBrandsToNotes(ownerId);
   const changes = parsed.data;
   // The row is locked while the edit is checked and written, so the whole
   // edit lands together or not at all.
@@ -187,6 +269,7 @@ router.patch("/fabric-stash/:fabricId", requireAuth, async (req, res): Promise<v
     const sizes = checkFabricSizes(
       changes.amount !== undefined ? changes.amount : current.amount,
       changes.width !== undefined ? changes.width : current.width,
+      changes.amountLeft !== undefined ? changes.amountLeft : current.amountLeft,
     );
     if (!sizes.ok) return { status: 400, error: sizes.error };
 
@@ -199,9 +282,10 @@ router.patch("/fabric-stash/:fabricId", requireAuth, async (req, res): Promise<v
         generalColor: changes.generalColor !== undefined ? changes.generalColor : current.generalColor,
         unit: changes.unit ?? current.unit,
         amount: sizes.amount,
+        amountLeft: sizes.amountLeft,
         width: sizes.width,
         preWashed: changes.preWashed !== undefined ? changes.preWashed : current.preWashed,
-        brand: changes.brand !== undefined ? tidyText(changes.brand) : current.brand,
+        archivedAt: changes.archived === undefined ? current.archivedAt : changes.archived ? current.archivedAt ?? new Date() : null,
         notes: changes.notes !== undefined ? tidyText(changes.notes) : current.notes,
         photoPaths: photos.photoPaths,
       })

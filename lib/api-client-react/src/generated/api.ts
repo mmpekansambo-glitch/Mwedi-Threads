@@ -36,6 +36,7 @@ import type {
   DesignerWebsiteTitlePreviewRequest,
   DesignerWebsiteTitlePreviewResponse,
   Error,
+  FabricArchiveMatch,
   GetProjectsParams,
   GetSewingProjectsParams,
   GetSewingToolsParams,
@@ -52,6 +53,7 @@ import type {
   Project,
   ProjectCounter,
   ProjectDetail,
+  RenameSewingToolBrands,
   RenameStashYarns,
   RenameStashYarnsResult,
   ResolveCatalogReview,
@@ -3144,6 +3146,7 @@ export const getCreateStashFabricUrl = () => {
 }
 
 /**
+ * When every detail matches a fabric in the Archive and the print photos look alike (or can't be compared), answers 409 with that fabric so the maker can say whether it's the same one. Send restoreId to bring it back with the new details, or addAsNew to add a separate piece.
  * @summary Add a fabric to the stash
  */
 export const createStashFabric = async (createStashFabricBody: CreateStashFabric, options?: Parameters<typeof customFetch>[1]): Promise<StashFabric> => {
@@ -3177,7 +3180,7 @@ return customFetch<StashFabric>(getCreateStashFabricUrl(),
 
 export const getCreateStashFabricMutationKey = () => ['createStashFabric'] as const;
 
-export const getCreateStashFabricMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse>,
+export const getCreateStashFabricMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | FabricArchiveMatch>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStashFabric>>, TError,CreateStashFabricMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof createStashFabric>>, TError,CreateStashFabricMutationVariables, TContext> => {
 
@@ -3206,13 +3209,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type CreateStashFabricMutationResult = NonNullable<Awaited<ReturnType<typeof createStashFabric>>>
     export type CreateStashFabricMutationBody = BodyType<CreateStashFabric>
-    export type CreateStashFabricMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse>
+    export type CreateStashFabricMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | FabricArchiveMatch>
     export type CreateStashFabricMutationVariables = {data: BodyType<CreateStashFabric>}
 
     /**
  * @summary Add a fabric to the stash
  */
-export const useCreateStashFabric = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse>,
+export const useCreateStashFabric = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | FabricArchiveMatch>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStashFabric>>, TError,CreateStashFabricMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof createStashFabric>>,
@@ -4292,6 +4295,94 @@ export const useCreateSewingTool = <TError = ErrorType<BadRequestResponse | Unau
         TContext
       > => {
       return useMutation(getCreateSewingToolMutationOptions(options));
+    }
+
+export const getRenameSewingToolBrandsUrl = () => {
+
+
+
+
+  return `/api/sewing-tools/rename-brand`
+}
+
+/**
+ * @summary Rename a brand on every tool that still has the old name
+ */
+export const renameSewingToolBrands = async (renameSewingToolBrandsBody: RenameSewingToolBrands, options?: Parameters<typeof customFetch>[1]): Promise<RenameStashYarnsResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<RenameStashYarnsResult>(getRenameSewingToolBrandsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(renameSewingToolBrandsBody)
+  }
+);}
+
+
+
+
+
+export const getRenameSewingToolBrandsMutationKey = () => ['renameSewingToolBrands'] as const;
+
+export const getRenameSewingToolBrandsMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof renameSewingToolBrands>>, TError,RenameSewingToolBrandsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof renameSewingToolBrands>>, TError,RenameSewingToolBrandsMutationVariables, TContext> => {
+
+const mutationKey = getRenameSewingToolBrandsMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof renameSewingToolBrands>>, RenameSewingToolBrandsMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  renameSewingToolBrands(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RenameSewingToolBrandsMutationResult = NonNullable<Awaited<ReturnType<typeof renameSewingToolBrands>>>
+    export type RenameSewingToolBrandsMutationBody = BodyType<RenameSewingToolBrands>
+    export type RenameSewingToolBrandsMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse>
+    export type RenameSewingToolBrandsMutationVariables = {data: BodyType<RenameSewingToolBrands>}
+
+    /**
+ * @summary Rename a brand on every tool that still has the old name
+ */
+export const useRenameSewingToolBrands = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof renameSewingToolBrands>>, TError,RenameSewingToolBrandsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof renameSewingToolBrands>>,
+        TError,
+        RenameSewingToolBrandsMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRenameSewingToolBrandsMutationOptions(options));
     }
 
 export const getRequestSewingToolPhotoUploadUrl = () => {

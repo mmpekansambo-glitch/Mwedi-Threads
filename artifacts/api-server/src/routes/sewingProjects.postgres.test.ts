@@ -268,6 +268,15 @@ describe.skipIf(!databaseUrl)("sewing projects against PostgreSQL", () => {
     expect(changed.preWashed).toBe(false);
   });
 
+  it("leaves fabric in the Archive out of the Overview's stash counts", async () => {
+    const plain = await addFabric(ownerB, { fabricType: "denim" });
+    const before = await read(await request("/sewing-overview", { user: ownerB }));
+    await request(`/fabric-stash/${plain.id}`, { method: "PATCH", user: ownerB, body: { archived: true } });
+    const after = await read(await request("/sewing-overview", { user: ownerB }));
+    expect(after.fabricPieces).toBe(before.fabricPieces - 1);
+    expect(after.fabricLength).toBe(before.fabricLength - 3);
+  });
+
   it("sums up the Sewing room for the Overview", async () => {
     const overview = await read(await request("/sewing-overview", { user: ownerA }));
     // ownerA has the dress (planning), the reopened shirt (in progress, still at Finish) and three 3 m pieces.
