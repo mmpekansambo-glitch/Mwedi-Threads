@@ -1,6 +1,8 @@
 # Mwedi Threads
 
-Mwedi Threads is a project journal for knitters and crocheters. It keeps a project's pattern, designer, yarn, tools, progress notes and photos in one place, so you always know where you stopped.
+Mwedi Threads is a project journal for knitters and crocheters. It keeps a project's pattern, designer, yarn, tools, progress notes and photos in one place, so you always know where you stopped. It also keeps a yarn stash and, for sewists, a Sewing room with a fabric stash.
+
+**Live app:** https://mwedithreads.replit.app
 
 ![Mwedi Threads landing page](docs/screenshots/landing.png)
 
@@ -8,17 +10,19 @@ Mwedi Threads is a project journal for knitters and crocheters. It keeps a proje
 
 - **Sign up and sign in** with email or Google. Your projects are private to you.
 - **Projects:** add, view, edit and delete knitting and crochet projects, with a friendly message when a required field is missing.
-- **Project details:** pattern, designer, yarn brand, type and color, and start, target and completed dates (by day or just by month).
-- **Hooks and needles:** pick a crochet hook from the standard sizes, or a main knitting needle and an optional second one with size, type and cable length. Sizes show mm, US and UK/Canada equivalents.
+- **Project details:** pattern, designer, and start, target and completed dates picked on scroll wheels (by day or just by month).
+- **Hooks and needles:** pick a crochet hook (plus an optional second hook) from the standard sizes, or a main knitting needle and an optional second one with size, type and cable length. Sizes show mm, US and UK/Canada equivalents.
 - **Designer link preview:** paste a designer's website and see its page title.
-- **Progress tracking:** track progress as an estimate, by rows or rounds, by sections or by skeins.
-- **Progress journal:** add dated notes with an optional photo to any project.
+- **Progress tracking:** track progress as an estimate, by rows or rounds, by sections or by skeins, with a counter card on each project page.
+- **Progress journal:** add dated notes with an optional photo to any project, and edit or delete them later.
 - **Completed date:** filled in automatically when a project is marked completed, and you can change it.
 - **Stars:** star favorite projects and filter to just the starred ones.
-- **Find projects:** search and filter by status and craft.
-- **Dashboard:** project counts, and charts of projects by status, projects finished per month and notes per week.
+- **Find projects:** search by name, pattern or yarn, filter by status and craft, and sort by recently updated, newest, oldest or A to Z.
+- **Yarn stash:** keep every yarn with a photo, brand, color, weight, blend and skeins left. Project yarns link to the stash, and finishing a project asks how many skeins are left.
+- **Sewing room:** turn on sewing to get a separate Sewing room with its own fabric stash.
+- **Dashboard:** project counts and charts of projects by status, projects finished per month and notes per week. Tapping a card or a status bar opens the matching projects.
+- **Dark mode** on web and mobile, following your device or your own choice.
 - **Web and mobile apps** that share one API.
-
 ## Screenshots
 
 | Dashboard | My projects |
@@ -28,6 +32,11 @@ Mwedi Threads is a project journal for knitters and crocheters. It keeps a proje
 | Project page |
 |---|
 | ![Project page](docs/screenshots/project-page.png) |
+
+## Tools I used
+
+- **Replit Agent** built the first version of the app, and Replit hosts it.
+- **Claude Code** built the later features on GitHub branches, one pull request per feature.
 
 ## Stack
 

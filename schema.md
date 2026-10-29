@@ -455,3 +455,15 @@ The shared yarn catalog. Every name has a `match_key` (lowercase letters and dig
 ## Date rule
 
 A date saved with `month` precision means only the month and year are known. In any calculation it counts as the 1st of that month.
+
+## Compared with the plan
+
+Section 3 of [PLAN.md](PLAN.md) planned 4 tables: `users`, `projects`, `project_progress_entries` and `stars`. All 4 were built, with these differences:
+
+- **users:** has the 4 planned columns (`id`, `email`, `display_name`, `joined_at`), plus the craft switches `yarn_enabled`, `sewing_enabled` and `crafts_chosen_at` added in #55. A row is created on the first signed-in request (#6).
+- **projects:** has every planned column, plus `completed_at` (#8), the progress method columns (#22), the knitting needle columns (#26), `counter` (#57) and the second hook (#60).
+- **project_progress_entries:** as planned, plus `progress_value` for the rows, sections and skeins methods (#22).
+- **stars:** as planned, one junction table with (`user_id`, `project_id`) as the key (#10).
+
+Tables added after the plan: `stash_yarns`, `yarn_brands`, `yarn_lines`, `yarn_colors` and `catalog_reviews` (yarn stash, #43 and #47), `project_yarns` and `skein_suggestions` (several yarns per project, #47), and `stash_fabrics` (Sewing room, #55).
+

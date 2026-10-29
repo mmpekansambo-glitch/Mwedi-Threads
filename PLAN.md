@@ -104,4 +104,35 @@ Today projects store the Clerk user ID in `owner_id` and there is no users table
 
 | Planned feature | Shipped / Changed / Cut | Status (Done/Backlogged) | Learning | What changed and why (one line) |
 |---|---|---|---|---|
-| | | | | |
+| 1. Sign up and login | Shipped | Done | _Ngwe to write_ | Clerk email and Google sign-in, as planned. Each account gets a row in `users` on its first signed-in request (#6). |
+| 2. Data model | Changed | Done | _Ngwe to write_ | The planned `users` table was added in #6 (closes #3), and the database grew from 4 planned tables to 12 as the yarn stash (#43, #47) and Sewing room (#55) were added. See schema.md. |
+| 3. Create / read / update / delete | Shipped | Done | _Ngwe to write_ | The project routes were broken and rewritten first (#5, closes #4). Journal notes became editable and deletable later (#61, closes #58). |
+| 4. Validation | Shipped | Done | _Ngwe to write_ | The web Edit details form let a blank name through, fixed in #50 (closes #32). Project yarn now needs a brand (#52). |
+| 5. Progress journal with photos | Changed | Done | _Ngwe to write_ | Each project now picks how progress is tracked: estimate, rows or rounds, sections or skeins (#22, closes #17). |
+| 6. Crochet hook-size picker | Changed | Done | _Ngwe to write_ | Widened to knitting needles with type and cable length (#26, closes #25) and an optional second hook (#60, closes #59). |
+| 7. Designer link preview | Changed | Done | _Ngwe to write_ | Name / Website switch and box merged onto one row (#24, closes #23). |
+| 8. Completed date | Shipped | Done | _Ngwe to write_ | Fills in when a project is finished, clears when reopened, and a date the maker picks wins (#8, closes #7). |
+| 9. Stars | Changed | Done | _Ngwe to write_ | The "Starred" view became a filter chip on My projects instead of its own page (#10, closes #9). |
+| 10. Find things | Changed | Done | _Ngwe to write_ | Search also matches yarn type (#41, closes #29). Sort kept "Recently updated" as the default next to newest, oldest and A to Z (#53, closes #30). |
+| 11. Dashboard | Shipped | Done | _Ngwe to write_ | All three charts shipped (#12, closes #11), the cards and bars open filtered lists (#64), and average days to finish and most-used yarn brand came last (#74, closes #31). |
+
+**Added after the plan** (not in sections 1 to 7 above)
+
+| Feature | PR(s) | Issue |
+|---|---|---|
+| PLAN.md palette across the app | #14 | #13 |
+| Bigger text, Lora + Figtree fonts | #16 | #15 |
+| Template filler removed, sign-out menu, dashboard card tints | #19 | #18 |
+| Scroll wheels for dates | #21 | #20 |
+| Fix: publishing on Replit (health check) | #28 | #27 |
+| Placeholder badge logo, sign-in strands removed | #36, #38 | #35, #37 |
+| Landing page cleanup and About page | #39 | #34 |
+| schema.md and README.md | #40 | #33 |
+| Yarn Stash tab and shared yarn catalog | #43 | #42 |
+| Several yarns per project, stash links, skeins-left prompts | #47 | #42, #45 |
+| Mobile app catch-up (logo, tab names) | #46 | #44 |
+| Fix: database updates skipped after a pull | #49 | #48 |
+| Sewing room part 1: craft switches and fabric stash | #55 | #54 |
+| Counter card on each project page | #57 | #56 |
+| Dark mode (phone and web), mauve Sewing room | #65, #67 | #62 |
+| Sewing room part 2: Overview, Projects and Tools | #68, #69 | #66 |
