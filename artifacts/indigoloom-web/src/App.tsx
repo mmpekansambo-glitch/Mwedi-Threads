@@ -67,6 +67,8 @@ import { NeedleIcon, YarnToolThumb, hookSizes, notionFor, sortYarnTools, yarnNee
 import { trackEvent, trackSuccessfulAction } from '@/lib/analytics';
 import { Toaster } from '@/components/ui/toaster';
 import { SignpostHost, showSignpost } from '@/components/signpost';
+import { NEW_NOTE, NoteEditingProvider, useNoteEditing, useNoteEditor } from '@/components/note-editing';
+import { SewingJournal } from '@/components/sewing-journal';
 import { useAppearance, type AppearanceChoice } from '@/hooks/use-appearance';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
@@ -874,13 +876,18 @@ function designerWebsiteLabel(websiteUrl: string, pageTitle: string | null, desi
 }
 
 function ProjectDetailPage({ projectId }: { projectId: string }) {
+  return <NoteEditingProvider><ProjectDetailView projectId={projectId}/></NoteEditingProvider>;
+}
+
+function ProjectDetailView({ projectId }: { projectId: string }) {
   const query = useGetProject(projectId, { query: { queryKey: getGetProjectQueryKey(projectId) } });
   const [editing, setEditing] = useState(false);
   const previewTitle = usePreviewDesignerWebsiteTitle();
   const [designerMode, setDesignerMode] = useState<DesignerMode>('name');
   const [designerPreviewMessage, setDesignerPreviewMessage] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [showProgress, setShowProgress] = useState(false);
+  const noteEditing = useNoteEditing();
+  const showProgress = noteEditing.openId === NEW_NOTE;
   const [progressPhoto, setProgressPhoto] = useState<File | null>(null);
   const [progressPhotoPreview, setProgressPhotoPreview] = useState('');
   const [progressPhotoError, setProgressPhotoError] = useState('');
@@ -997,34 +1004,50 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
     };
     update.mutate({ projectId, data: payload }, { onSuccess: () => { invalidate(); setEditing(false); } });
   });
-  const submitProgress = progressForm.handleSubmit(async (values) => {
-    if (!project) return;
+  const addProgress = useAddProgress();
+  // Saves the new note and says whether it went through.
+  const persistProgress = async (): Promise<boolean> => {
+    if (!project || !(await progressForm.trigger())) return false;
     const amount = progressAmountForApi(project, progressAmount);
     if (typeof amount === 'string') {
       setProgressAmountError(amount);
-      return;
+      return false;
     }
     setProgressAmountError('');
-    const payload: CreateProgress = { notes: values.notes.trim(), ...amount };
+    const payload: CreateProgress = { notes: progressForm.getValues('notes').trim(), ...amount };
     setProgressPhotoError('');
     if (progressPhoto) {
       const uploaded = await uploadProgressPhoto(projectId, progressPhoto);
       if ('error' in uploaded) {
         setProgressPhotoError(uploaded.error);
-        return;
+        return false;
       }
       payload.photoPath = uploaded.photoPath;
     }
-    addProgress.mutate({ projectId, data: payload }, {
-      onSuccess: trackSuccessfulAction('progress_updated', () => {
-        invalidate();
-        setShowProgress(false);
-        setProgressPhoto(null);
-        progressForm.reset({ notes: '' });
-      }),
+    try {
+      await addProgress.mutateAsync({ projectId, data: payload });
+    } catch {
+      return false;
+    }
+    trackSuccessfulAction('progress_updated', () => {
+      invalidate();
+      setProgressPhoto(null);
+      progressForm.reset({ notes: '' });
+    })();
+    return true;
+  };
+  useNoteEditor(NEW_NOTE, { dirty: () => Boolean(progressForm.getValues('notes').trim() || progressPhoto), save: persistProgress });
+  const submitProgress = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (await persistProgress()) noteEditing.close();
+  };
+  const startNote = () => {
+    void noteEditing.open(NEW_NOTE).then((opened) => {
+      if (!opened) return;
+      setProgressAmount(amountDraftFor(project!, latestProgressValue));
+      setProgressAmountError('');
     });
-  });
-  const addProgress = useAddProgress();
+  };
   const deleteProject = () => remove.mutate({ projectId }, {
     onSuccess: () => {
       void client.invalidateQueries({ queryKey: getGetProjectsQueryKey() });
@@ -1075,10 +1098,10 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
       <div className="detail-primary">
         <article className="progress-hero loom-card"><div className="progress-hero-copy"><h2 className="serif">Progress</h2>{progressDetail(project, latestProgressValue) && <p className="progress-detail" data-testid="text-progress-detail">{progressDetail(project, latestProgressValue)}</p>}<p>{progressSummary(project.progress)}</p></div><div className="progress-ring" style={{ '--progress': `${project.completionPercent * 3.6}deg` } as CSSProperties}><div><strong>{project.completionPercent}<small>%</small></strong><span>complete</span></div></div></article>
         <ProjectCounter key={project.id} projectId={project.id} initial={project.counter}/>
-        <div className="progress-log-heading"><div><h2 className="serif">Progress journal</h2></div><button className="button button-primary button-small" onClick={() => { setShowProgress(!showProgress); setProgressAmount(amountDraftFor(project, latestProgressValue)); setProgressAmountError(''); }} data-testid="button-add-progress">{showProgress ? <X size={15}/> : <Plus size={15}/>} {showProgress ? 'Close note' : 'Add a note'}</button></div>
-        {showProgress && <Form {...progressForm}><form className="progress-form loom-card" onSubmit={submitProgress} noValidate><div className="field-block"><label htmlFor="progress-notes">What did you work on?</label><textarea id="progress-notes" rows={3} placeholder="A few rows, a tricky bit figured out, a lovely color change…" {...progressForm.register('notes', { required: 'Add a note about this session.', maxLength: { value: 2000, message: 'Keep your note under 2,000 characters.' } })} data-testid="input-progress-notes"/>{progressForm.formState.errors.notes && <span className="field-error">{progressForm.formState.errors.notes.message}</span>}</div><div className="field-block progress-photo-field"><label htmlFor="progress-photo">Add a progress photo (optional)</label><input id="progress-photo" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { setProgressPhoto(event.target.files?.[0] ?? null); setProgressPhotoError(''); }} data-testid="input-progress-photo"/>{progressPhotoPreview && <div className="progress-photo-preview"><img src={progressPhotoPreview} alt="Selected progress photo preview"/><button type="button" className="button button-quiet" onClick={() => setProgressPhoto(null)}>Remove photo</button></div>}</div><div className="progress-form-row"><ProgressAmountField project={project} value={progressAmount} onChange={setProgressAmount}/>{progressAmountError && <span className="field-error" role="alert">{progressAmountError}</span>}</div>{(addProgress.isError || progressPhotoError) && <p className="mutation-error">{progressPhotoError || "Your note didn't stick this time. Please try again."}</p>}<div className="form-actions"><button type="button" className="button button-quiet" onClick={() => { setShowProgress(false); setProgressPhoto(null); }} data-testid="button-cancel-progress">Cancel</button><button type="submit" className="button button-primary" disabled={addProgress.isPending} data-testid="button-save-progress">{addProgress.isPending ? 'Saving note…' : 'Save progress'} <ArrowRight size={15}/></button></div></form></Form>}
+        <div className="progress-log-heading"><div><h2 className="serif">Progress journal</h2></div><button className="button button-primary button-small" onClick={() => { if (showProgress) noteEditing.close(); else startNote(); }} data-testid="button-add-progress">{showProgress ? <X size={15}/> : <Plus size={15}/>} {showProgress ? 'Close note' : 'Add a note'}</button></div>
+        {showProgress && <Form {...progressForm}><form className="progress-form loom-card" onSubmit={submitProgress} noValidate><div className="field-block"><label htmlFor="progress-notes">What did you work on?</label><textarea id="progress-notes" rows={3} placeholder="A few rows, a tricky bit figured out, a lovely color change…" {...progressForm.register('notes', { required: 'Add a note about this session.', maxLength: { value: 2000, message: 'Keep your note under 2,000 characters.' } })} data-testid="input-progress-notes"/>{progressForm.formState.errors.notes && <span className="field-error">{progressForm.formState.errors.notes.message}</span>}</div><div className="field-block progress-photo-field"><label htmlFor="progress-photo">Add a progress photo (optional)</label><input id="progress-photo" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { setProgressPhoto(event.target.files?.[0] ?? null); setProgressPhotoError(''); }} data-testid="input-progress-photo"/>{progressPhotoPreview && <div className="progress-photo-preview"><img src={progressPhotoPreview} alt="Selected progress photo preview"/><button type="button" className="button button-quiet" onClick={() => setProgressPhoto(null)}>Remove photo</button></div>}</div><div className="progress-form-row"><ProgressAmountField project={project} value={progressAmount} onChange={setProgressAmount}/>{progressAmountError && <span className="field-error" role="alert">{progressAmountError}</span>}</div>{(addProgress.isError || progressPhotoError) && <p className="mutation-error">{progressPhotoError || "Your note didn't stick this time. Please try again."}</p>}<div className="form-actions"><button type="button" className="button button-quiet" onClick={() => { noteEditing.close(); setProgressPhoto(null); }} data-testid="button-cancel-progress">Cancel</button><button type="submit" className="button button-primary" disabled={addProgress.isPending} data-testid="button-save-progress">{addProgress.isPending ? 'Saving note…' : 'Save progress'} <ArrowRight size={15}/></button></div></form></Form>}
         {photoRemovalError && <p className="mutation-error" role="alert">{photoRemovalError}</p>}
-        {project.progress.length ? <div className="timeline">{[...project.progress].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((entry, position) => <ProgressEntryCard key={entry.id} project={project} entry={entry} isLatest={position === 0} onChanged={invalidate}>{entry.photoPath && <><img className="timeline-photo" src={`/api/projects/${projectId}/progress/${entry.id}/photo`} alt={`Progress photo for ${project.title}`} loading="lazy"/><button type="button" className="button button-quiet button-remove-progress-photo" onClick={() => deleteEntryPhoto(entry.id)} disabled={removingPhotoEntryId === entry.id} data-testid={`button-remove-progress-photo-${entry.id}`}>{removingPhotoEntryId === entry.id ? 'Removing photo…' : 'Remove photo'} <X size={14}/></button></>}</ProgressEntryCard>)}</div> : <div className="journal-empty"><h3>No notes yet</h3><p>Add a note each time you work on this project.</p><button className="button button-outline" onClick={() => { setShowProgress(true); setProgressAmount(amountDraftFor(project, latestProgressValue)); setProgressAmountError(''); }} data-testid="button-first-progress">Add your first note <ArrowRight size={15}/></button></div>}
+        {project.progress.length ? <div className="timeline">{[...project.progress].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((entry, position) => <ProgressEntryCard key={entry.id} project={project} entry={entry} isLatest={position === 0} onChanged={invalidate}>{entry.photoPath && <><img className="timeline-photo" src={`/api/projects/${projectId}/progress/${entry.id}/photo`} alt={`Progress photo for ${project.title}`} loading="lazy"/><button type="button" className="button button-quiet button-remove-progress-photo" onClick={() => deleteEntryPhoto(entry.id)} disabled={removingPhotoEntryId === entry.id} data-testid={`button-remove-progress-photo-${entry.id}`}>{removingPhotoEntryId === entry.id ? 'Removing photo…' : 'Remove photo'} <X size={14}/></button></>}</ProgressEntryCard>)}</div> : <div className="journal-empty"><h3>No notes yet</h3><p>Add a note each time you work on this project.</p><button className="button button-outline" onClick={startNote} data-testid="button-first-progress">Add your first note <ArrowRight size={15}/></button></div>}
       </div>
       <aside className="detail-aside">
         <div className="aside-card loom-card"><h3 className="serif">Details</h3><dl className="detail-list">
@@ -2014,6 +2037,7 @@ function SewingProjectDetailPage({ projectId }: { projectId: string }) {
       {project.fitChanges && <div className="sewing-text"><h2>Fit changes</h2><p>{project.fitChanges}</p></div>}
       {project.notes && <div className="sewing-text"><h2>Notes</h2><p>{project.notes}</p></div>}
     </section>
+    <SewingJournal project={project} onChanged={() => { void client.invalidateQueries({ queryKey: getGetSewingProjectQueryKey(project.id) }); }}/>
     <section className="sewing-detail-fabric">
       <div className="section-heading"><div><h2 className="serif">Fabric</h2></div></div>
       {project.fabrics.length ? <div className="fabric-grid">{project.fabrics.map((item) => <Link key={item.stashFabricId} href={`/sewing/fabric/${item.stashFabricId}`} className="fabric-card lift" data-testid={`card-project-fabric-${item.stashFabricId}`}>

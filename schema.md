@@ -29,6 +29,7 @@ erDiagram
     stash_fabrics ||--o{ sewing_project_fabrics : "links"
     sewing_projects ||--o{ sewing_project_tools : uses
     sewing_tools ||--o{ sewing_project_tools : "links"
+    sewing_projects ||--o{ sewing_project_entries : "notes"
 
     users {
         text id PK
@@ -75,6 +76,12 @@ erDiagram
         uuid project_id FK
         uuid sewing_tool_id FK
         integer position
+    }
+    sewing_project_entries {
+        uuid id PK
+        uuid project_id FK
+        text notes
+        timestamptz created_at
     }
     projects {
         uuid id PK
@@ -157,6 +164,7 @@ erDiagram
 - **users → sewing_projects:** one-to-many. Sewing projects live apart from yarn projects.
 - **sewing_projects ↔ stash_fabrics through sewing_project_fabrics:** the fabric a project uses, with how much. Removing the fabric from the stash removes the link.
 - **sewing_projects ↔ sewing_tools through sewing_project_tools:** the notions and kit a project uses. Just a list: nothing is counted, and Tools quantities never change. Removing the tool removes the link.
+- **sewing_projects → sewing_project_entries:** one-to-many. A sewing project's dated notes journal. Deleting the project deletes its notes.
 - **users → yarn_tools:** one-to-many. The hooks, needles and notions a maker owns, shown on the Yarn studio's Tools page. Not linked to projects.
 
 The diagram shows the key columns only. Every column is listed below.
@@ -355,6 +363,18 @@ One row per notion or piece of kit in a maker's Sewing room.
 | project_id | uuid | yes | | Links to `sewing_projects.id`. Deleted with the project. |
 | sewing_tool_id | uuid | yes | | Links to `sewing_tools.id`. Deleted with the tool. |
 | position | integer | yes | 0 | Order on the project. |
+
+## sewing_project_entries
+
+One row per dated note in a sewing project's notes journal. Notes and a date only: no photo or progress amount.
+
+| Column | Type | Required | Default | Notes |
+|---|---|---|---|---|
+| id | uuid | yes | random | Primary key. |
+| project_id | uuid | yes | | Links to `sewing_projects.id`. Deleted with the project. |
+| notes | text | yes | | Up to 2,000 characters. |
+| created_at | timestamp with time zone | yes | now | When the note was written. The maker can move it to another day, never into the future. |
+| updated_at | timestamp with time zone | yes | now | |
 
 ## yarn_tools
 

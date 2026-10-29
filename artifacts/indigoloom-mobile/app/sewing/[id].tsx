@@ -15,6 +15,7 @@ import { FabricPhoto, fabricName } from '@/components/FabricFields';
 import { amountLeft, fabricAmount, needleLabel, sewingStages, stageIndex } from '@/components/SewingFields';
 import { ToolThumb, toolDetails } from '@/components/SewingTools';
 import { ColorDot, generalColors } from '@/components/YarnFields';
+import { SewingJournal } from '@/components/SewingJournal';
 import { useSewingColors } from '@/hooks/useColors';
 
 // What's still in the stash: a blank amount left means all of it.
@@ -182,6 +183,7 @@ function SewingProjectView({ project }: { project: SewingProject }) {
             </View>
           ) : null)}
         </View>
+        <SewingJournal project={project} />
         <LoomText serif style={[styles.section, { color: colors.foreground }]}>Fabric</LoomText>
         {project.fabrics.length ? project.fabrics.map((item) => (
           <Pressable key={item.stashFabricId} accessibilityRole="button" onPress={() => router.push({ pathname: '/fabric/[id]', params: { id: item.stashFabricId } })} style={[styles.fabric, { backgroundColor: colors.card, borderColor: colors.border }]} testID={`project-fabric-${item.stashFabricId}`}>
