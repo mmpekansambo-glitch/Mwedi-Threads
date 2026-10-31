@@ -402,6 +402,31 @@ test("starts a sewing project with fabric from the stash", async ({ page }) => {
   await expect(page.getByTestId(`card-project-fabric-${stash[2].id}`)).toContainText("Uses 1.2 m");
 });
 
+test("unchecks a stage tapped by mistake, back to Not started from Prep", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 1100 });
+  const sent = newSent();
+  await mockApi(page, { yarn: false, sewing: true, needsChoice: false }, sent);
+  await page.goto("/sewing/projects/cccccccc-0000-4000-8000-000000000001");
+  await expect(page.getByTestId("button-stage-cut")).toHaveAttribute("aria-pressed", "true");
+
+  await page.getByTestId("button-stage-sew").click();
+  await expect(page.getByTestId("button-stage-sew")).toHaveAttribute("aria-pressed", "true");
+  // Tapping the current stage again steps back one.
+  await page.getByTestId("button-stage-sew").click();
+  await expect(page.getByTestId("button-stage-cut")).toHaveAttribute("aria-pressed", "true");
+  await page.getByTestId("button-stage-cut").click();
+  await expect(page.getByTestId("button-stage-prep")).toHaveAttribute("aria-pressed", "true");
+  await page.getByTestId("button-stage-prep").click();
+  await expect(page.getByText("Planning")).toBeVisible();
+  await expect(page.getByTestId("button-stage-prep")).toHaveAttribute("aria-pressed", "false");
+  expect(sent.projectSaves).toEqual([{ stage: "sew" }, { stage: "cut" }, { stage: "prep" }, { status: "planning" }]);
+
+  // A project that hasn't started starts again from the stage picked.
+  await page.getByTestId("button-stage-prep").click();
+  await expect(page.getByTestId("button-stage-prep")).toHaveAttribute("aria-pressed", "true");
+  expect(sent.projectSaves[4]).toEqual({ stage: "prep", status: "in_progress" });
+});
+
 test("moves a project through stages and offers to update the stash when it's finished", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 1100 });
   const sent = newSent();

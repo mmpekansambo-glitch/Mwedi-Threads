@@ -20,6 +20,17 @@ export function stageIndex(stage: SewingStage): number {
   return sewingStages.findIndex((item) => item.value === stage);
 }
 
+// Tapping the current stage again unchecks it: the project steps back one
+// stage, and unchecking Prep puts it back to Not started. Any other stage is
+// picked as usual, which starts a project that hasn't started yet.
+export function stageChange(project: Pick<SewingProject, 'stage' | 'status'>, stage: SewingStage): { stage?: SewingStage; status?: SewingProject['status'] } {
+  const at = stageIndex(stage);
+  if (project.status !== 'planning' && project.status !== 'completed' && project.stage === stage) {
+    return at === 0 ? { status: 'planning' } : { stage: sewingStages[at - 1]!.value };
+  }
+  return project.status === 'planning' || project.status === 'paused' ? { stage, status: 'in_progress' } : { stage };
+}
+
 export function fabricAmount(amount: number | null, unit: FabricUnit): string {
   if (amount === null) return '';
   return `${amount} ${(fabricUnits.find((item) => item.value === unit) ?? fabricUnits[0]).amount}`;

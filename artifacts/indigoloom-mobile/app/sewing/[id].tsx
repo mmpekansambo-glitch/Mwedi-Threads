@@ -12,7 +12,7 @@ import type { ProjectStatus, SewingProject, SewingStage, StashFabric } from '@wo
 import { UsedUpNudge, fabricArchive, fabricUsedUp } from '@/components/ArchiveNudge';
 import { ErrorState, LoadingState, LoomButton, LoomText, SignedInGate, StatusChip, fonts } from '@/components/loom';
 import { FabricPhoto, fabricName } from '@/components/FabricFields';
-import { MachineSettingsList, amountLeft, fabricAmount, needleLabel, sewingStages, stageIndex } from '@/components/SewingFields';
+import { MachineSettingsList, amountLeft, fabricAmount, needleLabel, sewingStages, stageChange, stageIndex } from '@/components/SewingFields';
 import { ToolThumb, toolDetails } from '@/components/SewingTools';
 import { ColorDot, generalColors } from '@/components/YarnFields';
 import { SewingJournal } from '@/components/SewingJournal';
@@ -101,8 +101,7 @@ function SewingProjectView({ project }: { project: SewingProject }) {
     void client.invalidateQueries({ queryKey: getGetSewingOverviewQueryKey() });
   };
   const change = (data: { stage?: SewingStage; status?: ProjectStatus }) => update.mutate({ sewingProjectId: project.id, data }, { onSuccess: refresh });
-  // Picking a stage on a project that hasn't started yet starts it.
-  const pickStage = (stage: SewingStage) => change(project.status === 'planning' || project.status === 'paused' ? { stage, status: 'in_progress' } : { stage });
+  const pickStage = (stage: SewingStage) => change(stageChange(project, stage));
   const deleteProject = () => remove.mutate({ sewingProjectId: project.id }, {
     onSuccess: () => {
       void client.invalidateQueries({ queryKey: getGetSewingProjectsQueryKey() });
@@ -147,7 +146,7 @@ function SewingProjectView({ project }: { project: SewingProject }) {
               const done = project.status === 'completed' || index < current;
               const isCurrent = project.status !== 'completed' && project.status !== 'planning' && index === current;
               return (
-                <Pressable key={item.value} accessibilityRole="radio" accessibilityState={{ checked: isCurrent, disabled: project.status === 'completed' }} disabled={update.isPending || project.status === 'completed'} onPress={() => pickStage(item.value)} style={[styles.stage, { borderColor: isCurrent ? colors.primary : colors.border, backgroundColor: isCurrent ? colors.selectedWash : colors.card }]} testID={`button-stage-${item.value}`}>
+                <Pressable key={item.value} accessibilityRole="radio" accessibilityState={{ checked: isCurrent, disabled: project.status === 'completed' }} accessibilityHint={isCurrent ? 'Tap again to uncheck this stage' : undefined} disabled={update.isPending || project.status === 'completed'} onPress={() => pickStage(item.value)} style={[styles.stage, { borderColor: isCurrent ? colors.primary : colors.border, backgroundColor: isCurrent ? colors.selectedWash : colors.card }]} testID={`button-stage-${item.value}`}>
                   <View style={[styles.stageDot, { backgroundColor: done ? colors.primary : colors.selectedWash, borderColor: isCurrent ? colors.primary : 'transparent' }]}>
                     {done ? <Feather name="check" size={12} color={colors.primaryForeground} /> : <LoomText style={{ fontSize: 12, color: isCurrent ? colors.primaryText : colors.mutedForeground, fontFamily: fonts.bold }}>{index + 1}</LoomText>}
                   </View>
