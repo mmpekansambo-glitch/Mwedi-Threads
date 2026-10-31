@@ -61,7 +61,7 @@ import { ErrorBoundary } from '@/components/error-boundary';
 import {
   fabricConstructions, fabricName, fabricPhotoUrl, fabricPrints, fabricSize, fabricTypes, fabricUnits, labelFor, maxFabricPhotos, sizeForApi, OptionWheelField,
 } from '@/components/fabric-fields';
-import { StageTrack, TapWheelRow, amountLeft, fabricAmount, machineNeedleSizes, machineNeedleTypes, needleLabel, sewingStages, stageIndex } from '@/components/sewing-fields';
+import { StageTrack, TapWheelRow, amountLeft, fabricAmount, machineNeedleSizes, machineNeedleTypes, needleLabel, sewingStages, stageChange, stageIndex } from '@/components/sewing-fields';
 import { ToolThumb, ToolTypeWheelField, categoryFor, quantityForApi, toolDetails, toolPhotoUrl, toolSections } from '@/components/sewing-tools';
 import { NeedleIcon, YarnToolThumb, hookSizes, notionFor, sortYarnTools, yarnNeedleTypes, yarnNotionTypes, yarnToolDetails, yarnToolMaterials, yarnToolPhotoUrl, yarnToolSections, yarnToolTitle } from '@/components/yarn-tools';
 import { trackEvent, trackSuccessfulAction } from '@/lib/analytics';
@@ -1991,8 +1991,7 @@ function SewingProjectDetailPage({ projectId }: { projectId: string }) {
   };
   const change = (data: { stage?: SewingStage; status?: ProjectStatus }, after?: () => void) =>
     update.mutate({ sewingProjectId: project.id, data }, { onSuccess: (saved) => { refresh(saved); after?.(); } });
-  // Picking a stage on a project that hasn't started yet starts it.
-  const pickStage = (stage: SewingStage) => change(project.status === 'planning' || project.status === 'paused' ? { stage, status: 'in_progress' } : { stage });
+  const pickStage = (stage: SewingStage) => change(stageChange(project, stage));
   const finish = () => change({ status: 'completed' }, () => setLocation(`/sewing/projects/${project.id}?finished=1`, { replace: true }));
   const deleteProject = () => remove.mutate({ sewingProjectId: project.id }, {
     onSuccess: () => {
@@ -2016,7 +2015,7 @@ function SewingProjectDetailPage({ projectId }: { projectId: string }) {
         {sewingStages.map((item, index) => {
           const done = project.status === 'completed' || index < current;
           const isCurrent = project.status !== 'completed' && project.status !== 'planning' && index === current;
-          return <button key={item.value} type="button" className={`stage-pick${done ? ' done' : ''}${isCurrent ? ' current' : ''}`} aria-pressed={isCurrent} onClick={() => pickStage(item.value)} disabled={update.isPending || project.status === 'completed'} data-testid={`button-stage-${item.value}`}>
+          return <button key={item.value} type="button" className={`stage-pick${done ? ' done' : ''}${isCurrent ? ' current' : ''}`} aria-pressed={isCurrent} title={isCurrent ? `Uncheck ${item.label}` : undefined} onClick={() => pickStage(item.value)} disabled={update.isPending || project.status === 'completed'} data-testid={`button-stage-${item.value}`}>
             <i>{done ? <Check size={13}/> : index + 1}</i><span>{item.label}</span>
           </button>;
         })}
