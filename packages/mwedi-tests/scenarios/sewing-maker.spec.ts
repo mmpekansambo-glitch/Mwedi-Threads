@@ -106,6 +106,18 @@ test("a maker who works in the Sewing room", async ({ page }) => {
     await expect(page.getByTestId(`entry-sewing-note-${bodice}`)).toContainText("Bodice lengthened 2 cm");
   });
 
+  await test.step("adds what the dress cost, then fixes it (#99)", async () => {
+    await page.getByTestId("button-total-spend").click();
+    await page.getByTestId("input-total-spend").fill("abc");
+    await page.getByTestId("button-save-total-spend").click();
+    await expect(page.getByRole("alert")).toContainText("Enter an amount like 42.50.");
+    await page.getByTestId("input-total-spend").fill("1,250");
+    await page.getByTestId("button-save-total-spend").click();
+    await expect(page.getByTestId("button-total-spend")).toHaveText("$1,250");
+    await page.reload();
+    await expect(page.getByTestId("button-total-spend")).toHaveText("$1,250");
+  });
+
   await test.step("edits the cotton in the stash and the project shows it, not a copy (#83)", async () => {
     await page.goto(`/sewing/fabric/${cottonId}`);
     await pickFromWheel(page, "select-fabric-print", "Stripe");

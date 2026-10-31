@@ -5,10 +5,12 @@
  * Mwedi Threads project catalog and progress tracking API
  * OpenAPI spec version: 0.1.0
  */
+import type { Currency } from './currency';
 
 export interface Crafts {
   yarn: boolean;
   sewing: boolean;
   /** True for a new maker who hasn't picked their crafts yet */
   needsChoice: boolean;
+  currency: Currency;
 }

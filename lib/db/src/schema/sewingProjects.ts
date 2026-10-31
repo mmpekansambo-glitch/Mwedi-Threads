@@ -74,6 +74,8 @@ export const sewingProjectsTable = pgTable("sewing_projects", {
   notes: text("notes"),
   // Set when the project is marked finished, cleared if it is reopened.
   completedAt: date("completed_at", { mode: "string" }),
+  // What the maker spent on the project, in cents of their chosen currency.
+  totalSpendCents: integer("total_spend_cents"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

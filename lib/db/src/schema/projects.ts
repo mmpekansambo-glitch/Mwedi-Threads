@@ -86,6 +86,8 @@ export const projectsTable = pgTable("projects", {
   completionPercent: integer("completion_percent").notNull().default(0),
   // The project page counter. Separate from progress on purpose.
   counter: integer("counter").notNull().default(0),
+  // What the maker spent on the project, in cents of their chosen currency.
+  totalSpendCents: integer("total_spend_cents"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

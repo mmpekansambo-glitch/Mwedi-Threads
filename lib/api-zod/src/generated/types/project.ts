@@ -77,6 +77,12 @@ export interface Project {
      * @minimum 0
      */
   counter: number;
+  /**
+     * What the maker spent, in cents of their chosen currency
+     * @minimum 0
+     * @nullable
+     */
+  totalSpendCents: number | null;
   createdAt: Date;
   updatedAt: Date;
 }

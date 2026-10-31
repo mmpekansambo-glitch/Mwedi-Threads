@@ -89,7 +89,8 @@ describe.skipIf(!databaseUrl)("project authorization against PostgreSQL", () => 
         joined_at timestamptz NOT NULL DEFAULT now(),
         yarn_enabled boolean NOT NULL DEFAULT true,
         sewing_enabled boolean NOT NULL DEFAULT false,
-        crafts_chosen_at timestamptz
+        crafts_chosen_at timestamptz,
+        currency text NOT NULL DEFAULT 'USD'
       );
       CREATE TABLE ${isolatedSchema}.projects (
         id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -126,6 +127,7 @@ describe.skipIf(!databaseUrl)("project authorization against PostgreSQL", () => 
         progress_sections jsonb NOT NULL DEFAULT '[]'::jsonb,
         completion_percent integer NOT NULL DEFAULT 0,
         counter integer NOT NULL DEFAULT 0,
+        total_spend_cents integer,
         created_at timestamptz NOT NULL DEFAULT now(),
         updated_at timestamptz NOT NULL DEFAULT now()
       );
@@ -538,6 +540,53 @@ describe.skipIf(!databaseUrl)("project authorization against PostgreSQL", () => 
       body: { count: -1 },
     });
     expect(negative.status).toBe(400);
+  });
+
+  it("saves total spend for the owner only, clears it, and keeps the list order", async () => {
+    const before = await getTestDb()
+      .select({ updatedAt: projectsTable.updatedAt })
+      .from(projectsTable)
+      .where(eq(projectsTable.id, projectAId));
+
+    const saved = await request(`/projects/${projectAId}/totals`, {
+      method: "PUT",
+      user: ownerA,
+      body: { totalSpendCents: 4250 },
+    });
+    expect(saved.status).toBe(200);
+    expect(await saved.json()).toEqual({ totalSpendCents: 4250 });
+
+    const detail = await request(`/projects/${projectAId}`, { user: ownerA });
+    expect(((await detail.json()) as { totalSpendCents: number | null }).totalSpendCents).toBe(4250);
+
+    const after = await getTestDb()
+      .select({ updatedAt: projectsTable.updatedAt })
+      .from(projectsTable)
+      .where(eq(projectsTable.id, projectAId));
+    expect(after).toEqual(before);
+
+    const otherOwner = await request(`/projects/${projectAId}/totals`, {
+      method: "PUT",
+      user: ownerB,
+      body: { totalSpendCents: 1 },
+    });
+    expect(otherOwner.status).toBe(404);
+
+    for (const bad of [-1, 12.5, 100000001]) {
+      const response = await request(`/projects/${projectAId}/totals`, {
+        method: "PUT",
+        user: ownerA,
+        body: { totalSpendCents: bad },
+      });
+      expect(response.status).toBe(400);
+    }
+
+    const cleared = await request(`/projects/${projectAId}/totals`, {
+      method: "PUT",
+      user: ownerA,
+      body: { totalSpendCents: null },
+    });
+    expect(await cleared.json()).toEqual({ totalSpendCents: null });
   });
 
   // PLAN.md test 2: the dashboard's "Most-used yarn brand" stat.

@@ -6,7 +6,7 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   getGetSewingOverviewQueryKey, getGetSewingProjectQueryKey, getGetSewingProjectsQueryKey, getGetStashFabricsQueryKey,
-  useDeleteSewingProject, useGetSewingProject, useUpdateSewingProject, useUpdateStashFabric,
+  setSewingProjectTotals, useDeleteSewingProject, useGetSewingProject, useUpdateSewingProject, useUpdateStashFabric,
 } from '@workspace/api-client-react';
 import type { ProjectStatus, SewingProject, SewingStage, StashFabric } from '@workspace/api-client-react';
 import { UsedUpNudge, fabricArchive, fabricUsedUp } from '@/components/ArchiveNudge';
@@ -16,6 +16,8 @@ import { MachineSettingsList, amountLeft, fabricAmount, needleLabel, sewingStage
 import { ToolThumb, toolDetails } from '@/components/SewingTools';
 import { ColorDot, generalColors } from '@/components/YarnFields';
 import { SewingJournal } from '@/components/SewingJournal';
+import { SpendRow } from '@/components/SpendRow';
+import { useCrafts } from '@/components/Crafts';
 import { useSewingColors } from '@/hooks/useColors';
 
 // What's still in the stash: a blank amount left means all of it.
@@ -83,6 +85,7 @@ function SewingProjectView({ project }: { project: SewingProject }) {
   const colors = useSewingColors();
   const insets = useSafeAreaInsets();
   const client = useQueryClient();
+  const currency = useCrafts().data?.currency ?? 'USD';
   const { finished } = useLocalSearchParams<{ finished?: string }>();
   const update = useUpdateSewingProject();
   const remove = useDeleteSewingProject();
@@ -175,6 +178,11 @@ function SewingProjectView({ project }: { project: SewingProject }) {
               ) : null}
             </View>
           ) : null}
+          <View style={{ marginTop: 14 }}>
+            <SpendRow sewing cents={project.totalSpendCents} currency={currency} onSave={(cents) => setSewingProjectTotals(project.id, { totalSpendCents: cents }).then((saved) => {
+              client.setQueryData<SewingProject>(getGetSewingProjectQueryKey(project.id), (old) => (old ? { ...old, totalSpendCents: saved.totalSpendCents ?? null } : old));
+            })} />
+          </View>
           <MachineSettingsList settings={project.machineSettings} />
           {([['Fit changes', project.fitChanges], ['Notes', project.notes]] as const).map(([label, value]) => value ? (
             <View key={label} style={{ marginTop: 14 }}>

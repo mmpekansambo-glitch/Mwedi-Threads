@@ -97,6 +97,7 @@ function project(id: string, ownerId: string, title: string) {
     progressSections: [] as { name: string; done: boolean }[],
     completionPercent: 25,
     counter: 0,
+    totalSpendCents: null,
     createdAt: timestamp,
     updatedAt: timestamp,
   };
@@ -275,7 +276,7 @@ class Query {
         id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
         ...this.rowValues,
         completionPercent: this.rowValues.completionPercent ?? 0,
-        ...(this.table === projectsTable ? { counter: 0 } : {}),
+        ...(this.table === projectsTable ? { counter: 0, totalSpendCents: null } : {}),
         createdAt: timestamp,
         updatedAt: timestamp,
       };

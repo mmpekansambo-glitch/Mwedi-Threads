@@ -96,6 +96,20 @@ test("a maker who works in the Yarn studio", async ({ page }) => {
     await expect(page.getByTestId(`entry-progress-${second}`)).toContainText("Second panel, cables crossed right");
   });
 
+  await test.step("picks pounds in Settings and adds what the throw cost (#99)", async () => {
+    await page.getByTestId("button-profile-menu").click();
+    await page.getByTestId("select-currency").selectOption("GBP");
+    await expect(page.getByTestId("select-currency")).toHaveValue("GBP");
+    await page.getByTestId("button-profile-menu").click();
+    await expect(page.getByTestId("button-total-spend")).toHaveText("Add");
+    await page.getByTestId("button-total-spend").click();
+    await page.getByTestId("input-total-spend").fill("42.5");
+    await page.getByTestId("button-save-total-spend").click();
+    await expect(page.getByTestId("button-total-spend")).toHaveText("£42.50");
+    await page.reload();
+    await expect(page.getByTestId("button-total-spend")).toHaveText("£42.50");
+  });
+
   await test.step("renames the yarn's color in the stash and the project follows (#79)", async () => {
     await page.goto(`/stash/${fishermanId}`);
     await page.getByTestId("input-stash-color").fill("Fisherman Cream");

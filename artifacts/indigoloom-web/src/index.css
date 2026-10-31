@@ -1047,3 +1047,13 @@ a.stat-card:active { transform: scale(.98); box-shadow: none; }
 .dark .home-sewing .rail-link.selected svg { color: #A595C2; }
 /* Yarn studio Tools reuse the Sewing room tool rows in the yarn colours. */
 .home-yarn { --sew-accent: var(--granite); --sew-line: var(--lavender-deep); --sew-soft: var(--lavender-wash); }
+
+.spend-value { padding: 0; border: 0; background: none; color: var(--granite); font: inherit; font-weight: 600; cursor: pointer; }
+.spend-value:hover { text-decoration: underline; }
+.spend-edit { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 4px; }
+.spend-input { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border: 1px solid var(--lavender-soft); border-radius: 8px; background: var(--white); color: var(--slate); }
+.spend-input input { width: 84px; border: 0; padding: 2px 0; background: transparent; color: var(--evergreen); font: inherit; text-align: right; outline: none; }
+.spend-edit .icon-button { width: 28px; height: 28px; }
+.spend-edit .spend-save { color: var(--granite); }
+.spend-edit .field-error { flex-basis: 100%; text-align: right; }
+.menu-currency { width: calc(100% - 12px); margin: 0 6px 4px; padding: 6px 8px; border: 1px solid var(--lavender-soft); border-radius: 8px; background: var(--white); color: var(--evergreen); font: inherit; font-size: 13px; }

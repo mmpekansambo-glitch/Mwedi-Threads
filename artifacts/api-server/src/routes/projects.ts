@@ -11,6 +11,9 @@ import {
   SetProjectCounterBody,
   SetProjectCounterParams,
   SetProjectCounterResponse,
+  SetProjectTotalsBody,
+  SetProjectTotalsParams,
+  SetProjectTotalsResponse,
   StarProjectParams,
   UnstarProjectParams,
   DeleteProgressParams,
@@ -728,6 +731,34 @@ router.put("/projects/:projectId/counter", async (req, res): Promise<void> => {
     return;
   }
   res.json(SetProjectCounterResponse.parse(updated));
+});
+
+// Saves total spend on its own, without touching updatedAt, so the projects
+// list keeps its order. Only the fields sent change; null clears one.
+router.put("/projects/:projectId/totals", async (req, res): Promise<void> => {
+  const params = SetProjectTotalsParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: "Invalid project ID." });
+    return;
+  }
+  const body = SetProjectTotalsBody.safeParse(req.body);
+  if (!body.success) {
+    res.status(400).json({ error: "Enter an amount from 0 up." });
+    return;
+  }
+
+  const ownerId = getOwnerId(res);
+  const changes = body.data.totalSpendCents !== undefined ? { totalSpendCents: body.data.totalSpendCents } : {};
+  const [updated] = await db
+    .update(projectsTable)
+    .set({ ...changes, updatedAt: sql`${projectsTable.updatedAt}` })
+    .where(and(eq(projectsTable.id, params.data.projectId), eq(projectsTable.ownerId, ownerId)))
+    .returning({ totalSpendCents: projectsTable.totalSpendCents });
+  if (!updated) {
+    res.status(404).json({ error: "Project not found." });
+    return;
+  }
+  res.json(SetProjectTotalsResponse.parse(updated));
 });
 
 router.delete("/projects/:projectId/star", async (req, res): Promise<void> => {

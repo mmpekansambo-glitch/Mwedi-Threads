@@ -4,10 +4,12 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useClerk, useUser } from '@clerk/expo';
 import { Feather } from '@expo/vector-icons';
 import { router, useSegments } from 'expo-router';
-import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { getGetMyCraftsQueryKey, useGetMyCrafts, useUpdateMyCrafts } from '@workspace/api-client-react';
-import type { Crafts } from '@workspace/api-client-react';
+import { getGetMyCraftsQueryKey, useGetMyCrafts, useUpdateMyCrafts, useUpdateMyCurrency } from '@workspace/api-client-react';
+import type { Crafts, Currency } from '@workspace/api-client-react';
+import { ITEM_HEIGHT, Wheel } from '@/components/ProjectDateField';
+import { currencies } from '@/lib/money';
 import { Brand, LoomText, fonts } from '@/components/loom';
 import { useColors, useSewingColors } from '@/hooks/useColors';
 import { useAppearance } from '@/hooks/useAppearance';
@@ -101,6 +103,12 @@ export function ProfileMenu() {
   const { home, setHome } = useHome();
   const appearance = useAppearance();
   const [open, setOpen] = useState(false);
+  const saveCurrency = useUpdateMyCurrency();
+  const [pickingCurrency, setPickingCurrency] = useState(false);
+  const [currencyDraft, setCurrencyDraft] = useState(0);
+  const currencyIndex = Math.max(0, currencies.findIndex((option) => option.value === crafts?.currency));
+  const chooseCurrency = (currency: Currency) =>
+    saveCurrency.mutate({ data: { currency } }, { onSuccess: (saved) => client.setQueryData(getGetMyCraftsQueryKey(), saved) });
   const displayName = user?.firstName || user?.username || 'maker';
 
   const toggle = (craft: Craft) => {
@@ -138,6 +146,13 @@ export function ProfileMenu() {
                   </Pressable>
                 );
               })}
+              <Pressable accessibilityRole="button" accessibilityLabel={`Currency, ${currencies[currencyIndex].label}`} onPress={() => { setCurrencyDraft(currencyIndex); setPickingCurrency(true); }} style={[styles.switchRow, { marginTop: 4 }]} testID="button-currency">
+                <LoomText style={{ color: colors.foreground, fontFamily: fonts.bold, fontSize: 15 }}>Currency</LoomText>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <LoomText style={{ color: colors.mutedForeground, fontSize: 15 }}>{crafts.currency}</LoomText>
+                  <Feather name="chevron-right" size={15} color={colors.mutedForeground} />
+                </View>
+              </Pressable>
             </>) : null}
             <LoomText style={{ color: colors.foreground, fontFamily: fonts.bold, fontSize: 15, marginTop: crafts ? 8 : 0, marginBottom: 6 }}>Appearance</LoomText>
             <View style={[styles.appearance, { backgroundColor: colors.secondary }]} accessibilityRole="radiogroup">
@@ -151,6 +166,26 @@ export function ProfileMenu() {
               })}
             </View>
           </View>
+          <Modal visible={pickingCurrency} transparent animationType="slide" onRequestClose={() => setPickingCurrency(false)}>
+            <View style={styles.backdrop}>
+              <Pressable accessibilityLabel="Close currency picker" onPress={() => setPickingCurrency(false)} style={StyleSheet.absoluteFill} />
+              <View style={[styles.sheet, { backgroundColor: colors.card }]}>
+                <View style={styles.sheetHeading}>
+                  <Pressable accessibilityRole="button" onPress={() => setPickingCurrency(false)} style={styles.headingButton}>
+                    <LoomText style={{ color: colors.mutedForeground, fontSize: 16 }}>Cancel</LoomText>
+                  </Pressable>
+                  <LoomText serif style={{ color: colors.foreground, fontSize: 20 }}>Currency</LoomText>
+                  <Pressable accessibilityRole="button" onPress={() => { chooseCurrency(currencies[currencyDraft].value); setPickingCurrency(false); }} style={styles.headingButton} testID="button-currency-done">
+                    <LoomText style={{ color: colors.primaryText, fontFamily: fonts.semibold, fontSize: 16, textAlign: 'right' }}>Done</LoomText>
+                  </Pressable>
+                </View>
+                <View style={[styles.wheels, { backgroundColor: colors.selectedWash }]}>
+                  <View pointerEvents="none" style={[styles.wheelBand, { borderColor: colors.accent }]} />
+                  <Wheel label="Currency" items={currencies.map((option) => `${option.label} (${option.value})`)} index={currencyDraft} onChange={setCurrencyDraft} flex={1} testID="wheel-currency" />
+                </View>
+              </View>
+            </View>
+          </Modal>
           <Pressable accessibilityRole="button" onPress={() => { setOpen(false); void signOut(); }} style={styles.menuItem} testID="button-sign-out">
             <Feather name="log-out" size={16} color={colors.foreground} />
             <LoomText style={{ color: colors.foreground, fontFamily: fonts.semibold, fontSize: 15 }}>Sign out</LoomText>
@@ -212,6 +247,12 @@ const styles = StyleSheet.create({
   appearanceOption: { flexGrow: 1, minHeight: 32, paddingHorizontal: 10, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   track: { width: 38, height: 22, borderRadius: 11, padding: 3 },
   knob: { width: 16, height: 16, borderRadius: 8, backgroundColor: '#FFFFFF' },
+  backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(31, 47, 22, 0.42)' },
+  sheet: { borderTopLeftRadius: 22, borderTopRightRadius: 22, paddingHorizontal: 16, paddingTop: 10, paddingBottom: 34 },
+  sheetHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 10 },
+  headingButton: { minWidth: 64, paddingVertical: 10 },
+  wheels: { flexDirection: 'row', borderRadius: 12, overflow: 'hidden', paddingHorizontal: 6 },
+  wheelBand: { position: 'absolute', left: 8, right: 8, top: ITEM_HEIGHT * 2, height: ITEM_HEIGHT, borderTopWidth: 1.5, borderBottomWidth: 1.5 },
   menuItem: { flexDirection: 'row', alignItems: 'center', gap: 9, padding: 10 },
   choiceScreen: { flex: 1, paddingHorizontal: 22, alignItems: 'center', gap: 26 },
   choiceCard: { width: '100%', maxWidth: 460, borderWidth: 1, borderRadius: 18, padding: 20, gap: 10 },

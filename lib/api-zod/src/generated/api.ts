@@ -33,6 +33,8 @@ export const getDashboardResponseRecentProjectsItemCompletionPercentMax = 100;
 
 export const getDashboardResponseRecentProjectsItemCounterMin = 0;
 
+export const getDashboardResponseRecentProjectsItemTotalSpendCentsMin = 0;
+
 
 
 export const GetDashboardResponse = zod.object({
@@ -84,6 +86,7 @@ export const GetDashboardResponse = zod.object({
 })).max(getDashboardResponseRecentProjectsItemProgressSectionsMax),
   "completionPercent": zod.number().int().min(getDashboardResponseRecentProjectsItemCompletionPercentMin).max(getDashboardResponseRecentProjectsItemCompletionPercentMax),
   "counter": zod.number().int().min(getDashboardResponseRecentProjectsItemCounterMin).describe('The project\'s plain counter (any count the maker likes).'),
+  "totalSpendCents": zod.number().int().min(getDashboardResponseRecentProjectsItemTotalSpendCentsMin).nullable().describe('What the maker spent, in cents of their chosen currency'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })),
@@ -138,6 +141,8 @@ export const getProjectsResponseCompletionPercentMax = 100;
 
 export const getProjectsResponseCounterMin = 0;
 
+export const getProjectsResponseTotalSpendCentsMin = 0;
+
 
 
 export const GetProjectsResponseItem = zod.object({
@@ -185,6 +190,7 @@ export const GetProjectsResponseItem = zod.object({
 })).max(getProjectsResponseProgressSectionsMax),
   "completionPercent": zod.number().int().min(getProjectsResponseCompletionPercentMin).max(getProjectsResponseCompletionPercentMax),
   "counter": zod.number().int().min(getProjectsResponseCounterMin).describe('The project\'s plain counter (any count the maker likes).'),
+  "totalSpendCents": zod.number().int().min(getProjectsResponseTotalSpendCentsMin).nullable().describe('What the maker spent, in cents of their chosen currency'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -269,6 +275,8 @@ export const createProjectResponseCompletionPercentMax = 100;
 
 export const createProjectResponseCounterMin = 0;
 
+export const createProjectResponseTotalSpendCentsMin = 0;
+
 
 
 export const CreateProjectResponse = zod.object({
@@ -316,6 +324,7 @@ export const CreateProjectResponse = zod.object({
 })).max(createProjectResponseProgressSectionsMax),
   "completionPercent": zod.number().int().min(createProjectResponseCompletionPercentMin).max(createProjectResponseCompletionPercentMax),
   "counter": zod.number().int().min(createProjectResponseCounterMin).describe('The project\'s plain counter (any count the maker likes).'),
+  "totalSpendCents": zod.number().int().min(createProjectResponseTotalSpendCentsMin).nullable().describe('What the maker spent, in cents of their chosen currency'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -354,6 +363,8 @@ export const getProjectResponseOneCompletionPercentMin = 0;
 export const getProjectResponseOneCompletionPercentMax = 100;
 
 export const getProjectResponseOneCounterMin = 0;
+
+export const getProjectResponseOneTotalSpendCentsMin = 0;
 
 export const getProjectResponseTwoProgressItemCompletionPercentMin = 0;
 export const getProjectResponseTwoProgressItemCompletionPercentMax = 100;
@@ -405,6 +416,7 @@ export const GetProjectResponse = zod.object({
 })).max(getProjectResponseOneProgressSectionsMax),
   "completionPercent": zod.number().int().min(getProjectResponseOneCompletionPercentMin).max(getProjectResponseOneCompletionPercentMax),
   "counter": zod.number().int().min(getProjectResponseOneCounterMin).describe('The project\'s plain counter (any count the maker likes).'),
+  "totalSpendCents": zod.number().int().min(getProjectResponseOneTotalSpendCentsMin).nullable().describe('What the maker spent, in cents of their chosen currency'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 }).and(zod.object({
@@ -508,6 +520,8 @@ export const updateProjectResponseCompletionPercentMax = 100;
 
 export const updateProjectResponseCounterMin = 0;
 
+export const updateProjectResponseTotalSpendCentsMin = 0;
+
 
 
 export const UpdateProjectResponse = zod.object({
@@ -555,6 +569,7 @@ export const UpdateProjectResponse = zod.object({
 })).max(updateProjectResponseProgressSectionsMax),
   "completionPercent": zod.number().int().min(updateProjectResponseCompletionPercentMin).max(updateProjectResponseCompletionPercentMax),
   "counter": zod.number().int().min(updateProjectResponseCounterMin).describe('The project\'s plain counter (any count the maker likes).'),
+  "totalSpendCents": zod.number().int().min(updateProjectResponseTotalSpendCentsMin).nullable().describe('What the maker spent, in cents of their chosen currency'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -613,6 +628,32 @@ export const setProjectCounterResponseCountMax = 1000000;
 
 export const SetProjectCounterResponse = zod.object({
   "count": zod.number().int().min(setProjectCounterResponseCountMin).max(setProjectCounterResponseCountMax)
+})
+
+
+/**
+ * @summary Save the project's total spend (only the fields sent change)
+ */
+export const SetProjectTotalsParams = zod.object({
+  "projectId": zod.coerce.string().uuid()
+})
+
+export const setProjectTotalsBodyTotalSpendCentsMin = 0;
+export const setProjectTotalsBodyTotalSpendCentsMax = 100000000;
+
+
+
+export const SetProjectTotalsBody = zod.object({
+  "totalSpendCents": zod.number().int().min(setProjectTotalsBodyTotalSpendCentsMin).max(setProjectTotalsBodyTotalSpendCentsMax).nullish().describe('What the maker spent, in cents of their chosen currency (null clears it)')
+})
+
+export const setProjectTotalsResponseTotalSpendCentsMin = 0;
+export const setProjectTotalsResponseTotalSpendCentsMax = 100000000;
+
+
+
+export const SetProjectTotalsResponse = zod.object({
+  "totalSpendCents": zod.number().int().min(setProjectTotalsResponseTotalSpendCentsMin).max(setProjectTotalsResponseTotalSpendCentsMax).nullish().describe('What the maker spent, in cents of their chosen currency (null clears it)')
 })
 
 
@@ -1274,7 +1315,8 @@ export const GetYarnCatalogResponse = zod.object({
 export const GetMyCraftsResponse = zod.object({
   "yarn": zod.boolean(),
   "sewing": zod.boolean(),
-  "needsChoice": zod.boolean().describe('True for a new maker who hasn\'t picked their crafts yet')
+  "needsChoice": zod.boolean().describe('True for a new maker who hasn\'t picked their crafts yet'),
+  "currency": zod.enum(['USD', 'CAD', 'GBP', 'EUR', 'AUD', 'NZD', 'ZAR', 'MWK', 'ZMW', 'KES', 'NGN', 'INR', 'JPY']).describe('The currency project spend is shown in')
 })
 
 
@@ -1289,7 +1331,23 @@ export const UpdateMyCraftsBody = zod.object({
 export const UpdateMyCraftsResponse = zod.object({
   "yarn": zod.boolean(),
   "sewing": zod.boolean(),
-  "needsChoice": zod.boolean().describe('True for a new maker who hasn\'t picked their crafts yet')
+  "needsChoice": zod.boolean().describe('True for a new maker who hasn\'t picked their crafts yet'),
+  "currency": zod.enum(['USD', 'CAD', 'GBP', 'EUR', 'AUD', 'NZD', 'ZAR', 'MWK', 'ZMW', 'KES', 'NGN', 'INR', 'JPY']).describe('The currency project spend is shown in')
+})
+
+
+/**
+ * @summary Choose the currency project spend is shown in
+ */
+export const UpdateMyCurrencyBody = zod.object({
+  "currency": zod.enum(['USD', 'CAD', 'GBP', 'EUR', 'AUD', 'NZD', 'ZAR', 'MWK', 'ZMW', 'KES', 'NGN', 'INR', 'JPY']).describe('The currency project spend is shown in')
+})
+
+export const UpdateMyCurrencyResponse = zod.object({
+  "yarn": zod.boolean(),
+  "sewing": zod.boolean(),
+  "needsChoice": zod.boolean().describe('True for a new maker who hasn\'t picked their crafts yet'),
+  "currency": zod.enum(['USD', 'CAD', 'GBP', 'EUR', 'AUD', 'NZD', 'ZAR', 'MWK', 'ZMW', 'KES', 'NGN', 'INR', 'JPY']).describe('The currency project spend is shown in')
 })
 
 
@@ -1519,6 +1577,10 @@ export const GetSewingProjectsQueryParams = zod.object({
   "status": zod.enum(['planning', 'in_progress', 'paused', 'completed']).optional()
 })
 
+export const getSewingProjectsResponseTotalSpendCentsMin = 0;
+
+
+
 export const GetSewingProjectsResponseItem = zod.object({
   "id": zod.string().uuid(),
   "title": zod.string(),
@@ -1533,6 +1595,7 @@ export const GetSewingProjectsResponseItem = zod.object({
   "threadColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]),
   "notes": zod.string().nullable(),
   "completedAt": zod.coerce.date().nullable(),
+  "totalSpendCents": zod.number().int().min(getSewingProjectsResponseTotalSpendCentsMin).nullable().describe('What the maker spent, in cents of their chosen currency'),
   "fabrics": zod.array(zod.object({
   "stashFabricId": zod.string().uuid(),
   "amountUsed": zod.number().nullable().describe('In the fabric\'s own unit'),
@@ -1658,6 +1721,10 @@ export const CreateSewingProjectBody = zod.object({
 }).describe('Every part is optional, but a set needs at least one')).max(createSewingProjectBodyMachineSettingsMax).optional()
 })
 
+export const createSewingProjectResponseTotalSpendCentsMin = 0;
+
+
+
 export const CreateSewingProjectResponse = zod.object({
   "id": zod.string().uuid(),
   "title": zod.string(),
@@ -1672,6 +1739,7 @@ export const CreateSewingProjectResponse = zod.object({
   "threadColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]),
   "notes": zod.string().nullable(),
   "completedAt": zod.coerce.date().nullable(),
+  "totalSpendCents": zod.number().int().min(createSewingProjectResponseTotalSpendCentsMin).nullable().describe('What the maker spent, in cents of their chosen currency'),
   "fabrics": zod.array(zod.object({
   "stashFabricId": zod.string().uuid(),
   "amountUsed": zod.number().nullable().describe('In the fabric\'s own unit'),
@@ -1736,6 +1804,10 @@ export const GetSewingProjectParams = zod.object({
   "sewingProjectId": zod.coerce.string().uuid()
 })
 
+export const getSewingProjectResponseTotalSpendCentsMin = 0;
+
+
+
 export const GetSewingProjectResponse = zod.object({
   "id": zod.string().uuid(),
   "title": zod.string(),
@@ -1750,6 +1822,7 @@ export const GetSewingProjectResponse = zod.object({
   "threadColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]),
   "notes": zod.string().nullable(),
   "completedAt": zod.coerce.date().nullable(),
+  "totalSpendCents": zod.number().int().min(getSewingProjectResponseTotalSpendCentsMin).nullable().describe('What the maker spent, in cents of their chosen currency'),
   "fabrics": zod.array(zod.object({
   "stashFabricId": zod.string().uuid(),
   "amountUsed": zod.number().nullable().describe('In the fabric\'s own unit'),
@@ -1878,6 +1951,10 @@ export const UpdateSewingProjectBody = zod.object({
 }).describe('Every part is optional, but a set needs at least one')).max(updateSewingProjectBodyMachineSettingsMax).optional().describe('The full list of machine settings on the project, replacing what was there')
 })
 
+export const updateSewingProjectResponseTotalSpendCentsMin = 0;
+
+
+
 export const UpdateSewingProjectResponse = zod.object({
   "id": zod.string().uuid(),
   "title": zod.string(),
@@ -1892,6 +1969,7 @@ export const UpdateSewingProjectResponse = zod.object({
   "threadColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]),
   "notes": zod.string().nullable(),
   "completedAt": zod.coerce.date().nullable(),
+  "totalSpendCents": zod.number().int().min(updateSewingProjectResponseTotalSpendCentsMin).nullable().describe('What the maker spent, in cents of their chosen currency'),
   "fabrics": zod.array(zod.object({
   "stashFabricId": zod.string().uuid(),
   "amountUsed": zod.number().nullable().describe('In the fabric\'s own unit'),
@@ -1960,6 +2038,32 @@ export const DeleteSewingProjectResponse = zod.void()
 
 
 /**
+ * @summary Save the sewing project's total spend (only the fields sent change)
+ */
+export const SetSewingProjectTotalsParams = zod.object({
+  "sewingProjectId": zod.coerce.string().uuid()
+})
+
+export const setSewingProjectTotalsBodyTotalSpendCentsMin = 0;
+export const setSewingProjectTotalsBodyTotalSpendCentsMax = 100000000;
+
+
+
+export const SetSewingProjectTotalsBody = zod.object({
+  "totalSpendCents": zod.number().int().min(setSewingProjectTotalsBodyTotalSpendCentsMin).max(setSewingProjectTotalsBodyTotalSpendCentsMax).nullish().describe('What the maker spent, in cents of their chosen currency (null clears it)')
+})
+
+export const setSewingProjectTotalsResponseTotalSpendCentsMin = 0;
+export const setSewingProjectTotalsResponseTotalSpendCentsMax = 100000000;
+
+
+
+export const SetSewingProjectTotalsResponse = zod.object({
+  "totalSpendCents": zod.number().int().min(setSewingProjectTotalsResponseTotalSpendCentsMin).max(setSewingProjectTotalsResponseTotalSpendCentsMax).nullish().describe('What the maker spent, in cents of their chosen currency (null clears it)')
+})
+
+
+/**
  * @summary Add a dated note to a sewing project's journal
  */
 export const AddSewingProjectEntryParams = zod.object({
@@ -2022,6 +2126,10 @@ export const DeleteSewingProjectEntryResponse = zod.void()
 /**
  * @summary Counts and recent projects for the Sewing room Overview
  */
+export const getSewingOverviewResponseRecentProjectsItemTotalSpendCentsMin = 0;
+
+
+
 export const GetSewingOverviewResponse = zod.object({
   "inProgress": zod.number().int().describe('Projects being sewn (not planning, paused or finished)'),
   "finished": zod.number().int(),
@@ -2050,6 +2158,7 @@ export const GetSewingOverviewResponse = zod.object({
   "threadColor": zod.union([zod.enum(['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'brown', 'black', 'gray', 'white', 'cream', 'multi']),zod.null()]),
   "notes": zod.string().nullable(),
   "completedAt": zod.coerce.date().nullable(),
+  "totalSpendCents": zod.number().int().min(getSewingOverviewResponseRecentProjectsItemTotalSpendCentsMin).nullable().describe('What the maker spent, in cents of their chosen currency'),
   "fabrics": zod.array(zod.object({
   "stashFabricId": zod.string().uuid(),
   "amountUsed": zod.number().nullable().describe('In the fabric\'s own unit'),

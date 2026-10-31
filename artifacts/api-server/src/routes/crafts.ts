@@ -1,6 +1,6 @@
 import { eq, sql } from "drizzle-orm";
 import { Router, type IRouter, type Response } from "express";
-import { GetMyCraftsResponse, UpdateMyCraftsBody } from "@workspace/api-zod";
+import { GetMyCraftsResponse, UpdateMyCraftsBody, UpdateMyCurrencyBody } from "@workspace/api-zod";
 import { db, projectsTable, sewingProjectsTable, sewingToolsTable, stashFabricsTable, stashYarnsTable, usersTable, yarnToolsTable } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
 
@@ -15,7 +15,7 @@ function getOwnerId(res: Response): string {
 // keeps yarn on without being asked.
 async function loadCrafts(ownerId: string) {
   const [row] = await db
-    .select({ yarn: usersTable.yarnEnabled, sewing: usersTable.sewingEnabled, chosenAt: usersTable.craftsChosenAt })
+    .select({ yarn: usersTable.yarnEnabled, sewing: usersTable.sewingEnabled, chosenAt: usersTable.craftsChosenAt, currency: usersTable.currency })
     .from(usersTable)
     .where(eq(usersTable.id, ownerId));
   const hasSomething = row?.chosenAt
@@ -29,6 +29,7 @@ async function loadCrafts(ownerId: string) {
     yarn: row?.yarn ?? true,
     sewing: row?.sewing ?? false,
     needsChoice: !hasSomething,
+    currency: row?.currency ?? "USD",
   });
 }
 
@@ -52,6 +53,18 @@ router.put("/me/crafts", requireAuth, async (req, res): Promise<void> => {
     .update(usersTable)
     .set({ yarnEnabled: parsed.data.yarn, sewingEnabled: parsed.data.sewing, craftsChosenAt: new Date() })
     .where(eq(usersTable.id, ownerId));
+  res.json(await loadCrafts(ownerId));
+});
+
+// The currency is only a label for how spend is shown; amounts aren't converted.
+router.put("/me/currency", requireAuth, async (req, res): Promise<void> => {
+  const parsed = UpdateMyCurrencyBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Choose a currency from the list." });
+    return;
+  }
+  const ownerId = getOwnerId(res);
+  await db.update(usersTable).set({ currency: parsed.data.currency }).where(eq(usersTable.id, ownerId));
   res.json(await loadCrafts(ownerId));
 });
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAddProgress, useDeleteProgress, useDeleteProgressPhoto, useDeleteProject, useGetProject, getGetDashboardQueryKey, getGetProjectQueryKey, getGetProjectsQueryKey, getGetSkeinSuggestionsQueryKey } from '@workspace/api-client-react';
+import { setProjectTotals, useAddProgress, useDeleteProgress, useDeleteProgressPhoto, useDeleteProject, useGetProject, getGetDashboardQueryKey, getGetProjectQueryKey, getGetProjectsQueryKey, getGetSkeinSuggestionsQueryKey } from '@workspace/api-client-react';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { Feather } from '@expo/vector-icons';
@@ -15,6 +15,9 @@ import { describeNeedle } from '@/components/NeedleFields';
 import { describeProjectYarn } from '@/components/ProjectYarns';
 import { SkeinSuggestions } from '@/components/SkeinSuggestions';
 import { ProjectCounter } from '@/components/ProjectCounter';
+import { SpendRow } from '@/components/SpendRow';
+import { useCrafts } from '@/components/Crafts';
+import type { ProjectDetail } from '@workspace/api-client-react';
 import { showSignpost } from '@/components/Signpost';
 import { SavedProgressPhoto, SwipeableNote, confirmDeleteNote, pickProgressPhoto, uploadProgressPhoto } from '@/components/ProgressNote';
 import { useColors } from '@/hooks/useColors';
@@ -25,6 +28,7 @@ export default function ProjectDetailScreen() {
   const insets = useSafeAreaInsets();
   const client = useQueryClient();
   const query = useGetProject(id);
+  const currency = useCrafts().data?.currency ?? 'USD';
   const addProgress = useAddProgress();
   const removeProgressPhoto = useDeleteProgressPhoto();
   const removeProgress = useDeleteProgress();
@@ -191,6 +195,9 @@ export default function ProjectDetailScreen() {
               ].filter((entry) => entry[1]).map(([label, value]) => (
                 <View key={label} style={[styles.infoRow, { borderBottomColor: colors.border }]}><LoomText style={[styles.infoLabel, { color: colors.mutedForeground }]}>{label}</LoomText>{label === 'Designer' && project.designerWebsite ? <Pressable accessibilityRole="link" accessibilityLabel={`Open designer website: ${designerLinkLabel}`} accessibilityHint="Opens the saved designer website" onPress={() => { void Linking.openURL(project.designerWebsite!).catch(() => Alert.alert('Unable to open website', 'Check the saved link and try again.')); }} style={styles.designerLink}><LoomText numberOfLines={1} ellipsizeMode="tail" style={[styles.infoValue, styles.designerLinkText, { color: colors.primary, textDecorationLine: 'underline' }]}>{value}</LoomText></Pressable> : <LoomText numberOfLines={label === 'Designer' ? 1 : undefined} ellipsizeMode="tail" style={[styles.infoValue, { color: colors.foreground }]}>{value}</LoomText>}</View>
               ))}
+              <SpendRow cents={project.totalSpendCents} currency={currency} onSave={(cents) => setProjectTotals(project.id, { totalSpendCents: cents }).then((saved) => {
+                client.setQueryData<ProjectDetail>(getGetProjectQueryKey(project.id), (old) => (old ? { ...old, totalSpendCents: saved.totalSpendCents ?? null } : old));
+              })} />
               {project.description ? <LoomText style={[styles.description, { color: colors.foreground }]}>{project.description}</LoomText> : null}
             </View>
             <View style={[styles.detailCard, { backgroundColor: colors.card, borderColor: colors.border }]}>

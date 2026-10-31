@@ -38,11 +38,11 @@ describe.skipIf(!scenarioDatabaseUrl)("Scenario: a maker who works in the Yarn s
 
   it("signs up and picks the Yarn studio", async () => {
     const first = await amara.get("/me/crafts");
-    expect(first.body).toEqual({ yarn: true, sewing: false, needsChoice: true });
+    expect(first.body).toEqual({ yarn: true, sewing: false, needsChoice: true, currency: "USD" });
 
     const chosen = await amara.put("/me/crafts", { yarn: true, sewing: false });
     expect(chosen.status).toBe(200);
-    expect(chosen.body).toEqual({ yarn: true, sewing: false, needsChoice: false });
+    expect(chosen.body).toEqual({ yarn: true, sewing: false, needsChoice: false, currency: "USD" });
   });
 
   it("fills the stash with yarn, each with its own photo", async () => {

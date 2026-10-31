@@ -84,7 +84,8 @@ describe.skipIf(!databaseUrl)("yarn stash against PostgreSQL", () => {
         joined_at timestamptz NOT NULL DEFAULT now(),
         yarn_enabled boolean NOT NULL DEFAULT true,
         sewing_enabled boolean NOT NULL DEFAULT false,
-        crafts_chosen_at timestamptz
+        crafts_chosen_at timestamptz,
+        currency text NOT NULL DEFAULT 'USD'
       );
       CREATE TABLE ${isolatedSchema}.projects (
         id uuid PRIMARY KEY DEFAULT gen_random_uuid()

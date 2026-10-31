@@ -14,6 +14,8 @@ export const usersTable = pgTable("users", {
   displayName: text("display_name"),
   yarnEnabled: boolean("yarn_enabled").notNull().default(true),
   sewingEnabled: boolean("sewing_enabled").notNull().default(false),
+  // ISO 4217 code used to show project spend, such as "USD".
+  currency: text("currency").notNull().default("USD"),
   craftsChosenAt: timestamp("crafts_chosen_at", { withTimezone: true }),
   joinedAt: timestamp("joined_at", { withTimezone: true })
     .notNull()
@@ -25,6 +27,7 @@ export const insertUserSchema = createInsertSchema(usersTable).omit({
   yarnEnabled: true,
   sewingEnabled: true,
   craftsChosenAt: true,
+  currency: true,
 });
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof usersTable.$inferSelect;

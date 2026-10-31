@@ -53,6 +53,7 @@ import type {
   Project,
   ProjectCounter,
   ProjectDetail,
+  ProjectTotals,
   RenameSewingToolBrands,
   RenameStashYarns,
   RenameStashYarnsResult,
@@ -67,6 +68,7 @@ import type {
   StashYarn,
   UnauthorizedResponse,
   UpdateCrafts,
+  UpdateCurrency,
   UpdateProgress,
   UpdateProject,
   UpdateSewingProject,
@@ -995,6 +997,95 @@ export const useSetProjectCounter = <TError = ErrorType<BadRequestResponse | Una
         TContext
       > => {
       return useMutation(getSetProjectCounterMutationOptions(options));
+    }
+
+export const getSetProjectTotalsUrl = (projectId: string,) => {
+
+
+
+
+  return `/api/projects/${projectId}/totals`
+}
+
+/**
+ * @summary Save the project's total spend (only the fields sent change)
+ */
+export const setProjectTotals = async (projectId: string,
+    projectTotals: ProjectTotals, options?: Parameters<typeof customFetch>[1]): Promise<ProjectTotals> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<ProjectTotals>(getSetProjectTotalsUrl(projectId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(projectTotals)
+  }
+);}
+
+
+
+
+
+export const getSetProjectTotalsMutationKey = () => ['setProjectTotals'] as const;
+
+export const getSetProjectTotalsMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setProjectTotals>>, TError,SetProjectTotalsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setProjectTotals>>, TError,SetProjectTotalsMutationVariables, TContext> => {
+
+const mutationKey = getSetProjectTotalsMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setProjectTotals>>, SetProjectTotalsMutationVariables> = (props) => {
+          const {projectId,data} = props ?? {};
+
+          return  setProjectTotals(projectId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetProjectTotalsMutationResult = NonNullable<Awaited<ReturnType<typeof setProjectTotals>>>
+    export type SetProjectTotalsMutationBody = BodyType<ProjectTotals>
+    export type SetProjectTotalsMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse>
+    export type SetProjectTotalsMutationVariables = {projectId: string;data: BodyType<ProjectTotals>}
+
+    /**
+ * @summary Save the project's total spend (only the fields sent change)
+ */
+export const useSetProjectTotals = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setProjectTotals>>, TError,SetProjectTotalsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setProjectTotals>>,
+        TError,
+        SetProjectTotalsMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSetProjectTotalsMutationOptions(options));
     }
 
 export const getAddProgressUrl = (projectId: string,) => {
@@ -3055,6 +3146,94 @@ export const useUpdateMyCrafts = <TError = ErrorType<BadRequestResponse | Unauth
       return useMutation(getUpdateMyCraftsMutationOptions(options));
     }
 
+export const getUpdateMyCurrencyUrl = () => {
+
+
+
+
+  return `/api/me/currency`
+}
+
+/**
+ * @summary Choose the currency project spend is shown in
+ */
+export const updateMyCurrency = async (updateCurrency: UpdateCurrency, options?: Parameters<typeof customFetch>[1]): Promise<Crafts> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Crafts>(getUpdateMyCurrencyUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(updateCurrency)
+  }
+);}
+
+
+
+
+
+export const getUpdateMyCurrencyMutationKey = () => ['updateMyCurrency'] as const;
+
+export const getUpdateMyCurrencyMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMyCurrency>>, TError,UpdateMyCurrencyMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateMyCurrency>>, TError,UpdateMyCurrencyMutationVariables, TContext> => {
+
+const mutationKey = getUpdateMyCurrencyMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateMyCurrency>>, UpdateMyCurrencyMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateMyCurrency(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateMyCurrencyMutationResult = NonNullable<Awaited<ReturnType<typeof updateMyCurrency>>>
+    export type UpdateMyCurrencyMutationBody = BodyType<UpdateCurrency>
+    export type UpdateMyCurrencyMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse>
+    export type UpdateMyCurrencyMutationVariables = {data: BodyType<UpdateCurrency>}
+
+    /**
+ * @summary Choose the currency project spend is shown in
+ */
+export const useUpdateMyCurrency = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMyCurrency>>, TError,UpdateMyCurrencyMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateMyCurrency>>,
+        TError,
+        UpdateMyCurrencyMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateMyCurrencyMutationOptions(options));
+    }
+
 export const getGetStashFabricsUrl = (params?: GetStashFabricsParams,) => {
   const normalizedParams = new URLSearchParams();
 
@@ -4048,6 +4227,95 @@ export const useDeleteSewingProject = <TError = ErrorType<UnauthorizedResponse |
         TContext
       > => {
       return useMutation(getDeleteSewingProjectMutationOptions(options));
+    }
+
+export const getSetSewingProjectTotalsUrl = (sewingProjectId: string,) => {
+
+
+
+
+  return `/api/sewing-projects/${sewingProjectId}/totals`
+}
+
+/**
+ * @summary Save the sewing project's total spend (only the fields sent change)
+ */
+export const setSewingProjectTotals = async (sewingProjectId: string,
+    projectTotals: ProjectTotals, options?: Parameters<typeof customFetch>[1]): Promise<ProjectTotals> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<ProjectTotals>(getSetSewingProjectTotalsUrl(sewingProjectId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(projectTotals)
+  }
+);}
+
+
+
+
+
+export const getSetSewingProjectTotalsMutationKey = () => ['setSewingProjectTotals'] as const;
+
+export const getSetSewingProjectTotalsMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setSewingProjectTotals>>, TError,SetSewingProjectTotalsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setSewingProjectTotals>>, TError,SetSewingProjectTotalsMutationVariables, TContext> => {
+
+const mutationKey = getSetSewingProjectTotalsMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setSewingProjectTotals>>, SetSewingProjectTotalsMutationVariables> = (props) => {
+          const {sewingProjectId,data} = props ?? {};
+
+          return  setSewingProjectTotals(sewingProjectId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetSewingProjectTotalsMutationResult = NonNullable<Awaited<ReturnType<typeof setSewingProjectTotals>>>
+    export type SetSewingProjectTotalsMutationBody = BodyType<ProjectTotals>
+    export type SetSewingProjectTotalsMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse>
+    export type SetSewingProjectTotalsMutationVariables = {sewingProjectId: string;data: BodyType<ProjectTotals>}
+
+    /**
+ * @summary Save the sewing project's total spend (only the fields sent change)
+ */
+export const useSetSewingProjectTotals = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setSewingProjectTotals>>, TError,SetSewingProjectTotalsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setSewingProjectTotals>>,
+        TError,
+        SetSewingProjectTotalsMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSetSewingProjectTotalsMutationOptions(options));
     }
 
 export const getAddSewingProjectEntryUrl = (sewingProjectId: string,) => {

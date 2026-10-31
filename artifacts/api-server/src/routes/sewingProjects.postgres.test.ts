@@ -86,7 +86,8 @@ describe.skipIf(!databaseUrl)("sewing projects against PostgreSQL", () => {
         joined_at timestamptz NOT NULL DEFAULT now(),
         yarn_enabled boolean NOT NULL DEFAULT true,
         sewing_enabled boolean NOT NULL DEFAULT false,
-        crafts_chosen_at timestamptz
+        crafts_chosen_at timestamptz,
+        currency text NOT NULL DEFAULT 'USD'
       );
       CREATE TABLE ${isolatedSchema}.projects (
         id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -210,6 +211,24 @@ describe.skipIf(!databaseUrl)("sewing projects against PostgreSQL", () => {
 
     const reopened = await read(await request(`/sewing-projects/${project.id}`, { method: "PATCH", user: ownerA, body: { status: "in_progress", fabrics: [] } }));
     expect(reopened).toMatchObject({ completedAt: null, fabrics: [] });
+  });
+
+  it("saves total spend on a sewing project for its owner only", async () => {
+    const project = await read(await request("/sewing-projects", {
+      method: "POST", user: ownerA, body: { title: "Tote bag" },
+    }));
+    expect(project.totalSpendCents).toBeNull();
+
+    const saved = await request(`/sewing-projects/${project.id}/totals`, { method: "PUT", user: ownerA, body: { totalSpendCents: 1899 } });
+    expect(saved.status).toBe(200);
+    expect(await read(saved)).toEqual({ totalSpendCents: 1899 });
+    expect((await read(await request(`/sewing-projects/${project.id}`, { user: ownerA }))).totalSpendCents).toBe(1899);
+
+    const otherOwner = await request(`/sewing-projects/${project.id}/totals`, { method: "PUT", user: ownerB, body: { totalSpendCents: 1 } });
+    expect(otherOwner.status).toBe(404);
+    const negative = await request(`/sewing-projects/${project.id}/totals`, { method: "PUT", user: ownerA, body: { totalSpendCents: -5 } });
+    expect(negative.status).toBe(400);
+    await request(`/sewing-projects/${project.id}`, { method: "DELETE", user: ownerA });
   });
 
   it("drops a fabric from projects when it leaves the stash, and deletes projects", async () => {

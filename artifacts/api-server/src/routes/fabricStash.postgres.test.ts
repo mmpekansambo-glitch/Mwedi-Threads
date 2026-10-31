@@ -89,7 +89,8 @@ describe.skipIf(!databaseUrl)("crafts and fabric stash against PostgreSQL", () =
         joined_at timestamptz NOT NULL DEFAULT now(),
         yarn_enabled boolean NOT NULL DEFAULT true,
         sewing_enabled boolean NOT NULL DEFAULT false,
-        crafts_chosen_at timestamptz
+        crafts_chosen_at timestamptz,
+        currency text NOT NULL DEFAULT 'USD'
       );
       CREATE TABLE ${isolatedSchema}.projects (
         id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -149,12 +150,23 @@ describe.skipIf(!databaseUrl)("crafts and fabric stash against PostgreSQL", () =
   });
 
   it("starts existing makers on yarn only and asks new makers what they make", async () => {
-    expect(await read(await request("/me/crafts", { user: ownerA }))).toEqual({ yarn: true, sewing: false, needsChoice: false });
-    expect(await read(await request("/me/crafts", { user: newMaker }))).toEqual({ yarn: true, sewing: false, needsChoice: true });
+    expect(await read(await request("/me/crafts", { user: ownerA }))).toEqual({ yarn: true, sewing: false, needsChoice: false, currency: "USD" });
+    expect(await read(await request("/me/crafts", { user: newMaker }))).toEqual({ yarn: true, sewing: false, needsChoice: true, currency: "USD" });
 
     const chosen = await request("/me/crafts", { method: "PUT", user: newMaker, body: { yarn: false, sewing: true } });
     expect(chosen.status).toBe(200);
-    expect(await read(chosen)).toEqual({ yarn: false, sewing: true, needsChoice: false });
+    expect(await read(chosen)).toEqual({ yarn: false, sewing: true, needsChoice: false, currency: "USD" });
+  });
+
+  it("saves the maker's currency from the list only", async () => {
+    const saved = await request("/me/currency", { method: "PUT", user: newMaker, body: { currency: "MWK" } });
+    expect(saved.status).toBe(200);
+    expect((await read(saved)).currency).toBe("MWK");
+    expect((await read(await request("/me/crafts", { user: newMaker }))).currency).toBe("MWK");
+    expect((await read(await request("/me/crafts", { user: ownerA }))).currency).toBe("USD");
+
+    const unknown = await request("/me/currency", { method: "PUT", user: newMaker, body: { currency: "XYZ" } });
+    expect(unknown.status).toBe(400);
   });
 
   it("keeps at least one craft on", async () => {

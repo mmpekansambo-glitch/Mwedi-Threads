@@ -13,7 +13,7 @@ import {
   getGetStashYarnQueryKey, getGetStashYarnsQueryKey, getGetYarnCatalogQueryKey,
   getGetCatalogReviewsQueryKey, getGetCatalogReviewAccessQueryKey, getGetSkeinSuggestionsQueryKey, getGetStashYarnReviewsQueryKey,
   useGetCatalogReviewAccess, useGetCatalogReviews, useGetStashYarnReviews, useResolveCatalogReview,
-  requestFabricPhotoUpload, useCreateStashFabric, useDeleteStashFabric, useGetMyCrafts, useGetStashFabric, useGetStashFabrics, useUpdateMyCrafts, useUpdateStashFabric,
+  requestFabricPhotoUpload, useCreateStashFabric, useDeleteStashFabric, useGetMyCrafts, useGetStashFabric, useGetStashFabrics, useUpdateMyCrafts, useUpdateMyCurrency, setProjectTotals, setSewingProjectTotals, useUpdateStashFabric,
   getGetMyCraftsQueryKey, getGetStashFabricQueryKey, getGetStashFabricsQueryKey,
   useCreateSewingProject, useDeleteSewingProject, useGetSewingOverview, useGetSewingProject, useGetSewingProjects, useUpdateSewingProject,
   getGetSewingOverviewQueryKey, getGetSewingProjectQueryKey, getGetSewingProjectsQueryKey,
@@ -25,7 +25,7 @@ import {
 } from '@workspace/api-client-react';
 import { CrochetHookSize, KnittingNeedleSize, NeedleCableLength } from '@workspace/api-client-react';
 import type { RenameOffer } from '@workspace/api-client-react';
-import type { CatalogField, CatalogReview, CreateProject, CreateStashFabric, CreateProgress, Crafts, FabricConstruction, FabricPrint, FabricType, FabricUnit, GeneralColor, Project, ProjectStatus, SewingMachineSetting, SewingNeedleSize, SewingNeedleType, SewingProject, SewingStage, SewingTool, SewingToolCategory, SewingToolSection, StashFabric, StashYarn, UpdateProject, YarnNotionType, YarnTool, YarnToolMaterial, YarnToolSection, YarnWeight, KnittingNeedleType } from '@workspace/api-client-react';
+import type { CatalogField, CatalogReview, CreateProject, CreateStashFabric, CreateProgress, Crafts, Currency, ProjectDetail, FabricConstruction, FabricPrint, FabricType, FabricUnit, GeneralColor, Project, ProjectStatus, SewingMachineSetting, SewingNeedleSize, SewingNeedleType, SewingProject, SewingStage, SewingTool, SewingToolCategory, SewingToolSection, StashFabric, StashYarn, UpdateProject, YarnNotionType, YarnTool, YarnToolMaterial, YarnToolSection, YarnWeight, KnittingNeedleType } from '@workspace/api-client-react';
 import { FormProvider as Form, useForm, type UseFormReturn } from 'react-hook-form';
 import {
   Archive, ArrowLeft, ArrowRight, ArrowUpDown, ArrowUpRight, BookOpen, Check,
@@ -56,6 +56,8 @@ import {
 import { SkeinSuggestions } from '@/components/skein-suggestions';
 import { ArchiveNudge, ArchivedNote, UsedUpNudge, fabricArchive, fabricUsedUp, toolArchive, toolUsedUp, usedUp, yarnArchive } from '@/components/archive-nudge';
 import { ProjectCounter } from '@/components/project-counter';
+import { SpendRow } from '@/components/spend-row';
+import { currencies } from '@/lib/money';
 import { NameReviewButton, NameReviewForm, NameReviewList, catalogFieldLabels } from '@/components/name-review';
 import { ErrorBoundary } from '@/components/error-boundary';
 import {
@@ -384,6 +386,9 @@ function ProfileMenu({ initials, displayName, crafts, appearance, onSignOut }: {
   const [open, setOpen] = useState(false);
   const client = useQueryClient();
   const save = useUpdateMyCrafts();
+  const saveCurrency = useUpdateMyCurrency();
+  const chooseCurrency = (currency: Currency) =>
+    saveCurrency.mutate({ data: { currency } }, { onSuccess: (saved) => client.setQueryData(getGetMyCraftsQueryKey(), saved) });
   // The last craft that's on can't be turned off, so there is always a home.
   const toggle = (craft: Craft) => {
     if (!crafts) return;
@@ -414,6 +419,12 @@ function ProfileMenu({ initials, displayName, crafts, appearance, onSignOut }: {
             <span>{craft === 'yarn' ? 'Yarn' : 'Sewing'}</span><span className={`switch-track${on ? ' on' : ''}`} aria-hidden="true"><i/></span>
           </button>;
         })}
+        </div>}
+        {crafts && <div>
+          <label className="menu-settings-label" htmlFor="menu-currency" style={{ display: 'block' }}>Currency</label>
+          <select id="menu-currency" className="menu-currency" value={crafts.currency} onChange={(event) => chooseCurrency(event.target.value as Currency)} disabled={saveCurrency.isPending} data-testid="select-currency">
+            {currencies.map((option) => <option key={option.value} value={option.value}>{option.label} ({option.value})</option>)}
+          </select>
         </div>}
         <div role="radiogroup" aria-labelledby="menu-appearance-label">
           <div className="menu-settings-label" id="menu-appearance-label">Appearance</div>
@@ -880,6 +891,7 @@ function ProjectDetailPage({ projectId }: { projectId: string }) {
 }
 
 function ProjectDetailView({ projectId }: { projectId: string }) {
+  const currency = useCrafts().data?.currency ?? 'USD';
   const query = useGetProject(projectId, { query: { queryKey: getGetProjectQueryKey(projectId) } });
   const [editing, setEditing] = useState(false);
   const previewTitle = usePreviewDesignerWebsiteTitle();
@@ -1117,6 +1129,9 @@ function ProjectDetailView({ projectId }: { projectId: string }) {
           {project.tools && <div><dt>Saved tools note</dt><dd>{project.tools}</dd></div>}
           <div><dt>Target date</dt><dd>{formatProjectDate(project.targetDate, project.targetDatePrecision) || 'No date in mind'}</dd></div>
           {project.completedAt && <div><dt>Finished on</dt><dd data-testid="text-completed-date">{formatProjectDate(project.completedAt, project.completedAtPrecision)}</dd></div>}
+          <SpendRow cents={project.totalSpendCents} currency={currency} onSave={(cents) => setProjectTotals(project.id, { totalSpendCents: cents }).then((saved) => {
+            client.setQueryData<ProjectDetail>(getGetProjectQueryKey(project.id), (old) => (old ? { ...old, totalSpendCents: saved.totalSpendCents ?? null } : old));
+          })}/>
         </dl>{project.description && <div className="personal-note"><span>Notes</span><p>{project.description}</p></div>}<button className="aside-edit" onClick={() => setEditing(!editing)} data-testid="button-edit-details"><Feather size={14}/> Edit details</button></div>
       </aside>
     </section>
@@ -1982,6 +1997,7 @@ function FabricLeftPrompt({ project, onDone }: { project: SewingProject; onDone:
 
 function SewingProjectDetailPage({ projectId }: { projectId: string }) {
   const client = useQueryClient();
+  const currency = useCrafts().data?.currency ?? 'USD';
   const [, setLocation] = useLocation();
   const justFinished = new URLSearchParams(useSearch()).get('finished') === '1';
   const query = useGetSewingProject(projectId, { query: { queryKey: getGetSewingProjectQueryKey(projectId) } });
@@ -2039,6 +2055,9 @@ function SewingProjectDetailPage({ projectId }: { projectId: string }) {
         {project.sizeMade && <div><dt>Size made</dt><dd>{project.sizeMade}</dd></div>}
         {needleLabel(project) && <div><dt>Needle</dt><dd>{needleLabel(project)}</dd></div>}
         {project.threadColor && <div><dt>Thread color</dt><dd className="sewing-thread"><ColorDot color={project.threadColor} noun="thread"/>{labelFor(generalColors, project.threadColor)}</dd></div>}
+        <SpendRow cents={project.totalSpendCents} currency={currency} onSave={(cents) => setSewingProjectTotals(project.id, { totalSpendCents: cents }).then((saved) => {
+          client.setQueryData<SewingProject>(getGetSewingProjectQueryKey(project.id), (old) => (old ? { ...old, totalSpendCents: saved.totalSpendCents ?? null } : old));
+        })}/>
       </dl>
       {project.machineSettings.length > 0 && <div className="machine-settings" data-testid="sewing-machine-settings"><h2>Special machine settings</h2>
         <ul>{project.machineSettings.map((setting, index) => <li key={index}><b>{setting.name || 'Special machine settings'}</b>{machineSettingSummary(setting) && <small>{machineSettingSummary(setting)}</small>}{setting.notes && <small>{setting.notes}</small>}</li>)}</ul>
