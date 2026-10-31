@@ -2001,6 +2001,14 @@ function SewingProjectDetailPage({ projectId }: { projectId: string }) {
   </PortalLayout>;
 }
 
+function ToolRow({ tool }: { tool: SewingTool }) {
+  return <Link href={`/sewing/tools/${tool.id}`} className="tool-row lift" data-testid={`card-tool-${tool.id}`}>
+    <ToolThumb tool={tool}/>
+    <span className="tool-row-body"><b>{tool.name}</b><small>{toolDetails(tool)}</small></span>
+    {tool.quantity !== null && <span className="tool-quantity" aria-label={`Quantity ${tool.quantity}`}>× {tool.quantity}</span>}
+  </Link>;
+}
+
 function SewingToolsPage() {
   const [search, setSearch] = useState('');
   const [, setLocation] = useLocation();

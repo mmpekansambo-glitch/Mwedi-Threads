@@ -22,7 +22,7 @@ function FabricCard({ fabric }: { fabric: StashFabric }) {
       testID={`fabric-card-${fabric.id}`}
     >
       <View>
-        <FabricPhoto fabric={fabric} index={0} style={[styles.photo, { backgroundColor: colors.selectedWash }]} />
+        <FabricPhoto fabric={fabric} index={0} style={[styles.photo, { backgroundColor: colors.selectedWash }]} needsPhotoLabel />
         <ColorDot color={fabric.generalColor} noun="fabric" size={20} style={styles.photoDot} />
       </View>
       <View style={styles.cardBody}>
