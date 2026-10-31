@@ -21,10 +21,10 @@ import {
   getGetSewingToolQueryKey, getGetSewingToolsQueryKey,
   requestYarnToolPhotoUpload, useCreateYarnTool, useDeleteYarnTool, useGetYarnTool, useGetYarnTools, useUpdateYarnTool,
   getGetYarnToolQueryKey, getGetYarnToolsQueryKey,
-  acceptRenameOffer, findRenameOffer, getSewingTools, getStashYarns, nameKey, refreshPaths, renameOfferText, renameSewingToolBrands, showRemoved, showSaved, skeinsLeftAfter,
+  acceptRenameOffer, careFrom, findRenameOffer, getSewingTools, getStashYarns, nameKey, refreshPaths, renameOfferText, renameSewingToolBrands, showRemoved, showSaved, skeinsLeftAfter,
 } from '@workspace/api-client-react';
 import { CrochetHookSize, KnittingNeedleSize, NeedleCableLength } from '@workspace/api-client-react';
-import type { RenameOffer } from '@workspace/api-client-react';
+import type { FabricCare, RenameOffer } from '@workspace/api-client-react';
 import type { CatalogField, CatalogReview, CreateProject, CreateStashFabric, CreateProgress, Crafts, FabricConstruction, FabricPrint, FabricType, FabricUnit, GeneralColor, Project, ProjectStatus, SewingMachineSetting, SewingNeedleSize, SewingNeedleType, SewingProject, SewingStage, SewingTool, SewingToolCategory, SewingToolSection, StashFabric, StashYarn, UpdateProject, YarnNotionType, YarnTool, YarnToolMaterial, YarnToolSection, YarnWeight, KnittingNeedleType } from '@workspace/api-client-react';
 import { FormProvider as Form, useForm, type UseFormReturn } from 'react-hook-form';
 import {
@@ -61,6 +61,7 @@ import { ErrorBoundary } from '@/components/error-boundary';
 import {
   fabricConstructions, fabricName, fabricPhotoUrl, fabricPrints, fabricSize, fabricTypes, fabricUnits, labelFor, maxFabricPhotos, sizeForApi, OptionWheelField,
 } from '@/components/fabric-fields';
+import { CareField } from '@/components/care-fields';
 import { MachineSettingsField, StageTrack, TapWheelRow, amountLeft, fabricAmount, machineNeedleSizes, machineNeedleTypes, machineSettingSummary, needleLabel, sewingStages, stageChange, stageIndex } from '@/components/sewing-fields';
 import { ToolThumb, ToolTypeWheelField, categoryFor, quantityForApi, toolDetails, toolPhotoUrl, toolSections } from '@/components/sewing-tools';
 import { NeedleIcon, YarnToolThumb, hookSizes, notionFor, sortYarnTools, yarnNeedleTypes, yarnNotionTypes, yarnToolDetails, yarnToolMaterials, yarnToolPhotoUrl, yarnToolSections, yarnToolTitle } from '@/components/yarn-tools';
@@ -1475,7 +1476,7 @@ type FabricPhotoSlot = { kind: 'kept'; index: number } | { kind: 'new'; file: Fi
 
 type FabricDraft = {
   fabricType: FabricType | ''; construction: FabricConstruction | null; print: FabricPrint | ''; generalColor: GeneralColor | null;
-  unit: FabricUnit; amount: string; amountLeft: string; width: string; preWashed: boolean | null; notes: string;
+  unit: FabricUnit; amount: string; amountLeft: string; width: string; preWashed: boolean | null; notes: string; care: FabricCare;
 };
 
 function draftFromFabric(fabric?: StashFabric): FabricDraft {
@@ -1484,6 +1485,7 @@ function draftFromFabric(fabric?: StashFabric): FabricDraft {
     unit: fabric?.unit ?? 'meters', amount: fabric?.amount === null || !fabric ? '' : String(fabric.amount),
     amountLeft: fabric?.amountLeft === null || !fabric ? '' : String(fabric.amountLeft),
     width: fabric?.width === null || !fabric ? '' : String(fabric.width), preWashed: fabric?.preWashed ?? null, notes: fabric?.notes ?? '',
+    care: careFrom(fabric),
   };
 }
 
@@ -1607,7 +1609,7 @@ function FabricForm({ fabric }: { fabric?: StashFabric }) {
     }
     const data = {
       fabricType: draft.fabricType, construction: draft.construction, print: draft.print || null, generalColor: draft.generalColor,
-      unit: draft.unit, amount, amountLeft: left, width, preWashed: draft.preWashed, notes: draft.notes.trim() || null, photoPaths,
+      unit: draft.unit, amount, amountLeft: left, width, preWashed: draft.preWashed, ...draft.care, notes: draft.notes.trim() || null, photoPaths,
     };
     if (fabric) {
       update.mutate({ fabricId: fabric.id, data }, { onSuccess: done, onError: saveError, onSettled: () => setSaving(false) });
@@ -1680,6 +1682,7 @@ function FabricForm({ fabric }: { fabric?: StashFabric }) {
         <div className="field-block"><label htmlFor="fabric-width">Width</label><span className="input-with-unit"><input id="fabric-width" inputMode="decimal" placeholder={draft.unit === 'meters' ? 'e.g. 145' : 'e.g. 58'} value={draft.width} onChange={(event) => { set({ width: event.target.value }); setErrors(({ size: _size, ...rest }) => rest); }} data-testid="input-fabric-width"/><i>{unit.width}</i></span></div>
         {errors.size && <span className="field-error field-wide">{errors.size}</span>}
         <div className="field-block field-wide"><label htmlFor="fabric-notes">Notes</label><textarea id="fabric-notes" rows={3} maxLength={1000} placeholder="Where it's from, what it's for…" value={draft.notes} onChange={(event) => set({ notes: event.target.value })} data-testid="input-fabric-notes"/></div>
+        <CareField value={draft.care} onChange={(care) => set({ care })}/>
       </div>
       {errors.save && <p className="mutation-error" role="alert">{errors.save}</p>}
       <div className="form-actions"><Link href="/sewing/fabric" className="button button-quiet">Cancel</Link><button type="submit" className="button button-primary" disabled={saving} data-testid="button-save-fabric">{saving ? 'Saving…' : fabric ? 'Save changes' : 'Add to stash'}{!saving && <ArrowRight size={16}/>}</button></div>

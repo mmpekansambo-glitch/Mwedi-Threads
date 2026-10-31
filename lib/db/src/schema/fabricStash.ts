@@ -86,6 +86,13 @@ export const stashFabricsTable = pgTable("stash_fabrics", {
   // Left empty when the maker hasn't said; washing shrinks fabric, so this
   // tells them whether the amount and width are before or after.
   preWashed: boolean("pre_washed"),
+  // Optional care label, one pick per group (the API checks the values).
+  // Empty when the maker hasn't added care instructions.
+  careWash: text("care_wash"),
+  careBleach: text("care_bleach"),
+  careDry: text("care_dry"),
+  careIron: text("care_iron"),
+  careDryClean: text("care_dry_clean"),
   // No longer asked for. Kept until every saved brand has moved into the
   // notes (the API does that the first time a maker's fabric loads).
   brand: text("brand"),
