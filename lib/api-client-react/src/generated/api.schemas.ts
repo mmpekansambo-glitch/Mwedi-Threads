@@ -1184,6 +1184,98 @@ export const SewingNeedleSize = {
   '110/18': '110/18',
 } as const;
 
+export type SewingStitch = typeof SewingStitch[keyof typeof SewingStitch];
+
+
+export const SewingStitch = {
+  straight: 'straight',
+  zigzag: 'zigzag',
+  three_step_zigzag: 'three_step_zigzag',
+  stretch: 'stretch',
+  overlock: 'overlock',
+  blind_hem: 'blind_hem',
+  buttonhole: 'buttonhole',
+  decorative: 'decorative',
+} as const;
+
+export type SewingPresserFoot = typeof SewingPresserFoot[keyof typeof SewingPresserFoot];
+
+
+export const SewingPresserFoot = {
+  all_purpose: 'all_purpose',
+  zipper: 'zipper',
+  walking: 'walking',
+  buttonhole: 'buttonhole',
+  blind_hem: 'blind_hem',
+  rolled_hem: 'rolled_hem',
+  quarter_inch: 'quarter_inch',
+  open_toe: 'open_toe',
+  non_stick: 'non_stick',
+} as const;
+
+/**
+ * One named set of machine settings, such as Seams or Topstitch
+ */
+export interface SewingMachineSetting {
+  /** @nullable */
+  name: string | null;
+  stitch: SewingStitch | null;
+  /**
+     * In mm
+     * @nullable
+     */
+  stitchLength: number | null;
+  /**
+     * In mm
+     * @nullable
+     */
+  stitchWidth: number | null;
+  /** @nullable */
+  tension: number | null;
+  presserFoot: SewingPresserFoot | null;
+  /** @nullable */
+  notes: string | null;
+}
+
+/**
+ * Every part is optional, but a set needs at least one
+ */
+export interface SewingMachineSettingInput {
+  /**
+     * @maxLength 60
+     * @nullable
+     */
+  name?: string | null;
+  stitch?: SewingStitch | null;
+  /**
+     * In mm, in half steps
+     * @minimum 0
+     * @maximum 5
+     * @nullable
+     */
+  stitchLength?: number | null;
+  /**
+     * In mm, in half steps
+     * @minimum 0
+     * @maximum 7
+     * @nullable
+     */
+  stitchWidth?: number | null;
+  /**
+     * In half steps
+     * @minimum 0
+     * @maximum 9
+     * @nullable
+     */
+  tension?: number | null;
+  presserFoot?: SewingPresserFoot | null;
+  /**
+     * @maxLength 500
+     * @nullable
+     */
+  notes?: string | null;
+}
+
 export interface SewingProjectFabric {
   stashFabricId: string;
   /**
@@ -1235,6 +1327,8 @@ export interface SewingProject {
   fabrics: SewingProjectFabric[];
   /** Tools from the maker's Sewing room the project uses, in the order listed */
   tools: SewingTool[];
+  /** Named machine settings, in the order listed */
+  machineSettings: SewingMachineSetting[];
   /** The project's notes journal, newest first */
   entries: SewingProjectEntry[];
   createdAt: string;
@@ -1291,6 +1385,8 @@ export interface CreateSewingProject {
   fabrics?: SewingProjectFabricInput[];
   /** @maxItems 30 */
   toolIds?: string[];
+  /** @maxItems 10 */
+  machineSettings?: SewingMachineSettingInput[];
 }
 
 export interface UpdateSewingProject {
@@ -1339,6 +1435,11 @@ export interface UpdateSewingProject {
      * @maxItems 30
      */
   toolIds?: string[];
+  /**
+     * The full list of machine settings on the project, replacing what was there
+     * @maxItems 10
+     */
+  machineSettings?: SewingMachineSettingInput[];
 }
 
 export interface SewingStageCount {

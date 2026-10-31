@@ -36,7 +36,7 @@ function sewingProject(id: string, overrides: Record<string, unknown> = {}) {
   return {
     id, title: "Linen shirt", status: "in_progress", stage: "cut", patternName: "Camp shirt", patternDesigner: "Maker Example",
     sizeMade: "M", fitChanges: "Shortened the sleeves 3 cm", needleType: null, needleSize: null, threadColor: null, notes: null, completedAt: null,
-    fabrics: [{ stashFabricId: stash[0].id, amountUsed: 1.75, fabric: stash[0] }], tools: [], entries: [],
+    fabrics: [{ stashFabricId: stash[0].id, amountUsed: 1.75, fabric: stash[0] }], tools: [], machineSettings: [], entries: [],
     createdAt: "2026-10-21T12:00:00.000Z", updatedAt: "2026-10-22T12:00:00.000Z",
     ...overrides,
   };
@@ -312,6 +312,68 @@ test("adds tools, a needle and a thread color to a sewing project", async ({ pag
   await expect(page.getByText("Stretch 75/11")).toBeVisible();
   await expect(page.getByTestId(`card-tool-${tools[0].id}`)).toContainText("Invisible zip");
   if (shots) await page.screenshot({ path: `${shots}/project-page-tools-web.png`, fullPage: true });
+});
+
+test("keeps named machine settings on a sewing project", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 1500 });
+  const sent = newSent();
+  await mockApi(page, { yarn: false, sewing: true, needsChoice: false }, sent);
+  await page.goto("/sewing/projects/cccccccc-0000-4000-8000-000000000001");
+  // Nothing shows on the project page until there are settings.
+  await expect(page.getByText("Shortened the sleeves 3 cm")).toBeVisible();
+  await expect(page.getByTestId("sewing-machine-settings")).toHaveCount(0);
+  await page.goto("/sewing/projects/cccccccc-0000-4000-8000-000000000001/edit");
+  if (shots) await page.screenshot({ path: `${shots}/form-machine-empty-web.png`, fullPage: true });
+
+  await page.getByTestId("button-add-machine-settings").click();
+  await page.getByTestId("input-machine-name-0").fill("Seams");
+  await page.getByTestId("row-machine-stitch-0").click();
+  await page.getByTestId("row-machine-stitch-0-wheel-0").getByRole("option", { name: "Straight" }).click();
+  await page.getByTestId("row-machine-stitch-0-done").click();
+  await page.getByTestId("row-machine-length-0").click();
+  await page.getByTestId("row-machine-length-0-wheel-0").getByRole("option", { name: "2.5 mm" }).click();
+  await page.getByTestId("row-machine-length-0-done").click();
+  await page.getByTestId("row-machine-tension-0").click();
+  await page.getByTestId("row-machine-tension-0-wheel-0").getByRole("option", { name: "4", exact: true }).click();
+  await page.getByTestId("row-machine-tension-0-done").click();
+  await page.getByTestId("row-machine-foot-0").click();
+  await page.getByTestId("row-machine-foot-0-wheel-0").getByRole("option", { name: "All-purpose" }).click();
+  await page.getByTestId("row-machine-foot-0-done").click();
+  await expect(page.getByTestId("row-machine-width-0")).toContainText("Add");
+  if (shots) await page.screenshot({ path: `${shots}/form-machine-open-web.png`, fullPage: true });
+  await page.getByTestId("button-machine-done-0").click();
+  await expect(page.getByTestId("machine-set-0")).toContainText("Straight · Length 2.5 mm · Tension 4 · All-purpose foot");
+
+  // An empty set is dropped when it's closed.
+  await page.getByTestId("button-add-machine-settings").click();
+  await page.getByTestId("button-machine-done-1").click();
+  await expect(page.getByTestId("machine-set-1")).toHaveCount(0);
+
+  await page.getByTestId("button-add-machine-settings").click();
+  await page.getByTestId("input-machine-name-1").fill("Topstitch");
+  await page.getByTestId("row-machine-length-1").click();
+  await page.getByTestId("row-machine-length-1-wheel-0").getByRole("option", { name: "3.5 mm" }).click();
+  await page.getByTestId("row-machine-length-1-done").click();
+  await page.getByTestId("input-machine-note-1").fill("Topstitch thread on top");
+  await page.getByTestId("button-machine-done-1").click();
+  if (shots) await page.screenshot({ path: `${shots}/form-machine-sets-web.png`, fullPage: true });
+  await page.getByTestId("button-save-sewing-project").click();
+
+  await expect(page).toHaveURL(/\/sewing\/projects\/cccccccc-0000-4000-8000-000000000001$/);
+  expect(sent.projectSaves[0]).toMatchObject({
+    machineSettings: [
+      { name: "Seams", stitch: "straight", stitchLength: 2.5, stitchWidth: null, tension: 4, presserFoot: "all_purpose", notes: null },
+      { name: "Topstitch", stitch: null, stitchLength: 3.5, stitchWidth: null, tension: null, presserFoot: null, notes: "Topstitch thread on top" },
+    ],
+  });
+  const shown = page.getByTestId("sewing-machine-settings");
+  await expect(shown).toContainText("Seams");
+  await expect(shown).toContainText("Length 3.5 mm");
+  await expect(shown).toContainText("Topstitch thread on top");
+  if (shots) {
+    await page.waitForTimeout(800);
+    await page.screenshot({ path: `${shots}/project-page-machine-web.png`, fullPage: true });
+  }
 });
 
 test("starts a sewing project with fabric from the stash", async ({ page }) => {

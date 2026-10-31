@@ -25,7 +25,7 @@ import {
 } from '@workspace/api-client-react';
 import { CrochetHookSize, KnittingNeedleSize, NeedleCableLength } from '@workspace/api-client-react';
 import type { RenameOffer } from '@workspace/api-client-react';
-import type { CatalogField, CatalogReview, CreateProject, CreateStashFabric, CreateProgress, Crafts, FabricConstruction, FabricPrint, FabricType, FabricUnit, GeneralColor, Project, ProjectStatus, SewingNeedleSize, SewingNeedleType, SewingProject, SewingStage, SewingTool, SewingToolCategory, SewingToolSection, StashFabric, StashYarn, UpdateProject, YarnNotionType, YarnTool, YarnToolMaterial, YarnToolSection, YarnWeight, KnittingNeedleType } from '@workspace/api-client-react';
+import type { CatalogField, CatalogReview, CreateProject, CreateStashFabric, CreateProgress, Crafts, FabricConstruction, FabricPrint, FabricType, FabricUnit, GeneralColor, Project, ProjectStatus, SewingMachineSetting, SewingNeedleSize, SewingNeedleType, SewingProject, SewingStage, SewingTool, SewingToolCategory, SewingToolSection, StashFabric, StashYarn, UpdateProject, YarnNotionType, YarnTool, YarnToolMaterial, YarnToolSection, YarnWeight, KnittingNeedleType } from '@workspace/api-client-react';
 import { FormProvider as Form, useForm, type UseFormReturn } from 'react-hook-form';
 import {
   Archive, ArrowLeft, ArrowRight, ArrowUpDown, ArrowUpRight, BookOpen, Check,
@@ -61,7 +61,7 @@ import { ErrorBoundary } from '@/components/error-boundary';
 import {
   fabricConstructions, fabricName, fabricPhotoUrl, fabricPrints, fabricSize, fabricTypes, fabricUnits, labelFor, maxFabricPhotos, sizeForApi, OptionWheelField,
 } from '@/components/fabric-fields';
-import { StageTrack, TapWheelRow, amountLeft, fabricAmount, machineNeedleSizes, machineNeedleTypes, needleLabel, sewingStages, stageChange, stageIndex } from '@/components/sewing-fields';
+import { MachineSettingsField, StageTrack, TapWheelRow, amountLeft, fabricAmount, machineNeedleSizes, machineNeedleTypes, machineSettingSummary, needleLabel, sewingStages, stageChange, stageIndex } from '@/components/sewing-fields';
 import { ToolThumb, ToolTypeWheelField, categoryFor, quantityForApi, toolDetails, toolPhotoUrl, toolSections } from '@/components/sewing-tools';
 import { NeedleIcon, YarnToolThumb, hookSizes, notionFor, sortYarnTools, yarnNeedleTypes, yarnNotionTypes, yarnToolDetails, yarnToolMaterials, yarnToolPhotoUrl, yarnToolSections, yarnToolTitle } from '@/components/yarn-tools';
 import { trackEvent, trackSuccessfulAction } from '@/lib/analytics';
@@ -1774,6 +1774,7 @@ type SewingDraft = {
   title: string; status: ProjectStatus; patternName: string; patternDesigner: string; sizeMade: string;
   fitChanges: string; notes: string; fabrics: SewingFabricDraft[];
   needleType: SewingNeedleType | null; needleSize: SewingNeedleSize | null; threadColor: GeneralColor | null; tools: SewingTool[];
+  machineSettings: SewingMachineSetting[];
 };
 
 function draftFromSewingProject(project?: SewingProject): SewingDraft {
@@ -1784,6 +1785,7 @@ function draftFromSewingProject(project?: SewingProject): SewingDraft {
     fabrics: project?.fabrics.map((item) => ({ fabric: item.fabric, amountUsed: item.amountUsed === null ? '' : String(item.amountUsed) })) ?? [],
     needleType: project?.needleType ?? null, needleSize: project?.needleSize ?? null, threadColor: project?.threadColor ?? null,
     tools: project?.tools ?? [],
+    machineSettings: project?.machineSettings ?? [],
   };
 }
 
@@ -1850,6 +1852,7 @@ function SewingProjectForm({ project }: { project?: SewingProject }) {
       fabrics: fabrics as Array<{ stashFabricId: string; amountUsed: number | null }>,
       needleType: draft.needleType, needleSize: draft.needleSize, threadColor: draft.threadColor,
       toolIds: draft.tools.map((tool) => tool.id),
+      machineSettings: draft.machineSettings,
     };
     const finishing = draft.status === 'completed' && project?.status !== 'completed';
     const options = {
@@ -1920,6 +1923,10 @@ function SewingProjectForm({ project }: { project?: SewingProject }) {
             onDone={([color]) => set({ threadColor: generalColors[color!]!.value })}
             onClear={() => set({ threadColor: null })}/>
         </div>
+      </fieldset>
+      <fieldset className="sewing-fabric-field">
+        <legend>Special machine settings</legend>
+        <MachineSettingsField settings={draft.machineSettings} onChange={(machineSettings) => set({ machineSettings })}/>
       </fieldset>
       {errors.save && <p className="mutation-error" role="alert">{errors.save}</p>}
       <div className="form-actions"><Link href={back} className="button button-quiet">Cancel</Link><button type="submit" className="button button-primary" disabled={saving} data-testid="button-save-sewing-project">{saving ? 'Saving…' : project ? 'Save changes' : 'Start project'}{!saving && <ArrowRight size={16}/>}</button></div>
@@ -2033,6 +2040,9 @@ function SewingProjectDetailPage({ projectId }: { projectId: string }) {
         {needleLabel(project) && <div><dt>Needle</dt><dd>{needleLabel(project)}</dd></div>}
         {project.threadColor && <div><dt>Thread color</dt><dd className="sewing-thread"><ColorDot color={project.threadColor} noun="thread"/>{labelFor(generalColors, project.threadColor)}</dd></div>}
       </dl>
+      {project.machineSettings.length > 0 && <div className="machine-settings" data-testid="sewing-machine-settings"><h2>Special machine settings</h2>
+        <ul>{project.machineSettings.map((setting, index) => <li key={index}><b>{setting.name || 'Special machine settings'}</b>{machineSettingSummary(setting) && <small>{machineSettingSummary(setting)}</small>}{setting.notes && <small>{setting.notes}</small>}</li>)}</ul>
+      </div>}
       {project.fitChanges && <div className="sewing-text"><h2>Fit changes</h2><p>{project.fitChanges}</p></div>}
       {project.notes && <div className="sewing-text"><h2>Notes</h2><p>{project.notes}</p></div>}
     </section>

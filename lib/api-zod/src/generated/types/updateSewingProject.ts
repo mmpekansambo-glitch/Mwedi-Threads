@@ -7,6 +7,7 @@
  */
 import type { GeneralColor } from './generalColor';
 import type { ProjectStatus } from './projectStatus';
+import type { SewingMachineSettingInput } from './sewingMachineSettingInput';
 import type { SewingNeedleSize } from './sewingNeedleSize';
 import type { SewingNeedleType } from './sewingNeedleType';
 import type { SewingProjectFabricInput } from './sewingProjectFabricInput';
@@ -58,4 +59,9 @@ export interface UpdateSewingProject {
      * @maxItems 30
      */
   toolIds?: string[];
+  /**
+     * The full list of machine settings on the project, replacing what was there
+     * @maxItems 10
+     */
+  machineSettings?: SewingMachineSettingInput[];
 }

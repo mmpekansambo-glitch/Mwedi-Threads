@@ -12,7 +12,7 @@ async function mockApi(page: Page, calls: Call[]) {
   const project = () => ({
     id: projectId, title: "Wrap dress", status: "in_progress", stage: "fit", patternName: null, patternDesigner: null,
     sizeMade: null, fitChanges: null, needleType: null, needleSize: null, threadColor: null, notes: null, completedAt: null,
-    fabrics: [], tools: [], entries, createdAt: "2026-10-21T12:00:00.000Z", updatedAt: "2026-10-22T12:00:00.000Z",
+    fabrics: [], tools: [], machineSettings: [], entries, createdAt: "2026-10-21T12:00:00.000Z", updatedAt: "2026-10-22T12:00:00.000Z",
   });
   await page.route("**/api/**", async (route) => {
     const request = route.request();

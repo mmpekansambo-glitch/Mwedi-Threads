@@ -41,7 +41,7 @@ async function mockApi(page: Page) {
     project: {
       id: "aaaaaaaa-1111-4000-8000-000000000001", title: "Sundress", status: "in_progress", stage: "sew", patternName: null, patternDesigner: null,
       sizeMade: null, fitChanges: null, needleType: null, needleSize: null, threadColor: null, notes: null, completedAt: null as string | null,
-      fabrics: [] as unknown[], tools: [], entries: [], createdAt: "2026-10-21T12:00:00.000Z", updatedAt: "2026-10-22T12:00:00.000Z",
+      fabrics: [] as unknown[], tools: [], machineSettings: [], entries: [], createdAt: "2026-10-21T12:00:00.000Z", updatedAt: "2026-10-22T12:00:00.000Z",
     },
     creates: [] as Record<string, unknown>[],
     fabricPatches: [] as unknown[],

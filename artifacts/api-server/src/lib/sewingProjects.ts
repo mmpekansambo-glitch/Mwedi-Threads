@@ -69,3 +69,46 @@ export function fabricTypeCounts<T extends string>(pieces: { fabricType: T }[]):
     .map(([fabricType, count]) => ({ fabricType, count }))
     .sort((a, b) => b.count - a.count || a.fabricType.localeCompare(b.fabricType));
 }
+
+type MachineSettingInput<S, F> = {
+  name?: string | null;
+  stitch?: S | null;
+  stitchLength?: number | null;
+  stitchWidth?: number | null;
+  tension?: number | null;
+  presserFoot?: F | null;
+  notes?: string | null;
+};
+export type MachineSetting<S, F> = { [K in keyof MachineSettingInput<S, F>]-?: Exclude<MachineSettingInput<S, F>[K], undefined> };
+
+const settingLimits = [
+  ["stitchLength", 5, "Stitch length goes from 0 to 5 mm."],
+  ["stitchWidth", 7, "Stitch width goes from 0 to 7 mm."],
+  ["tension", 9, "Tension goes from 0 to 9."],
+] as const;
+
+// Lengths, widths and tension come in half steps from 0 up to each limit.
+// Sets with nothing filled in are dropped, so an empty row never saves.
+export function checkMachineSettings<S extends string, F extends string>(
+  sets: MachineSettingInput<S, F>[],
+): { ok: true; sets: MachineSetting<S, F>[] } | { ok: false; error: string } {
+  const checked: MachineSetting<S, F>[] = [];
+  for (const set of sets) {
+    for (const [field, max, error] of settingLimits) {
+      const value = set[field];
+      if (value === null || value === undefined) continue;
+      if (!Number.isFinite(value) || value < 0 || value > max || !Number.isInteger(value * 2)) return { ok: false, error };
+    }
+    const tidied: MachineSetting<S, F> = {
+      name: set.name?.trim() || null,
+      stitch: set.stitch ?? null,
+      stitchLength: set.stitchLength ?? null,
+      stitchWidth: set.stitchWidth ?? null,
+      tension: set.tension ?? null,
+      presserFoot: set.presserFoot ?? null,
+      notes: set.notes?.trim() || null,
+    };
+    if (Object.values(tidied).some((value) => value !== null)) checked.push(tidied);
+  }
+  return { ok: true, sets: checked };
+}
