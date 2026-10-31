@@ -1355,7 +1355,8 @@ export const CreateStashFabricBody = zod.object({
   "width": zod.number().min(createStashFabricBodyWidthMin).max(createStashFabricBodyWidthMax).nullish(),
   "preWashed": zod.boolean().nullish(),
   "notes": zod.string().max(createStashFabricBodyNotesMax).nullish(),
-  "photoPaths": zod.array(zod.string()).min(1).max(createStashFabricBodyPhotoPathsMax).describe('The print close-up first, then up to three more'),
+  "photoPaths": zod.array(zod.string()).max(createStashFabricBodyPhotoPathsMax).describe('The print close-up first, then up to three more. Empty only when photoLater is true.'),
+  "photoLater": zod.boolean().optional().describe('Added from a project\'s supplies: save it without a photo, and the stash shows it as needing one'),
   "restoreId": zod.string().uuid().optional().describe('The archived fabric the maker said is the same one'),
   "addAsNew": zod.boolean().optional().describe('The maker said it\'s a different piece, so don\'t ask again')
 })

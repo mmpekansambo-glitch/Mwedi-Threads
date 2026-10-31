@@ -59,8 +59,9 @@ import { ProjectCounter } from '@/components/project-counter';
 import { NameReviewButton, NameReviewForm, NameReviewList, catalogFieldLabels } from '@/components/name-review';
 import { ErrorBoundary } from '@/components/error-boundary';
 import {
-  fabricConstructions, fabricName, fabricPhotoUrl, fabricPrints, fabricSize, fabricTypes, fabricUnits, labelFor, maxFabricPhotos, sizeForApi, OptionWheelField,
+  fabricConstructions, fabricName, fabricPhotoUrl, fabricPrints, fabricSize, fabricTypes, fabricUnits, labelFor, maxFabricPhotos, sizeForApi, OptionWheelField, FabricPrintImage,
 } from '@/components/fabric-fields';
+import { SuppliesField, SuppliesList } from '@/components/sewing-supplies';
 import { MachineSettingsField, StageTrack, TapWheelRow, amountLeft, fabricAmount, machineNeedleSizes, machineNeedleTypes, machineSettingSummary, needleLabel, sewingStages, stageChange, stageIndex } from '@/components/sewing-fields';
 import { ToolThumb, ToolTypeWheelField, categoryFor, quantityForApi, toolDetails, toolPhotoUrl, toolSections } from '@/components/sewing-tools';
 import { NeedleIcon, YarnToolThumb, hookSizes, notionFor, sortYarnTools, yarnNeedleTypes, yarnNotionTypes, yarnToolDetails, yarnToolMaterials, yarnToolPhotoUrl, yarnToolSections, yarnToolTitle } from '@/components/yarn-tools';
@@ -1423,7 +1424,7 @@ function StashYarnForm({ yarn }: { yarn?: StashYarn }) {
 
 function FabricCard({ fabric }: { fabric: StashFabric }) {
   return <Link href={`/sewing/fabric/${fabric.id}`} className="fabric-card lift" data-testid={`card-fabric-${fabric.id}`}>
-    <span className="fabric-swatch"><img src={fabricPhotoUrl(fabric, 0)} alt={`${fabricName(fabric)} print`} loading="lazy"/><ColorDot color={fabric.generalColor} noun="fabric" className="stash-photo-dot"/></span>
+    <span className="fabric-swatch"><FabricPrintImage fabric={fabric} alt={`${fabricName(fabric)} print`} needsPhotoLabel/><ColorDot color={fabric.generalColor} noun="fabric" className="stash-photo-dot"/></span>
     <span className="fabric-card-body">
       <h3>{fabricName(fabric)}</h3>
       {fabric.construction && <span className="fabric-card-meta">{labelFor(fabricConstructions, fabric.construction)}</span>}
@@ -1636,7 +1637,7 @@ function FabricForm({ fabric }: { fabric?: StashFabric }) {
     {sameFabric && <div className="skein-suggestion loom-card same-fabric" role="status" data-testid="same-fabric-check">
       <div className="same-fabric-photos">
         {main && <figure><img src={photoSrc(main)} alt="The print you’re adding"/><figcaption>Adding</figcaption></figure>}
-        <figure><img src={fabricPhotoUrl(sameFabric.match, 0)} alt={`${fabricName(sameFabric.match)} print in your Archive`}/><figcaption>In your Archive</figcaption></figure>
+        <figure><FabricPrintImage fabric={sameFabric.match} alt={`${fabricName(sameFabric.match)} print in your Archive`}/><figcaption>In your Archive</figcaption></figure>
       </div>
       <p><b>Same fabric?</b> {sameFabric.similarPhoto ? 'This looks like' : 'This matches'} the {fabricName(sameFabric.match).toLowerCase()} in your Archive. If it’s the same, we’ll bring it back with these details instead of adding a copy.</p>
       <div className="skein-suggestion-actions">
@@ -1690,7 +1691,7 @@ function FabricForm({ fabric }: { fabric?: StashFabric }) {
 function SewingProjectCard({ project }: { project: SewingProject }) {
   const first = project.fabrics[0]?.fabric;
   return <Link href={`/sewing/projects/${project.id}`} className="sewing-card loom-card lift" data-testid={`card-sewing-project-${project.id}`}>
-    <span className="sewing-card-swatch">{first ? <img src={fabricPhotoUrl(first, 0)} alt={`${fabricName(first)} print`} loading="lazy"/> : <Scissors size={26} aria-hidden="true"/>}</span>
+    <span className="sewing-card-swatch">{first ? <FabricPrintImage fabric={first} alt={`${fabricName(first)} print`}/> : <Scissors size={26} aria-hidden="true"/>}</span>
     <span className="sewing-card-body">
       <span className="project-card-meta"><StatusPill status={project.status}/></span>
       <h3>{project.title}</h3>
@@ -1796,45 +1797,14 @@ function SewingProjectFormPage({ projectId }: { projectId?: string }) {
   return <SewingProjectForm project={existing.data} key={existing.data?.id ?? 'new'}/>;
 }
 
-// Shows a maker's stash fabric to pick from, leaving out fabric already chosen.
-function StashFabricPicker({ chosen, onPick, onClose }: { chosen: string[]; onPick: (fabric: StashFabric) => void; onClose: () => void }) {
-  const stash = useGetStashFabrics({}, { query: { queryKey: getGetStashFabricsQueryKey({}) } });
-  const available = stash.data?.filter((fabric) => !chosen.includes(fabric.id)) ?? [];
-  return <div className="fabric-picker" role="group" aria-label="Choose fabric from your stash">
-    <div className="fabric-picker-head"><b>Your fabric stash</b><button type="button" className="icon-button" onClick={onClose} aria-label="Close fabric list"><X size={16}/></button></div>
-    {stash.isLoading ? <p className="fabric-picker-note">Loading your fabric…</p>
-      : available.length ? <div className="fabric-picker-grid">{available.map((fabric) => <button key={fabric.id} type="button" className="fabric-pick" onClick={() => onPick(fabric)} data-testid={`button-pick-fabric-${fabric.id}`}>
-        <img src={fabricPhotoUrl(fabric, 0)} alt=""/><span><b>{fabricName(fabric)}</b><small>{fabricSize(fabric)}</small></span>
-      </button>)}</div>
-      : <p className="fabric-picker-note">{stash.data?.length ? 'All your fabric is on this project.' : 'Your fabric stash is empty.'} <Link href="/sewing/fabric/new">Add fabric</Link></p>}
-  </div>;
-}
-
-// Shows a maker's Sewing room tools to pick from, leaving out tools already chosen.
-function SewingToolPicker({ chosen, onPick, onClose }: { chosen: string[]; onPick: (tool: SewingTool) => void; onClose: () => void }) {
-  const tools = useGetSewingTools({}, { query: { queryKey: getGetSewingToolsQueryKey({}) } });
-  const available = tools.data?.filter((tool) => !chosen.includes(tool.id)) ?? [];
-  return <div className="fabric-picker" role="group" aria-label="Choose from your tools">
-    <div className="fabric-picker-head"><b>Your tools</b><button type="button" className="icon-button" onClick={onClose} aria-label="Close tools list"><X size={16}/></button></div>
-    {tools.isLoading ? <p className="fabric-picker-note">Loading your tools…</p>
-      : available.length ? <div className="tool-picker-list">{available.map((tool) => <button key={tool.id} type="button" className="tool-pick" onClick={() => onPick(tool)} data-testid={`button-pick-tool-${tool.id}`}>
-        <ToolThumb tool={tool}/><span><b>{tool.name}</b><small>{toolDetails(tool)}</small></span>
-      </button>)}</div>
-      : <p className="fabric-picker-note">{tools.data?.length ? 'All your tools are on this project.' : 'You haven’t saved any tools yet.'} <Link href="/sewing/tools/new">Add a tool</Link></p>}
-  </div>;
-}
-
 function SewingProjectForm({ project }: { project?: SewingProject }) {
   const client = useQueryClient();
   const [, setLocation] = useLocation();
   const create = useCreateSewingProject();
   const update = useUpdateSewingProject();
   const [draft, setDraft] = useState<SewingDraft>(() => draftFromSewingProject(project));
-  const [picking, setPicking] = useState(false);
-  const [pickingTools, setPickingTools] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const set = (change: Partial<SewingDraft>) => setDraft((current) => ({ ...current, ...change }));
-  const setFabric = (index: number, change: Partial<SewingFabricDraft>) => set({ fabrics: draft.fabrics.map((item, place) => (place === index ? { ...item, ...change } : item)) });
   const saving = create.isPending || update.isPending;
   const back = project ? `/sewing/projects/${project.id}` : '/sewing/projects';
 
@@ -1882,31 +1852,8 @@ function SewingProjectForm({ project }: { project?: SewingProject }) {
         <div className="field-block field-wide"><label htmlFor="sewing-notes">Notes</label><textarea id="sewing-notes" rows={3} maxLength={2000} placeholder="Optional" value={draft.notes} onChange={(event) => set({ notes: event.target.value })} data-testid="input-sewing-notes"/></div>
       </div>
       <fieldset className="sewing-fabric-field">
-        <legend>Fabric</legend>
-        {draft.fabrics.map((item, index) => {
-          const unit = fabricUnits.find((option) => option.value === item.fabric.unit) ?? fabricUnits[0];
-          return <div key={item.fabric.id} className="sewing-fabric-row" data-testid={`sewing-fabric-${index}`}>
-            <img src={fabricPhotoUrl(item.fabric, 0)} alt=""/>
-            <span className="sewing-fabric-name"><b>{fabricName(item.fabric)}</b><small>{fabricSize(item.fabric) || 'No amount saved'}</small></span>
-            <label className="sewing-fabric-used"><span>Used</span><span className="input-with-unit"><input inputMode="decimal" placeholder="e.g. 1.5" value={item.amountUsed} onChange={(event) => { setFabric(index, { amountUsed: event.target.value }); setErrors(({ fabrics: _fabrics, ...rest }) => rest); }} aria-label={`Amount of ${fabricName(item.fabric)} used`} data-testid={`input-sewing-fabric-used-${index}`}/><i>{unit.amount}</i></span></label>
-            <button type="button" className="icon-button" aria-label={`Remove ${fabricName(item.fabric)}`} onClick={() => set({ fabrics: draft.fabrics.filter((_, place) => place !== index) })} data-testid={`button-remove-sewing-fabric-${index}`}><X size={15}/></button>
-          </div>;
-        })}
-        {errors.fabrics && <span className="field-error">{errors.fabrics}</span>}
-        {picking
-          ? <StashFabricPicker chosen={draft.fabrics.map((item) => item.fabric.id)} onPick={(fabric) => { set({ fabrics: [...draft.fabrics, { fabric, amountUsed: '' }] }); setPicking(false); }} onClose={() => setPicking(false)}/>
-          : draft.fabrics.length < 12 && <button type="button" className="button button-outline" onClick={() => setPicking(true)} data-testid="button-add-sewing-fabric"><Plus size={16}/> Add fabric from your stash</button>}
-      </fieldset>
-      <fieldset className="sewing-fabric-field">
-        <legend>Tools</legend>
-        {draft.tools.map((tool) => <div key={tool.id} className="sewing-tool-row" data-testid={`sewing-tool-${tool.id}`}>
-          <ToolThumb tool={tool}/>
-          <span className="sewing-fabric-name"><b>{tool.name}</b><small>{toolDetails(tool)}</small></span>
-          <button type="button" className="icon-button" aria-label={`Remove ${tool.name}`} onClick={() => set({ tools: draft.tools.filter((item) => item.id !== tool.id) })} data-testid={`button-remove-sewing-tool-${tool.id}`}><X size={15}/></button>
-        </div>)}
-        {pickingTools
-          ? <SewingToolPicker chosen={draft.tools.map((tool) => tool.id)} onPick={(tool) => { set({ tools: [...draft.tools, tool] }); setPickingTools(false); }} onClose={() => setPickingTools(false)}/>
-          : draft.tools.length < 30 && <button type="button" className="button button-outline" onClick={() => setPickingTools(true)} data-testid="button-add-sewing-tool"><Plus size={16}/> Add tools</button>}
+        <legend>Supplies</legend>
+        <SuppliesField fabrics={draft.fabrics} tools={draft.tools} onFabrics={(fabrics) => set({ fabrics })} onTools={(tools) => set({ tools })} error={errors.fabrics} onAmountTyped={() => setErrors(({ fabrics: _fabrics, ...rest }) => rest)}/>
       </fieldset>
       <fieldset className="sewing-fabric-field">
         <legend>Needle and thread</legend>
@@ -2047,26 +1994,11 @@ function SewingProjectDetailPage({ projectId }: { projectId: string }) {
       {project.notes && <div className="sewing-text"><h2>Notes</h2><p>{project.notes}</p></div>}
     </section>
     <SewingJournal project={project} onChanged={() => { void client.invalidateQueries({ queryKey: getGetSewingProjectQueryKey(project.id) }); }}/>
-    <section className="sewing-detail-fabric">
-      <div className="section-heading"><div><h2 className="serif">Fabric</h2></div></div>
-      {project.fabrics.length ? <div className="fabric-grid">{project.fabrics.map((item) => <Link key={item.stashFabricId} href={`/sewing/fabric/${item.stashFabricId}`} className="fabric-card lift" data-testid={`card-project-fabric-${item.stashFabricId}`}>
-        <span className="fabric-swatch"><img src={fabricPhotoUrl(item.fabric, 0)} alt={`${fabricName(item.fabric)} print`} loading="lazy"/></span>
-        <span className="fabric-card-body"><h3>{fabricName(item.fabric)}</h3>{item.amountUsed !== null && <span className="fabric-card-size">Uses {fabricAmount(item.amountUsed, item.fabric.unit)}</span>}</span>
-      </Link>)}</div> : <p className="notes-empty">No fabric on this project yet. <Link href={`/sewing/projects/${project.id}/edit`}>Add fabric</Link></p>}
+    <section className="sewing-detail-fabric" data-testid="sewing-detail-supplies">
+      <div className="section-heading"><div><h2 className="serif">Supplies</h2></div></div>
+      <SuppliesList fabrics={project.fabrics} tools={project.tools} projectId={project.id}/>
     </section>
-    {project.tools.length > 0 && <section className="sewing-detail-fabric">
-      <div className="section-heading"><div><h2 className="serif">Tools</h2></div></div>
-      <div className="tool-list">{project.tools.map((tool) => <ToolRow key={tool.id} tool={tool}/>)}</div>
-    </section>}
   </PortalLayout>;
-}
-
-function ToolRow({ tool }: { tool: SewingTool }) {
-  return <Link href={`/sewing/tools/${tool.id}`} className="tool-row lift" data-testid={`card-tool-${tool.id}`}>
-    <ToolThumb tool={tool}/>
-    <span className="tool-row-body"><b>{tool.name}</b><small>{toolDetails(tool)}</small></span>
-    {tool.quantity !== null && <span className="tool-quantity" aria-label={`Quantity ${tool.quantity}`}>× {tool.quantity}</span>}
-  </Link>;
 }
 
 function SewingToolsPage() {

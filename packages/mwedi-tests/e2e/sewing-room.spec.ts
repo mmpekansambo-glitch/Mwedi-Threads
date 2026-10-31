@@ -27,7 +27,7 @@ const stash = [
   fabric("bbbbbbbb-0000-4000-8000-000000000003", { fabricType: "wool", print: "check", generalColor: "red", amount: 3, width: 150, photoCount: 1 }),
 ];
 
-type Sent = { crafts: unknown[]; create?: unknown; uploads: number; projectSaves: unknown[]; fabricUpdates: unknown[] };
+type Sent = { crafts: unknown[]; create?: unknown; toolCreate?: unknown; uploads: number; projectSaves: unknown[]; fabricUpdates: unknown[] };
 const newSent = (): Sent => ({ crafts: [], uploads: 0, projectSaves: [], fabricUpdates: [] });
 
 type ProjectFabric = { stashFabricId: string; amountUsed: number | null };
@@ -66,11 +66,14 @@ async function mockApi(page: Page, crafts: { yarn: boolean; sewing: boolean; nee
       fabrics: [{ stashFabricId: stash[1].id, amountUsed: null, fabric: stash[1] }],
     }),
   ];
+  // Fabric and tools added from a project's supplies during this test.
+  const addedFabric: Array<ReturnType<typeof fabric>> = [];
+  const addedTools: Array<ReturnType<typeof sewingTool>> = [];
   // Saved projects get their fabric back from the stash, like the API.
   const withFabric = (body: Record<string, unknown>) => ({
     ...body,
-    ...(body.fabrics ? { fabrics: (body.fabrics as ProjectFabric[]).map((item) => ({ ...item, fabric: stash.find((entry) => entry.id === item.stashFabricId) })) } : {}),
-    ...(body.toolIds ? { tools: (body.toolIds as string[]).map((id) => tools.find((entry) => entry.id === id)) } : {}),
+    ...(body.fabrics ? { fabrics: (body.fabrics as ProjectFabric[]).map((item) => ({ ...item, fabric: [...stash, ...addedFabric].find((entry) => entry.id === item.stashFabricId) })) } : {}),
+    ...(body.toolIds ? { tools: (body.toolIds as string[]).map((id) => [...tools, ...addedTools].find((entry) => entry.id === id)) } : {}),
   });
   await page.route("**/storage.test/**", (route) => route.fulfill({ status: 200, body: "" }));
   await page.route("**/api/**", async (route) => {
@@ -91,7 +94,10 @@ async function mockApi(page: Page, crafts: { yarn: boolean; sewing: boolean; nee
     }
     if (pathname === "/api/fabric-stash" && request.method() === "POST") {
       sent.create = request.postDataJSON();
-      return route.fulfill({ status: 201, json: fabric("bbbbbbbb-0000-4000-8000-000000000009", sent.create as object) });
+      const body = sent.create as { photoPaths: string[] };
+      const created = fabric("bbbbbbbb-0000-4000-8000-000000000009", { construction: null, print: null, generalColor: null, width: null, notes: null, ...body, photoCount: body.photoPaths.length });
+      addedFabric.push(created);
+      return route.fulfill({ status: 201, json: created });
     }
     const photoMatch = pathname.match(/^\/api\/fabric-stash\/([^/]+)\/photos\/\d$/);
     if (photoMatch) {
@@ -140,7 +146,13 @@ async function mockApi(page: Page, crafts: { yarn: boolean; sewing: boolean; nee
       sent.fabricUpdates.push({ id: itemMatchPatch(pathname), ...(request.postDataJSON() as object) });
       return route.fulfill({ json: stash.find((entry) => entry.id === itemMatchPatch(pathname)) });
     }
-    if (pathname === "/api/sewing-tools") return route.fulfill({ json: tools });
+    if (pathname === "/api/sewing-tools" && request.method() === "POST") {
+      sent.toolCreate = request.postDataJSON();
+      const created = sewingTool("dddddddd-0000-4000-8000-000000000009", { quantity: null, size: null, color: null, ...(sent.toolCreate as object) });
+      addedTools.push(created);
+      return route.fulfill({ status: 201, json: created });
+    }
+    if (pathname === "/api/sewing-tools") return route.fulfill({ json: [...tools, ...addedTools] });
     if (pathname === "/api/dashboard") {
       return route.fulfill({ json: { totalProjects: 0, activeProjects: 0, completedProjects: 0, recentProjects: [], recentProgress: [], mostUsedYarnBrands: [], mostUsedYarnBrandProjects: 0, averageDaysToFinish: null, charts: { projectsByStatus: [], completedPerMonth: [], completedWithoutDate: 0, progressPerWeek: [] } } });
     }
@@ -286,9 +298,11 @@ test("adds tools, a needle and a thread color to a sewing project", async ({ pag
   await expect(page.getByTestId("row-sewing-needle")).toContainText("Add");
   await expect(page.getByTestId("row-sewing-thread")).toContainText("Add");
 
-  await page.getByTestId("button-add-sewing-tool").click();
+  await page.getByTestId("button-add-supplies").click();
+  await page.getByTestId("button-supplies-stash-tools").click();
   await page.getByTestId(`button-pick-tool-${tools[1].id}`).click();
-  await page.getByTestId("button-add-sewing-tool").click();
+  await page.getByTestId("button-add-supplies").click();
+  await page.getByTestId("button-supplies-stash-tools").click();
   await page.getByTestId(`button-pick-tool-${tools[0].id}`).click();
   await expect(page.getByTestId(`sewing-tool-${tools[1].id}`)).toContainText("Walking foot");
 
@@ -388,7 +402,8 @@ test("starts a sewing project with fabric from the stash", async ({ page }) => {
   await page.getByTestId("input-sewing-pattern").fill("A-line skirt");
   await page.getByTestId("input-sewing-size").fill("12");
   await page.getByTestId("input-sewing-fit").fill("Took in the waist 1 cm");
-  await page.getByTestId("button-add-sewing-fabric").click();
+  await page.getByTestId("button-add-supplies").click();
+  await page.getByTestId("button-supplies-stash-fabric").click();
   await page.getByTestId(`button-pick-fabric-${stash[2].id}`).click();
   await page.getByTestId("input-sewing-fabric-used-0").fill("1.2");
   if (shots) await page.screenshot({ path: `${shots}/sewing-project-form-web.png`, fullPage: true });
@@ -400,6 +415,57 @@ test("starts a sewing project with fabric from the stash", async ({ page }) => {
     fabrics: [{ stashFabricId: stash[2].id, amountUsed: 1.2 }],
   });
   await expect(page.getByTestId(`card-project-fabric-${stash[2].id}`)).toContainText("Uses 1.2 m");
+});
+
+test("adds new fabric without a photo and a new notion from a project's supplies, saving them to the stash and Tools", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 1400 });
+  const sent = newSent();
+  await mockApi(page, { yarn: false, sewing: true, needsChoice: false }, sent);
+  await page.goto("/sewing/projects/new");
+  await page.getByTestId("input-sewing-title").fill("Linen trousers");
+
+  await page.getByTestId("button-add-supplies").click();
+  if (shots) await page.screenshot({ path: `${shots}/supplies-menu-web.png`, fullPage: true });
+  await page.getByTestId("button-supplies-new-fabric").click();
+  await page.getByTestId("button-quick-fabric-save").click();
+  await expect(page.getByText("Choose the fabric type.")).toBeVisible();
+  await page.getByTestId("select-quick-fabric-type").click();
+  await page.getByTestId("select-quick-fabric-type-wheel").getByRole("option", { name: "Linen" }).click();
+  await page.getByTestId("select-quick-fabric-type-done").click();
+  await page.getByTestId("input-quick-fabric-amount").fill("2");
+  if (shots) await page.screenshot({ path: `${shots}/supplies-new-fabric-web.png`, fullPage: true });
+  await page.getByTestId("button-quick-fabric-save").click();
+  expect(sent.create).toMatchObject({ fabricType: "linen", unit: "meters", amount: 2, amountLeft: 2, photoPaths: [], photoLater: true, addAsNew: true });
+  await expect(page.getByTestId("sewing-fabric-0")).toContainText("Needs a photo");
+  await page.getByTestId("input-sewing-fabric-used-0").fill("1.8");
+
+  await page.getByTestId("button-add-supplies").click();
+  await page.getByTestId("button-supplies-new-tool").click();
+  await page.getByTestId("select-tool-type-closures").click();
+  await page.getByTestId("select-tool-type-closures-wheel").getByRole("option", { name: "Buttons" }).click();
+  await page.getByTestId("select-tool-type-closures-done").click();
+  await page.getByTestId("input-quick-tool-name").fill("Horn buttons");
+  if (shots) await page.screenshot({ path: `${shots}/supplies-new-tool-web.png`, fullPage: true });
+  await page.getByTestId("button-quick-tool-save").click();
+  expect(sent.toolCreate).toEqual({ section: "notions", category: "button", name: "Horn buttons" });
+  await expect(page.getByTestId("sewing-tool-dddddddd-0000-4000-8000-000000000009")).toContainText("Horn buttons");
+
+  await page.getByTestId("button-add-supplies").click();
+  await page.getByTestId("button-supplies-stash-tools").click();
+  await page.getByTestId(`button-pick-tool-${tools[0].id}`).click();
+  if (shots) await page.screenshot({ path: `${shots}/supplies-form-web.png`, fullPage: true });
+  await page.getByTestId("button-save-sewing-project").click();
+
+  await expect(page).toHaveURL(/\/sewing\/projects\/cccccccc-0000-4000-8000-000000000009$/);
+  expect(sent.projectSaves[0]).toMatchObject({
+    fabrics: [{ stashFabricId: "bbbbbbbb-0000-4000-8000-000000000009", amountUsed: 1.8 }],
+    toolIds: ["dddddddd-0000-4000-8000-000000000009", tools[0].id],
+  });
+  const supplies = page.getByTestId("sewing-detail-supplies");
+  await expect(supplies.getByTestId("card-project-fabric-bbbbbbbb-0000-4000-8000-000000000009")).toContainText("Needs a photo");
+  await expect(supplies.getByTestId("card-project-fabric-bbbbbbbb-0000-4000-8000-000000000009")).toContainText("Uses 1.8 m");
+  await expect(supplies.getByTestId("card-tool-dddddddd-0000-4000-8000-000000000009")).toContainText("Horn buttons");
+  if (shots) { await page.waitForTimeout(800); await page.screenshot({ path: `${shots}/supplies-project-page-web.png`, fullPage: true }); }
 });
 
 test("unchecks a stage tapped by mistake, back to Not started from Prep", async ({ page }) => {

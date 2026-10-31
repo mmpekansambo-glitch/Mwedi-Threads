@@ -65,10 +65,12 @@ test("a maker who works in the Sewing room", async ({ page }) => {
     await page.goto("/sewing/projects/new");
     await page.getByTestId("input-sewing-title").fill("Summer dress");
     await page.getByTestId("select-sewing-status").selectOption("in_progress");
-    await page.getByTestId("button-add-sewing-fabric").click();
+    await page.getByTestId("button-add-supplies").click();
+    await page.getByTestId("button-supplies-stash-fabric").click();
     await page.getByTestId(`button-pick-fabric-${cottonId}`).click();
     await page.getByTestId("input-sewing-fabric-used-0").fill("2.5");
-    await page.getByTestId("button-add-sewing-tool").click();
+    await page.getByTestId("button-add-supplies").click();
+    await page.getByTestId("button-supplies-stash-tools").click();
     await page.getByTestId(`button-pick-tool-${zipId}`).click();
     await page.getByTestId("row-sewing-needle").click();
     await page.getByTestId("row-sewing-needle-wheel-0").getByRole("option", { name: "Universal" }).click();

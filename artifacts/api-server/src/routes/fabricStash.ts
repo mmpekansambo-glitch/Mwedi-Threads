@@ -134,7 +134,12 @@ router.post("/fabric-stash", requireAuth, async (req, res): Promise<void> => {
   }
 
   const ownerId = getOwnerId(res);
-  const photos = checkFabricPhotos(ownerId, parsed.data.photoPaths, []);
+  // Fabric added from a project's supplies may come without a photo; the
+  // stash then shows it as needing one.
+  const photoLater = parsed.data.photoLater === true && parsed.data.photoPaths.length === 0;
+  const photos = photoLater
+    ? { ok: true as const, photoPaths: [] as string[] }
+    : checkFabricPhotos(ownerId, parsed.data.photoPaths, []);
   if (!photos.ok) {
     res.status(400).json({ error: photos.error });
     return;
@@ -205,8 +210,8 @@ router.post("/fabric-stash", requireAuth, async (req, res): Promise<void> => {
       .orderBy(desc(stashFabricsTable.archivedAt))
       .limit(3);
     for (const candidate of candidates) {
-      const similarPhoto = candidate.photoPaths[0]
-        ? await printsLookAlike(details.photoPaths[0]!, candidate.photoPaths[0])
+      const similarPhoto = candidate.photoPaths[0] && details.photoPaths[0]
+        ? await printsLookAlike(details.photoPaths[0], candidate.photoPaths[0])
         : null;
       if (similarPhoto === false) continue;
       res.status(409).json({ match: serializeFabric(candidate), similarPhoto });

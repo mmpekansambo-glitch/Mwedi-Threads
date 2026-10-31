@@ -833,6 +833,33 @@ a.stat-card:active { transform: scale(.98); box-shadow: none; }
 .fabric-pick span { display: grid; gap: 2px; min-width: 0; }
 .fabric-pick small { color: var(--slate); font-size: 12px; }
 .fabric-picker-note { margin: 0; color: var(--slate-deep); font-size: 14px; }
+.fabric-no-photo { display: grid; place-items: center; align-content: center; gap: 6px; flex: 0 0 auto; width: 100%; height: 100%; color: var(--sew-accent); background: var(--sew-soft); font-size: 14px; font-weight: 600; }
+.sewing-fabric-row .fabric-no-photo { width: 54px; height: 54px; border-radius: 7px; border: 1px dashed var(--sew-line); }
+.fabric-pick .fabric-no-photo { width: 46px; height: 46px; border-radius: 6px; border: 1px dashed var(--sew-line); }
+.fabric-swatch .fabric-no-photo { position: absolute; inset: 0; border-bottom: 1px dashed var(--sew-line); }
+.sewing-card-swatch .fabric-no-photo { position: absolute; inset: 0; }
+.supplies { display: grid; gap: 10px; }
+.supplies > .button { justify-self: start; }
+.supplies-group { margin: 6px 0 0; color: var(--sew-accent); font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.sewing-detail-fabric .supplies-group { margin: 14px 0 10px; }
+.supplies-needs-photo { display: inline-block; margin-right: 6px; padding: 0 7px; border: 1px solid #e8c8be; border-radius: 99px; background: #fbefec; color: #694b4b; font-size: 11px; font-weight: 600; }
+.supplies-menu { display: grid; gap: 6px; }
+.supplies-menu .fabric-picker-head { margin-bottom: 2px; }
+.supplies-menu-group { margin: 6px 0 0; color: var(--sew-accent); font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.supplies-option { display: flex; align-items: center; gap: 12px; padding: 9px; border: 1px solid var(--sew-line); border-radius: 10px; background: var(--white); color: var(--evergreen); font: inherit; text-align: left; cursor: pointer; }
+.supplies-option:hover,.supplies-option:focus-visible { border-color: var(--sew-accent); }
+.supplies-option > span:last-child { display: grid; gap: 2px; }
+.supplies-option small { color: var(--slate); font-size: 13px; }
+.supplies-option-icon { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 9px; background: var(--sew-soft); color: var(--sew-accent); }
+.supplies-quick { display: grid; gap: 12px; max-width: 520px; }
+.supplies-quick .fabric-picker-head { margin-bottom: 0; }
+.supplies-quick > .button { justify-self: start; }
+.supplies-amount { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.supplies-amount .input-with-unit input { width: 130px; }
+.supplies-amount .segmented { min-width: 190px; }
+.supplies-photo { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; border: 1.5px dashed var(--sew-line); border-radius: 10px; background: var(--white); color: var(--sew-accent); font-size: 14px; font-weight: 600; cursor: pointer; }
+.supplies-hint { margin: 0; color: var(--slate); font-size: 13px; line-height: 1.45; }
+.link-button { padding: 0; border: 0; background: none; color: var(--sew-accent); font: inherit; font-weight: 600; text-decoration: underline; cursor: pointer; }
 .sewing-tool-row { display: flex; align-items: center; gap: 12px; padding: 8px; border: 1px solid var(--sew-line); border-radius: 10px; background: var(--white); }
 .sewing-tool-row .tool-thumb { width: 46px; height: 46px; }
 .tool-picker-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; max-height: 320px; overflow: auto; }
