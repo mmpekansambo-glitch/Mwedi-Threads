@@ -2423,11 +2423,17 @@ components:
           maxLength: 1000
         photoPaths:
           type: array
-          description: The print close-up first, then up to three more
-          minItems: 1
+          description: >-
+            The print close-up first, then up to three more. Empty only when
+            photoLater is true.
           maxItems: 4
           items:
             type: string
+        photoLater:
+          type: boolean
+          description: >-
+            Added from a project's supplies: save it without a photo, and the
+            stash shows it as needing one
         restoreId:
           type: string
           format: uuid

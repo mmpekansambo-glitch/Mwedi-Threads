@@ -845,11 +845,12 @@ export interface CreateStashFabric {
      */
   notes?: string | null;
   /**
-     * The print close-up first, then up to three more
-     * @minItems 1
+     * The print close-up first, then up to three more. Empty only when photoLater is true.
      * @maxItems 4
      */
   photoPaths: string[];
+  /** Added from a project's supplies: save it without a photo, and the stash shows it as needing one */
+  photoLater?: boolean;
   /** The archived fabric the maker said is the same one */
   restoreId?: string;
   /** The maker said it's a different piece, so don't ask again */

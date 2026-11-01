@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { X, type LucideIcon } from 'lucide-react';
+import { Camera, X, type LucideIcon } from 'lucide-react';
 import type { FabricConstruction, FabricPrint, FabricType, FabricUnit, StashFabric } from '@workspace/api-client-react';
 import { Wheel } from '@/components/date-wheel-field';
 
@@ -91,6 +91,15 @@ export function fabricSize(fabric: Pick<StashFabric, 'amount' | 'width' | 'unit'
 
 export function fabricPhotoUrl(fabric: Pick<StashFabric, 'id' | 'updatedAt'>, index: number): string {
   return `/api/fabric-stash/${fabric.id}/photos/${index}?v=${encodeURIComponent(String(fabric.updatedAt))}`;
+}
+
+// The print close-up, or a camera mark when fabric added from a project's
+// supplies has no photo yet.
+export function FabricPrintImage({ fabric, alt, needsPhotoLabel }: { fabric: Pick<StashFabric, 'id' | 'updatedAt' | 'photoCount'>; alt: string; needsPhotoLabel?: boolean }) {
+  if (fabric.photoCount === 0) {
+    return <span className="fabric-no-photo" role="img" aria-label="Needs a photo"><Camera size={needsPhotoLabel ? 20 : 17} aria-hidden="true"/>{needsPhotoLabel && <span>Needs a photo</span>}</span>;
+  }
+  return <img src={fabricPhotoUrl(fabric, 0)} alt={alt} loading="lazy"/>;
 }
 
 // Amounts and widths are typed as text and checked before saving.

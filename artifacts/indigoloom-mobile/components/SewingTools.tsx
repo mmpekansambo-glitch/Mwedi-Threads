@@ -134,7 +134,7 @@ export function ToolThumb({ tool, size = 56 }: { tool: SewingTool; size?: number
   return <View style={[box, styles.thumbIcon]}><Feather name={categoryFor(tool.category).icon} size={Math.round(size * 0.4)} color={colors.primaryText} /></View>;
 }
 
-function Choices<T extends string>({ options, value, onChange, testID }: { options: Array<{ value: T; label: string }>; value: T | ''; onChange: (value: T) => void; testID: string }) {
+export function Choices<T extends string>({ options, value, onChange, testID }: { options: Array<{ value: T; label: string }>; value: T | ''; onChange: (value: T) => void; testID: string }) {
   const colors = useSewingColors();
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.choices} accessibilityRole="radiogroup">
@@ -152,7 +152,7 @@ function Choices<T extends string>({ options, value, onChange, testID }: { optio
 
 // Each group keeps its heading with its own scroll wheel under it, like the
 // date picker. A tool has one type, so choosing in one group replaces the rest.
-function ToolTypeWheelField({ section, value, onChange }: { section: SewingToolSection; value: SewingToolCategory | ''; onChange: (value: SewingToolCategory) => void }) {
+export function ToolTypeWheelField({ section, value, onChange }: { section: SewingToolSection; value: SewingToolCategory | ''; onChange: (value: SewingToolCategory) => void }) {
   const colors = useSewingColors();
   const [openRow, setOpenRow] = useState<{ group: string; options: CategoryOption[] } | null>(null);
   const [draft, setDraft] = useState(0);
