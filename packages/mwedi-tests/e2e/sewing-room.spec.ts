@@ -15,7 +15,8 @@ const prints: Record<string, string> = {
 function fabric(id: string, overrides: Record<string, unknown> = {}) {
   return {
     id, fabricType: "cotton", construction: "woven", print: "floral", generalColor: "blue", unit: "meters",
-    amount: 2.5, amountLeft: null, width: 145, preWashed: null, notes: "Lawn for a summer dress", photoCount: 2, archivedAt: null as string | null,
+    amount: 2.5, amountLeft: null, width: 145, preWashed: null,
+    careWash: null, careBleach: null, careDry: null, careIron: null, careDryClean: null, notes: "Lawn for a summer dress", photoCount: 2, archivedAt: null as string | null,
     createdAt: "2026-10-20T12:00:00.000Z", updatedAt: "2026-10-20T12:00:00.000Z",
     ...overrides,
   };
@@ -220,6 +221,26 @@ test("adds a fabric with a print close-up and an extra photo", async ({ page }) 
   await expect(page.getByTestId("button-prewashed-yes")).toHaveAttribute("aria-checked", "true");
   await page.getByTestId("input-fabric-notes").fill("For a shirt");
   if (shots) await page.screenshot({ path: `${shots}/fabric-form-web.png` });
+
+  // Care instructions stay behind one button until the maker wants them.
+  await expect(page.getByTestId("row-care-wash")).toHaveCount(0);
+  await page.getByTestId("button-add-care").click();
+  await expect(page.getByTestId("row-care-wash")).toContainText("Choose");
+  await page.getByTestId("row-care-wash").click();
+  await expect(page.getByRole("dialog", { name: "Wash" }).getByRole("radio")).toHaveText(["Machine 30°", "Machine 40°", "Machine 60°", "Gentle 30°", "Hand wash", "Do not wash"]);
+  await page.getByTestId("row-care-wash-machine_30").click();
+  await expect(page.getByTestId("row-care-wash")).toContainText("Machine 30°");
+  await page.getByTestId("row-care-dry").click();
+  await expect(page.getByRole("dialog", { name: "Dry" }).getByRole("radio")).toHaveCount(6);
+  if (shots) await page.screenshot({ path: `${shots}/care-dry-grid-web.png` });
+  await page.getByTestId("row-care-dry-line").click();
+  await page.getByTestId("row-care-iron").click();
+  await page.getByTestId("row-care-iron-medium").click();
+  await page.getByTestId("row-care-bleach").click();
+  await page.getByTestId("row-care-bleach-do_not").click();
+  await page.getByTestId("row-care-bleach-clear").click();
+  await expect(page.getByTestId("row-care-bleach")).toContainText("Choose");
+  if (shots) await page.screenshot({ path: `${shots}/care-rows-web.png` });
   await page.getByTestId("button-save-fabric").click();
 
   await expect(page).toHaveURL(/\/sewing\/fabric$/);
@@ -227,8 +248,36 @@ test("adds a fabric with a print close-up and an extra photo", async ({ page }) 
   expect(sent.create).toMatchObject({
     fabricType: "linen", construction: "woven", print: "check", generalColor: "green", unit: "yards",
     amount: 2.75, amountLeft: null, width: 54, preWashed: true, notes: "For a shirt",
+    careWash: "machine_30", careBleach: null, careDry: "line", careIron: "medium", careDryClean: null,
     photoPaths: ["/objects/fabric/user/bbbbbbbb-0000-4000-8000-0000000000f1", "/objects/fabric/user/bbbbbbbb-0000-4000-8000-0000000000f2"],
   });
+});
+
+test("shows a fabric's care instructions and saves changes to them", async ({ page }) => {
+  const sent = newSent();
+  stash[0] = { ...stash[0], careWash: "gentle_30", careDry: "flat", careIron: "low" };
+  try {
+    await mockApi(page, { yarn: true, sewing: true, needsChoice: false }, sent);
+    await page.goto(`/sewing/fabric/${stash[0].id}`);
+    await expect(page.getByTestId("row-care-wash")).toContainText("Gentle 30°");
+    await expect(page.getByTestId("row-care-dry")).toContainText("Dry flat");
+    await expect(page.getByTestId("row-care-dryclean")).toContainText("Choose");
+    await page.getByTestId("row-care-dryclean").click();
+    await page.getByTestId("row-care-dryclean-do_not").click();
+    await page.getByTestId("button-save-fabric").click();
+    await expect.poll(() => sent.fabricUpdates.length).toBe(1);
+    expect(sent.fabricUpdates[0]).toMatchObject({ careWash: "gentle_30", careBleach: null, careDry: "flat", careIron: "low", careDryClean: "do_not" });
+
+    // Remove clears every group and folds the section away.
+    await page.goto(`/sewing/fabric/${stash[0].id}`);
+    await page.getByTestId("button-remove-care").click();
+    await expect(page.getByTestId("button-add-care")).toBeVisible();
+    await page.getByTestId("button-save-fabric").click();
+    await expect.poll(() => sent.fabricUpdates.length).toBe(2);
+    expect(sent.fabricUpdates[1]).toMatchObject({ careWash: null, careBleach: null, careDry: null, careIron: null, careDryClean: null });
+  } finally {
+    stash[0] = fabric("bbbbbbbb-0000-4000-8000-000000000001");
+  }
 });
 
 test("turns sewing on from Settings in the profile menu, keeping one craft on", async ({ page }) => {

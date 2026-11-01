@@ -6,3 +6,5 @@ export { refreshPaths, showRemoved, showSaved } from "./saved-cache";
 export { acceptRenameOffer, findRenameOffer, nameKey, renameOfferText } from "./rename-offer";
 export type { RenameOffer } from "./rename-offer";
 export { skeinsLeftAfter } from "./skeins";
+export { careFrom, careGroups, careOption, hasCare, noCare } from "./care";
+export type { CareGroup, CareGroupKey, CareOption, CareShape, FabricCare } from "./care";
