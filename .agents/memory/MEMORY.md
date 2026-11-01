@@ -2,3 +2,4 @@
 - [Clerk API auth tests](clerk-api-auth-tests.md) — Development cookie auth needs a browser token; use a locally signed bearer session JWT to test API verification without external credentials.
 - [Structured yarn history](structured-yarn-history.md) — Store new yarn details as brand/type/color, while keeping old free-text yarn values visible without guessing how to split them.
 - [iOS long-text containment](ios-long-text-containment.md) — Line limits alone may not constrain previews and saved link labels; bound the text container too.
+- [pnpm workspace install recovery](pnpm-workspace-install-recovery.md) — A root install can restore missing module resolution even when the lockfile is already current.
