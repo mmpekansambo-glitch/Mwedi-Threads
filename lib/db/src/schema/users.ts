@@ -1,4 +1,4 @@
-import { boolean, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { boolean, integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -15,6 +15,9 @@ export const usersTable = pgTable("users", {
   yarnEnabled: boolean("yarn_enabled").notNull().default(true),
   sewingEnabled: boolean("sewing_enabled").notNull().default(false),
   craftsChosenAt: timestamp("crafts_chosen_at", { withTimezone: true }),
+  // Weekly crafting goal in days (1-7) for each studio; empty means no goal.
+  yarnWeeklyGoal: integer("yarn_weekly_goal"),
+  sewingWeeklyGoal: integer("sewing_weekly_goal"),
   joinedAt: timestamp("joined_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -25,6 +28,8 @@ export const insertUserSchema = createInsertSchema(usersTable).omit({
   yarnEnabled: true,
   sewingEnabled: true,
   craftsChosenAt: true,
+  yarnWeeklyGoal: true,
+  sewingWeeklyGoal: true,
 });
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof usersTable.$inferSelect;

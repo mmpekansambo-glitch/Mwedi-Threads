@@ -45,6 +45,7 @@ import {
   type ProgressAmountDraft, type ProgressSettingsDraft,
 } from '@/components/progress-method';
 import { DashboardCharts } from '@/components/dashboard-charts';
+import { WeeklyGoalCard } from '@/components/weekly-goal';
 import { ProgressBar, ProgressEntryCard, uploadProgressPhoto } from '@/components/progress-entry';
 import {
   BlendFields, ColorDot, DidYouMean, GeneralColorPicker, WeightWheelField, blendForApi, generalColors, useSettledValue, weightLabel, yarnWeights,
@@ -507,6 +508,7 @@ function DashboardPage() {
   const name = user?.firstName || 'maker';
   return <PortalLayout active="dashboard">
     <PageHeading title={<>Hi, {name}</>} action={<Link href="/projects/new" className="button button-primary" data-testid="link-new-project"><Plus size={17}/> New project</Link>}/>
+    <WeeklyGoalCard studio="yarn"/>
     {query.isLoading ? <div className="dashboard-loading"><div className="stat-skeleton"/><div className="stat-skeleton"/><div className="stat-skeleton"/></div> : query.isError || !data ? <QueryProblem retry={() => query.refetch()}/> : <>
       <section className="stat-row" aria-label="Project totals">
         <Link href="/projects" className="stat-card stat-card-all" data-testid="link-stat-all"><span className="stat-label">All projects</span><strong>{data.totalProjects}</strong><StatDoodle kind="yarn"/></Link>
@@ -1715,6 +1717,7 @@ function SewingOverviewPage() {
   const name = user?.firstName || 'maker';
   return <PortalLayout active="sewing">
     <PageHeading title={<>Hi, {name}</>} action={<Link href="/sewing/projects/new" className="button button-primary" data-testid="link-new-sewing-project"><Plus size={17}/> New project</Link>}/>
+    <WeeklyGoalCard studio="sewing"/>
     {query.isLoading ? <div className="dashboard-loading"><div className="stat-skeleton"/><div className="stat-skeleton"/><div className="stat-skeleton"/></div> : query.isError || !data ? <QueryProblem retry={() => query.refetch()}/> : <>
       <section className="stat-row" aria-label="Sewing totals">
         <Link href="/sewing/projects?status=in_progress" className="stat-card stat-card-active" data-testid="link-sewing-stat-in-progress"><span className="stat-label">In progress</span><strong>{data.inProgress}</strong><StatDoodle kind="spool"/></Link>

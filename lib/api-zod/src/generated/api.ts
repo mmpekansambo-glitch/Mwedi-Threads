@@ -1294,6 +1294,71 @@ export const UpdateMyCraftsResponse = zod.object({
 
 
 /**
+ * @summary This week's crafting days and the studio's weekly goal
+ */
+export const GetWeeklyGoalQueryParams = zod.object({
+  "studio": zod.enum(['yarn', 'sewing']),
+  "today": zod.date().describe('The maker\'s own date today (YYYY-MM-DD)'),
+  "timeZone": zod.coerce.string().optional().describe('The maker\'s time zone, e.g. America/Los_Angeles (UTC when missing or unknown)')
+})
+
+export const GetWeeklyGoalResponse = zod.object({
+  "goal": zod.number().int().nullable().describe('Days a week the maker aims to craft (1-7); null when no goal is set'),
+  "weekStart": zod.coerce.date().describe('Monday of this week'),
+  "days": zod.array(zod.boolean()).describe('Monday to Sunday, true for each day that counts'),
+  "count": zod.number().int(),
+  "todayCounted": zod.boolean(),
+  "weeksInARow": zod.number().int().describe('Weeks in a row the goal was met, counting this week once it is met')
+})
+
+
+/**
+ * @summary Set or turn off the studio's weekly goal
+ */
+export const SetWeeklyGoalQueryParams = zod.object({
+  "studio": zod.enum(['yarn', 'sewing']),
+  "today": zod.date().describe('The maker\'s own date today (YYYY-MM-DD)'),
+  "timeZone": zod.coerce.string().optional().describe('The maker\'s time zone, e.g. America/Los_Angeles (UTC when missing or unknown)')
+})
+
+export const setWeeklyGoalBodyGoalMax = 7;
+
+
+
+export const SetWeeklyGoalBody = zod.object({
+  "goal": zod.number().int().min(1).max(setWeeklyGoalBodyGoalMax).nullable()
+})
+
+export const SetWeeklyGoalResponse = zod.object({
+  "goal": zod.number().int().nullable().describe('Days a week the maker aims to craft (1-7); null when no goal is set'),
+  "weekStart": zod.coerce.date().describe('Monday of this week'),
+  "days": zod.array(zod.boolean()).describe('Monday to Sunday, true for each day that counts'),
+  "count": zod.number().int(),
+  "todayCounted": zod.boolean(),
+  "weeksInARow": zod.number().int().describe('Weeks in a row the goal was met, counting this week once it is met')
+})
+
+
+/**
+ * @summary Count today as a crafting day ("I crafted today")
+ */
+export const CheckInWeeklyGoalQueryParams = zod.object({
+  "studio": zod.enum(['yarn', 'sewing']),
+  "today": zod.date().describe('The maker\'s own date today (YYYY-MM-DD)'),
+  "timeZone": zod.coerce.string().optional().describe('The maker\'s time zone, e.g. America/Los_Angeles (UTC when missing or unknown)')
+})
+
+export const CheckInWeeklyGoalResponse = zod.object({
+  "goal": zod.number().int().nullable().describe('Days a week the maker aims to craft (1-7); null when no goal is set'),
+  "weekStart": zod.coerce.date().describe('Monday of this week'),
+  "days": zod.array(zod.boolean()).describe('Monday to Sunday, true for each day that counts'),
+  "count": zod.number().int(),
+  "todayCounted": zod.boolean(),
+  "weeksInARow": zod.number().int().describe('Weeks in a row the goal was met, counting this week once it is met')
+})
+
+
+/**
  * @summary List the fabric in the signed-in maker's stash
  */
 export const GetStashFabricsQueryParams = zod.object({

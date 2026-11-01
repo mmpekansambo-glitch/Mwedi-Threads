@@ -5,8 +5,8 @@ import pg from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import * as schema from "@workspace/db/schema";
-import { sewingToolsTable, usersTable } from "@workspace/db/schema";
-import { sewingProjectEntriesSql, sewingProjectMachineSettingsSql, sewingProjectToolsSql, sewingTablesSql, sewingToolsSql, stashTablesSql } from "../test/stashTablesSql";
+import { craftActivityTable, sewingToolsTable, usersTable } from "@workspace/db/schema";
+import { sewingProjectEntriesSql, sewingProjectMachineSettingsSql, sewingProjectToolsSql, sewingTablesSql, sewingToolsSql, stashTablesSql, craftActivitySql } from "../test/stashTablesSql";
 
 vi.mock("@clerk/express", () => ({
   getAuth: (req: Request) => ({
@@ -86,7 +86,9 @@ describe.skipIf(!databaseUrl)("sewing projects against PostgreSQL", () => {
         joined_at timestamptz NOT NULL DEFAULT now(),
         yarn_enabled boolean NOT NULL DEFAULT true,
         sewing_enabled boolean NOT NULL DEFAULT false,
-        crafts_chosen_at timestamptz
+        crafts_chosen_at timestamptz,
+        yarn_weekly_goal integer,
+        sewing_weekly_goal integer
       );
       CREATE TABLE ${isolatedSchema}.projects (
         id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -99,6 +101,7 @@ describe.skipIf(!databaseUrl)("sewing projects against PostgreSQL", () => {
       ${sewingProjectToolsSql(isolatedSchema)}
       ${sewingProjectEntriesSql(isolatedSchema)}
       ${sewingProjectMachineSettingsSql(isolatedSchema)}
+      ${craftActivitySql(isolatedSchema)}
     `);
 
     testPool = new pg.Pool({
@@ -338,6 +341,9 @@ describe.skipIf(!databaseUrl)("sewing projects against PostgreSQL", () => {
     expect((await request(`${notes}/${first.id}`, { method: "DELETE", user: ownerA })).status).toBe(404);
     expect((await request(`${notes}/${first.id}`, { method: "DELETE", user: ownerB })).status).toBe(204);
     expect((await read(await request(`/sewing-projects/${project.id}`, { user: ownerB }))).entries).toHaveLength(1);
+    // The deleted note's day still counts toward the weekly goal.
+    const activity = await getTestDb().select().from(craftActivityTable).where(eq(craftActivityTable.userId, ownerB));
+    expect(activity.map((row) => [row.studio, row.hour.toISOString()])).toContainEqual(["sewing", "2026-10-01T12:00:00.000Z"]);
     expect((await request(`/sewing-projects/${project.id}`, { method: "DELETE", user: ownerB })).status).toBe(204);
   });
 
