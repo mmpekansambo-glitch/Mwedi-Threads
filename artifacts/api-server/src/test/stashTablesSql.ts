@@ -120,17 +120,33 @@ export function stashTablesSql(isolatedSchema: string): string {
   `;
 }
 
-// The Sewing room project tables. Needs stash_fabrics and the project_status type.
+// The Sewing room pattern and project tables. Needs stash_fabrics and the project_status type.
 export function sewingTablesSql(isolatedSchema: string): string {
   return `
     CREATE TYPE ${isolatedSchema}.sewing_stage AS ENUM ('prep', 'cut', 'sew', 'fit', 'finish');
     CREATE TYPE ${isolatedSchema}.sewing_needle_type AS ENUM ('universal', 'ballpoint', 'stretch', 'jeans', 'microtex', 'quilting', 'leather', 'topstitch', 'embroidery', 'metallic');
+    CREATE TYPE ${isolatedSchema}.sewing_pattern_type AS ENUM ('dress', 'top', 'shirt', 'skirt', 'trousers', 'shorts', 'jumpsuit', 'jacket', 'coat', 'knitwear', 'lingerie', 'swimwear', 'activewear', 'sleepwear', 'menswear', 'kids', 'baby', 'bag', 'accessories', 'quilt', 'home', 'costume', 'other');
+    CREATE TYPE ${isolatedSchema}.sewing_pattern_format AS ENUM ('paper', 'pdf', 'magazine', 'self_drafted');
+    CREATE TABLE ${isolatedSchema}.sewing_patterns (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id text NOT NULL REFERENCES ${isolatedSchema}.users(id) ON DELETE CASCADE,
+      name text NOT NULL,
+      designer text,
+      pattern_type ${isolatedSchema}.sewing_pattern_type,
+      format ${isolatedSchema}.sewing_pattern_format,
+      sizes text,
+      notes text,
+      photo_path text,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now()
+    );
     CREATE TABLE ${isolatedSchema}.sewing_projects (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       owner_id text NOT NULL REFERENCES ${isolatedSchema}.users(id) ON DELETE CASCADE,
       title text NOT NULL,
       status ${isolatedSchema}.project_status NOT NULL DEFAULT 'planning',
       stage ${isolatedSchema}.sewing_stage NOT NULL DEFAULT 'prep',
+      pattern_id uuid REFERENCES ${isolatedSchema}.sewing_patterns(id) ON DELETE SET NULL,
       pattern_name text,
       pattern_designer text,
       size_made text,

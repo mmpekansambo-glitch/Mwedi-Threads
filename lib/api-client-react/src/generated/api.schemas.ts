@@ -1455,6 +1455,126 @@ export interface SewingProjectFabricInput {
   amountUsed?: number | null;
 }
 
+/**
+ * What the pattern makes
+ */
+export type SewingPatternType = typeof SewingPatternType[keyof typeof SewingPatternType];
+
+
+export const SewingPatternType = {
+  dress: 'dress',
+  top: 'top',
+  shirt: 'shirt',
+  skirt: 'skirt',
+  trousers: 'trousers',
+  shorts: 'shorts',
+  jumpsuit: 'jumpsuit',
+  jacket: 'jacket',
+  coat: 'coat',
+  knitwear: 'knitwear',
+  lingerie: 'lingerie',
+  swimwear: 'swimwear',
+  activewear: 'activewear',
+  sleepwear: 'sleepwear',
+  menswear: 'menswear',
+  kids: 'kids',
+  baby: 'baby',
+  bag: 'bag',
+  accessories: 'accessories',
+  quilt: 'quilt',
+  home: 'home',
+  costume: 'costume',
+  other: 'other',
+} as const;
+
+export type SewingPatternFormat = typeof SewingPatternFormat[keyof typeof SewingPatternFormat];
+
+
+export const SewingPatternFormat = {
+  paper: 'paper',
+  pdf: 'pdf',
+  magazine: 'magazine',
+  self_drafted: 'self_drafted',
+} as const;
+
+export interface SewingPattern {
+  id: string;
+  name: string;
+  /** @nullable */
+  designer: string | null;
+  patternType: SewingPatternType | null;
+  format: SewingPatternFormat | null;
+  /** @nullable */
+  sizes: string | null;
+  /** @nullable */
+  notes: string | null;
+  hasPhoto: boolean;
+  /** Finished sewing projects that used this pattern */
+  timesMade: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateSewingPattern {
+  /**
+     * @minLength 1
+     * @maxLength 160
+     */
+  name: string;
+  /**
+     * @maxLength 160
+     * @nullable
+     */
+  designer?: string | null;
+  patternType?: SewingPatternType | null;
+  format?: SewingPatternFormat | null;
+  /**
+     * @maxLength 80
+     * @nullable
+     */
+  sizes?: string | null;
+  /**
+     * @maxLength 1000
+     * @nullable
+     */
+  notes?: string | null;
+  /**
+     * A path from the pattern photo upload URL
+     * @nullable
+     */
+  photoPath?: string | null;
+}
+
+export interface UpdateSewingPattern {
+  /**
+     * @minLength 1
+     * @maxLength 160
+     */
+  name?: string;
+  /**
+     * @maxLength 160
+     * @nullable
+     */
+  designer?: string | null;
+  patternType?: SewingPatternType | null;
+  format?: SewingPatternFormat | null;
+  /**
+     * @maxLength 80
+     * @nullable
+     */
+  sizes?: string | null;
+  /**
+     * @maxLength 1000
+     * @nullable
+     */
+  notes?: string | null;
+  /**
+     * A new path from the upload URL, or null to remove the photo. Leave it out to keep the photo.
+     * @nullable
+     */
+  photoPath?: string | null;
+}
+
 export interface SewingProjectEntry {
   id: string;
   notes: string;
@@ -1468,6 +1588,11 @@ export interface SewingProject {
   title: string;
   status: ProjectStatus;
   stage: SewingStage;
+  /**
+     * The pattern from the maker's pattern stash, if any
+     * @nullable
+     */
+  patternId: string | null;
   /** @nullable */
   patternName: string | null;
   /** @nullable */
@@ -1525,6 +1650,12 @@ export interface CreateSewingProject {
   status?: ProjectStatus;
   stage?: SewingStage;
   /**
+     * A pattern from the maker's pattern stash, or null for none. Wins over patternName.
+     * @nullable
+     */
+  patternId?: string | null;
+  /**
+     * Without patternId, the pattern is found in the maker's stash by name and designer, or added to it
      * @maxLength 160
      * @nullable
      */
@@ -1569,6 +1700,12 @@ export interface UpdateSewingProject {
   status?: ProjectStatus;
   stage?: SewingStage;
   /**
+     * A pattern from the maker's pattern stash, or null for none. Wins over patternName.
+     * @nullable
+     */
+  patternId?: string | null;
+  /**
+     * Without patternId, the pattern is found in the maker's stash by name and designer, or added to it
      * @maxLength 160
      * @nullable
      */
@@ -2024,6 +2161,15 @@ search?: string;
 archived?: boolean;
 section?: SewingToolSection;
 category?: SewingToolCategory;
+};
+
+export type GetSewingPatternsParams = {
+/**
+ * Matches name, designer, sizes or notes
+ */
+search?: string;
+patternType?: SewingPatternType;
+format?: SewingPatternFormat;
 };
 
 export type GetYarnToolsParams = {

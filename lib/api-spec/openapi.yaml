@@ -1549,6 +1549,155 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+  /sewing-patterns:
+    get:
+      operationId: getSewingPatterns
+      tags: [sewing]
+      summary: List the signed-in maker's sewing patterns
+      parameters:
+        - in: query
+          name: search
+          description: Matches name, designer, sizes or notes
+          schema:
+            type: string
+        - in: query
+          name: patternType
+          schema:
+            $ref: "#/components/schemas/SewingPatternType"
+        - in: query
+          name: format
+          schema:
+            $ref: "#/components/schemas/SewingPatternFormat"
+      responses:
+        "200":
+          description: Matching patterns
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SewingPattern"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      operationId: createSewingPattern
+      tags: [sewing]
+      summary: Add a sewing pattern
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSewingPattern"
+      responses:
+        "201":
+          description: Pattern added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SewingPattern"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /sewing-patterns/photo-upload:
+    post:
+      operationId: requestSewingPatternPhotoUpload
+      tags: [sewing]
+      summary: Request a private upload URL for a pattern cover photo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProgressPhotoUploadRequest"
+      responses:
+        "200":
+          description: Private upload URL generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProgressPhotoUploadResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /sewing-patterns/{sewingPatternId}:
+    parameters:
+      - in: path
+        name: sewingPatternId
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: getSewingPattern
+      tags: [sewing]
+      summary: Get one sewing pattern
+      responses:
+        "200":
+          description: Pattern
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SewingPattern"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updateSewingPattern
+      tags: [sewing]
+      summary: Change a sewing pattern
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSewingPattern"
+      responses:
+        "200":
+          description: Pattern updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SewingPattern"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteSewingPattern
+      tags: [sewing]
+      summary: Remove a sewing pattern. Projects that used it keep no pattern.
+      responses:
+        "204":
+          description: Pattern removed
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /sewing-patterns/{sewingPatternId}/photo:
+    parameters:
+      - in: path
+        name: sewingPatternId
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: getSewingPatternPhoto
+      tags: [sewing]
+      summary: View a pattern's cover photo
+      responses:
+        "302":
+          description: Redirects to a short-lived private image URL
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /yarn-tools:
     get:
       operationId: getYarnTools
@@ -3095,6 +3244,102 @@ components:
           minimum: 0
           maximum: 999
       required: [stashFabricId]
+    SewingPatternType:
+      type: string
+      description: What the pattern makes
+      enum: [dress, top, shirt, skirt, trousers, shorts, jumpsuit, jacket, coat, knitwear, lingerie, swimwear, activewear, sleepwear, menswear, kids, baby, bag, accessories, quilt, home, costume, other]
+    SewingPatternFormat:
+      type: string
+      enum: [paper, pdf, magazine, self_drafted]
+    SewingPattern:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        designer:
+          type: [string, "null"]
+        patternType:
+          oneOf:
+            - $ref: "#/components/schemas/SewingPatternType"
+            - type: "null"
+        format:
+          oneOf:
+            - $ref: "#/components/schemas/SewingPatternFormat"
+            - type: "null"
+        sizes:
+          type: [string, "null"]
+        notes:
+          type: [string, "null"]
+        hasPhoto:
+          type: boolean
+        timesMade:
+          type: integer
+          description: Finished sewing projects that used this pattern
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, name, designer, patternType, format, sizes, notes, hasPhoto, timesMade, createdAt, updatedAt]
+    CreateSewingPattern:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 160
+        designer:
+          type: [string, "null"]
+          maxLength: 160
+        patternType:
+          oneOf:
+            - $ref: "#/components/schemas/SewingPatternType"
+            - type: "null"
+        format:
+          oneOf:
+            - $ref: "#/components/schemas/SewingPatternFormat"
+            - type: "null"
+        sizes:
+          type: [string, "null"]
+          maxLength: 80
+        notes:
+          type: [string, "null"]
+          maxLength: 1000
+        photoPath:
+          type: [string, "null"]
+          description: A path from the pattern photo upload URL
+      required: [name]
+    UpdateSewingPattern:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 160
+        designer:
+          type: [string, "null"]
+          maxLength: 160
+        patternType:
+          oneOf:
+            - $ref: "#/components/schemas/SewingPatternType"
+            - type: "null"
+        format:
+          oneOf:
+            - $ref: "#/components/schemas/SewingPatternFormat"
+            - type: "null"
+        sizes:
+          type: [string, "null"]
+          maxLength: 80
+        notes:
+          type: [string, "null"]
+          maxLength: 1000
+        photoPath:
+          type: [string, "null"]
+          description: A new path from the upload URL, or null to remove the photo. Leave it out to keep the photo.
     SewingProject:
       type: object
       properties:
@@ -3107,6 +3352,10 @@ components:
           $ref: "#/components/schemas/ProjectStatus"
         stage:
           $ref: "#/components/schemas/SewingStage"
+        patternId:
+          type: [string, "null"]
+          format: uuid
+          description: The pattern from the maker's pattern stash, if any
         patternName:
           type: [string, "null"]
         patternDesigner:
@@ -3165,7 +3414,7 @@ components:
         updatedAt:
           type: string
           format: date-time
-      required: [id, title, status, stage, patternName, patternDesigner, sizeMade, fitChanges, needleType, needleSize, threadColor, notes, completedAt, totalSpendCents, hoursSpent, fabrics, tools, machineSettings, entries, createdAt, updatedAt]
+      required: [id, title, status, stage, patternId, patternName, patternDesigner, sizeMade, fitChanges, needleType, needleSize, threadColor, notes, completedAt, totalSpendCents, hoursSpent, fabrics, tools, machineSettings, entries, createdAt, updatedAt]
     SewingProjectEntry:
       type: object
       properties:
@@ -3205,9 +3454,14 @@ components:
           $ref: "#/components/schemas/ProjectStatus"
         stage:
           $ref: "#/components/schemas/SewingStage"
+        patternId:
+          type: [string, "null"]
+          format: uuid
+          description: A pattern from the maker's pattern stash, or null for none. Wins over patternName.
         patternName:
           type: [string, "null"]
           maxLength: 160
+          description: Without patternId, the pattern is found in the maker's stash by name and designer, or added to it
         patternDesigner:
           type: [string, "null"]
           maxLength: 160
@@ -3260,9 +3514,14 @@ components:
           $ref: "#/components/schemas/ProjectStatus"
         stage:
           $ref: "#/components/schemas/SewingStage"
+        patternId:
+          type: [string, "null"]
+          format: uuid
+          description: A pattern from the maker's pattern stash, or null for none. Wins over patternName.
         patternName:
           type: [string, "null"]
           maxLength: 160
+          description: Without patternId, the pattern is found in the maker's stash by name and designer, or added to it
         patternDesigner:
           type: [string, "null"]
           maxLength: 160

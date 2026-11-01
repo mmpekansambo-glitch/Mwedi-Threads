@@ -20,6 +20,11 @@ export interface SewingProject {
   title: string;
   status: ProjectStatus;
   stage: SewingStage;
+  /**
+     * The pattern from the maker's pattern stash, if any
+     * @nullable
+     */
+  patternId: string | null;
   /** @nullable */
   patternName: string | null;
   /** @nullable */

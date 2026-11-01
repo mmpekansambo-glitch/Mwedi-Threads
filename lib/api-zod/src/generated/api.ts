@@ -1709,6 +1709,7 @@ export const GetSewingProjectsResponseItem = zod.object({
   "title": zod.string(),
   "status": zod.enum(['planning', 'in_progress', 'paused', 'completed']),
   "stage": zod.enum(['prep', 'cut', 'sew', 'fit', 'finish']).describe('Prep, Cut, Sew, Fit, Finish, in that order'),
+  "patternId": zod.string().uuid().nullable().describe('The pattern from the maker\'s pattern stash, if any'),
   "patternName": zod.string().nullable(),
   "patternDesigner": zod.string().nullable(),
   "sizeMade": zod.string().nullable(),
@@ -1826,7 +1827,8 @@ export const CreateSewingProjectBody = zod.object({
   "title": zod.string().min(1).max(createSewingProjectBodyTitleMax),
   "status": zod.enum(['planning', 'in_progress', 'paused', 'completed']).optional(),
   "stage": zod.enum(['prep', 'cut', 'sew', 'fit', 'finish']).optional().describe('Prep, Cut, Sew, Fit, Finish, in that order'),
-  "patternName": zod.string().max(createSewingProjectBodyPatternNameMax).nullish(),
+  "patternId": zod.string().uuid().nullish().describe('A pattern from the maker\'s pattern stash, or null for none. Wins over patternName.'),
+  "patternName": zod.string().max(createSewingProjectBodyPatternNameMax).nullish().describe('Without patternId, the pattern is found in the maker\'s stash by name and designer, or added to it'),
   "patternDesigner": zod.string().max(createSewingProjectBodyPatternDesignerMax).nullish(),
   "sizeMade": zod.string().max(createSewingProjectBodySizeMadeMax).nullish(),
   "fitChanges": zod.string().max(createSewingProjectBodyFitChangesMax).nullish(),
@@ -1861,6 +1863,7 @@ export const CreateSewingProjectResponse = zod.object({
   "title": zod.string(),
   "status": zod.enum(['planning', 'in_progress', 'paused', 'completed']),
   "stage": zod.enum(['prep', 'cut', 'sew', 'fit', 'finish']).describe('Prep, Cut, Sew, Fit, Finish, in that order'),
+  "patternId": zod.string().uuid().nullable().describe('The pattern from the maker\'s pattern stash, if any'),
   "patternName": zod.string().nullable(),
   "patternDesigner": zod.string().nullable(),
   "sizeMade": zod.string().nullable(),
@@ -1952,6 +1955,7 @@ export const GetSewingProjectResponse = zod.object({
   "title": zod.string(),
   "status": zod.enum(['planning', 'in_progress', 'paused', 'completed']),
   "stage": zod.enum(['prep', 'cut', 'sew', 'fit', 'finish']).describe('Prep, Cut, Sew, Fit, Finish, in that order'),
+  "patternId": zod.string().uuid().nullable().describe('The pattern from the maker\'s pattern stash, if any'),
   "patternName": zod.string().nullable(),
   "patternDesigner": zod.string().nullable(),
   "sizeMade": zod.string().nullable(),
@@ -2072,7 +2076,8 @@ export const UpdateSewingProjectBody = zod.object({
   "title": zod.string().min(1).max(updateSewingProjectBodyTitleMax).optional(),
   "status": zod.enum(['planning', 'in_progress', 'paused', 'completed']).optional(),
   "stage": zod.enum(['prep', 'cut', 'sew', 'fit', 'finish']).optional().describe('Prep, Cut, Sew, Fit, Finish, in that order'),
-  "patternName": zod.string().max(updateSewingProjectBodyPatternNameMax).nullish(),
+  "patternId": zod.string().uuid().nullish().describe('A pattern from the maker\'s pattern stash, or null for none. Wins over patternName.'),
+  "patternName": zod.string().max(updateSewingProjectBodyPatternNameMax).nullish().describe('Without patternId, the pattern is found in the maker\'s stash by name and designer, or added to it'),
   "patternDesigner": zod.string().max(updateSewingProjectBodyPatternDesignerMax).nullish(),
   "sizeMade": zod.string().max(updateSewingProjectBodySizeMadeMax).nullish(),
   "fitChanges": zod.string().max(updateSewingProjectBodyFitChangesMax).nullish(),
@@ -2107,6 +2112,7 @@ export const UpdateSewingProjectResponse = zod.object({
   "title": zod.string(),
   "status": zod.enum(['planning', 'in_progress', 'paused', 'completed']),
   "stage": zod.enum(['prep', 'cut', 'sew', 'fit', 'finish']).describe('Prep, Cut, Sew, Fit, Finish, in that order'),
+  "patternId": zod.string().uuid().nullable().describe('The pattern from the maker\'s pattern stash, if any'),
   "patternName": zod.string().nullable(),
   "patternDesigner": zod.string().nullable(),
   "sizeMade": zod.string().nullable(),
@@ -2314,6 +2320,7 @@ export const GetSewingOverviewResponse = zod.object({
   "title": zod.string(),
   "status": zod.enum(['planning', 'in_progress', 'paused', 'completed']),
   "stage": zod.enum(['prep', 'cut', 'sew', 'fit', 'finish']).describe('Prep, Cut, Sew, Fit, Finish, in that order'),
+  "patternId": zod.string().uuid().nullable().describe('The pattern from the maker\'s pattern stash, if any'),
   "patternName": zod.string().nullable(),
   "patternDesigner": zod.string().nullable(),
   "sizeMade": zod.string().nullable(),
@@ -2597,6 +2604,174 @@ export const GetSewingToolPhotoParams = zod.object({
 })
 
 export const GetSewingToolPhotoResponse = zod.void()
+
+
+/**
+ * @summary List the signed-in maker's sewing patterns
+ */
+export const GetSewingPatternsQueryParams = zod.object({
+  "search": zod.coerce.string().optional().describe('Matches name, designer, sizes or notes'),
+  "patternType": zod.enum(['dress', 'top', 'shirt', 'skirt', 'trousers', 'shorts', 'jumpsuit', 'jacket', 'coat', 'knitwear', 'lingerie', 'swimwear', 'activewear', 'sleepwear', 'menswear', 'kids', 'baby', 'bag', 'accessories', 'quilt', 'home', 'costume', 'other']).optional(),
+  "format": zod.enum(['paper', 'pdf', 'magazine', 'self_drafted']).optional()
+})
+
+export const GetSewingPatternsResponseItem = zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "designer": zod.string().nullable(),
+  "patternType": zod.union([zod.enum(['dress', 'top', 'shirt', 'skirt', 'trousers', 'shorts', 'jumpsuit', 'jacket', 'coat', 'knitwear', 'lingerie', 'swimwear', 'activewear', 'sleepwear', 'menswear', 'kids', 'baby', 'bag', 'accessories', 'quilt', 'home', 'costume', 'other']).describe('What the pattern makes'),zod.null()]),
+  "format": zod.union([zod.enum(['paper', 'pdf', 'magazine', 'self_drafted']),zod.null()]),
+  "sizes": zod.string().nullable(),
+  "notes": zod.string().nullable(),
+  "hasPhoto": zod.boolean(),
+  "timesMade": zod.number().int().describe('Finished sewing projects that used this pattern'),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const GetSewingPatternsResponse = zod.array(GetSewingPatternsResponseItem)
+
+
+/**
+ * @summary Add a sewing pattern
+ */
+export const createSewingPatternBodyNameMax = 160;
+
+export const createSewingPatternBodyDesignerMax = 160;
+
+export const createSewingPatternBodySizesMax = 80;
+
+export const createSewingPatternBodyNotesMax = 1000;
+
+
+
+export const CreateSewingPatternBody = zod.object({
+  "name": zod.string().min(1).max(createSewingPatternBodyNameMax),
+  "designer": zod.string().max(createSewingPatternBodyDesignerMax).nullish(),
+  "patternType": zod.union([zod.enum(['dress', 'top', 'shirt', 'skirt', 'trousers', 'shorts', 'jumpsuit', 'jacket', 'coat', 'knitwear', 'lingerie', 'swimwear', 'activewear', 'sleepwear', 'menswear', 'kids', 'baby', 'bag', 'accessories', 'quilt', 'home', 'costume', 'other']).describe('What the pattern makes'),zod.null()]).optional(),
+  "format": zod.union([zod.enum(['paper', 'pdf', 'magazine', 'self_drafted']),zod.null()]).optional(),
+  "sizes": zod.string().max(createSewingPatternBodySizesMax).nullish(),
+  "notes": zod.string().max(createSewingPatternBodyNotesMax).nullish(),
+  "photoPath": zod.string().nullish().describe('A path from the pattern photo upload URL')
+})
+
+export const CreateSewingPatternResponse = zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "designer": zod.string().nullable(),
+  "patternType": zod.union([zod.enum(['dress', 'top', 'shirt', 'skirt', 'trousers', 'shorts', 'jumpsuit', 'jacket', 'coat', 'knitwear', 'lingerie', 'swimwear', 'activewear', 'sleepwear', 'menswear', 'kids', 'baby', 'bag', 'accessories', 'quilt', 'home', 'costume', 'other']).describe('What the pattern makes'),zod.null()]),
+  "format": zod.union([zod.enum(['paper', 'pdf', 'magazine', 'self_drafted']),zod.null()]),
+  "sizes": zod.string().nullable(),
+  "notes": zod.string().nullable(),
+  "hasPhoto": zod.boolean(),
+  "timesMade": zod.number().int().describe('Finished sewing projects that used this pattern'),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Request a private upload URL for a pattern cover photo
+ */
+export const requestSewingPatternPhotoUploadBodyNameMax = 255;
+
+export const requestSewingPatternPhotoUploadBodySizeMax = 10485760;
+
+
+
+export const RequestSewingPatternPhotoUploadBody = zod.object({
+  "name": zod.string().min(1).max(requestSewingPatternPhotoUploadBodyNameMax),
+  "size": zod.number().int().min(1).max(requestSewingPatternPhotoUploadBodySizeMax),
+  "contentType": zod.enum(['image/jpeg', 'image/png', 'image/webp'])
+})
+
+export const RequestSewingPatternPhotoUploadResponse = zod.object({
+  "uploadURL": zod.string().url(),
+  "photoPath": zod.string()
+})
+
+
+/**
+ * @summary Get one sewing pattern
+ */
+export const GetSewingPatternParams = zod.object({
+  "sewingPatternId": zod.coerce.string().uuid()
+})
+
+export const GetSewingPatternResponse = zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "designer": zod.string().nullable(),
+  "patternType": zod.union([zod.enum(['dress', 'top', 'shirt', 'skirt', 'trousers', 'shorts', 'jumpsuit', 'jacket', 'coat', 'knitwear', 'lingerie', 'swimwear', 'activewear', 'sleepwear', 'menswear', 'kids', 'baby', 'bag', 'accessories', 'quilt', 'home', 'costume', 'other']).describe('What the pattern makes'),zod.null()]),
+  "format": zod.union([zod.enum(['paper', 'pdf', 'magazine', 'self_drafted']),zod.null()]),
+  "sizes": zod.string().nullable(),
+  "notes": zod.string().nullable(),
+  "hasPhoto": zod.boolean(),
+  "timesMade": zod.number().int().describe('Finished sewing projects that used this pattern'),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Change a sewing pattern
+ */
+export const UpdateSewingPatternParams = zod.object({
+  "sewingPatternId": zod.coerce.string().uuid()
+})
+
+export const updateSewingPatternBodyNameMax = 160;
+
+export const updateSewingPatternBodyDesignerMax = 160;
+
+export const updateSewingPatternBodySizesMax = 80;
+
+export const updateSewingPatternBodyNotesMax = 1000;
+
+
+
+export const UpdateSewingPatternBody = zod.object({
+  "name": zod.string().min(1).max(updateSewingPatternBodyNameMax).optional(),
+  "designer": zod.string().max(updateSewingPatternBodyDesignerMax).nullish(),
+  "patternType": zod.union([zod.enum(['dress', 'top', 'shirt', 'skirt', 'trousers', 'shorts', 'jumpsuit', 'jacket', 'coat', 'knitwear', 'lingerie', 'swimwear', 'activewear', 'sleepwear', 'menswear', 'kids', 'baby', 'bag', 'accessories', 'quilt', 'home', 'costume', 'other']).describe('What the pattern makes'),zod.null()]).optional(),
+  "format": zod.union([zod.enum(['paper', 'pdf', 'magazine', 'self_drafted']),zod.null()]).optional(),
+  "sizes": zod.string().max(updateSewingPatternBodySizesMax).nullish(),
+  "notes": zod.string().max(updateSewingPatternBodyNotesMax).nullish(),
+  "photoPath": zod.string().nullish().describe('A new path from the upload URL, or null to remove the photo. Leave it out to keep the photo.')
+})
+
+export const UpdateSewingPatternResponse = zod.object({
+  "id": zod.string().uuid(),
+  "name": zod.string(),
+  "designer": zod.string().nullable(),
+  "patternType": zod.union([zod.enum(['dress', 'top', 'shirt', 'skirt', 'trousers', 'shorts', 'jumpsuit', 'jacket', 'coat', 'knitwear', 'lingerie', 'swimwear', 'activewear', 'sleepwear', 'menswear', 'kids', 'baby', 'bag', 'accessories', 'quilt', 'home', 'costume', 'other']).describe('What the pattern makes'),zod.null()]),
+  "format": zod.union([zod.enum(['paper', 'pdf', 'magazine', 'self_drafted']),zod.null()]),
+  "sizes": zod.string().nullable(),
+  "notes": zod.string().nullable(),
+  "hasPhoto": zod.boolean(),
+  "timesMade": zod.number().int().describe('Finished sewing projects that used this pattern'),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Remove a sewing pattern. Projects that used it keep no pattern.
+ */
+export const DeleteSewingPatternParams = zod.object({
+  "sewingPatternId": zod.coerce.string().uuid()
+})
+
+export const DeleteSewingPatternResponse = zod.void()
+
+
+/**
+ * @summary View a pattern's cover photo
+ */
+export const GetSewingPatternPhotoParams = zod.object({
+  "sewingPatternId": zod.coerce.string().uuid()
+})
+
+export const GetSewingPatternPhotoResponse = zod.void()
 
 
 /**
