@@ -85,6 +85,7 @@ describe.skipIf(!databaseUrl)("yarn stash against PostgreSQL", () => {
         yarn_enabled boolean NOT NULL DEFAULT true,
         sewing_enabled boolean NOT NULL DEFAULT false,
         crafts_chosen_at timestamptz,
+        currency text NOT NULL DEFAULT 'USD',
         yarn_weekly_goal integer,
         sewing_weekly_goal integer
       );

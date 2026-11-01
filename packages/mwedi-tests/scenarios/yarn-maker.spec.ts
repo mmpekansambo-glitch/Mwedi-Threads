@@ -96,6 +96,20 @@ test("a maker who works in the Yarn studio", async ({ page }) => {
     await expect(page.getByTestId(`entry-progress-${second}`)).toContainText("Second panel, cables crossed right");
   });
 
+  await test.step("picks pounds in Settings and adds what the throw cost (#99)", async () => {
+    await page.getByTestId("button-profile-menu").click();
+    await page.getByTestId("select-currency").selectOption("GBP");
+    await expect(page.getByTestId("select-currency")).toHaveValue("GBP");
+    await page.getByTestId("button-profile-menu").click();
+    await expect(page.getByTestId("button-total-spend")).toHaveText("Add");
+    await page.getByTestId("button-total-spend").click();
+    await page.getByTestId("input-total-spend").fill("42.5");
+    await page.getByTestId("button-save-total-spend").click();
+    await expect(page.getByTestId("button-total-spend")).toHaveText("£42.50");
+    await page.reload();
+    await expect(page.getByTestId("button-total-spend")).toHaveText("£42.50");
+  });
+
   await test.step("renames the yarn's color in the stash and the project follows (#79)", async () => {
     await page.goto(`/stash/${fishermanId}`);
     await page.getByTestId("input-stash-color").fill("Fisherman Cream");
@@ -120,6 +134,22 @@ test("a maker who works in the Yarn studio", async ({ page }) => {
     await expect(suggestion).toContainText("used 3 skeins of Lion Brand Wool-Ease Fisherman Cream. Update skeins left from 4 to 1?");
     await page.locator('[data-testid^="button-update-skeins-"]').click();
     await expect(suggestion).toHaveCount(0);
+  });
+
+  await test.step("logs 12½ hours in the finish-up prompt, which keeps the spend (#99)", async () => {
+    const prompt = page.getByTestId("prompt-finish-up");
+    await expect(prompt.getByTestId("button-total-spend")).toHaveText("£42.50");
+    await prompt.getByTestId("button-hours").click();
+    await page.getByTestId("wheel-hours").focus();
+    for (let step = 0; step < 12; step += 1) await page.keyboard.press("ArrowDown");
+    await page.getByTestId("wheel-half-hour").getByRole("option", { name: "+ ½" }).click();
+    await page.getByTestId("button-save-hours").click();
+    await expect(prompt.getByTestId("button-hours")).toHaveText("12½ hours");
+    await prompt.getByTestId("button-finish-up-done").click();
+    await expect(prompt).toHaveCount(0);
+    await page.reload();
+    await expect(page.getByTestId("prompt-finish-up")).toHaveCount(0);
+    await expect(page.getByTestId("button-hours")).toHaveText("12½ hours");
   });
 
   await test.step("uses up the yarn and moves it to the Archive (#82)", async () => {

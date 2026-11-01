@@ -40,7 +40,7 @@ describe.skipIf(!scenarioDatabaseUrl)("Scenario: a maker who works in the Sewing
   it("signs up and picks the Sewing room only", async () => {
     expect((await bisi.get("/me/crafts")).body.needsChoice).toBe(true);
     const chosen = await bisi.put("/me/crafts", { yarn: false, sewing: true });
-    expect(chosen.body).toEqual({ yarn: false, sewing: true, needsChoice: false });
+    expect(chosen.body).toEqual({ yarn: false, sewing: true, needsChoice: false, currency: "USD" });
   });
 
   it("adds fabric to the stash, each with a print photo", async () => {
@@ -253,7 +253,7 @@ describe.skipIf(!scenarioDatabaseUrl)("Scenario: a maker who works in the Sewing
 
   it("turns on the Yarn studio later without losing the Sewing room", async () => {
     const both = await bisi.put("/me/crafts", { yarn: true, sewing: true });
-    expect(both.body).toEqual({ yarn: true, sewing: true, needsChoice: false });
+    expect(both.body).toEqual({ yarn: true, sewing: true, needsChoice: false, currency: "USD" });
     expect((await bisi.get("/sewing-projects")).body).toHaveLength(2);
     expect((await bisi.get("/projects")).body).toHaveLength(0);
   });

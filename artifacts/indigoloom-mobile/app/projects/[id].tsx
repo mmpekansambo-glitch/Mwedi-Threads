@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useAddProgress, useDeleteProgress, useDeleteProgressPhoto, useDeleteProject, useGetProject, getGetDashboardQueryKey, getGetProjectQueryKey, getGetProjectsQueryKey, getGetSkeinSuggestionsQueryKey } from '@workspace/api-client-react';
+import { useEffect, useRef, useState } from 'react';
+import { setProjectTotals, useAddProgress, useDeleteProgress, useDeleteProgressPhoto, useDeleteProject, useGetProject, getGetDashboardQueryKey, getGetProjectQueryKey, getGetProjectsQueryKey, getGetSkeinSuggestionsQueryKey } from '@workspace/api-client-react';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { Feather } from '@expo/vector-icons';
@@ -15,6 +15,9 @@ import { describeNeedle } from '@/components/NeedleFields';
 import { describeProjectYarn } from '@/components/ProjectYarns';
 import { SkeinSuggestions } from '@/components/SkeinSuggestions';
 import { ProjectCounter } from '@/components/ProjectCounter';
+import { FinishUpPrompt, HoursRow, SpendRow } from '@/components/ProjectTotals';
+import { useCrafts } from '@/components/Crafts';
+import type { ProjectDetail, ProjectTotals } from '@workspace/api-client-react';
 import { showSignpost } from '@/components/Signpost';
 import { SavedProgressPhoto, SwipeableNote, confirmDeleteNote, pickProgressPhoto, uploadProgressPhoto } from '@/components/ProgressNote';
 import { useColors } from '@/hooks/useColors';
@@ -25,6 +28,20 @@ export default function ProjectDetailScreen() {
   const insets = useSafeAreaInsets();
   const client = useQueryClient();
   const query = useGetProject(id);
+  const currency = useCrafts().data?.currency ?? 'USD';
+  // Finishing a project (in the edit screen) brings up the finish-up prompt;
+  // opening one that's already finished doesn't.
+  const [finishUp, setFinishUp] = useState(false);
+  const lastStatus = useRef<string | undefined>(undefined);
+  const status = query.data?.status;
+  useEffect(() => {
+    if (status === 'completed' && lastStatus.current !== undefined && lastStatus.current !== 'completed') setFinishUp(true);
+    if (status !== 'completed') setFinishUp(false);
+    lastStatus.current = status;
+  }, [status]);
+  const saveTotals = (data: ProjectTotals) => setProjectTotals(id, data).then((saved) => {
+    client.setQueryData<ProjectDetail>(getGetProjectQueryKey(id), (old) => (old ? { ...old, totalSpendCents: saved.totalSpendCents ?? null, hoursSpent: saved.hoursSpent ?? null } : old));
+  });
   const addProgress = useAddProgress();
   const removeProgressPhoto = useDeleteProgressPhoto();
   const removeProgress = useDeleteProgress();
@@ -154,6 +171,7 @@ export default function ProjectDetailScreen() {
           <View style={styles.center}><LoomText serif style={{ color: colors.foreground, fontSize: 26 }}>Project not found</LoomText><LoomText style={{ color: colors.mutedForeground, marginTop: 7 }}>It may have been removed or moved.</LoomText><LoomButton title="Back to projects" onPress={() => router.replace('/(tabs)/projects')} variant="secondary" style={{ marginTop: 16 }} /></View>
         ) : (
           <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 30 }]}>
+          {finishUp ? <FinishUpPrompt hours={project.hoursSpent} cents={project.totalSpendCents} currency={currency} onSaveHours={(hours) => saveTotals({ hoursSpent: hours })} onSaveSpend={(cents) => saveTotals({ totalSpendCents: cents })} onDone={() => setFinishUp(false)} /> : null}
           <SkeinSuggestions projectId={project.id} />
           <View style={[styles.hero, { backgroundColor: project.craft === 'knitting' ? colors.knitWash : colors.crochetWash }]}>
               <LoomText serif style={[styles.title, { color: colors.foreground }]}>{project.title}</LoomText>
@@ -191,6 +209,8 @@ export default function ProjectDetailScreen() {
               ].filter((entry) => entry[1]).map(([label, value]) => (
                 <View key={label} style={[styles.infoRow, { borderBottomColor: colors.border }]}><LoomText style={[styles.infoLabel, { color: colors.mutedForeground }]}>{label}</LoomText>{label === 'Designer' && project.designerWebsite ? <Pressable accessibilityRole="link" accessibilityLabel={`Open designer website: ${designerLinkLabel}`} accessibilityHint="Opens the saved designer website" onPress={() => { void Linking.openURL(project.designerWebsite!).catch(() => Alert.alert('Unable to open website', 'Check the saved link and try again.')); }} style={styles.designerLink}><LoomText numberOfLines={1} ellipsizeMode="tail" style={[styles.infoValue, styles.designerLinkText, { color: colors.primary, textDecorationLine: 'underline' }]}>{value}</LoomText></Pressable> : <LoomText numberOfLines={label === 'Designer' ? 1 : undefined} ellipsizeMode="tail" style={[styles.infoValue, { color: colors.foreground }]}>{value}</LoomText>}</View>
               ))}
+              {project.status === 'completed' ? <HoursRow hours={project.hoursSpent} onSave={(hours) => saveTotals({ hoursSpent: hours })} /> : null}
+              <SpendRow cents={project.totalSpendCents} currency={currency} onSave={(cents) => saveTotals({ totalSpendCents: cents })} />
               {project.description ? <LoomText style={[styles.description, { color: colors.foreground }]}>{project.description}</LoomText> : null}
             </View>
             <View style={[styles.detailCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
