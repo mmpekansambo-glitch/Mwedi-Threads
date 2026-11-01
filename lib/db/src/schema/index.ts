@@ -27,3 +27,4 @@ export * from "./sewingProjects";
 export * from "./sewingTools";
 export * from "./sewingPatterns";
 export * from "./yarnTools";
+export * from "./habits";

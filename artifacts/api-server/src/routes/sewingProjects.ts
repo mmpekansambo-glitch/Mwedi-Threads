@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, ilike, inArray, isNull, or } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, inArray, isNull, or, sql } from "drizzle-orm";
 import { Router, type IRouter, type Response } from "express";
 import {
   AddSewingProjectEntryBody,
@@ -10,6 +10,9 @@ import {
   GetSewingProjectParams,
   GetSewingProjectResponse,
   GetSewingProjectsQueryParams,
+  SetSewingProjectTotalsBody,
+  SetSewingProjectTotalsParams,
+  SetSewingProjectTotalsResponse,
   UpdateSewingProjectBody,
   UpdateSewingProjectEntryBody,
   UpdateSewingProjectEntryParams,
@@ -31,6 +34,7 @@ import {
   type SewingProjectEntry,
 } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
+import { recordCraftActivity } from "../lib/craftActivity";
 import { checkFabricLinks, checkMachineSettings, checkToolIds, fabricTypeCounts, sewingStages, stashLength, statusChanges, type MachineSetting } from "../lib/sewingProjects";
 import { serializeFabric } from "./fabricStash";
 import { serializeTool } from "./sewingTools";
@@ -399,6 +403,37 @@ router.delete("/sewing-projects/:sewingProjectId", requireAuth, async (req, res)
   res.sendStatus(204);
 });
 
+// Saves total spend and hours on their own, without touching updatedAt, so the projects
+// list keeps its order. Only the fields sent change; null clears one.
+router.put("/sewing-projects/:sewingProjectId/totals", requireAuth, async (req, res): Promise<void> => {
+  const params = SetSewingProjectTotalsParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: "Invalid project ID." });
+    return;
+  }
+  const body = SetSewingProjectTotalsBody.safeParse(req.body);
+  if (!body.success) {
+    res.status(400).json({ error: "Enter an amount from 0 up, and hours in half-hour steps." });
+    return;
+  }
+
+  const ownerId = getOwnerId(res);
+  const changes = {
+    ...(body.data.totalSpendCents !== undefined ? { totalSpendCents: body.data.totalSpendCents } : {}),
+    ...(body.data.hoursSpent !== undefined ? { hoursSpent: body.data.hoursSpent } : {}),
+  };
+  const [updated] = await db
+    .update(sewingProjectsTable)
+    .set({ ...changes, updatedAt: sql`${sewingProjectsTable.updatedAt}` })
+    .where(and(eq(sewingProjectsTable.id, params.data.sewingProjectId), eq(sewingProjectsTable.ownerId, ownerId)))
+    .returning({ totalSpendCents: sewingProjectsTable.totalSpendCents, hoursSpent: sewingProjectsTable.hoursSpent });
+  if (!updated) {
+    res.status(404).json({ error: "Project not found." });
+    return;
+  }
+  res.json(SetSewingProjectTotalsResponse.parse(updated));
+});
+
 router.post("/sewing-projects/:sewingProjectId/entries", requireAuth, async (req, res): Promise<void> => {
   const params = AddSewingProjectEntryParams.safeParse(req.params);
   const parsed = AddSewingProjectEntryBody.safeParse(req.body);
@@ -420,6 +455,7 @@ router.post("/sewing-projects/:sewingProjectId/entries", requireAuth, async (req
     .insert(sewingProjectEntriesTable)
     .values({ projectId: project.id, notes, ...(parsed.data.createdAt ? { createdAt: parsed.data.createdAt } : {}) })
     .returning();
+  await recordCraftActivity(getOwnerId(res), "sewing", entry.createdAt);
   res.status(201).json(serializeEntry(entry));
 });
 

@@ -5,8 +5,8 @@ import pg from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import * as schema from "@workspace/db/schema";
-import { sewingToolsTable, usersTable } from "@workspace/db/schema";
-import { sewingProjectEntriesSql, sewingProjectMachineSettingsSql, sewingProjectToolsSql, sewingTablesSql, sewingToolsSql, stashTablesSql } from "../test/stashTablesSql";
+import { craftActivityTable, sewingToolsTable, usersTable } from "@workspace/db/schema";
+import { sewingProjectEntriesSql, sewingProjectMachineSettingsSql, sewingProjectToolsSql, sewingTablesSql, sewingToolsSql, stashTablesSql, craftActivitySql } from "../test/stashTablesSql";
 
 vi.mock("@clerk/express", () => ({
   getAuth: (req: Request) => ({
@@ -86,7 +86,10 @@ describe.skipIf(!databaseUrl)("sewing projects against PostgreSQL", () => {
         joined_at timestamptz NOT NULL DEFAULT now(),
         yarn_enabled boolean NOT NULL DEFAULT true,
         sewing_enabled boolean NOT NULL DEFAULT false,
-        crafts_chosen_at timestamptz
+        crafts_chosen_at timestamptz,
+        currency text NOT NULL DEFAULT 'USD',
+        yarn_weekly_goal integer,
+        sewing_weekly_goal integer
       );
       CREATE TABLE ${isolatedSchema}.projects (
         id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -99,6 +102,7 @@ describe.skipIf(!databaseUrl)("sewing projects against PostgreSQL", () => {
       ${sewingProjectToolsSql(isolatedSchema)}
       ${sewingProjectEntriesSql(isolatedSchema)}
       ${sewingProjectMachineSettingsSql(isolatedSchema)}
+      ${craftActivitySql(isolatedSchema)}
     `);
 
     testPool = new pg.Pool({
@@ -210,6 +214,26 @@ describe.skipIf(!databaseUrl)("sewing projects against PostgreSQL", () => {
 
     const reopened = await read(await request(`/sewing-projects/${project.id}`, { method: "PATCH", user: ownerA, body: { status: "in_progress", fabrics: [] } }));
     expect(reopened).toMatchObject({ completedAt: null, fabrics: [] });
+  });
+
+  it("saves total spend on a sewing project for its owner only", async () => {
+    const project = await read(await request("/sewing-projects", {
+      method: "POST", user: ownerA, body: { title: "Tote bag" },
+    }));
+    expect(project.totalSpendCents).toBeNull();
+
+    const saved = await request(`/sewing-projects/${project.id}/totals`, { method: "PUT", user: ownerA, body: { totalSpendCents: 1899 } });
+    expect(saved.status).toBe(200);
+    expect(await read(saved)).toEqual({ totalSpendCents: 1899, hoursSpent: null });
+    const hours = await request(`/sewing-projects/${project.id}/totals`, { method: "PUT", user: ownerA, body: { hoursSpent: 6 } });
+    expect(await read(hours)).toEqual({ totalSpendCents: 1899, hoursSpent: 6 });
+    expect((await read(await request(`/sewing-projects/${project.id}`, { user: ownerA }))).totalSpendCents).toBe(1899);
+
+    const otherOwner = await request(`/sewing-projects/${project.id}/totals`, { method: "PUT", user: ownerB, body: { totalSpendCents: 1 } });
+    expect(otherOwner.status).toBe(404);
+    const negative = await request(`/sewing-projects/${project.id}/totals`, { method: "PUT", user: ownerA, body: { totalSpendCents: -5 } });
+    expect(negative.status).toBe(400);
+    await request(`/sewing-projects/${project.id}`, { method: "DELETE", user: ownerA });
   });
 
   it("drops a fabric from projects when it leaves the stash, and deletes projects", async () => {
@@ -338,6 +362,9 @@ describe.skipIf(!databaseUrl)("sewing projects against PostgreSQL", () => {
     expect((await request(`${notes}/${first.id}`, { method: "DELETE", user: ownerA })).status).toBe(404);
     expect((await request(`${notes}/${first.id}`, { method: "DELETE", user: ownerB })).status).toBe(204);
     expect((await read(await request(`/sewing-projects/${project.id}`, { user: ownerB }))).entries).toHaveLength(1);
+    // The deleted note's day still counts toward the weekly goal.
+    const activity = await getTestDb().select().from(craftActivityTable).where(eq(craftActivityTable.userId, ownerB));
+    expect(activity.map((row) => [row.studio, row.hour.toISOString()])).toContainEqual(["sewing", "2026-10-01T12:00:00.000Z"]);
     expect((await request(`/sewing-projects/${project.id}`, { method: "DELETE", user: ownerB })).status).toBe(204);
   });
 

@@ -38,11 +38,11 @@ describe.skipIf(!scenarioDatabaseUrl)("Scenario: a maker who works in the Yarn s
 
   it("signs up and picks the Yarn studio", async () => {
     const first = await amara.get("/me/crafts");
-    expect(first.body).toEqual({ yarn: true, sewing: false, needsChoice: true });
+    expect(first.body).toEqual({ yarn: true, sewing: false, needsChoice: true, currency: "USD" });
 
     const chosen = await amara.put("/me/crafts", { yarn: true, sewing: false });
     expect(chosen.status).toBe(200);
-    expect(chosen.body).toEqual({ yarn: true, sewing: false, needsChoice: false });
+    expect(chosen.body).toEqual({ yarn: true, sewing: false, needsChoice: false, currency: "USD" });
   });
 
   it("fills the stash with yarn, each with its own photo", async () => {
@@ -167,6 +167,16 @@ describe.skipIf(!scenarioDatabaseUrl)("Scenario: a maker who works in the Yarn s
     const counted = await amara.put(`/projects/${throw_.id}/counter`, { count: 42 });
     expect(counted.status).toBe(200);
     expect((await amara.get(`/projects/${throw_.id}`)).body.counter).toBe(42);
+  });
+
+  it("sets a weekly goal of 4 crafting days; today already counts (#104)", async () => {
+    const today = new Date().toISOString().slice(0, 10);
+    const week = `/weekly-goal?studio=yarn&today=${today}&timeZone=UTC`;
+    const set = await amara.put(week, { goal: 4 });
+    expect(set.status).toBe(200);
+    expect(set.body).toMatchObject({ goal: 4, count: 1, todayCounted: true, weeksInARow: 0 });
+    expect(set.body.days.filter(Boolean)).toHaveLength(1);
+    expect((await amara.put(week, { goal: 9 })).status).toBe(400);
   });
 
   it("renames a color in the stash and the projects using it follow (#79)", async () => {

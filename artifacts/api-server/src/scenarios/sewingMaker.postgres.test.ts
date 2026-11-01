@@ -40,7 +40,7 @@ describe.skipIf(!scenarioDatabaseUrl)("Scenario: a maker who works in the Sewing
   it("signs up and picks the Sewing room only", async () => {
     expect((await bisi.get("/me/crafts")).body.needsChoice).toBe(true);
     const chosen = await bisi.put("/me/crafts", { yarn: false, sewing: true });
-    expect(chosen.body).toEqual({ yarn: false, sewing: true, needsChoice: false });
+    expect(chosen.body).toEqual({ yarn: false, sewing: true, needsChoice: false, currency: "USD" });
   });
 
   it("adds fabric to the stash, each with a print photo", async () => {
@@ -144,6 +144,18 @@ describe.skipIf(!scenarioDatabaseUrl)("Scenario: a maker who works in the Sewing
     expect(entries.map((entry: Json) => entry.notes)).toEqual(["Bodice fixed after lengthening", "Cut all pieces"]);
   });
 
+  it("sets a weekly sewing goal; today's notes fill today, even the deleted one (#104)", async () => {
+    const today = new Date().toISOString().slice(0, 10);
+    const week = `/weekly-goal?studio=sewing&today=${today}&timeZone=UTC`;
+    expect((await bisi.get(week)).body).toMatchObject({ goal: null, todayCounted: true, count: 1 });
+    const set = await bisi.put(week, { goal: 3 });
+    expect(set.body).toMatchObject({ goal: 3, count: 1, weeksInARow: 0 });
+    // Checking in again on a day that already counts changes nothing.
+    expect((await bisi.post(week.replace("/weekly-goal?", "/weekly-goal/check-in?"), {})).body.count).toBe(1);
+    // The Yarn studio keeps its own goal.
+    expect((await bisi.get(`/weekly-goal?studio=yarn&today=${today}&timeZone=UTC`)).body).toMatchObject({ goal: null, count: 0 });
+  });
+
   it("sees the Overview: stages, fabric types and stash length", async () => {
     const view = await overview();
     expect(view).toMatchObject({ inProgress: 1, finished: 0, fabricPieces: 3, fabricLength: 6.5, fabricUnit: "meters" });
@@ -241,7 +253,7 @@ describe.skipIf(!scenarioDatabaseUrl)("Scenario: a maker who works in the Sewing
 
   it("turns on the Yarn studio later without losing the Sewing room", async () => {
     const both = await bisi.put("/me/crafts", { yarn: true, sewing: true });
-    expect(both.body).toEqual({ yarn: true, sewing: true, needsChoice: false });
+    expect(both.body).toEqual({ yarn: true, sewing: true, needsChoice: false, currency: "USD" });
     expect((await bisi.get("/sewing-projects")).body).toHaveLength(2);
     expect((await bisi.get("/projects")).body).toHaveLength(0);
   });

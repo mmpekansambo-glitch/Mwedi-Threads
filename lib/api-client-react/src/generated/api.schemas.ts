@@ -261,6 +261,18 @@ export interface Project {
      * @minimum 0
      */
   counter: number;
+  /**
+     * What the maker spent, in cents of their chosen currency
+     * @minimum 0
+     * @nullable
+     */
+  totalSpendCents: number | null;
+  /**
+     * Total hours the project took, in half-hour steps
+     * @minimum 0
+     * @nullable
+     */
+  hoursSpent: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -271,6 +283,23 @@ export interface ProjectCounter {
      * @maximum 1000000
      */
   count: number;
+}
+
+export interface ProjectTotals {
+  /**
+     * What the maker spent, in cents of their chosen currency (null clears it)
+     * @minimum 0
+     * @maximum 100000000
+     * @nullable
+     */
+  totalSpendCents?: number | null;
+  /**
+     * Total hours the project took, in half-hour steps (null clears it)
+     * @minimum 0
+     * @maximum 5000
+     * @nullable
+     */
+  hoursSpent?: number | null;
 }
 
 export type ProjectDetail = Project & {
@@ -601,11 +630,71 @@ export interface YarnBlendPart {
   percent: number;
 }
 
+/**
+ * The currency project spend is shown in
+ */
+export type Currency = typeof Currency[keyof typeof Currency];
+
+
+export const Currency = {
+  USD: 'USD',
+  CAD: 'CAD',
+  GBP: 'GBP',
+  EUR: 'EUR',
+  AUD: 'AUD',
+  NZD: 'NZD',
+  ZAR: 'ZAR',
+  MWK: 'MWK',
+  ZMW: 'ZMW',
+  KES: 'KES',
+  NGN: 'NGN',
+  INR: 'INR',
+  JPY: 'JPY',
+} as const;
+
 export interface Crafts {
   yarn: boolean;
   sewing: boolean;
   /** True for a new maker who hasn't picked their crafts yet */
   needsChoice: boolean;
+  currency: Currency;
+}
+
+export interface UpdateCurrency {
+  currency: Currency;
+}
+
+export type Studio = typeof Studio[keyof typeof Studio];
+
+
+export const Studio = {
+  yarn: 'yarn',
+  sewing: 'sewing',
+} as const;
+
+export interface WeeklyGoal {
+  /**
+     * Days a week the maker aims to craft (1-7); null when no goal is set
+     * @nullable
+     */
+  goal: number | null;
+  /** Monday of this week */
+  weekStart: string;
+  /** Monday to Sunday, true for each day that counts */
+  days: boolean[];
+  count: number;
+  todayCounted: boolean;
+  /** Weeks in a row the goal was met, counting this week once it is met */
+  weeksInARow: number;
+}
+
+export interface UpdateWeeklyGoal {
+  /**
+     * @minimum 1
+     * @maximum 7
+     * @nullable
+     */
+  goal: number | null;
 }
 
 export interface UpdateCrafts {
@@ -1519,6 +1608,18 @@ export interface SewingProject {
   notes: string | null;
   /** @nullable */
   completedAt: string | null;
+  /**
+     * What the maker spent, in cents of their chosen currency
+     * @minimum 0
+     * @nullable
+     */
+  totalSpendCents: number | null;
+  /**
+     * Total hours the project took, in half-hour steps
+     * @minimum 0
+     * @nullable
+     */
+  hoursSpent: number | null;
   fabrics: SewingProjectFabric[];
   /** Tools from the maker's Sewing room the project uses, in the order listed */
   tools: SewingTool[];
@@ -1989,6 +2090,42 @@ export type GetYarnCatalogParams = {
 brand?: string;
 subBrand?: string;
 color?: string;
+};
+
+export type GetWeeklyGoalParams = {
+studio: Studio;
+/**
+ * The maker's own date today (YYYY-MM-DD)
+ */
+today: string;
+/**
+ * The maker's time zone, e.g. America/Los_Angeles (UTC when missing or unknown)
+ */
+timeZone?: string;
+};
+
+export type SetWeeklyGoalParams = {
+studio: Studio;
+/**
+ * The maker's own date today (YYYY-MM-DD)
+ */
+today: string;
+/**
+ * The maker's time zone, e.g. America/Los_Angeles (UTC when missing or unknown)
+ */
+timeZone?: string;
+};
+
+export type CheckInWeeklyGoalParams = {
+studio: Studio;
+/**
+ * The maker's own date today (YYYY-MM-DD)
+ */
+today: string;
+/**
+ * The maker's time zone, e.g. America/Los_Angeles (UTC when missing or unknown)
+ */
+timeZone?: string;
 };
 
 export type GetStashFabricsParams = {

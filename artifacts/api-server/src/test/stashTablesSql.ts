@@ -156,6 +156,8 @@ export function sewingTablesSql(isolatedSchema: string): string {
       thread_color ${isolatedSchema}.general_color,
       notes text,
       completed_at date,
+      total_spend_cents integer,
+      hours_spent double precision,
       created_at timestamptz NOT NULL DEFAULT now(),
       updated_at timestamptz NOT NULL DEFAULT now()
     );
@@ -266,6 +268,19 @@ export function yarnToolsSql(isolatedSchema: string): string {
       photo_path text,
       created_at timestamptz NOT NULL DEFAULT now(),
       updated_at timestamptz NOT NULL DEFAULT now()
+    );
+  `;
+}
+
+// The weekly goal's activity log (lib/db/src/schema/habits.ts).
+export function craftActivitySql(isolatedSchema: string): string {
+  return `
+    CREATE TYPE ${isolatedSchema}.studio AS ENUM ('yarn', 'sewing');
+    CREATE TABLE ${isolatedSchema}.craft_activity (
+      user_id text NOT NULL REFERENCES ${isolatedSchema}.users(id) ON DELETE CASCADE,
+      studio ${isolatedSchema}.studio NOT NULL,
+      hour timestamptz NOT NULL,
+      PRIMARY KEY (user_id, studio, hour)
     );
   `;
 }

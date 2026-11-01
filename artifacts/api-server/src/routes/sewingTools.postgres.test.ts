@@ -85,7 +85,10 @@ describe.skipIf(!databaseUrl)("sewing tools against PostgreSQL", () => {
         joined_at timestamptz NOT NULL DEFAULT now(),
         yarn_enabled boolean NOT NULL DEFAULT true,
         sewing_enabled boolean NOT NULL DEFAULT false,
-        crafts_chosen_at timestamptz
+        crafts_chosen_at timestamptz,
+        currency text NOT NULL DEFAULT 'USD',
+        yarn_weekly_goal integer,
+        sewing_weekly_goal integer
       );
       ${sewingToolsSql(isolatedSchema)}
     `);

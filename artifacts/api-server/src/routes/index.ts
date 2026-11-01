@@ -8,6 +8,7 @@ import sewingProjectsRouter from "./sewingProjects";
 import sewingToolsRouter from "./sewingTools";
 import sewingPatternsRouter from "./sewingPatterns";
 import yarnToolsRouter from "./yarnTools";
+import weeklyGoalRouter from "./weeklyGoal";
 
 const router: IRouter = Router();
 
@@ -19,6 +20,7 @@ router.use(sewingProjectsRouter);
 router.use(sewingToolsRouter);
 router.use(sewingPatternsRouter);
 router.use(yarnToolsRouter);
+router.use(weeklyGoalRouter);
 router.use(projectsRouter);
 
 export default router;
