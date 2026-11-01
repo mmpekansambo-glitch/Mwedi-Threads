@@ -136,6 +136,7 @@ export function sewingTablesSql(isolatedSchema: string): string {
       notes text,
       completed_at date,
       total_spend_cents integer,
+      hours_spent double precision,
       created_at timestamptz NOT NULL DEFAULT now(),
       updated_at timestamptz NOT NULL DEFAULT now()
     );

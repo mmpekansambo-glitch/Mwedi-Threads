@@ -137,6 +137,7 @@ describe.skipIf(!databaseUrl)("project yarn, stash links and catalog reviews aga
         completion_percent integer NOT NULL DEFAULT 0,
         counter integer NOT NULL DEFAULT 0,
         total_spend_cents integer,
+        hours_spent double precision,
         created_at timestamptz NOT NULL DEFAULT now(),
         updated_at timestamptz NOT NULL DEFAULT now()
       );

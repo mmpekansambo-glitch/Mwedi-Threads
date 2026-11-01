@@ -25,6 +25,7 @@ import {
 } from '@workspace/api-client-react';
 import { CrochetHookSize, KnittingNeedleSize, NeedleCableLength } from '@workspace/api-client-react';
 import type { RenameOffer } from '@workspace/api-client-react';
+import type { ProjectTotals } from '@workspace/api-client-react';
 import type { CatalogField, CatalogReview, CreateProject, CreateStashFabric, CreateProgress, Crafts, Currency, ProjectDetail, FabricConstruction, FabricPrint, FabricType, FabricUnit, GeneralColor, Project, ProjectStatus, SewingMachineSetting, SewingNeedleSize, SewingNeedleType, SewingProject, SewingStage, SewingTool, SewingToolCategory, SewingToolSection, StashFabric, StashYarn, UpdateProject, YarnNotionType, YarnTool, YarnToolMaterial, YarnToolSection, YarnWeight, KnittingNeedleType } from '@workspace/api-client-react';
 import { FormProvider as Form, useForm, type UseFormReturn } from 'react-hook-form';
 import {
@@ -56,7 +57,7 @@ import {
 import { SkeinSuggestions } from '@/components/skein-suggestions';
 import { ArchiveNudge, ArchivedNote, UsedUpNudge, fabricArchive, fabricUsedUp, toolArchive, toolUsedUp, usedUp, yarnArchive } from '@/components/archive-nudge';
 import { ProjectCounter } from '@/components/project-counter';
-import { SpendRow } from '@/components/spend-row';
+import { FinishUpPrompt, HoursRow, SpendRow } from '@/components/project-totals';
 import { currencies } from '@/lib/money';
 import { NameReviewButton, NameReviewForm, NameReviewList, catalogFieldLabels } from '@/components/name-review';
 import { ErrorBoundary } from '@/components/error-boundary';
@@ -335,6 +336,19 @@ function CraftChoicePage() {
 const portalTitles = { dashboard: 'Overview', projects: 'My projects', stash: 'Yarn stash', reviews: 'Name reviews', sewing: 'Overview', sewingProjects: 'Projects', fabric: 'Fabric stash', tools: 'Tools', yarnTools: 'Tools' };
 const sewingPages = new Set<keyof typeof portalTitles>(['sewing', 'sewingProjects', 'fabric', 'tools']);
 const homeNames: Record<Craft, string> = { yarn: 'Yarn studio', sewing: 'Sewing room' };
+
+// True from the moment a project on screen turns Finished until the maker
+// closes the finish-up prompt. Opening an already-finished project doesn't count.
+function useFinishUp(status: string | undefined, startOpen = false) {
+  const [open, setOpen] = useState(startOpen);
+  const last = useRef(status);
+  useEffect(() => {
+    if (status === 'completed' && last.current !== undefined && last.current !== 'completed') setOpen(true);
+    if (status !== 'completed') setOpen(false);
+    last.current = status;
+  }, [status]);
+  return [open && status === 'completed', () => setOpen(false)] as const;
+}
 
 function PortalLayout({ children, active }: { children: ReactNode; active: keyof typeof portalTitles }) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -911,6 +925,7 @@ function ProjectDetailView({ projectId }: { projectId: string }) {
   const [photoRemovalError, setPhotoRemovalError] = useState('');
   const [removingPhotoEntryId, setRemovingPhotoEntryId] = useState('');
   const project = query.data;
+  const [finishUp, closeFinishUp] = useFinishUp(project?.status);
   useEffect(() => {
     if (!progressPhoto) {
       setProgressPhotoPreview('');
@@ -1076,12 +1091,16 @@ function ProjectDetailView({ projectId }: { projectId: string }) {
       onSettled: () => setRemovingPhotoEntryId(''),
     });
   };
+  const saveTotals = (data: ProjectTotals) => setProjectTotals(projectId, data).then((saved) => {
+    client.setQueryData<ProjectDetail>(getGetProjectQueryKey(projectId), (old) => (old ? { ...old, totalSpendCents: saved.totalSpendCents ?? null, hoursSpent: saved.hoursSpent ?? null } : old));
+  });
   if (query.isLoading) return <PortalLayout active="projects"><LoadingScreen label="Finding this project…"/></PortalLayout>;
   if (query.isError || !project) return <PortalLayout active="projects"><QueryProblem retry={() => query.refetch()} message="We couldn't find this project."/></PortalLayout>;
   const craftLabel = project.craft === 'knitting' ? 'Knitting' : 'Crochet';
   return <PortalLayout active="projects">
     <Link href="/projects" className="back-link" data-testid="link-back-projects"><ArrowLeft size={16}/> Back to projects</Link>
      <div className="detail-heading"><div><h1 className="serif">{project.title}</h1><div className="detail-status"><StatusPill status={project.status}/><span>{craftLabel}</span>{project.startedAt && <span>Started {formatProjectDate(project.startedAt, project.startedAtPrecision)}</span>}</div></div><div className="detail-actions"><StarButton project={project} className="detail-star"/><button className="button button-outline" onClick={() => setEditing(!editing)} data-testid="button-edit-project">{editing ? <X size={16}/> : <Feather size={16}/>} {editing ? 'Close edit' : 'Edit details'}</button><button className="icon-button danger-icon" aria-label="Delete project" title="Delete project" onClick={() => setConfirmDelete(true)} data-testid="button-delete-project"><Trash2 size={17}/></button></div></div>
+    {finishUp && <FinishUpPrompt hours={project.hoursSpent} cents={project.totalSpendCents} currency={currency} onSaveHours={(hours) => saveTotals({ hoursSpent: hours })} onSaveSpend={(cents) => saveTotals({ totalSpendCents: cents })} onDone={closeFinishUp}/>}
     <SkeinSuggestions projectId={project.id}/>
     {confirmDelete && <div className="confirm-banner"><div><b>Delete this project?</b><span>This will permanently remove the project and its progress notes.</span></div><button className="button button-quiet" onClick={() => setConfirmDelete(false)} data-testid="button-cancel-delete">Cancel</button><button className="button button-danger" onClick={deleteProject} disabled={remove.isPending} data-testid="button-confirm-delete">{remove.isPending ? 'Removing…' : 'Delete project'}</button></div>}
     {editing && <Form {...editForm}><form className="edit-form loom-card" onSubmit={saveEdit} noValidate><div className="form-intro"><h2 className="serif">Edit details</h2></div><div className="form-grid">
@@ -1129,9 +1148,8 @@ function ProjectDetailView({ projectId }: { projectId: string }) {
           {project.tools && <div><dt>Saved tools note</dt><dd>{project.tools}</dd></div>}
           <div><dt>Target date</dt><dd>{formatProjectDate(project.targetDate, project.targetDatePrecision) || 'No date in mind'}</dd></div>
           {project.completedAt && <div><dt>Finished on</dt><dd data-testid="text-completed-date">{formatProjectDate(project.completedAt, project.completedAtPrecision)}</dd></div>}
-          <SpendRow cents={project.totalSpendCents} currency={currency} onSave={(cents) => setProjectTotals(project.id, { totalSpendCents: cents }).then((saved) => {
-            client.setQueryData<ProjectDetail>(getGetProjectQueryKey(project.id), (old) => (old ? { ...old, totalSpendCents: saved.totalSpendCents ?? null } : old));
-          })}/>
+          {project.status === 'completed' && <HoursRow hours={project.hoursSpent} onSave={(hours) => saveTotals({ hoursSpent: hours })}/>}
+          <SpendRow cents={project.totalSpendCents} currency={currency} onSave={(cents) => saveTotals({ totalSpendCents: cents })}/>
         </dl>{project.description && <div className="personal-note"><span>Notes</span><p>{project.description}</p></div>}<button className="aside-edit" onClick={() => setEditing(!editing)} data-testid="button-edit-details"><Feather size={14}/> Edit details</button></div>
       </aside>
     </section>
@@ -2004,6 +2022,10 @@ function SewingProjectDetailPage({ projectId }: { projectId: string }) {
   const update = useUpdateSewingProject();
   const remove = useDeleteSewingProject();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [finishUp, closeFinishUp] = useFinishUp(query.data?.status, justFinished);
+  const saveTotals = (data: ProjectTotals) => setSewingProjectTotals(projectId, data).then((saved) => {
+    client.setQueryData<SewingProject>(getGetSewingProjectQueryKey(projectId), (old) => (old ? { ...old, totalSpendCents: saved.totalSpendCents ?? null, hoursSpent: saved.hoursSpent ?? null } : old));
+  });
   if (query.isLoading) return <PortalLayout active="sewingProjects"><LoadingScreen label="Finding this project…"/></PortalLayout>;
   if (query.isError || !query.data) return <PortalLayout active="sewingProjects"><QueryProblem retry={() => query.refetch()} message="We couldn’t find this project."/></PortalLayout>;
   const project = query.data;
@@ -2031,6 +2053,7 @@ function SewingProjectDetailPage({ projectId }: { projectId: string }) {
       <button className="icon-button danger-icon" aria-label="Delete project" title="Delete project" onClick={() => setConfirmDelete(true)} data-testid="button-delete-sewing-project"><Trash2 size={17}/></button>
     </div>}/>
     {confirmDelete && <div className="confirm-banner"><div><b>Delete this project?</b><span>Your fabric stays in your stash.</span></div><button className="button button-quiet" onClick={() => setConfirmDelete(false)}>Cancel</button><button className="button button-danger" onClick={deleteProject} disabled={remove.isPending} data-testid="button-confirm-delete-sewing-project">{remove.isPending ? 'Deleting…' : 'Delete project'}</button></div>}
+    {finishUp && <FinishUpPrompt hours={project.hoursSpent} cents={project.totalSpendCents} currency={currency} onSaveHours={(hours) => saveTotals({ hoursSpent: hours })} onSaveSpend={(cents) => saveTotals({ totalSpendCents: cents })} onDone={closeFinishUp}/>}
     {justFinished && project.status === 'completed' && <FabricLeftPrompt project={project} onDone={() => setLocation(`/sewing/projects/${project.id}`, { replace: true })}/>}
     <section className="sewing-detail loom-card">
       <div className="sewing-detail-status"><StatusPill status={project.status}/>{project.completedAt && <span className="updated-label">Finished {formatWheelDate(project.completedAt, 'day')}</span>}</div>
@@ -2055,9 +2078,8 @@ function SewingProjectDetailPage({ projectId }: { projectId: string }) {
         {project.sizeMade && <div><dt>Size made</dt><dd>{project.sizeMade}</dd></div>}
         {needleLabel(project) && <div><dt>Needle</dt><dd>{needleLabel(project)}</dd></div>}
         {project.threadColor && <div><dt>Thread color</dt><dd className="sewing-thread"><ColorDot color={project.threadColor} noun="thread"/>{labelFor(generalColors, project.threadColor)}</dd></div>}
-        <SpendRow cents={project.totalSpendCents} currency={currency} onSave={(cents) => setSewingProjectTotals(project.id, { totalSpendCents: cents }).then((saved) => {
-          client.setQueryData<SewingProject>(getGetSewingProjectQueryKey(project.id), (old) => (old ? { ...old, totalSpendCents: saved.totalSpendCents ?? null } : old));
-        })}/>
+        {project.status === 'completed' && <HoursRow hours={project.hoursSpent} onSave={(hours) => saveTotals({ hoursSpent: hours })}/>}
+        <SpendRow cents={project.totalSpendCents} currency={currency} onSave={(cents) => saveTotals({ totalSpendCents: cents })}/>
       </dl>
       {project.machineSettings.length > 0 && <div className="machine-settings" data-testid="sewing-machine-settings"><h2>Special machine settings</h2>
         <ul>{project.machineSettings.map((setting, index) => <li key={index}><b>{setting.name || 'Special machine settings'}</b>{machineSettingSummary(setting) && <small>{machineSettingSummary(setting)}</small>}{setting.notes && <small>{setting.notes}</small>}</li>)}</ul>

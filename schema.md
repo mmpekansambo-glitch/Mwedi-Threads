@@ -234,6 +234,7 @@ One row per knitting or crochet project.
 | completion_percent | integer | yes | 0 | |
 | counter | integer | yes | 0 | The plain counter on the project page. Never changes progress. |
 | total_spend_cents | integer | no | | What the maker spent, in hundredths of their currency (4250 = 42.50). Saving it doesn't change updated_at. |
+| hours_spent | double precision | no | | Total hours the project took, in half-hour steps. Logged once it's finished. |
 | created_at | timestamp with time zone | yes | now | |
 | updated_at | timestamp with time zone | yes | now | Updated on every change except the counter. |
 
@@ -333,6 +334,7 @@ One row per sewing project in a maker's Sewing room.
 | notes | text | no | | |
 | completed_at | date | no | | Set when finished, cleared on reopening. |
 | total_spend_cents | integer | no | | What the maker spent, in hundredths of their currency. Saving it doesn't change updated_at. |
+| hours_spent | double precision | no | | Total hours the project took, in half-hour steps. Logged once it's finished. |
 | created_at | timestamp with time zone | yes | now | |
 | updated_at | timestamp with time zone | yes | now | Updated on every change. |
 
@@ -514,7 +516,7 @@ A date saved with `month` precision means only the month and year are known. In 
 Section 3 of [PLAN.md](PLAN.md) planned 4 tables: `users`, `projects`, `project_progress_entries` and `stars`. All 4 were built, with these differences:
 
 - **users:** has the 4 planned columns (`id`, `email`, `display_name`, `joined_at`), plus the craft switches `yarn_enabled`, `sewing_enabled` and `crafts_chosen_at` added in #55, and `currency` (#99). A row is created on the first signed-in request (#6).
-- **projects:** has every planned column, plus `completed_at` (#8), the progress method columns (#22), the knitting needle columns (#26), `counter` (#57), the second hook (#60) and `total_spend_cents` (#99).
+- **projects:** has every planned column, plus `completed_at` (#8), the progress method columns (#22), the knitting needle columns (#26), `counter` (#57), the second hook (#60), `total_spend_cents` and `hours_spent` (#99).
 - **project_progress_entries:** as planned, plus `progress_value` for the rows, sections and skeins methods (#22).
 - **stars:** as planned, one junction table with (`user_id`, `project_id`) as the key (#10).
 

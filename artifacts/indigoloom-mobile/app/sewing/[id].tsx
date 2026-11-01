@@ -8,7 +8,7 @@ import {
   getGetSewingOverviewQueryKey, getGetSewingProjectQueryKey, getGetSewingProjectsQueryKey, getGetStashFabricsQueryKey,
   setSewingProjectTotals, useDeleteSewingProject, useGetSewingProject, useUpdateSewingProject, useUpdateStashFabric,
 } from '@workspace/api-client-react';
-import type { ProjectStatus, SewingProject, SewingStage, StashFabric } from '@workspace/api-client-react';
+import type { ProjectStatus, ProjectTotals, SewingProject, SewingStage, StashFabric } from '@workspace/api-client-react';
 import { UsedUpNudge, fabricArchive, fabricUsedUp } from '@/components/ArchiveNudge';
 import { ErrorState, LoadingState, LoomButton, LoomText, SignedInGate, StatusChip, fonts } from '@/components/loom';
 import { FabricPhoto, fabricName } from '@/components/FabricFields';
@@ -16,7 +16,7 @@ import { MachineSettingsList, amountLeft, fabricAmount, needleLabel, sewingStage
 import { ToolThumb, toolDetails } from '@/components/SewingTools';
 import { ColorDot, generalColors } from '@/components/YarnFields';
 import { SewingJournal } from '@/components/SewingJournal';
-import { SpendRow } from '@/components/SpendRow';
+import { FinishUpPrompt, HoursRow, SpendRow } from '@/components/ProjectTotals';
 import { useCrafts } from '@/components/Crafts';
 import { useSewingColors } from '@/hooks/useColors';
 
@@ -91,10 +91,14 @@ function SewingProjectView({ project }: { project: SewingProject }) {
   const remove = useDeleteSewingProject();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [prompt, setPrompt] = useState(finished === '1');
+  const [finishUp, setFinishUp] = useState(finished === '1');
+  const saveTotals = (data: ProjectTotals) => setSewingProjectTotals(project.id, data).then((saved) => {
+    client.setQueryData<SewingProject>(getGetSewingProjectQueryKey(project.id), (old) => (old ? { ...old, totalSpendCents: saved.totalSpendCents ?? null, hoursSpent: saved.hoursSpent ?? null } : old));
+  });
   // Finishing here or in the edit form brings up the stash prompt.
   const lastStatus = useRef(project.status);
   useEffect(() => {
-    if (project.status === 'completed' && lastStatus.current !== 'completed') setPrompt(true);
+    if (project.status === 'completed' && lastStatus.current !== 'completed') { setPrompt(true); setFinishUp(true); }
     lastStatus.current = project.status;
   }, [project.status]);
 
@@ -137,6 +141,7 @@ function SewingProjectView({ project }: { project: SewingProject }) {
             </View>
           </View>
         ) : null}
+        {finishUp && project.status === 'completed' ? <FinishUpPrompt sewing hours={project.hoursSpent} cents={project.totalSpendCents} currency={currency} onSaveHours={(hours) => saveTotals({ hoursSpent: hours })} onSaveSpend={(cents) => saveTotals({ totalSpendCents: cents })} onDone={() => setFinishUp(false)} /> : null}
         {prompt && project.status === 'completed' ? <FabricLeftPrompt project={project} onDone={() => setPrompt(false)} /> : null}
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <LoomText serif style={[styles.title, { color: colors.foreground }]}>{project.title}</LoomText>
@@ -179,9 +184,8 @@ function SewingProjectView({ project }: { project: SewingProject }) {
             </View>
           ) : null}
           <View style={{ marginTop: 14 }}>
-            <SpendRow sewing cents={project.totalSpendCents} currency={currency} onSave={(cents) => setSewingProjectTotals(project.id, { totalSpendCents: cents }).then((saved) => {
-              client.setQueryData<SewingProject>(getGetSewingProjectQueryKey(project.id), (old) => (old ? { ...old, totalSpendCents: saved.totalSpendCents ?? null } : old));
-            })} />
+            {project.status === 'completed' ? <HoursRow sewing hours={project.hoursSpent} onSave={(hours) => saveTotals({ hoursSpent: hours })} /> : null}
+            <SpendRow sewing cents={project.totalSpendCents} currency={currency} onSave={(cents) => saveTotals({ totalSpendCents: cents })} />
           </View>
           <MachineSettingsList settings={project.machineSettings} />
           {([['Fit changes', project.fitChanges], ['Notes', project.notes]] as const).map(([label, value]) => value ? (

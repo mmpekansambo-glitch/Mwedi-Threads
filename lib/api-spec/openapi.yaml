@@ -262,7 +262,7 @@ paths:
     put:
       operationId: setProjectTotals
       tags: [projects]
-      summary: Save the project's total spend (only the fields sent change)
+      summary: Save the project's total spend and hours (only the fields sent change)
       requestBody:
         required: true
         content:
@@ -1169,7 +1169,7 @@ paths:
     put:
       operationId: setSewingProjectTotals
       tags: [sewing]
-      summary: Save the sewing project's total spend (only the fields sent change)
+      summary: Save the sewing project's total spend and hours (only the fields sent change)
       requestBody:
         required: true
         content:
@@ -1854,6 +1854,10 @@ components:
           type: [integer, "null"]
           minimum: 0
           description: What the maker spent, in cents of their chosen currency
+        hoursSpent:
+          type: [number, "null"]
+          minimum: 0
+          description: Total hours the project took, in half-hour steps
         createdAt:
           type: string
           format: date-time
@@ -1865,6 +1869,7 @@ components:
         - title
         - counter
         - totalSpendCents
+        - hoursSpent
         - craft
         - status
         - description
@@ -1912,6 +1917,12 @@ components:
           minimum: 0
           maximum: 100000000
           description: What the maker spent, in cents of their chosen currency (null clears it)
+        hoursSpent:
+          type: [number, "null"]
+          minimum: 0
+          maximum: 5000
+          multipleOf: 0.5
+          description: Total hours the project took, in half-hour steps (null clears it)
     ProjectDetail:
       allOf:
         - $ref: "#/components/schemas/Project"
@@ -2918,6 +2929,10 @@ components:
           type: [integer, "null"]
           minimum: 0
           description: What the maker spent, in cents of their chosen currency
+        hoursSpent:
+          type: [number, "null"]
+          minimum: 0
+          description: Total hours the project took, in half-hour steps
         fabrics:
           type: array
           items:
@@ -2943,7 +2958,7 @@ components:
         updatedAt:
           type: string
           format: date-time
-      required: [id, title, status, stage, patternName, patternDesigner, sizeMade, fitChanges, needleType, needleSize, threadColor, notes, completedAt, totalSpendCents, fabrics, tools, machineSettings, entries, createdAt, updatedAt]
+      required: [id, title, status, stage, patternName, patternDesigner, sizeMade, fitChanges, needleType, needleSize, threadColor, notes, completedAt, totalSpendCents, hoursSpent, fabrics, tools, machineSettings, entries, createdAt, updatedAt]
     SewingProjectEntry:
       type: object
       properties:

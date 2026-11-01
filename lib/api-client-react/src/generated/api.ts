@@ -1008,7 +1008,7 @@ export const getSetProjectTotalsUrl = (projectId: string,) => {
 }
 
 /**
- * @summary Save the project's total spend (only the fields sent change)
+ * @summary Save the project's total spend and hours (only the fields sent change)
  */
 export const setProjectTotals = async (projectId: string,
     projectTotals: ProjectTotals, options?: Parameters<typeof customFetch>[1]): Promise<ProjectTotals> => {
@@ -1075,7 +1075,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type SetProjectTotalsMutationVariables = {projectId: string;data: BodyType<ProjectTotals>}
 
     /**
- * @summary Save the project's total spend (only the fields sent change)
+ * @summary Save the project's total spend and hours (only the fields sent change)
  */
 export const useSetProjectTotals = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setProjectTotals>>, TError,SetProjectTotalsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
@@ -4238,7 +4238,7 @@ export const getSetSewingProjectTotalsUrl = (sewingProjectId: string,) => {
 }
 
 /**
- * @summary Save the sewing project's total spend (only the fields sent change)
+ * @summary Save the sewing project's total spend and hours (only the fields sent change)
  */
 export const setSewingProjectTotals = async (sewingProjectId: string,
     projectTotals: ProjectTotals, options?: Parameters<typeof customFetch>[1]): Promise<ProjectTotals> => {
@@ -4305,7 +4305,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type SetSewingProjectTotalsMutationVariables = {sewingProjectId: string;data: BodyType<ProjectTotals>}
 
     /**
- * @summary Save the sewing project's total spend (only the fields sent change)
+ * @summary Save the sewing project's total spend and hours (only the fields sent change)
  */
 export const useSetSewingProjectTotals = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setSewingProjectTotals>>, TError,SetSewingProjectTotalsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}

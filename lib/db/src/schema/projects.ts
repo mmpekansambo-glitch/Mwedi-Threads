@@ -88,6 +88,8 @@ export const projectsTable = pgTable("projects", {
   counter: integer("counter").notNull().default(0),
   // What the maker spent on the project, in cents of their chosen currency.
   totalSpendCents: integer("total_spend_cents"),
+  // Total hours the project took, in half-hour steps, logged once it's finished.
+  hoursSpent: doublePrecision("hours_spent"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

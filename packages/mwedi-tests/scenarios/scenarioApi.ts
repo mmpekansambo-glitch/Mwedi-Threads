@@ -15,12 +15,19 @@ export async function signInAs(page: Page, makerId: string): Promise<void> {
   await page.route("**/api/**", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
-    const response = await route.fetch({
-      url: `${scenarioApi}${url.pathname}${url.search}`,
-      headers: { ...request.headers(), "x-test-user": makerId },
-      maxRedirects: 0,
-    });
-    await route.fulfill({ response });
+    try {
+      const response = await route.fetch({
+        url: `${scenarioApi}${url.pathname}${url.search}`,
+        headers: { ...request.headers(), "x-test-user": makerId },
+        maxRedirects: 0,
+      });
+      await route.fulfill({ response });
+    } catch (error) {
+      // A reload or navigation while a call is on its way drops that call;
+      // the browser no longer wants the answer, so there is nothing to fulfill.
+      if (/Fetch response has been disposed|Target page, context or browser has been closed/.test(String(error))) return;
+      throw error;
+    }
   });
 }
 

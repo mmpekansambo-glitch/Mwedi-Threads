@@ -41,6 +41,12 @@ export interface SewingProject {
      * @nullable
      */
   totalSpendCents: number | null;
+  /**
+     * Total hours the project took, in half-hour steps
+     * @minimum 0
+     * @nullable
+     */
+  hoursSpent: number | null;
   fabrics: SewingProjectFabric[];
   /** Tools from the maker's Sewing room the project uses, in the order listed */
   tools: SewingTool[];

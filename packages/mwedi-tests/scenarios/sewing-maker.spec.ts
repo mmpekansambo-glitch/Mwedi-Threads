@@ -137,7 +137,12 @@ test("a maker who works in the Sewing room", async ({ page }) => {
 
   await test.step("finishes the dress and takes the fabric used off the stash (#83)", async () => {
     await page.goto(projectUrl);
+    await expect(page.getByTestId("button-hours")).toHaveCount(0);
     await page.getByTestId("button-finish-sewing-project").click();
+    await expect(page.getByTestId("prompt-finish-up")).toBeVisible();
+    await page.getByTestId("prompt-finish-up").getByTestId("button-finish-up-done").click();
+    await expect(page.getByTestId("prompt-finish-up")).toHaveCount(0);
+    await expect(page.getByTestId("button-hours")).toHaveText("Add");
     await expect(page.getByTestId("prompt-fabric-left")).toContainText("Cotton, stripe: 3 m left → 0.5 m");
     await page.getByTestId("button-update-stash").click();
     await expect(page.getByTestId("prompt-fabric-left")).toHaveCount(0);

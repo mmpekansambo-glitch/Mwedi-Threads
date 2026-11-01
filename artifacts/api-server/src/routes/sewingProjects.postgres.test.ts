@@ -221,7 +221,9 @@ describe.skipIf(!databaseUrl)("sewing projects against PostgreSQL", () => {
 
     const saved = await request(`/sewing-projects/${project.id}/totals`, { method: "PUT", user: ownerA, body: { totalSpendCents: 1899 } });
     expect(saved.status).toBe(200);
-    expect(await read(saved)).toEqual({ totalSpendCents: 1899 });
+    expect(await read(saved)).toEqual({ totalSpendCents: 1899, hoursSpent: null });
+    const hours = await request(`/sewing-projects/${project.id}/totals`, { method: "PUT", user: ownerA, body: { hoursSpent: 6 } });
+    expect(await read(hours)).toEqual({ totalSpendCents: 1899, hoursSpent: 6 });
     expect((await read(await request(`/sewing-projects/${project.id}`, { user: ownerA }))).totalSpendCents).toBe(1899);
 
     const otherOwner = await request(`/sewing-projects/${project.id}/totals`, { method: "PUT", user: ownerB, body: { totalSpendCents: 1 } });

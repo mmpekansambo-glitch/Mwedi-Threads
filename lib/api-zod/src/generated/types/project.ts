@@ -83,6 +83,12 @@ export interface Project {
      * @nullable
      */
   totalSpendCents: number | null;
+  /**
+     * Total hours the project took, in half-hour steps
+     * @minimum 0
+     * @nullable
+     */
+  hoursSpent: number | null;
   createdAt: Date;
   updatedAt: Date;
 }

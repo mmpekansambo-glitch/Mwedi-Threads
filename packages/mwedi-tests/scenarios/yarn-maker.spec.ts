@@ -136,6 +136,22 @@ test("a maker who works in the Yarn studio", async ({ page }) => {
     await expect(suggestion).toHaveCount(0);
   });
 
+  await test.step("logs 12½ hours in the finish-up prompt, which keeps the spend (#99)", async () => {
+    const prompt = page.getByTestId("prompt-finish-up");
+    await expect(prompt.getByTestId("button-total-spend")).toHaveText("£42.50");
+    await prompt.getByTestId("button-hours").click();
+    await page.getByTestId("wheel-hours").focus();
+    for (let step = 0; step < 12; step += 1) await page.keyboard.press("ArrowDown");
+    await page.getByTestId("wheel-half-hour").getByRole("option", { name: "+ ½" }).click();
+    await page.getByTestId("button-save-hours").click();
+    await expect(prompt.getByTestId("button-hours")).toHaveText("12½ hours");
+    await prompt.getByTestId("button-finish-up-done").click();
+    await expect(prompt).toHaveCount(0);
+    await page.reload();
+    await expect(page.getByTestId("prompt-finish-up")).toHaveCount(0);
+    await expect(page.getByTestId("button-hours")).toHaveText("12½ hours");
+  });
+
   await test.step("uses up the yarn and moves it to the Archive (#82)", async () => {
     await page.goto(`/stash/${fishermanId}`);
     await expect(page.getByTestId("input-skeins-left")).toHaveValue("1");

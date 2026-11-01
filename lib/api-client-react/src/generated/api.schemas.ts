@@ -267,6 +267,12 @@ export interface Project {
      * @nullable
      */
   totalSpendCents: number | null;
+  /**
+     * Total hours the project took, in half-hour steps
+     * @minimum 0
+     * @nullable
+     */
+  hoursSpent: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -287,6 +293,13 @@ export interface ProjectTotals {
      * @nullable
      */
   totalSpendCents?: number | null;
+  /**
+     * Total hours the project took, in half-hour steps (null clears it)
+     * @minimum 0
+     * @maximum 5000
+     * @nullable
+     */
+  hoursSpent?: number | null;
 }
 
 export type ProjectDetail = Project & {
@@ -1373,6 +1386,12 @@ export interface SewingProject {
      * @nullable
      */
   totalSpendCents: number | null;
+  /**
+     * Total hours the project took, in half-hour steps
+     * @minimum 0
+     * @nullable
+     */
+  hoursSpent: number | null;
   fabrics: SewingProjectFabric[];
   /** Tools from the maker's Sewing room the project uses, in the order listed */
   tools: SewingTool[];

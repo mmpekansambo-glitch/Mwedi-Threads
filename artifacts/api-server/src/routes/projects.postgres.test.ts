@@ -128,6 +128,7 @@ describe.skipIf(!databaseUrl)("project authorization against PostgreSQL", () => 
         completion_percent integer NOT NULL DEFAULT 0,
         counter integer NOT NULL DEFAULT 0,
         total_spend_cents integer,
+        hours_spent double precision,
         created_at timestamptz NOT NULL DEFAULT now(),
         updated_at timestamptz NOT NULL DEFAULT now()
       );
@@ -554,7 +555,7 @@ describe.skipIf(!databaseUrl)("project authorization against PostgreSQL", () => 
       body: { totalSpendCents: 4250 },
     });
     expect(saved.status).toBe(200);
-    expect(await saved.json()).toEqual({ totalSpendCents: 4250 });
+    expect(await saved.json()).toEqual({ totalSpendCents: 4250, hoursSpent: null });
 
     const detail = await request(`/projects/${projectAId}`, { user: ownerA });
     expect(((await detail.json()) as { totalSpendCents: number | null }).totalSpendCents).toBe(4250);
@@ -586,7 +587,26 @@ describe.skipIf(!databaseUrl)("project authorization against PostgreSQL", () => 
       user: ownerA,
       body: { totalSpendCents: null },
     });
-    expect(await cleared.json()).toEqual({ totalSpendCents: null });
+    expect(await cleared.json()).toEqual({ totalSpendCents: null, hoursSpent: null });
+  });
+
+  it("saves hours in half-hour steps without touching spend", async () => {
+    await request(`/projects/${projectAId}/totals`, { method: "PUT", user: ownerA, body: { totalSpendCents: 900 } });
+    const saved = await request(`/projects/${projectAId}/totals`, { method: "PUT", user: ownerA, body: { hoursSpent: 12.5 } });
+    expect(saved.status).toBe(200);
+    expect(await saved.json()).toEqual({ totalSpendCents: 900, hoursSpent: 12.5 });
+    const detail = await request(`/projects/${projectAId}`, { user: ownerA });
+    expect(((await detail.json()) as { hoursSpent: number | null }).hoursSpent).toBe(12.5);
+
+    for (const bad of [-0.5, 1.25, 5000.5]) {
+      const response = await request(`/projects/${projectAId}/totals`, { method: "PUT", user: ownerA, body: { hoursSpent: bad } });
+      expect(response.status).toBe(400);
+    }
+    const otherOwner = await request(`/projects/${projectAId}/totals`, { method: "PUT", user: ownerB, body: { hoursSpent: 1 } });
+    expect(otherOwner.status).toBe(404);
+
+    const cleared = await request(`/projects/${projectAId}/totals`, { method: "PUT", user: ownerA, body: { hoursSpent: null, totalSpendCents: null } });
+    expect(await cleared.json()).toEqual({ totalSpendCents: null, hoursSpent: null });
   });
 
   // PLAN.md test 2: the dashboard's "Most-used yarn brand" stat.

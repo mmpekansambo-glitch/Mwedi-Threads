@@ -733,7 +733,7 @@ router.put("/projects/:projectId/counter", async (req, res): Promise<void> => {
   res.json(SetProjectCounterResponse.parse(updated));
 });
 
-// Saves total spend on its own, without touching updatedAt, so the projects
+// Saves total spend and hours on their own, without touching updatedAt, so the projects
 // list keeps its order. Only the fields sent change; null clears one.
 router.put("/projects/:projectId/totals", async (req, res): Promise<void> => {
   const params = SetProjectTotalsParams.safeParse(req.params);
@@ -743,17 +743,20 @@ router.put("/projects/:projectId/totals", async (req, res): Promise<void> => {
   }
   const body = SetProjectTotalsBody.safeParse(req.body);
   if (!body.success) {
-    res.status(400).json({ error: "Enter an amount from 0 up." });
+    res.status(400).json({ error: "Enter an amount from 0 up, and hours in half-hour steps." });
     return;
   }
 
   const ownerId = getOwnerId(res);
-  const changes = body.data.totalSpendCents !== undefined ? { totalSpendCents: body.data.totalSpendCents } : {};
+  const changes = {
+    ...(body.data.totalSpendCents !== undefined ? { totalSpendCents: body.data.totalSpendCents } : {}),
+    ...(body.data.hoursSpent !== undefined ? { hoursSpent: body.data.hoursSpent } : {}),
+  };
   const [updated] = await db
     .update(projectsTable)
     .set({ ...changes, updatedAt: sql`${projectsTable.updatedAt}` })
     .where(and(eq(projectsTable.id, params.data.projectId), eq(projectsTable.ownerId, ownerId)))
-    .returning({ totalSpendCents: projectsTable.totalSpendCents });
+    .returning({ totalSpendCents: projectsTable.totalSpendCents, hoursSpent: projectsTable.hoursSpent });
   if (!updated) {
     res.status(404).json({ error: "Project not found." });
     return;

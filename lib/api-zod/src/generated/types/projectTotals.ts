@@ -14,4 +14,11 @@ export interface ProjectTotals {
      * @nullable
      */
   totalSpendCents?: number | null;
+  /**
+     * Total hours the project took, in half-hour steps (null clears it)
+     * @minimum 0
+     * @maximum 5000
+     * @nullable
+     */
+  hoursSpent?: number | null;
 }

@@ -352,7 +352,7 @@ router.delete("/sewing-projects/:sewingProjectId", requireAuth, async (req, res)
   res.sendStatus(204);
 });
 
-// Saves total spend on its own, without touching updatedAt, so the projects
+// Saves total spend and hours on their own, without touching updatedAt, so the projects
 // list keeps its order. Only the fields sent change; null clears one.
 router.put("/sewing-projects/:sewingProjectId/totals", requireAuth, async (req, res): Promise<void> => {
   const params = SetSewingProjectTotalsParams.safeParse(req.params);
@@ -362,17 +362,20 @@ router.put("/sewing-projects/:sewingProjectId/totals", requireAuth, async (req, 
   }
   const body = SetSewingProjectTotalsBody.safeParse(req.body);
   if (!body.success) {
-    res.status(400).json({ error: "Enter an amount from 0 up." });
+    res.status(400).json({ error: "Enter an amount from 0 up, and hours in half-hour steps." });
     return;
   }
 
   const ownerId = getOwnerId(res);
-  const changes = body.data.totalSpendCents !== undefined ? { totalSpendCents: body.data.totalSpendCents } : {};
+  const changes = {
+    ...(body.data.totalSpendCents !== undefined ? { totalSpendCents: body.data.totalSpendCents } : {}),
+    ...(body.data.hoursSpent !== undefined ? { hoursSpent: body.data.hoursSpent } : {}),
+  };
   const [updated] = await db
     .update(sewingProjectsTable)
     .set({ ...changes, updatedAt: sql`${sewingProjectsTable.updatedAt}` })
     .where(and(eq(sewingProjectsTable.id, params.data.sewingProjectId), eq(sewingProjectsTable.ownerId, ownerId)))
-    .returning({ totalSpendCents: sewingProjectsTable.totalSpendCents });
+    .returning({ totalSpendCents: sewingProjectsTable.totalSpendCents, hoursSpent: sewingProjectsTable.hoursSpent });
   if (!updated) {
     res.status(404).json({ error: "Project not found." });
     return;
