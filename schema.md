@@ -25,6 +25,8 @@ erDiagram
     users ||--o{ yarn_tools : owns
     users ||--o{ sewing_projects : owns
     users ||--o{ sewing_tools : owns
+    users ||--o{ sewing_patterns : owns
+    sewing_patterns |o--o{ sewing_projects : "made from"
     sewing_projects ||--o{ sewing_project_fabrics : uses
     stash_fabrics ||--o{ sewing_project_fabrics : "links"
     sewing_projects ||--o{ sewing_project_tools : uses
@@ -59,6 +61,13 @@ erDiagram
         sewing_stage stage
         sewing_needle_type needle_type
         general_color thread_color
+    }
+    sewing_patterns {
+        uuid id PK
+        text owner_id FK
+        text name
+        sewing_pattern_type pattern_type
+        sewing_pattern_format format
     }
     sewing_project_fabrics {
         uuid id PK
@@ -174,6 +183,8 @@ erDiagram
 - **sewing_projects ↔ sewing_tools through sewing_project_tools:** the notions and kit a project uses. Just a list: nothing is counted, and Tools quantities never change. Removing the tool removes the link.
 - **sewing_projects → sewing_project_machine_settings:** one-to-many. Named sets of machine settings (such as Seams, Topstitch, Hem). Optional; deleting the project deletes them.
 - **sewing_projects → sewing_project_entries:** one-to-many. A sewing project's dated notes journal. Deleting the project deletes its notes.
+- **users → sewing_patterns:** one-to-many. The Sewing room's pattern stash, on its own Patterns page.
+- **sewing_patterns → sewing_projects:** a project can use one pattern from its maker's pattern stash; a pattern can be used by many projects. Its finished projects are its "times made". Removing the pattern leaves its projects with no pattern.
 - **users → yarn_tools:** one-to-many. The hooks, needles and notions a maker owns, shown on the Yarn studio's Tools page. Not linked to projects.
 
 The diagram shows the key columns only. Every column is listed below.
@@ -326,8 +337,9 @@ One row per sewing project in a maker's Sewing room.
 | title | text | yes | | |
 | status | project_status | yes | `planning` | Same statuses as yarn projects. |
 | stage | sewing_stage | yes | `prep` | Prep, Cut, Sew, Fit, Finish. Finishing a project moves it to Finish. |
-| pattern_name | text | no | | |
-| pattern_designer | text | no | | |
+| pattern_id | uuid | no | | Links to `sewing_patterns.id`. Set to empty when the pattern is removed. |
+| pattern_name | text | no | | Typed pattern from before the pattern stash. Moved into `sewing_patterns` the first time the maker's Sewing room loads, then cleared. |
+| pattern_designer | text | no | | Same as `pattern_name`. |
 | size_made | text | no | | |
 | fit_changes | text | no | | |
 | needle_type | sewing_needle_type | no | | Universal, ballpoint, stretch, jeans, microtex, quilting, leather, topstitch, embroidery or metallic. |
@@ -347,6 +359,24 @@ One row per sewing project in a maker's Sewing room.
 | stash_fabric_id | uuid | yes | | Links to `stash_fabrics.id`. Deleted with the fabric. |
 | amount_used | double precision | no | | In the fabric's own unit. |
 | position | integer | yes | 0 | Order on the project. |
+
+## sewing_patterns
+
+One row per sewing pattern in a maker's pattern stash. No archive: patterns are reused, not used up.
+
+| Column | Type | Required | Default | Notes |
+|---|---|---|---|---|
+| id | uuid | yes | random | Primary key. |
+| owner_id | text | yes | | Links to `users.id`. Deleted with the user. |
+| name | text | yes | | |
+| designer | text | no | | Designer or company. |
+| pattern_type | sewing_pattern_type | no | | Dress, Top, Shirt, Skirt, Trousers, Bag, Quilt, Kids, Home, Other and so on. |
+| format | sewing_pattern_format | no | | Paper, PDF, Magazine or Self-drafted. |
+| sizes | text | no | | The sizes the pattern comes in, such as 6–24. |
+| notes | text | no | | |
+| photo_path | text | no | | Optional cover photo, only shown to its owner. |
+| created_at | timestamp with time zone | yes | now | |
+| updated_at | timestamp with time zone | yes | now | Updated on every change. |
 
 ## sewing_tools
 
