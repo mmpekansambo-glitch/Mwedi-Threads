@@ -18,7 +18,7 @@ import { CraftChoiceScreen, HomeProvider, useCrafts, useHome } from '@/component
 // is a system-level appearance provided by iOS and cannot be overridden.
 // Custom brand colors are applied only on the ClassicTabLayout path (older iOS / Android / web).
 // Each home shows only its own tabs: Overview, My projects, Yarn stash and
-// Tools in the Yarn studio; Overview, Projects, Fabric and Tools in the Sewing room.
+// Tools in the Yarn studio; Overview, Projects, Fabric, Patterns and Tools in the Sewing room.
 function NativeTabLayout() {
   const { home } = useHome();
   const yarnHidden = home !== 'yarn';
@@ -53,6 +53,10 @@ function NativeTabLayout() {
       <NativeTabs.Trigger name="fabric" hidden={!yarnHidden}>
         <NativeTabs.Trigger.Icon sf={{ default: 'scissors', selected: 'scissors' }} />
         <NativeTabs.Trigger.Label>Fabric</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="patterns" hidden={!yarnHidden}>
+        <NativeTabs.Trigger.Icon sf={{ default: 'doc.text', selected: 'doc.text.fill' }} />
+        <NativeTabs.Trigger.Label>Patterns</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="tools" hidden={!yarnHidden}>
         <NativeTabs.Trigger.Icon sf={{ default: 'wrench.and.screwdriver', selected: 'wrench.and.screwdriver.fill' }} />
@@ -195,6 +199,19 @@ function ClassicTabLayout() {
               <SymbolView name="scissors" tintColor={color} size={23} />
             ) : (
               <Feather name="scissors" size={21} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="patterns"
+        options={{
+          title: 'Patterns',
+          href: yarnHidden ? undefined : null,
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="doc.text" tintColor={color} size={23} />
+            ) : (
+              <Feather name="file-text" size={21} color={color} />
             ),
         }}
       />

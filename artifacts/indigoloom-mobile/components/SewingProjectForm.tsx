@@ -6,7 +6,7 @@ import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   getGetSewingOverviewQueryKey, getGetSewingProjectQueryKey, getGetSewingProjectsQueryKey,
-  useCreateSewingProject, useUpdateSewingProject,
+  useCreateSewingProject, useUpdateSewingProject, refreshPaths,
 } from '@workspace/api-client-react';
 import type { GeneralColor, ProjectStatus, SewingMachineSetting, SewingNeedleSize, SewingNeedleType, SewingProject, SewingTool } from '@workspace/api-client-react';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
@@ -14,6 +14,7 @@ import { FormFieldLabel, LoomButton, LoomText, fonts } from '@/components/loom';
 import { sizeForApi } from '@/components/FabricFields';
 import { MachineSettingsField, TapWheelRow, machineNeedleSizes, machineNeedleTypes, needleLabel } from '@/components/SewingFields';
 import { SuppliesField, type SuppliesFabric } from '@/components/SewingSupplies';
+import { ProjectPatternField, patternForApi, type ChosenPattern } from '@/components/SewingPatterns';
 import { ColorDot, generalColors } from '@/components/YarnFields';
 import { useSewingColors } from '@/hooks/useColors';
 
@@ -32,8 +33,7 @@ export function SewingProjectForm({ project }: { project?: SewingProject }) {
   const update = useUpdateSewingProject();
   const [title, setTitle] = useState(project?.title ?? '');
   const [status, setStatus] = useState<ProjectStatus>(project?.status ?? 'planning');
-  const [patternName, setPatternName] = useState(project?.patternName ?? '');
-  const [patternDesigner, setPatternDesigner] = useState(project?.patternDesigner ?? '');
+  const [pattern, setPattern] = useState<ChosenPattern | null>(project?.patternId && project.patternName ? { id: project.patternId, name: project.patternName, designer: project.patternDesigner } : null);
   const [sizeMade, setSizeMade] = useState(project?.sizeMade ?? '');
   const [fitChanges, setFitChanges] = useState(project?.fitChanges ?? '');
   const [notes, setNotes] = useState(project?.notes ?? '');
@@ -54,7 +54,7 @@ export function SewingProjectForm({ project }: { project?: SewingProject }) {
     const links = fabrics.map((item) => ({ stashFabricId: item.fabric.id, amountUsed: sizeForApi(item.amountUsed) }));
     if (links.some((item) => item.amountUsed === 'invalid')) return setMessage('Enter amounts between 0 and 999, like 1.5.');
     const data = {
-      title: title.trim(), status, patternName: patternName.trim() || null, patternDesigner: patternDesigner.trim() || null,
+      title: title.trim(), status, ...patternForApi(pattern),
       sizeMade: sizeMade.trim() || null, fitChanges: fitChanges.trim() || null, notes: notes.trim() || null,
       fabrics: links as Array<{ stashFabricId: string; amountUsed: number | null }>,
       needleType, needleSize, threadColor, toolIds: chosenTools.map((tool) => tool.id), machineSettings,
@@ -65,6 +65,7 @@ export function SewingProjectForm({ project }: { project?: SewingProject }) {
         client.setQueryData(getGetSewingProjectQueryKey(saved.id), saved);
         void client.invalidateQueries({ queryKey: getGetSewingProjectsQueryKey() });
         void client.invalidateQueries({ queryKey: getGetSewingOverviewQueryKey() });
+        refreshPaths(client, '/api/sewing-patterns');
         // An edit goes back to the project, which offers the stash update itself
         // when it sees the project become finished.
         if (project) router.back();
@@ -87,10 +88,7 @@ export function SewingProjectForm({ project }: { project?: SewingProject }) {
         <View style={[styles.formCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <FormFieldLabel>Project name *</FormFieldLabel>
           <TextInput {...inputProps} value={title} onChangeText={setTitle} maxLength={160} placeholder="e.g. Linen summer dress" style={inputStyle} testID="input-sewing-title" />
-          <FormFieldLabel>Pattern</FormFieldLabel>
-          <TextInput {...inputProps} value={patternName} onChangeText={setPatternName} maxLength={160} placeholder="Optional" style={inputStyle} testID="input-sewing-pattern" />
-          <FormFieldLabel>Designer</FormFieldLabel>
-          <TextInput {...inputProps} value={patternDesigner} onChangeText={setPatternDesigner} maxLength={160} placeholder="Optional" style={inputStyle} testID="input-sewing-designer" />
+          <ProjectPatternField chosen={pattern} onChange={setPattern} />
           <FormFieldLabel>Size made</FormFieldLabel>
           <TextInput {...inputProps} value={sizeMade} onChangeText={setSizeMade} maxLength={60} placeholder="e.g. 12 or M" style={inputStyle} testID="input-sewing-size" />
           <FormFieldLabel>Status</FormFieldLabel>
