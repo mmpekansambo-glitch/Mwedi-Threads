@@ -7,6 +7,11 @@
  */
 
 export * from './badRequestResponse';
+export * from './careBleach';
+export * from './careDry';
+export * from './careDryClean';
+export * from './careIron';
+export * from './careWash';
 export * from './catalogField';
 export * from './catalogReview';
 export * from './catalogReviewAccess';

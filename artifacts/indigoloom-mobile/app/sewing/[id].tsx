@@ -14,6 +14,7 @@ import { ErrorState, LoadingState, LoomButton, LoomText, SignedInGate, StatusChi
 import { FabricPhoto, fabricName } from '@/components/FabricFields';
 import { MachineSettingsList, amountLeft, fabricAmount, needleLabel, sewingStages, stageChange, stageIndex } from '@/components/SewingFields';
 import { ToolThumb, toolDetails } from '@/components/SewingTools';
+import { NeedsPhotoTag } from '@/components/SewingSupplies';
 import { ColorDot, generalColors } from '@/components/YarnFields';
 import { SewingJournal } from '@/components/SewingJournal';
 import { FinishUpPrompt, HoursRow, SpendRow } from '@/components/ProjectTotals';
@@ -196,18 +197,21 @@ function SewingProjectView({ project }: { project: SewingProject }) {
           ) : null)}
         </View>
         <SewingJournal project={project} />
-        <LoomText serif style={[styles.section, { color: colors.foreground }]}>Fabric</LoomText>
-        {project.fabrics.length ? project.fabrics.map((item) => (
+        <LoomText serif style={[styles.section, { color: colors.foreground }]}>Supplies</LoomText>
+        {!project.fabrics.length && !project.tools.length ? <LoomText style={{ color: colors.mutedForeground, fontSize: 15 }}>No supplies on this project yet.</LoomText> : null}
+        {project.fabrics.length ? <LoomText style={[styles.supplyGroup, { color: colors.primaryText }]}>FABRIC</LoomText> : null}
+        {project.fabrics.map((item) => (
           <Pressable key={item.stashFabricId} accessibilityRole="button" onPress={() => router.push({ pathname: '/fabric/[id]', params: { id: item.stashFabricId } })} style={[styles.fabric, { backgroundColor: colors.card, borderColor: colors.border }]} testID={`project-fabric-${item.stashFabricId}`}>
             <FabricPhoto fabric={item.fabric} index={0} style={[styles.fabricPhoto, { backgroundColor: colors.selectedWash }]} />
             <View style={{ flex: 1 }}>
               <LoomText style={{ color: colors.foreground, fontFamily: fonts.semibold, fontSize: 16 }}>{fabricName(item.fabric)}</LoomText>
+              {item.fabric.photoCount === 0 ? <NeedsPhotoTag /> : null}
               {item.amountUsed !== null ? <LoomText style={{ color: colors.primaryText, fontSize: 14, fontFamily: fonts.semibold }}>Uses {fabricAmount(item.amountUsed, item.fabric.unit)}</LoomText> : null}
             </View>
             <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
           </Pressable>
-        )) : <LoomText style={{ color: colors.mutedForeground, fontSize: 15 }}>No fabric on this project yet.</LoomText>}
-        {project.tools.length ? <LoomText serif style={[styles.section, { color: colors.foreground, marginTop: 18 }]}>Tools</LoomText> : null}
+        ))}
+        {project.tools.length ? <LoomText style={[styles.supplyGroup, { color: colors.primaryText }]}>NOTIONS AND TOOLS</LoomText> : null}
         {project.tools.map((tool) => (
           <Pressable key={tool.id} accessibilityRole="button" onPress={() => router.push({ pathname: '/tools/[id]', params: { id: tool.id } })} style={[styles.fabric, { backgroundColor: colors.card, borderColor: colors.border }]} testID={`project-tool-${tool.id}`}>
             <ToolThumb tool={tool} size={52} />
@@ -239,6 +243,7 @@ export default function SewingProjectScreen() {
 }
 
 const styles = StyleSheet.create({
+  supplyGroup: { fontFamily: fonts.bold, fontSize: 12, letterSpacing: 0.7, marginTop: 6, marginBottom: 8 },
   screen: { flex: 1 },
   nav: { minHeight: 48, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1 },
   navButton: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },

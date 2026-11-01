@@ -306,6 +306,11 @@ One row per piece of fabric in a maker's Sewing room stash. There is no shared c
 | amount_left | double precision | no | | How much is still in the stash. Empty means all of it. Can't be more than `amount`. |
 | width | double precision | no | | |
 | pre_washed | boolean | no | | Empty when the maker hasn't said. Washing shrinks fabric, so this tells them whether the amount and width are before or after. |
+| care_wash | text | no | | Optional care label (#100): `machine_30`, `machine_40`, `machine_60`, `gentle_30`, `hand` or `do_not`. The API checks the value. |
+| care_bleach | text | no | | `any`, `non_chlorine` or `do_not`. |
+| care_dry | text | no | | `tumble_low`, `tumble_normal`, `do_not_tumble`, `line`, `flat` or `drip`. |
+| care_iron | text | no | | `low`, `medium`, `high` or `do_not`. |
+| care_dry_clean | text | no | | `dry_clean` or `do_not`. |
 | brand | text | no | | No longer asked for. A brand saved before is moved into the notes ("Brand: …") the first time the maker's fabric loads; the column can be dropped once that's done. |
 | notes | text | no | | |
 | photo_paths | text[] | yes | `{}` | Private photos, only shown to their owner. The first is the print close-up (required), then up to three more. |

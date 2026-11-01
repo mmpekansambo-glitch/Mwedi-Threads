@@ -5,6 +5,11 @@
  * Mwedi Threads project catalog and progress tracking API
  * OpenAPI spec version: 0.1.0
  */
+import type { CareBleach } from './careBleach';
+import type { CareDry } from './careDry';
+import type { CareDryClean } from './careDryClean';
+import type { CareIron } from './careIron';
+import type { CareWash } from './careWash';
 import type { FabricConstruction } from './fabricConstruction';
 import type { FabricPrint } from './fabricPrint';
 import type { FabricType } from './fabricType';
@@ -37,17 +42,23 @@ export interface CreateStashFabric {
   width?: number | null;
   /** @nullable */
   preWashed?: boolean | null;
+  careWash?: CareWash | null;
+  careBleach?: CareBleach | null;
+  careDry?: CareDry | null;
+  careIron?: CareIron | null;
+  careDryClean?: CareDryClean | null;
   /**
      * @maxLength 1000
      * @nullable
      */
   notes?: string | null;
   /**
-     * The print close-up first, then up to three more
-     * @minItems 1
+     * The print close-up first, then up to three more. Empty only when photoLater is true.
      * @maxItems 4
      */
   photoPaths: string[];
+  /** Added from a project's supplies: save it without a photo, and the stash shows it as needing one */
+  photoLater?: boolean;
   /** The archived fabric the maker said is the same one */
   restoreId?: string;
   /** The maker said it's a different piece, so don't ask again */

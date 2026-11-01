@@ -326,6 +326,19 @@ describe.skipIf(!databaseUrl)("sewing projects against PostgreSQL", () => {
     expect(changed.preWashed).toBe(false);
   });
 
+  it("keeps optional care instructions on a fabric", async () => {
+    const plain = await addFabric(ownerB);
+    expect(plain).toMatchObject({ careWash: null, careBleach: null, careDry: null, careIron: null, careDryClean: null });
+    const cared = await addFabric(ownerB, { careWash: "machine_30", careDry: "line", careIron: "medium" });
+    expect(cared).toMatchObject({ careWash: "machine_30", careBleach: null, careDry: "line", careIron: "medium", careDryClean: null });
+
+    // Changing one group leaves the others; null clears a group.
+    const changed = await read(await request(`/fabric-stash/${cared.id}`, { method: "PATCH", user: ownerB, body: { careDryClean: "do_not", careIron: null } }));
+    expect(changed).toMatchObject({ careWash: "machine_30", careDry: "line", careIron: null, careDryClean: "do_not" });
+    expect((await read(await request(`/fabric-stash/${cared.id}`, { method: "PATCH", user: ownerB, body: { notes: "Lawn" } }))).careWash).toBe("machine_30");
+    expect((await request(`/fabric-stash/${cared.id}`, { method: "PATCH", user: ownerB, body: { careWash: "boil" } })).status).toBe(400);
+  });
+
   it("keeps a dated notes journal on a project for its owner only", async () => {
     const project = await read(await request("/sewing-projects", { method: "POST", user: ownerB, body: { title: "Coat" } }));
     expect(project.entries).toEqual([]);

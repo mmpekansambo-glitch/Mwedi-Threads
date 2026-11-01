@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
+import { Feather } from '@expo/vector-icons';
 import { useAuth } from '@clerk/expo';
 import { Image } from 'expo-image';
 import { View, type ImageStyle, type StyleProp, type ViewStyle } from 'react-native';
+import { LoomText, fonts } from '@/components/loom';
+import { useSewingColors } from '@/hooks/useColors';
 import type { FabricConstruction, FabricPrint, FabricType, FabricUnit, StashFabric } from '@workspace/api-client-react';
 
 // A to Z with Other last.
@@ -91,7 +94,24 @@ export function fabricSize(fabric: Pick<StashFabric, 'amount' | 'width' | 'unit'
 }
 
 // Fabric photos are private, so they load with the signed-in maker's token.
-export function FabricPhoto({ fabric, index, style }: { fabric: Pick<StashFabric, 'id' | 'updatedAt'>; index: number; style: StyleProp<ImageStyle> }) {
+// Fabric added from a project's supplies may have no photo yet: it shows a
+// camera mark, with "Needs a photo" where there's room.
+export function FabricPhoto({ fabric, index, style, needsPhotoLabel }: { fabric: Pick<StashFabric, 'id' | 'updatedAt'> & { photoCount?: number }; index: number; style: StyleProp<ImageStyle>; needsPhotoLabel?: boolean }) {
+  if (fabric.photoCount === 0) return <NoFabricPhoto style={style} label={needsPhotoLabel} />;
+  return <SavedFabricPhoto fabric={fabric} index={index} style={style} />;
+}
+
+function NoFabricPhoto({ style, label }: { style: StyleProp<ImageStyle>; label?: boolean }) {
+  const colors = useSewingColors();
+  return (
+    <View accessibilityLabel="Needs a photo" style={[style as StyleProp<ViewStyle>, { backgroundColor: colors.selectedWash, alignItems: 'center', justifyContent: 'center', gap: 4 }]}>
+      <Feather name="camera" size={label ? 20 : 17} color={colors.primaryText} />
+      {label ? <LoomText style={{ color: colors.primaryText, fontFamily: fonts.semibold, fontSize: 13 }}>Needs a photo</LoomText> : null}
+    </View>
+  );
+}
+
+function SavedFabricPhoto({ fabric, index, style }: { fabric: Pick<StashFabric, 'id' | 'updatedAt'>; index: number; style: StyleProp<ImageStyle> }) {
   const { getToken } = useAuth();
   const [token, setToken] = useState<string | null>(null);
   useEffect(() => {

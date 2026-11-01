@@ -744,6 +744,60 @@ export const FabricUnit = {
   yards: 'yards',
 } as const;
 
+/**
+ * Wash symbol on a fabric's care label
+ */
+export type CareWash = typeof CareWash[keyof typeof CareWash];
+
+
+export const CareWash = {
+  machine_30: 'machine_30',
+  machine_40: 'machine_40',
+  machine_60: 'machine_60',
+  gentle_30: 'gentle_30',
+  hand: 'hand',
+  do_not: 'do_not',
+} as const;
+
+export type CareBleach = typeof CareBleach[keyof typeof CareBleach];
+
+
+export const CareBleach = {
+  any: 'any',
+  non_chlorine: 'non_chlorine',
+  do_not: 'do_not',
+} as const;
+
+export type CareDry = typeof CareDry[keyof typeof CareDry];
+
+
+export const CareDry = {
+  tumble_low: 'tumble_low',
+  tumble_normal: 'tumble_normal',
+  do_not_tumble: 'do_not_tumble',
+  line: 'line',
+  flat: 'flat',
+  drip: 'drip',
+} as const;
+
+export type CareIron = typeof CareIron[keyof typeof CareIron];
+
+
+export const CareIron = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+  do_not: 'do_not',
+} as const;
+
+export type CareDryClean = typeof CareDryClean[keyof typeof CareDryClean];
+
+
+export const CareDryClean = {
+  dry_clean: 'dry_clean',
+  do_not: 'do_not',
+} as const;
+
 export interface StashFabric {
   id: string;
   fabricType: FabricType;
@@ -768,6 +822,11 @@ export interface StashFabric {
      * @nullable
      */
   preWashed: boolean | null;
+  careWash: CareWash | null;
+  careBleach: CareBleach | null;
+  careDry: CareDry | null;
+  careIron: CareIron | null;
+  careDryClean: CareDryClean | null;
   /** @nullable */
   notes: string | null;
   /** The first photo is the print close-up */
@@ -831,17 +890,23 @@ export interface CreateStashFabric {
   width?: number | null;
   /** @nullable */
   preWashed?: boolean | null;
+  careWash?: CareWash | null;
+  careBleach?: CareBleach | null;
+  careDry?: CareDry | null;
+  careIron?: CareIron | null;
+  careDryClean?: CareDryClean | null;
   /**
      * @maxLength 1000
      * @nullable
      */
   notes?: string | null;
   /**
-     * The print close-up first, then up to three more
-     * @minItems 1
+     * The print close-up first, then up to three more. Empty only when photoLater is true.
      * @maxItems 4
      */
   photoPaths: string[];
+  /** Added from a project's supplies: save it without a photo, and the stash shows it as needing one */
+  photoLater?: boolean;
   /** The archived fabric the maker said is the same one */
   restoreId?: string;
   /** The maker said it's a different piece, so don't ask again */
@@ -874,6 +939,11 @@ export interface UpdateStashFabric {
   width?: number | null;
   /** @nullable */
   preWashed?: boolean | null;
+  careWash?: CareWash | null;
+  careBleach?: CareBleach | null;
+  careDry?: CareDry | null;
+  careIron?: CareIron | null;
+  careDryClean?: CareDryClean | null;
   /**
      * @maxLength 1000
      * @nullable

@@ -221,6 +221,30 @@ describe.skipIf(!databaseUrl)("crafts and fabric stash against PostgreSQL", () =
     expect(tooMany.status).toBe(400);
   });
 
+  it("saves fabric added from a project's supplies without a photo, and asks for one when it is edited in the stash", async () => {
+    const quick = await request("/fabric-stash", {
+      method: "POST", user: ownerA,
+      body: { fabricType: "linen", unit: "meters", amount: 1.5, amountLeft: 1.5, photoPaths: [], photoLater: true, addAsNew: true },
+    });
+    expect(quick.status).toBe(201);
+    const fabric = await read(quick);
+    expect(fabric.photoCount).toBe(0);
+    expect(fabric.amountLeft).toBe(1.5);
+
+    const noPhotoEdit = await request(`/fabric-stash/${fabric.id}`, { method: "PATCH", user: ownerA, body: { print: "solid", photoPaths: [] } });
+    expect(noPhotoEdit.status).toBe(400);
+
+    const withPhoto = await request(`/fabric-stash/${fabric.id}`, { method: "PATCH", user: ownerA, body: { print: "solid", photoPaths: [photo(ownerA)] } });
+    expect(withPhoto.status).toBe(200);
+    expect((await read(withPhoto)).photoCount).toBe(1);
+
+    const photoLaterWithPhoto = await request("/fabric-stash", {
+      method: "POST", user: ownerA,
+      body: { fabricType: "linen", unit: "meters", photoPaths: [photo(ownerB)], photoLater: true },
+    });
+    expect(photoLaterWithPhoto.status).toBe(400);
+  });
+
   it("keeps, reorders and removes photos on edit, deleting the removed files", async () => {
     const first = photo(ownerA);
     const second = photo(ownerA);

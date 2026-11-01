@@ -11,9 +11,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   getGetMyCraftsQueryKey, getGetStashFabricQueryKey, getGetStashFabricsQueryKey,
   requestFabricPhotoUpload, useCreateStashFabric, useDeleteStashFabric, useUpdateStashFabric,
-  refreshPaths, showRemoved, showSaved, skeinsLeftAfter,
+  careFrom, refreshPaths, showRemoved, showSaved, skeinsLeftAfter,
 } from '@workspace/api-client-react';
-import type { CreateStashFabric, FabricConstruction, FabricPrint, FabricType, FabricUnit, GeneralColor, StashFabric } from '@workspace/api-client-react';
+import type { CreateStashFabric, FabricCare, FabricConstruction, FabricPrint, FabricType, FabricUnit, GeneralColor, StashFabric } from '@workspace/api-client-react';
+import { CareField } from '@/components/CareFields';
 import { ArchivedNote, UsedUpNudge, fabricArchive, fabricUsedUp } from '@/components/ArchiveNudge';
 import { showSignpost } from '@/components/Signpost';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
@@ -137,6 +138,7 @@ export function FabricForm({ fabric }: { fabric?: StashFabric }) {
   // maker to say whether it's the same piece.
   const [sameFabric, setSameFabric] = useState<{ match: StashFabric; similarPhoto: boolean | null; data: CreateStashFabric } | null>(null);
   const [notes, setNotes] = useState(fabric?.notes ?? '');
+  const [care, setCare] = useState<FabricCare>(() => careFrom(fabric));
   const [photos, setPhotos] = useState<PhotoSlot[]>(() => Array.from({ length: fabric?.photoCount ?? 0 }, (_, index) => ({ kind: 'kept', index })));
   const [message, setMessage] = useState('');
   const [saving, setSaving] = useState(false);
@@ -223,7 +225,7 @@ export function FabricForm({ fabric }: { fabric?: StashFabric }) {
       return;
     }
     const data = {
-      fabricType, construction, print, generalColor, unit, amount: amountForSave, amountLeft: leftForSave, width: widthForSave, preWashed,
+      fabricType, construction, print, generalColor, unit, amount: amountForSave, amountLeft: leftForSave, width: widthForSave, preWashed, ...care,
       notes: notes.trim() || null, photoPaths,
     };
     if (fabric) {
@@ -348,6 +350,7 @@ export function FabricForm({ fabric }: { fabric?: StashFabric }) {
           <TextInput {...inputProps} value={width} onChangeText={setWidth} keyboardType="decimal-pad" placeholder={unit === 'meters' ? 'e.g. 145' : 'e.g. 58'} style={inputStyle} testID="input-fabric-width" />
           <FormFieldLabel>Notes</FormFieldLabel>
           <TextInput {...inputProps} value={notes} onChangeText={setNotes} maxLength={1000} multiline placeholder="Where it's from, what it's for…" style={[inputStyle, styles.notes]} testID="input-fabric-notes" />
+          <CareField value={care} onChange={setCare} />
           {message ? <LoomText accessibilityRole="alert" style={[styles.error, { color: colors.destructive }]}>{message}</LoomText> : null}
           <LoomButton title={fabric ? 'Save changes' : 'Add to stash'} icon="arrow-right" onPress={() => { void save(); }} busy={saving} testID="button-save-fabric" />
         </View>}

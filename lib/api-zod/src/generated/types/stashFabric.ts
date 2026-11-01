@@ -5,6 +5,11 @@
  * Mwedi Threads project catalog and progress tracking API
  * OpenAPI spec version: 0.1.0
  */
+import type { CareBleach } from './careBleach';
+import type { CareDry } from './careDry';
+import type { CareDryClean } from './careDryClean';
+import type { CareIron } from './careIron';
+import type { CareWash } from './careWash';
 import type { FabricConstruction } from './fabricConstruction';
 import type { FabricPrint } from './fabricPrint';
 import type { FabricType } from './fabricType';
@@ -35,6 +40,11 @@ export interface StashFabric {
      * @nullable
      */
   preWashed: boolean | null;
+  careWash: CareWash | null;
+  careBleach: CareBleach | null;
+  careDry: CareDry | null;
+  careIron: CareIron | null;
+  careDryClean: CareDryClean | null;
   /** @nullable */
   notes: string | null;
   /** The first photo is the print close-up */

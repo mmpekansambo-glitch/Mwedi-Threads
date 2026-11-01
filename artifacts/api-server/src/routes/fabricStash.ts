@@ -134,7 +134,12 @@ router.post("/fabric-stash", requireAuth, async (req, res): Promise<void> => {
   }
 
   const ownerId = getOwnerId(res);
-  const photos = checkFabricPhotos(ownerId, parsed.data.photoPaths, []);
+  // Fabric added from a project's supplies may come without a photo; the
+  // stash then shows it as needing one.
+  const photoLater = parsed.data.photoLater === true && parsed.data.photoPaths.length === 0;
+  const photos = photoLater
+    ? { ok: true as const, photoPaths: [] as string[] }
+    : checkFabricPhotos(ownerId, parsed.data.photoPaths, []);
   if (!photos.ok) {
     res.status(400).json({ error: photos.error });
     return;
@@ -154,6 +159,11 @@ router.post("/fabric-stash", requireAuth, async (req, res): Promise<void> => {
     amountLeft: sizes.amountLeft,
     width: sizes.width,
     preWashed: parsed.data.preWashed ?? null,
+    careWash: parsed.data.careWash ?? null,
+    careBleach: parsed.data.careBleach ?? null,
+    careDry: parsed.data.careDry ?? null,
+    careIron: parsed.data.careIron ?? null,
+    careDryClean: parsed.data.careDryClean ?? null,
     notes: tidyText(parsed.data.notes),
     photoPaths: photos.photoPaths,
   };
@@ -205,8 +215,8 @@ router.post("/fabric-stash", requireAuth, async (req, res): Promise<void> => {
       .orderBy(desc(stashFabricsTable.archivedAt))
       .limit(3);
     for (const candidate of candidates) {
-      const similarPhoto = candidate.photoPaths[0]
-        ? await printsLookAlike(details.photoPaths[0]!, candidate.photoPaths[0])
+      const similarPhoto = candidate.photoPaths[0] && details.photoPaths[0]
+        ? await printsLookAlike(details.photoPaths[0], candidate.photoPaths[0])
         : null;
       if (similarPhoto === false) continue;
       res.status(409).json({ match: serializeFabric(candidate), similarPhoto });
@@ -285,6 +295,11 @@ router.patch("/fabric-stash/:fabricId", requireAuth, async (req, res): Promise<v
         amountLeft: sizes.amountLeft,
         width: sizes.width,
         preWashed: changes.preWashed !== undefined ? changes.preWashed : current.preWashed,
+        careWash: changes.careWash !== undefined ? changes.careWash : current.careWash,
+        careBleach: changes.careBleach !== undefined ? changes.careBleach : current.careBleach,
+        careDry: changes.careDry !== undefined ? changes.careDry : current.careDry,
+        careIron: changes.careIron !== undefined ? changes.careIron : current.careIron,
+        careDryClean: changes.careDryClean !== undefined ? changes.careDryClean : current.careDryClean,
         archivedAt: changes.archived === undefined ? current.archivedAt : changes.archived ? current.archivedAt ?? new Date() : null,
         notes: changes.notes !== undefined ? tidyText(changes.notes) : current.notes,
         photoPaths: photos.photoPaths,
