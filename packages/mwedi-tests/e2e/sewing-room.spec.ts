@@ -448,7 +448,11 @@ test("starts a sewing project with fabric from the stash", async ({ page }) => {
   await expect(page.getByText("Give your project a name.")).toBeVisible();
 
   await page.getByTestId("input-sewing-title").fill("Wool skirt");
-  await page.getByTestId("input-sewing-pattern").fill("A-line skirt");
+  await page.getByTestId("row-sewing-pattern").click();
+  await page.getByTestId("button-new-pattern").click();
+  await page.getByTestId("input-new-pattern-name").fill("A-line skirt");
+  await page.getByTestId("button-use-new-pattern").click();
+  await expect(page.getByTestId("sewing-pattern-chosen")).toContainText("A-line skirt");
   await page.getByTestId("input-sewing-size").fill("12");
   await page.getByTestId("input-sewing-fit").fill("Took in the waist 1 cm");
   await page.getByTestId("button-add-supplies").click();
@@ -460,7 +464,7 @@ test("starts a sewing project with fabric from the stash", async ({ page }) => {
 
   await expect(page).toHaveURL(/\/sewing\/projects\/cccccccc-0000-4000-8000-000000000009$/);
   expect(sent.projectSaves[0]).toMatchObject({
-    title: "Wool skirt", status: "planning", patternName: "A-line skirt", sizeMade: "12", fitChanges: "Took in the waist 1 cm",
+    title: "Wool skirt", status: "planning", patternId: null, patternName: "A-line skirt", sizeMade: "12", fitChanges: "Took in the waist 1 cm",
     fabrics: [{ stashFabricId: stash[2].id, amountUsed: 1.2 }],
   });
   await expect(page.getByTestId(`card-project-fabric-${stash[2].id}`)).toContainText("Uses 1.2 m");
