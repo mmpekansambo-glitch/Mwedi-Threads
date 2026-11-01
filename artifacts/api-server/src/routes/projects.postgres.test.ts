@@ -5,8 +5,8 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import * as schema from "@workspace/db/schema";
-import { progressEntriesTable, projectsTable, projectYarnsTable, usersTable } from "@workspace/db/schema";
-import { stashTablesSql } from "../test/stashTablesSql";
+import { craftActivityTable, progressEntriesTable, projectsTable, projectYarnsTable, usersTable } from "@workspace/db/schema";
+import { stashTablesSql, craftActivitySql } from "../test/stashTablesSql";
 
 vi.mock("@clerk/express", () => ({
   getAuth: (req: Request) => ({
@@ -90,7 +90,9 @@ describe.skipIf(!databaseUrl)("project authorization against PostgreSQL", () => 
         yarn_enabled boolean NOT NULL DEFAULT true,
         sewing_enabled boolean NOT NULL DEFAULT false,
         crafts_chosen_at timestamptz,
-        currency text NOT NULL DEFAULT 'USD'
+        currency text NOT NULL DEFAULT 'USD',
+        yarn_weekly_goal integer,
+        sewing_weekly_goal integer
       );
       CREATE TABLE ${isolatedSchema}.projects (
         id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -148,6 +150,7 @@ describe.skipIf(!databaseUrl)("project authorization against PostgreSQL", () => 
         PRIMARY KEY (user_id, project_id)
       );
       ${stashTablesSql(isolatedSchema)}
+      ${craftActivitySql(isolatedSchema)}
     `);
 
     testPool = new pg.Pool({
@@ -527,6 +530,9 @@ describe.skipIf(!databaseUrl)("project authorization against PostgreSQL", () => 
       .from(projectsTable)
       .where(eq(projectsTable.id, projectAId));
     expect(after).toEqual(before);
+    // Using the counter counts as crafting today for the weekly goal.
+    const activity = await getTestDb().select().from(craftActivityTable).where(eq(craftActivityTable.userId, ownerA));
+    expect(activity.some((row) => row.studio === "yarn")).toBe(true);
 
     const otherOwner = await request(`/projects/${projectAId}/counter`, {
       method: "PUT",

@@ -18,6 +18,8 @@ tags:
     description: A maker's yarn stash and the shared yarn catalog
   - name: crafts
     description: Which crafts (yarn, sewing) a maker has turned on
+  - name: goals
+    description: The weekly crafting goal in each studio
   - name: sewing
     description: A maker's Sewing room and fabric stash
   - name: yarnTools
@@ -843,6 +845,95 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Crafts"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /weekly-goal:
+    parameters:
+      - in: query
+        name: studio
+        required: true
+        schema:
+          $ref: "#/components/schemas/Studio"
+      - in: query
+        name: today
+        required: true
+        description: The maker's own date today (YYYY-MM-DD)
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: timeZone
+        description: The maker's time zone, e.g. America/Los_Angeles (UTC when missing or unknown)
+        schema:
+          type: string
+    get:
+      operationId: getWeeklyGoal
+      tags: [goals]
+      summary: This week's crafting days and the studio's weekly goal
+      responses:
+        "200":
+          description: This week's crafting days
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WeeklyGoal"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    put:
+      operationId: setWeeklyGoal
+      tags: [goals]
+      summary: Set or turn off the studio's weekly goal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateWeeklyGoal"
+      responses:
+        "200":
+          description: This week's crafting days
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WeeklyGoal"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /weekly-goal/check-in:
+    parameters:
+      - in: query
+        name: studio
+        required: true
+        schema:
+          $ref: "#/components/schemas/Studio"
+      - in: query
+        name: today
+        required: true
+        description: The maker's own date today (YYYY-MM-DD)
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: timeZone
+        description: The maker's time zone, e.g. America/Los_Angeles (UTC when missing or unknown)
+        schema:
+          type: string
+    post:
+      operationId: checkInWeeklyGoal
+      tags: [goals]
+      summary: Count today as a crafting day ("I crafted today")
+      responses:
+        "200":
+          description: This week's crafting days
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WeeklyGoal"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -2355,6 +2446,40 @@ components:
         currency:
           $ref: "#/components/schemas/Currency"
       required: [currency]
+    Studio:
+      type: string
+      enum: [yarn, sewing]
+    WeeklyGoal:
+      type: object
+      properties:
+        goal:
+          type: [integer, "null"]
+          description: Days a week the maker aims to craft (1-7); null when no goal is set
+        weekStart:
+          type: string
+          format: date
+          description: Monday of this week
+        days:
+          type: array
+          description: Monday to Sunday, true for each day that counts
+          items:
+            type: boolean
+        count:
+          type: integer
+        todayCounted:
+          type: boolean
+        weeksInARow:
+          type: integer
+          description: Weeks in a row the goal was met, counting this week once it is met
+      required: [goal, weekStart, days, count, todayCounted, weeksInARow]
+    UpdateWeeklyGoal:
+      type: object
+      properties:
+        goal:
+          type: [integer, "null"]
+          minimum: 1
+          maximum: 7
+      required: [goal]
     UpdateCrafts:
       type: object
       properties:

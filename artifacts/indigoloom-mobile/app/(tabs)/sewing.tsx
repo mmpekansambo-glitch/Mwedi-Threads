@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { StatDoodle } from '@/components/StatDoodle';
 import { EmptyState, ErrorState, LoadingState, LoomButton, LoomText, fonts } from '@/components/loom';
+import { WeeklyGoalCard } from '@/components/WeeklyGoal';
 import { HomeSwitcher, ProfileMenu } from '@/components/Crafts';
 import { SewingProjectCard, fabricAmount, sewingStages } from '@/components/SewingFields';
 import { fabricTypes, labelFor } from '@/components/FabricFields';
@@ -33,6 +34,7 @@ export default function SewingOverviewScreen() {
         <ProfileMenu />
       </View>
       <HomeSwitcher />
+      <WeeklyGoalCard studio="sewing" />
       {query.isLoading ? <LoadingState label="Gathering your sewing…" /> : query.isError || !data ? <ErrorState onRetry={() => void query.refetch()} /> : (
         <>
           <View style={styles.stats}>

@@ -664,6 +664,39 @@ export interface UpdateCurrency {
   currency: Currency;
 }
 
+export type Studio = typeof Studio[keyof typeof Studio];
+
+
+export const Studio = {
+  yarn: 'yarn',
+  sewing: 'sewing',
+} as const;
+
+export interface WeeklyGoal {
+  /**
+     * Days a week the maker aims to craft (1-7); null when no goal is set
+     * @nullable
+     */
+  goal: number | null;
+  /** Monday of this week */
+  weekStart: string;
+  /** Monday to Sunday, true for each day that counts */
+  days: boolean[];
+  count: number;
+  todayCounted: boolean;
+  /** Weeks in a row the goal was met, counting this week once it is met */
+  weeksInARow: number;
+}
+
+export interface UpdateWeeklyGoal {
+  /**
+     * @minimum 1
+     * @maximum 7
+     * @nullable
+     */
+  goal: number | null;
+}
+
 export interface UpdateCrafts {
   yarn: boolean;
   sewing: boolean;
@@ -1920,6 +1953,42 @@ export type GetYarnCatalogParams = {
 brand?: string;
 subBrand?: string;
 color?: string;
+};
+
+export type GetWeeklyGoalParams = {
+studio: Studio;
+/**
+ * The maker's own date today (YYYY-MM-DD)
+ */
+today: string;
+/**
+ * The maker's time zone, e.g. America/Los_Angeles (UTC when missing or unknown)
+ */
+timeZone?: string;
+};
+
+export type SetWeeklyGoalParams = {
+studio: Studio;
+/**
+ * The maker's own date today (YYYY-MM-DD)
+ */
+today: string;
+/**
+ * The maker's time zone, e.g. America/Los_Angeles (UTC when missing or unknown)
+ */
+timeZone?: string;
+};
+
+export type CheckInWeeklyGoalParams = {
+studio: Studio;
+/**
+ * The maker's own date today (YYYY-MM-DD)
+ */
+today: string;
+/**
+ * The maker's time zone, e.g. America/Los_Angeles (UTC when missing or unknown)
+ */
+timeZone?: string;
 };
 
 export type GetStashFabricsParams = {

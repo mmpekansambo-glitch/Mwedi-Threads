@@ -90,7 +90,9 @@ describe.skipIf(!databaseUrl)("crafts and fabric stash against PostgreSQL", () =
         yarn_enabled boolean NOT NULL DEFAULT true,
         sewing_enabled boolean NOT NULL DEFAULT false,
         crafts_chosen_at timestamptz,
-        currency text NOT NULL DEFAULT 'USD'
+        currency text NOT NULL DEFAULT 'USD',
+        yarn_weekly_goal integer,
+        sewing_weekly_goal integer
       );
       CREATE TABLE ${isolatedSchema}.projects (
         id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

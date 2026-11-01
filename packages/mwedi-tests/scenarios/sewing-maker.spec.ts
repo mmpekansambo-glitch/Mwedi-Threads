@@ -189,4 +189,18 @@ test("a maker who works in the Sewing room", async ({ page }) => {
     await page.goto(projectUrl);
     await expect(page.getByTestId(`card-tool-${zipId}`)).toContainText("Invisible zip");
   });
+  await test.step("sets a weekly sewing goal on the Overview (#104)", async () => {
+    await page.goto("/sewing");
+    const card = page.getByTestId("card-weekly-goal-sewing");
+    // The notes written today already count.
+    await expect(card).toContainText("1 day so far");
+    await card.getByTestId("button-set-weekly-goal").click();
+    await card.getByTestId("input-weekly-goal-wheel").getByRole("option", { name: "3 days", exact: true }).click();
+    await card.getByTestId("button-save-weekly-goal").click();
+    await expect(card.getByTestId("text-weekly-goal-count")).toHaveText("1 of 3 days");
+    await expect(card.getByTestId("text-today-counted")).toBeVisible();
+    await card.getByTestId("button-change-weekly-goal").click();
+    await card.getByTestId("button-turn-off-weekly-goal").click();
+    await expect(card.getByTestId("button-set-weekly-goal")).toBeVisible();
+  });
 });
