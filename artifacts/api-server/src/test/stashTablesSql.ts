@@ -253,3 +253,16 @@ export function yarnToolsSql(isolatedSchema: string): string {
     );
   `;
 }
+
+// The weekly goal's activity log (lib/db/src/schema/habits.ts).
+export function craftActivitySql(isolatedSchema: string): string {
+  return `
+    CREATE TYPE ${isolatedSchema}.studio AS ENUM ('yarn', 'sewing');
+    CREATE TABLE ${isolatedSchema}.craft_activity (
+      user_id text NOT NULL REFERENCES ${isolatedSchema}.users(id) ON DELETE CASCADE,
+      studio ${isolatedSchema}.studio NOT NULL,
+      hour timestamptz NOT NULL,
+      PRIMARY KEY (user_id, studio, hour)
+    );
+  `;
+}

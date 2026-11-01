@@ -8,6 +8,7 @@ import { DashboardCharts } from '@/components/DashboardCharts';
 import { StatDoodle } from '@/components/StatDoodle';
 import { EmptyState, ErrorState, LoadingState, LoomButton, LoomText, PageHeader, ProjectCard, fonts } from '@/components/loom';
 import { useColors } from '@/hooks/useColors';
+import { WeeklyGoalCard } from '@/components/WeeklyGoal';
 import { HomeSwitcher, ProfileMenu, useCrafts } from '@/components/Crafts';
 
 // Opens My projects filtered to one status; an empty status shows every project.
@@ -55,6 +56,7 @@ export default function DashboardScreen() {
         <ProfileMenu />
       </View>
       <HomeSwitcher />
+      <WeeklyGoalCard studio="yarn" />
       {query.isLoading ? <LoadingState /> : query.isError || !data ? <ErrorState onRetry={() => void query.refetch()} /> : (
         <>
           <View style={[styles.stats, { marginBottom: 8 }]}>

@@ -169,6 +169,16 @@ describe.skipIf(!scenarioDatabaseUrl)("Scenario: a maker who works in the Yarn s
     expect((await amara.get(`/projects/${throw_.id}`)).body.counter).toBe(42);
   });
 
+  it("sets a weekly goal of 4 crafting days; today already counts (#104)", async () => {
+    const today = new Date().toISOString().slice(0, 10);
+    const week = `/weekly-goal?studio=yarn&today=${today}&timeZone=UTC`;
+    const set = await amara.put(week, { goal: 4 });
+    expect(set.status).toBe(200);
+    expect(set.body).toMatchObject({ goal: 4, count: 1, todayCounted: true, weeksInARow: 0 });
+    expect(set.body.days.filter(Boolean)).toHaveLength(1);
+    expect((await amara.put(week, { goal: 9 })).status).toBe(400);
+  });
+
   it("renames a color in the stash and the projects using it follow (#79)", async () => {
     const renamed = await amara.patch(`/yarn-stash/${yarn.cranberry.id}`, { color: "Cranberry Red" });
     expect(renamed.status).toBe(200);

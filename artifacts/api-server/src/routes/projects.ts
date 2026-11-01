@@ -48,6 +48,7 @@ import { deleteStoredObject, signedObjectUrl, storageLocation } from "../lib/obj
 import { buildDashboardCharts, progressChartStart } from "../lib/dashboardCharts";
 import { averageDaysToFinish, mostUsedYarnBrands } from "../lib/dashboardStats";
 import { checkProgressSettings, workOutProgress } from "../lib/progressMethods";
+import { recordCraftActivity } from "../lib/craftActivity";
 import {
   checkProjectYarns,
   linkProjectYarnsToStash,
@@ -727,6 +728,7 @@ router.put("/projects/:projectId/counter", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Project not found." });
     return;
   }
+  await recordCraftActivity(ownerId, "yarn");
   res.json(SetProjectCounterResponse.parse(updated));
 });
 
@@ -923,6 +925,7 @@ router.post(
       await setProjectProgress(tx, ownerId, project, progress.completionPercent, progress.progressSections);
       return [created];
     });
+    await recordCraftActivity(ownerId, "yarn", entry.createdAt);
 
     const validated = AddProgressResponse.parse(entry);
     res.status(201).json(validated);

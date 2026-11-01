@@ -23,6 +23,7 @@ import type {
   BadRequestResponse,
   CatalogReview,
   CatalogReviewAccess,
+  CheckInWeeklyGoalParams,
   Crafts,
   CreateCatalogReview,
   CreateProgress,
@@ -43,6 +44,7 @@ import type {
   GetSkeinSuggestionsParams,
   GetStashFabricsParams,
   GetStashYarnsParams,
+  GetWeeklyGoalParams,
   GetYarnCatalogParams,
   GetYarnToolsParams,
   HealthStatus,
@@ -58,6 +60,7 @@ import type {
   RenameStashYarnsResult,
   ResolveCatalogReview,
   SaveSewingProjectEntry,
+  SetWeeklyGoalParams,
   SewingOverview,
   SewingProject,
   SewingProjectEntry,
@@ -73,7 +76,9 @@ import type {
   UpdateSewingTool,
   UpdateStashFabric,
   UpdateStashYarn,
+  UpdateWeeklyGoal,
   UpdateYarnTool,
+  WeeklyGoal,
   YarnCatalog,
   YarnTool
 } from './api.schemas';
@@ -3053,6 +3058,267 @@ export const useUpdateMyCrafts = <TError = ErrorType<BadRequestResponse | Unauth
         TContext
       > => {
       return useMutation(getUpdateMyCraftsMutationOptions(options));
+    }
+
+export const getGetWeeklyGoalUrl = (params: GetWeeklyGoalParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/weekly-goal?${stringifiedParams}` : `/api/weekly-goal`
+}
+
+/**
+ * @summary This week's crafting days and the studio's weekly goal
+ */
+export const getWeeklyGoal = async (params: GetWeeklyGoalParams, options?: Parameters<typeof customFetch>[1]): Promise<WeeklyGoal> => {
+
+  return customFetch<WeeklyGoal>(getGetWeeklyGoalUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetWeeklyGoalQueryKey = (params?: GetWeeklyGoalParams,) => {
+    return [
+    `/api/weekly-goal`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetWeeklyGoalQueryOptions = <TData = Awaited<ReturnType<typeof getWeeklyGoal>>, TError = ErrorType<BadRequestResponse | UnauthorizedResponse>>(params: GetWeeklyGoalParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWeeklyGoal>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWeeklyGoalQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWeeklyGoal>>> = ({ signal }) => getWeeklyGoal(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWeeklyGoal>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetWeeklyGoalQueryResult = NonNullable<Awaited<ReturnType<typeof getWeeklyGoal>>>
+export type GetWeeklyGoalQueryError = ErrorType<BadRequestResponse | UnauthorizedResponse>
+
+
+/**
+ * @summary This week's crafting days and the studio's weekly goal
+ */
+
+export function useGetWeeklyGoal<TData = Awaited<ReturnType<typeof getWeeklyGoal>>, TError = ErrorType<BadRequestResponse | UnauthorizedResponse>>(
+ params: GetWeeklyGoalParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWeeklyGoal>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetWeeklyGoalQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSetWeeklyGoalUrl = (params: SetWeeklyGoalParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/weekly-goal?${stringifiedParams}` : `/api/weekly-goal`
+}
+
+/**
+ * @summary Set or turn off the studio's weekly goal
+ */
+export const setWeeklyGoal = async (updateWeeklyGoal: UpdateWeeklyGoal,
+    params: SetWeeklyGoalParams, options?: Parameters<typeof customFetch>[1]): Promise<WeeklyGoal> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<WeeklyGoal>(getSetWeeklyGoalUrl(params),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(updateWeeklyGoal)
+  }
+);}
+
+
+
+
+
+export const getSetWeeklyGoalMutationKey = () => ['setWeeklyGoal'] as const;
+
+export const getSetWeeklyGoalMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setWeeklyGoal>>, TError,SetWeeklyGoalMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setWeeklyGoal>>, TError,SetWeeklyGoalMutationVariables, TContext> => {
+
+const mutationKey = getSetWeeklyGoalMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setWeeklyGoal>>, SetWeeklyGoalMutationVariables> = (props) => {
+          const {data,params} = props ?? {};
+
+          return  setWeeklyGoal(data,params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetWeeklyGoalMutationResult = NonNullable<Awaited<ReturnType<typeof setWeeklyGoal>>>
+    export type SetWeeklyGoalMutationBody = BodyType<UpdateWeeklyGoal>
+    export type SetWeeklyGoalMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse>
+    export type SetWeeklyGoalMutationVariables = {data: BodyType<UpdateWeeklyGoal>;params: SetWeeklyGoalParams}
+
+    /**
+ * @summary Set or turn off the studio's weekly goal
+ */
+export const useSetWeeklyGoal = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setWeeklyGoal>>, TError,SetWeeklyGoalMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setWeeklyGoal>>,
+        TError,
+        SetWeeklyGoalMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSetWeeklyGoalMutationOptions(options));
+    }
+
+export const getCheckInWeeklyGoalUrl = (params: CheckInWeeklyGoalParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/weekly-goal/check-in?${stringifiedParams}` : `/api/weekly-goal/check-in`
+}
+
+/**
+ * @summary Count today as a crafting day ("I crafted today")
+ */
+export const checkInWeeklyGoal = async (params: CheckInWeeklyGoalParams, options?: Parameters<typeof customFetch>[1]): Promise<WeeklyGoal> => {
+
+  return customFetch<WeeklyGoal>(getCheckInWeeklyGoalUrl(params),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getCheckInWeeklyGoalMutationKey = () => ['checkInWeeklyGoal'] as const;
+
+export const getCheckInWeeklyGoalMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkInWeeklyGoal>>, TError,CheckInWeeklyGoalMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof checkInWeeklyGoal>>, TError,CheckInWeeklyGoalMutationVariables, TContext> => {
+
+const mutationKey = getCheckInWeeklyGoalMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof checkInWeeklyGoal>>, CheckInWeeklyGoalMutationVariables> = (props) => {
+          const {params} = props ?? {};
+
+          return  checkInWeeklyGoal(params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CheckInWeeklyGoalMutationResult = NonNullable<Awaited<ReturnType<typeof checkInWeeklyGoal>>>
+
+    export type CheckInWeeklyGoalMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse>
+    export type CheckInWeeklyGoalMutationVariables = {params: CheckInWeeklyGoalParams}
+
+    /**
+ * @summary Count today as a crafting day ("I crafted today")
+ */
+export const useCheckInWeeklyGoal = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkInWeeklyGoal>>, TError,CheckInWeeklyGoalMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof checkInWeeklyGoal>>,
+        TError,
+        CheckInWeeklyGoalMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCheckInWeeklyGoalMutationOptions(options));
     }
 
 export const getGetStashFabricsUrl = (params?: GetStashFabricsParams,) => {

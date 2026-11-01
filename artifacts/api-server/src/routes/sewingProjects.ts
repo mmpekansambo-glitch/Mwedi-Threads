@@ -30,6 +30,7 @@ import {
   type SewingProjectEntry,
 } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
+import { recordCraftActivity } from "../lib/craftActivity";
 import { checkFabricLinks, checkMachineSettings, checkToolIds, fabricTypeCounts, sewingStages, stashLength, statusChanges, type MachineSetting } from "../lib/sewingProjects";
 import { serializeFabric } from "./fabricStash";
 import { serializeTool } from "./sewingTools";
@@ -370,6 +371,7 @@ router.post("/sewing-projects/:sewingProjectId/entries", requireAuth, async (req
     .insert(sewingProjectEntriesTable)
     .values({ projectId: project.id, notes, ...(parsed.data.createdAt ? { createdAt: parsed.data.createdAt } : {}) })
     .returning();
+  await recordCraftActivity(getOwnerId(res), "sewing", entry.createdAt);
   res.status(201).json(serializeEntry(entry));
 });
 

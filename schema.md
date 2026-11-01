@@ -9,6 +9,7 @@ erDiagram
     users ||--o{ projects : owns
     projects ||--o{ project_progress_entries : has
     users ||--o{ stars : gives
+    users ||--o{ craft_activity : logs
     projects ||--o{ stars : receives
     users ||--o{ stash_yarns : owns
     yarn_brands ||--o{ yarn_lines : has
@@ -191,6 +192,8 @@ One row per person who has signed in. A row is created the first time someone ma
 | yarn_enabled | boolean | yes | true | The Yarn studio is on. |
 | sewing_enabled | boolean | yes | false | The Sewing room is on. At least one of the two stays on. |
 | crafts_chosen_at | timestamp with time zone | no | | Set when the person picks their crafts. A new person with nothing saved and no choice yet is asked "What do you make?". |
+| yarn_weekly_goal | integer | no | | Weekly crafting goal in the Yarn studio, in days (1 to 7). Empty means no goal. |
+| sewing_weekly_goal | integer | no | | The same for the Sewing room. |
 
 ## projects
 
@@ -260,6 +263,18 @@ One row means "this user starred this project."
 | created_at | timestamp with time zone | yes | now | |
 
 The primary key is the pair (`user_id`, `project_id`), so a project can only be starred once per person.
+
+## craft_activity
+
+The weekly goal's log of crafting time (#104). A row is added when the maker writes a journal note (the hour of the note's date), uses a yarn project's row counter, or taps "I crafted today" / "I sewed today". A day counts toward the week when it has a row here or a note still in that studio's journals, so deleting a note keeps its day.
+
+| Column | Type | Required | Default | Notes |
+|---|---|---|---|---|
+| user_id | text | yes | | Links to `users.id`. Deleted with the user. |
+| studio | studio | yes | | `yarn` or `sewing`. |
+| hour | timestamp with time zone | yes | | Rounded down to the hour, so many counter taps make one row. The maker's own calendar day is worked out from it with their time zone. |
+
+The primary key is (`user_id`, `studio`, `hour`).
 
 ## stash_yarns
 
@@ -420,7 +435,8 @@ One row per crochet hook, knitting needle or notion a maker owns in their Yarn s
 | needle_type | text | no | | Needles only: `straight`, `circular`, `double_pointed` or `interchangeable`. |
 | cable_length | text | no | | Circular and interchangeable needles only. |
 | material | yarn_tool_material | no | | Hooks and needles only. |
-| notion_type | yarn_notion_type | no | | Required for notions. |
+| notion_type | studio | `yarn`, `sewing` |
+| yarn_notion_type | no | | Required for notions. |
 | name | text | no | | Optional. A notion with no name shows its type. |
 | quantity | integer | no | | How many the maker owns. |
 | brand | text | no | | |
@@ -515,7 +531,7 @@ A date saved with `month` precision means only the month and year are known. In 
 
 Section 3 of [PLAN.md](PLAN.md) planned 4 tables: `users`, `projects`, `project_progress_entries` and `stars`. All 4 were built, with these differences:
 
-- **users:** has the 4 planned columns (`id`, `email`, `display_name`, `joined_at`), plus the craft switches `yarn_enabled`, `sewing_enabled` and `crafts_chosen_at` added in #55. A row is created on the first signed-in request (#6).
+- **users:** has the 4 planned columns (`id`, `email`, `display_name`, `joined_at`), plus the craft switches `yarn_enabled`, `sewing_enabled` and `crafts_chosen_at` added in #55, and the weekly goals `yarn_weekly_goal` and `sewing_weekly_goal` (#104). A row is created on the first signed-in request (#6).
 - **projects:** has every planned column, plus `completed_at` (#8), the progress method columns (#22), the knitting needle columns (#26), `counter` (#57) and the second hook (#60).
 - **project_progress_entries:** as planned, plus `progress_value` for the rows, sections and skeins methods (#22).
 - **stars:** as planned, one junction table with (`user_id`, `project_id`) as the key (#10).
