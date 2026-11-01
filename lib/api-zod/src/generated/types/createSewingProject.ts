@@ -22,6 +22,12 @@ export interface CreateSewingProject {
   status?: ProjectStatus;
   stage?: SewingStage;
   /**
+     * A pattern from the maker's pattern stash, or null for none. Wins over patternName.
+     * @nullable
+     */
+  patternId?: string | null;
+  /**
+     * Without patternId, the pattern is found in the maker's stash by name and designer, or added to it
      * @maxLength 160
      * @nullable
      */

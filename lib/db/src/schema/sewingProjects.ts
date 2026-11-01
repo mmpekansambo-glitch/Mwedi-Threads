@@ -13,6 +13,7 @@ import { projectStatusEnum } from "./projects";
 import { stashFabricsTable } from "./fabricStash";
 import { generalColorEnum } from "./yarnStash";
 import { sewingToolsTable } from "./sewingTools";
+import { sewingPatternsTable } from "./sewingPatterns";
 
 // The stage a sewing project has reached, in the order they happen.
 export const sewingStageEnum = pgEnum("sewing_stage", ["prep", "cut", "sew", "fit", "finish"]);
@@ -63,6 +64,11 @@ export const sewingProjectsTable = pgTable("sewing_projects", {
   title: text("title").notNull(),
   status: projectStatusEnum("status").notNull().default("planning"),
   stage: sewingStageEnum("stage").notNull().default("prep"),
+  // The pattern from the maker's pattern stash. Removing the pattern from the
+  // stash leaves the project with no pattern.
+  patternId: uuid("pattern_id").references(() => sewingPatternsTable.id, { onDelete: "set null" }),
+  // Typed pattern details from before the pattern stash. The API moves them
+  // into the stash and clears them, so new rows keep these empty.
   patternName: text("pattern_name"),
   patternDesigner: text("pattern_designer"),
   sizeMade: text("size_made"),

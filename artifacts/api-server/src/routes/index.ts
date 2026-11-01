@@ -6,6 +6,7 @@ import craftsRouter from "./crafts";
 import fabricStashRouter from "./fabricStash";
 import sewingProjectsRouter from "./sewingProjects";
 import sewingToolsRouter from "./sewingTools";
+import sewingPatternsRouter from "./sewingPatterns";
 import yarnToolsRouter from "./yarnTools";
 
 const router: IRouter = Router();
@@ -16,6 +17,7 @@ router.use(craftsRouter);
 router.use(fabricStashRouter);
 router.use(sewingProjectsRouter);
 router.use(sewingToolsRouter);
+router.use(sewingPatternsRouter);
 router.use(yarnToolsRouter);
 router.use(projectsRouter);
 

@@ -27,6 +27,7 @@ import type {
   CreateCatalogReview,
   CreateProgress,
   CreateProject,
+  CreateSewingPattern,
   CreateSewingProject,
   CreateSewingTool,
   CreateStashFabric,
@@ -38,6 +39,7 @@ import type {
   Error,
   FabricArchiveMatch,
   GetProjectsParams,
+  GetSewingPatternsParams,
   GetSewingProjectsParams,
   GetSewingToolsParams,
   GetSkeinSuggestionsParams,
@@ -59,6 +61,7 @@ import type {
   ResolveCatalogReview,
   SaveSewingProjectEntry,
   SewingOverview,
+  SewingPattern,
   SewingProject,
   SewingProjectEntry,
   SewingTool,
@@ -69,6 +72,7 @@ import type {
   UpdateCrafts,
   UpdateProgress,
   UpdateProject,
+  UpdateSewingPattern,
   UpdateSewingProject,
   UpdateSewingTool,
   UpdateStashFabric,
@@ -5036,6 +5040,583 @@ export function useGetSewingToolPhoto<TData = Awaited<ReturnType<typeof getSewin
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetSewingToolPhotoQueryOptions(sewingToolId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetSewingPatternsUrl = (params?: GetSewingPatternsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/sewing-patterns?${stringifiedParams}` : `/api/sewing-patterns`
+}
+
+/**
+ * @summary List the signed-in maker's sewing patterns
+ */
+export const getSewingPatterns = async (params?: GetSewingPatternsParams, options?: Parameters<typeof customFetch>[1]): Promise<SewingPattern[]> => {
+
+  return customFetch<SewingPattern[]>(getGetSewingPatternsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSewingPatternsQueryKey = (params?: GetSewingPatternsParams,) => {
+    return [
+    `/api/sewing-patterns`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetSewingPatternsQueryOptions = <TData = Awaited<ReturnType<typeof getSewingPatterns>>, TError = ErrorType<UnauthorizedResponse>>(params?: GetSewingPatternsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSewingPatterns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSewingPatternsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSewingPatterns>>> = ({ signal }) => getSewingPatterns(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSewingPatterns>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSewingPatternsQueryResult = NonNullable<Awaited<ReturnType<typeof getSewingPatterns>>>
+export type GetSewingPatternsQueryError = ErrorType<UnauthorizedResponse>
+
+
+/**
+ * @summary List the signed-in maker's sewing patterns
+ */
+
+export function useGetSewingPatterns<TData = Awaited<ReturnType<typeof getSewingPatterns>>, TError = ErrorType<UnauthorizedResponse>>(
+ params?: GetSewingPatternsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSewingPatterns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSewingPatternsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateSewingPatternUrl = () => {
+
+
+
+
+  return `/api/sewing-patterns`
+}
+
+/**
+ * @summary Add a sewing pattern
+ */
+export const createSewingPattern = async (createSewingPatternBody: CreateSewingPattern, options?: Parameters<typeof customFetch>[1]): Promise<SewingPattern> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<SewingPattern>(getCreateSewingPatternUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(createSewingPatternBody)
+  }
+);}
+
+
+
+
+
+export const getCreateSewingPatternMutationKey = () => ['createSewingPattern'] as const;
+
+export const getCreateSewingPatternMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSewingPattern>>, TError,CreateSewingPatternMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createSewingPattern>>, TError,CreateSewingPatternMutationVariables, TContext> => {
+
+const mutationKey = getCreateSewingPatternMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createSewingPattern>>, CreateSewingPatternMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createSewingPattern(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateSewingPatternMutationResult = NonNullable<Awaited<ReturnType<typeof createSewingPattern>>>
+    export type CreateSewingPatternMutationBody = BodyType<CreateSewingPattern>
+    export type CreateSewingPatternMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse>
+    export type CreateSewingPatternMutationVariables = {data: BodyType<CreateSewingPattern>}
+
+    /**
+ * @summary Add a sewing pattern
+ */
+export const useCreateSewingPattern = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSewingPattern>>, TError,CreateSewingPatternMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createSewingPattern>>,
+        TError,
+        CreateSewingPatternMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateSewingPatternMutationOptions(options));
+    }
+
+export const getRequestSewingPatternPhotoUploadUrl = () => {
+
+
+
+
+  return `/api/sewing-patterns/photo-upload`
+}
+
+/**
+ * @summary Request a private upload URL for a pattern cover photo
+ */
+export const requestSewingPatternPhotoUpload = async (progressPhotoUploadRequest: ProgressPhotoUploadRequest, options?: Parameters<typeof customFetch>[1]): Promise<ProgressPhotoUploadResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<ProgressPhotoUploadResponse>(getRequestSewingPatternPhotoUploadUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(progressPhotoUploadRequest)
+  }
+);}
+
+
+
+
+
+export const getRequestSewingPatternPhotoUploadMutationKey = () => ['requestSewingPatternPhotoUpload'] as const;
+
+export const getRequestSewingPatternPhotoUploadMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestSewingPatternPhotoUpload>>, TError,RequestSewingPatternPhotoUploadMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestSewingPatternPhotoUpload>>, TError,RequestSewingPatternPhotoUploadMutationVariables, TContext> => {
+
+const mutationKey = getRequestSewingPatternPhotoUploadMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestSewingPatternPhotoUpload>>, RequestSewingPatternPhotoUploadMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  requestSewingPatternPhotoUpload(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequestSewingPatternPhotoUploadMutationResult = NonNullable<Awaited<ReturnType<typeof requestSewingPatternPhotoUpload>>>
+    export type RequestSewingPatternPhotoUploadMutationBody = BodyType<ProgressPhotoUploadRequest>
+    export type RequestSewingPatternPhotoUploadMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse>
+    export type RequestSewingPatternPhotoUploadMutationVariables = {data: BodyType<ProgressPhotoUploadRequest>}
+
+    /**
+ * @summary Request a private upload URL for a pattern cover photo
+ */
+export const useRequestSewingPatternPhotoUpload = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestSewingPatternPhotoUpload>>, TError,RequestSewingPatternPhotoUploadMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof requestSewingPatternPhotoUpload>>,
+        TError,
+        RequestSewingPatternPhotoUploadMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRequestSewingPatternPhotoUploadMutationOptions(options));
+    }
+
+export const getGetSewingPatternUrl = (sewingPatternId: string,) => {
+
+
+
+
+  return `/api/sewing-patterns/${sewingPatternId}`
+}
+
+/**
+ * @summary Get one sewing pattern
+ */
+export const getSewingPattern = async (sewingPatternId: string, options?: Parameters<typeof customFetch>[1]): Promise<SewingPattern> => {
+
+  return customFetch<SewingPattern>(getGetSewingPatternUrl(sewingPatternId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSewingPatternQueryKey = (sewingPatternId: string,) => {
+    return [
+    `/api/sewing-patterns/${sewingPatternId}`
+    ] as const;
+    }
+
+
+export const getGetSewingPatternQueryOptions = <TData = Awaited<ReturnType<typeof getSewingPattern>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse>>(sewingPatternId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSewingPattern>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSewingPatternQueryKey(sewingPatternId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSewingPattern>>> = ({ signal }) => getSewingPattern(sewingPatternId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: sewingPatternId !== null && sewingPatternId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSewingPattern>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSewingPatternQueryResult = NonNullable<Awaited<ReturnType<typeof getSewingPattern>>>
+export type GetSewingPatternQueryError = ErrorType<UnauthorizedResponse | NotFoundResponse>
+
+
+/**
+ * @summary Get one sewing pattern
+ */
+
+export function useGetSewingPattern<TData = Awaited<ReturnType<typeof getSewingPattern>>, TError = ErrorType<UnauthorizedResponse | NotFoundResponse>>(
+ sewingPatternId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSewingPattern>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSewingPatternQueryOptions(sewingPatternId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateSewingPatternUrl = (sewingPatternId: string,) => {
+
+
+
+
+  return `/api/sewing-patterns/${sewingPatternId}`
+}
+
+/**
+ * @summary Change a sewing pattern
+ */
+export const updateSewingPattern = async (sewingPatternId: string,
+    updateSewingPatternBody: UpdateSewingPattern, options?: Parameters<typeof customFetch>[1]): Promise<SewingPattern> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<SewingPattern>(getUpdateSewingPatternUrl(sewingPatternId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(updateSewingPatternBody)
+  }
+);}
+
+
+
+
+
+export const getUpdateSewingPatternMutationKey = () => ['updateSewingPattern'] as const;
+
+export const getUpdateSewingPatternMutationOptions = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSewingPattern>>, TError,UpdateSewingPatternMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateSewingPattern>>, TError,UpdateSewingPatternMutationVariables, TContext> => {
+
+const mutationKey = getUpdateSewingPatternMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateSewingPattern>>, UpdateSewingPatternMutationVariables> = (props) => {
+          const {sewingPatternId,data} = props ?? {};
+
+          return  updateSewingPattern(sewingPatternId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateSewingPatternMutationResult = NonNullable<Awaited<ReturnType<typeof updateSewingPattern>>>
+    export type UpdateSewingPatternMutationBody = BodyType<UpdateSewingPattern>
+    export type UpdateSewingPatternMutationError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse>
+    export type UpdateSewingPatternMutationVariables = {sewingPatternId: string;data: BodyType<UpdateSewingPattern>}
+
+    /**
+ * @summary Change a sewing pattern
+ */
+export const useUpdateSewingPattern = <TError = ErrorType<BadRequestResponse | UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSewingPattern>>, TError,UpdateSewingPatternMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateSewingPattern>>,
+        TError,
+        UpdateSewingPatternMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateSewingPatternMutationOptions(options));
+    }
+
+export const getDeleteSewingPatternUrl = (sewingPatternId: string,) => {
+
+
+
+
+  return `/api/sewing-patterns/${sewingPatternId}`
+}
+
+/**
+ * @summary Remove a sewing pattern. Projects that used it keep no pattern.
+ */
+export const deleteSewingPattern = async (sewingPatternId: string, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getDeleteSewingPatternUrl(sewingPatternId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteSewingPatternMutationKey = () => ['deleteSewingPattern'] as const;
+
+export const getDeleteSewingPatternMutationOptions = <TError = ErrorType<UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteSewingPattern>>, TError,DeleteSewingPatternMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteSewingPattern>>, TError,DeleteSewingPatternMutationVariables, TContext> => {
+
+const mutationKey = getDeleteSewingPatternMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteSewingPattern>>, DeleteSewingPatternMutationVariables> = (props) => {
+          const {sewingPatternId} = props ?? {};
+
+          return  deleteSewingPattern(sewingPatternId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteSewingPatternMutationResult = NonNullable<Awaited<ReturnType<typeof deleteSewingPattern>>>
+
+    export type DeleteSewingPatternMutationError = ErrorType<UnauthorizedResponse | NotFoundResponse>
+    export type DeleteSewingPatternMutationVariables = {sewingPatternId: string}
+
+    /**
+ * @summary Remove a sewing pattern. Projects that used it keep no pattern.
+ */
+export const useDeleteSewingPattern = <TError = ErrorType<UnauthorizedResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteSewingPattern>>, TError,DeleteSewingPatternMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteSewingPattern>>,
+        TError,
+        DeleteSewingPatternMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeleteSewingPatternMutationOptions(options));
+    }
+
+export const getGetSewingPatternPhotoUrl = (sewingPatternId: string,) => {
+
+
+
+
+  return `/api/sewing-patterns/${sewingPatternId}/photo`
+}
+
+/**
+ * @summary View a pattern's cover photo
+ */
+export const getSewingPatternPhoto = async (sewingPatternId: string, options?: Parameters<typeof customFetch>[1]): Promise<unknown> => {
+
+  return customFetch<unknown>(getGetSewingPatternPhotoUrl(sewingPatternId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSewingPatternPhotoQueryKey = (sewingPatternId: string,) => {
+    return [
+    `/api/sewing-patterns/${sewingPatternId}/photo`
+    ] as const;
+    }
+
+
+export const getGetSewingPatternPhotoQueryOptions = <TData = Awaited<ReturnType<typeof getSewingPatternPhoto>>, TError = ErrorType<void | UnauthorizedResponse | NotFoundResponse>>(sewingPatternId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSewingPatternPhoto>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSewingPatternPhotoQueryKey(sewingPatternId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSewingPatternPhoto>>> = ({ signal }) => getSewingPatternPhoto(sewingPatternId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: sewingPatternId !== null && sewingPatternId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSewingPatternPhoto>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSewingPatternPhotoQueryResult = NonNullable<Awaited<ReturnType<typeof getSewingPatternPhoto>>>
+export type GetSewingPatternPhotoQueryError = ErrorType<void | UnauthorizedResponse | NotFoundResponse>
+
+
+/**
+ * @summary View a pattern's cover photo
+ */
+
+export function useGetSewingPatternPhoto<TData = Awaited<ReturnType<typeof getSewingPatternPhoto>>, TError = ErrorType<void | UnauthorizedResponse | NotFoundResponse>>(
+ sewingPatternId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSewingPatternPhoto>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSewingPatternPhotoQueryOptions(sewingPatternId,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

@@ -21,6 +21,7 @@ import {
   sewingProjectFabricsTable,
   sewingProjectMachineSettingsTable,
   sewingProjectToolsTable,
+  sewingPatternsTable,
   sewingPresserFootEnum,
   sewingProjectsTable,
   sewingStitchEnum,
@@ -33,6 +34,7 @@ import { requireAuth } from "../middlewares/requireAuth";
 import { checkFabricLinks, checkMachineSettings, checkToolIds, fabricTypeCounts, sewingStages, stashLength, statusChanges, type MachineSetting } from "../lib/sewingProjects";
 import { serializeFabric } from "./fabricStash";
 import { serializeTool } from "./sewingTools";
+import { findOrAddPattern, moveTypedPatterns } from "../lib/sewingPatterns";
 
 const router: IRouter = Router();
 
@@ -58,6 +60,13 @@ function inFuture(date: Date | undefined): boolean {
 // listed them (notes newest first).
 async function withFabrics(projects: SewingProject[]) {
   const ids = projects.map((project) => project.id);
+  const patternIds = [...new Set(projects.map((project) => project.patternId).filter((id): id is string => !!id))];
+  const patterns = patternIds.length
+    ? await db
+        .select({ id: sewingPatternsTable.id, name: sewingPatternsTable.name, designer: sewingPatternsTable.designer })
+        .from(sewingPatternsTable)
+        .where(inArray(sewingPatternsTable.id, patternIds))
+    : [];
   const entries = ids.length
     ? await db
         .select()
@@ -90,8 +99,12 @@ async function withFabrics(projects: SewingProject[]) {
     : [];
   return projects.map((project) => {
     const { ownerId: _ownerId, ...rest } = project;
+    // A linked pattern's name and designer come from the pattern stash.
+    const pattern = patterns.find((item) => item.id === project.patternId);
     const parsed = GetSewingProjectResponse.parse({
       ...rest,
+      patternName: pattern ? pattern.name : project.patternName,
+      patternDesigner: pattern ? pattern.designer : project.patternDesigner,
       fabrics: links
         .filter(({ link }) => link.projectId === project.id)
         .map(({ link, fabric }) => ({
@@ -173,6 +186,26 @@ async function saveLinks(projectId: string, links: { stashFabricId: string; amou
   }
 }
 
+type PatternChoice = { patternId?: string | null; patternName?: string | null; patternDesigner?: string | null };
+type PatternResult = { ok: true; patternId: string | null | undefined } | { ok: false; error: string };
+
+// Works out which stash pattern a project uses. A patternId must be one of
+// the maker's own; a typed name without an id is found in the stash or added
+// to it. undefined keeps the project's pattern as it is.
+async function choosePattern(ownerId: string, sent: PatternChoice): Promise<PatternResult> {
+  if (sent.patternId) {
+    const [own] = await db
+      .select({ id: sewingPatternsTable.id })
+      .from(sewingPatternsTable)
+      .where(and(eq(sewingPatternsTable.id, sent.patternId), eq(sewingPatternsTable.ownerId, ownerId)));
+    return own ? { ok: true, patternId: own.id } : { ok: false, error: "Choose a pattern from your pattern stash." };
+  }
+  if (sent.patternId === undefined && sent.patternName === undefined) return { ok: true, patternId: undefined };
+  const name = sent.patternName?.trim();
+  if (!name) return { ok: true, patternId: null };
+  return { ok: true, patternId: await findOrAddPattern(ownerId, name, sent.patternDesigner ?? null) };
+}
+
 async function findOwn(ownerId: string, projectId: string) {
   const [project] = await db
     .select()
@@ -188,13 +221,21 @@ router.get("/sewing-projects", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
-  const filters = [eq(sewingProjectsTable.ownerId, getOwnerId(res))];
+  const ownerId = getOwnerId(res);
+  await moveTypedPatterns(ownerId);
+  const filters = [eq(sewingProjectsTable.ownerId, ownerId)];
   const search = parsed.data.search?.trim();
   if (search) {
+    const matchingPatterns = db
+      .select({ id: sewingPatternsTable.id })
+      .from(sewingPatternsTable)
+      .where(and(
+        eq(sewingPatternsTable.ownerId, ownerId),
+        or(ilike(sewingPatternsTable.name, `%${search}%`), ilike(sewingPatternsTable.designer, `%${search}%`)),
+      ));
     filters.push(or(
       ilike(sewingProjectsTable.title, `%${search}%`),
-      ilike(sewingProjectsTable.patternName, `%${search}%`),
-      ilike(sewingProjectsTable.patternDesigner, `%${search}%`),
+      inArray(sewingProjectsTable.patternId, matchingPatterns),
       ilike(sewingProjectsTable.sizeMade, `%${search}%`),
     )!);
   }
@@ -231,6 +272,11 @@ router.post("/sewing-projects", requireAuth, async (req, res): Promise<void> => 
     res.status(400).json({ error: settings.error });
     return;
   }
+  const pattern = await choosePattern(ownerId, parsed.data);
+  if (!pattern.ok) {
+    res.status(400).json({ error: pattern.error });
+    return;
+  }
 
   const status = parsed.data.status ?? "planning";
   const [created] = await db
@@ -240,8 +286,7 @@ router.post("/sewing-projects", requireAuth, async (req, res): Promise<void> => 
       title: parsed.data.title.trim(),
       status,
       stage: parsed.data.stage ?? "prep",
-      patternName: tidyText(parsed.data.patternName),
-      patternDesigner: tidyText(parsed.data.patternDesigner),
+      patternId: pattern.patternId ?? null,
       sizeMade: tidyText(parsed.data.sizeMade),
       fitChanges: tidyText(parsed.data.fitChanges),
       needleType: parsed.data.needleType ?? null,
@@ -263,6 +308,7 @@ router.get("/sewing-projects/:sewingProjectId", requireAuth, async (req, res): P
     res.status(400).json({ error: "Invalid project ID." });
     return;
   }
+  await moveTypedPatterns(getOwnerId(res));
   const project = await findOwn(getOwnerId(res), params.data.sewingProjectId);
   if (!project) {
     res.status(404).json({ error: "Project not found." });
@@ -301,6 +347,11 @@ router.patch("/sewing-projects/:sewingProjectId", requireAuth, async (req, res):
     res.status(400).json({ error: settings.error });
     return;
   }
+  const pattern = await choosePattern(ownerId, changes);
+  if (!pattern.ok) {
+    res.status(400).json({ error: pattern.error });
+    return;
+  }
 
   const text = (value: string | null | undefined, existing: string | null) =>
     value !== undefined ? tidyText(value) : existing;
@@ -310,8 +361,7 @@ router.patch("/sewing-projects/:sewingProjectId", requireAuth, async (req, res):
       title: changes.title?.trim() ?? current.title,
       status: changes.status ?? current.status,
       stage: changes.stage ?? current.stage,
-      patternName: text(changes.patternName, current.patternName),
-      patternDesigner: text(changes.patternDesigner, current.patternDesigner),
+      ...(pattern.patternId !== undefined ? { patternId: pattern.patternId, patternName: null, patternDesigner: null } : {}),
       sizeMade: text(changes.sizeMade, current.sizeMade),
       fitChanges: text(changes.fitChanges, current.fitChanges),
       needleType: changes.needleType !== undefined ? changes.needleType : current.needleType,
@@ -425,6 +475,7 @@ router.delete("/sewing-projects/:sewingProjectId/entries/:entryId", requireAuth,
 
 router.get("/sewing-overview", requireAuth, async (_req, res): Promise<void> => {
   const ownerId = getOwnerId(res);
+  await moveTypedPatterns(ownerId);
   const [projects, pieces] = await Promise.all([
     db
       .select()
