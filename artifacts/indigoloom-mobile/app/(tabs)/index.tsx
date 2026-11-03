@@ -61,10 +61,10 @@ export default function DashboardScreen() {
         <>
           <View style={[styles.stats, { marginBottom: 8 }]}>
             {([
-              ['All projects', data.totalProjects, 'yarn', colors.statAll, colors.statAllInk, ''],
-              ['In progress', data.activeProjects, 'hook', colors.statActive, colors.statActiveInk, 'in_progress'],
-              ['Finished', data.completedProjects, 'square', colors.statFinished, colors.statFinishedInk, 'completed'],
-            ] as const).map(([label, value, doodle, tint, ink, status]) => (
+              ['All projects', data.totalProjects, 'yarn', colors.statAll, colors.statAllInk, colors.statAllValue, ''],
+              ['In progress', data.activeProjects, 'hook', colors.statActive, colors.statActiveInk, colors.statActiveValue, 'in_progress'],
+              ['Finished', data.completedProjects, 'square', colors.statFinished, colors.statFinishedInk, colors.statFinishedValue, 'completed'],
+            ] as const).map(([label, value, doodle, tint, ink, ink2, status]) => (
               <Pressable
                 key={label}
                 accessibilityRole="button"
@@ -74,7 +74,7 @@ export default function DashboardScreen() {
                 testID={`button-stat-${status || 'all'}`}
               >
                 <LoomText style={[styles.statLabel, { color: colors.mutedForeground }]}>{label}</LoomText>
-                <LoomText serif style={[styles.statValue, { color: colors.foreground }]}>{value}</LoomText>
+                <LoomText serif style={[styles.statValue, { color: ink2 }]}>{value}</LoomText>
                 <View style={styles.statDoodle}><StatDoodle kind={doodle} color={ink} size={40} /></View>
               </Pressable>
             ))}
@@ -85,7 +85,7 @@ export default function DashboardScreen() {
               accessibilityRole={data.mostUsedYarnBrands.length === 1 ? 'button' : undefined}
               disabled={data.mostUsedYarnBrands.length !== 1}
               onPress={() => searchProjects(data.mostUsedYarnBrands[0])}
-              style={({ pressed }) => [styles.stat, { backgroundColor: colors.statActive, borderColor: colors.statActive }, pressed && styles.statPressed]}
+              style={({ pressed }) => [styles.stat, { backgroundColor: colors.statBrand, borderColor: colors.statBrand }, pressed && styles.statPressed]}
               testID="button-stat-top-brand"
             >
               <LoomText style={[styles.statLabel, { color: colors.mutedForeground }]}>Most-used yarn brand</LoomText>
@@ -96,7 +96,7 @@ export default function DashboardScreen() {
                 </LoomText>
               )}
             </Pressable>
-            <View style={[styles.stat, { backgroundColor: colors.statAll, borderColor: colors.statAll }]} testID="card-stat-average-days">
+            <View style={[styles.stat, { backgroundColor: colors.statAverage, borderColor: colors.statAverage }]} testID="card-stat-average-days">
               <LoomText style={[styles.statLabel, { color: colors.mutedForeground }]}>Average days to finish</LoomText>
               <LoomText serif style={[styles.statValue, { color: colors.foreground }]}>{data.averageDaysToFinish ?? '—'}</LoomText>
             </View>

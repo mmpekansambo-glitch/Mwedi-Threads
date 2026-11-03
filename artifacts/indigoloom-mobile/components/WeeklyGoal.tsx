@@ -6,6 +6,8 @@ import { checkInWeeklyGoal, getGetWeeklyGoalQueryKey, setWeeklyGoal, useGetWeekl
 import type { GetWeeklyGoalParams, Studio, WeeklyGoal } from '@workspace/api-client-react';
 import { LoomText, fonts } from '@/components/loom';
 import { ITEM_HEIGHT, Wheel } from '@/components/ProjectDateField';
+import colorTokens from '@/constants/colors';
+import { useScheme } from '@/hooks/useAppearance';
 import { useColors, useSewingColors } from '@/hooks/useColors';
 
 const dayLetters = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -28,7 +30,9 @@ function weekParams(studio: Studio): GetWeeklyGoalParams {
 export function WeeklyGoalCard({ studio }: { studio: Studio }) {
   const yarnColors = useColors();
   const sewingColors = useSewingColors();
-  const colors = studio === 'sewing' ? sewingColors : yarnColors;
+  const base = studio === 'sewing' ? sewingColors : yarnColors;
+  // In dark mode the card itself turns bright; the goal picker sheet keeps the normal colors.
+  const colors = useScheme() === 'dark' ? { ...base, ...colorTokens.weekBright[studio] } : base;
   const client = useQueryClient();
   const params = weekParams(studio);
   const key = getGetWeeklyGoalQueryKey(params);
@@ -110,23 +114,23 @@ export function WeeklyGoalCard({ studio }: { studio: Studio }) {
       <Modal visible={picking} transparent animationType="slide" onRequestClose={() => setPicking(false)}>
         <View style={styles.backdrop}>
           <Pressable accessibilityLabel="Close goal picker" onPress={() => setPicking(false)} style={StyleSheet.absoluteFill} />
-          <View style={[styles.sheet, { backgroundColor: colors.card }]}>
+          <View style={[styles.sheet, { backgroundColor: base.card }]}>
             <View style={styles.sheetHeading}>
               <Pressable accessibilityRole="button" onPress={() => setPicking(false)} style={styles.headingButton}>
-                <LoomText style={{ color: colors.mutedForeground, fontSize: 16 }}>Cancel</LoomText>
+                <LoomText style={{ color: base.mutedForeground, fontSize: 16 }}>Cancel</LoomText>
               </Pressable>
-              <LoomText serif style={{ color: colors.foreground, fontSize: 20 }}>Days per week</LoomText>
+              <LoomText serif style={{ color: base.foreground, fontSize: 20 }}>Days per week</LoomText>
               <Pressable accessibilityRole="button" disabled={busy} onPress={() => void saveGoal(draft + 1)} style={styles.headingButton} testID="button-save-weekly-goal">
-                <LoomText style={{ color: colors.primaryText, fontFamily: fonts.semibold, fontSize: 16, textAlign: 'right' }}>Save</LoomText>
+                <LoomText style={{ color: base.primaryText, fontFamily: fonts.semibold, fontSize: 16, textAlign: 'right' }}>Save</LoomText>
               </Pressable>
             </View>
-            <View style={[styles.wheels, { backgroundColor: colors.selectedWash }]}>
-              <View pointerEvents="none" style={[styles.wheelBand, { borderColor: colors.accent }]} />
+            <View style={[styles.wheels, { backgroundColor: base.selectedWash }]}>
+              <View pointerEvents="none" style={[styles.wheelBand, { borderColor: base.accent }]} />
               <Wheel label="Days per week" items={goalItems} index={draft} onChange={setDraft} flex={1} testID="input-weekly-goal-wheel" />
             </View>
             {week.goal !== null ? (
               <Pressable accessibilityRole="button" disabled={busy} onPress={() => void saveGoal(null)} style={styles.turnOff} testID="button-turn-off-weekly-goal">
-                <LoomText style={{ color: colors.mutedForeground, fontFamily: fonts.semibold, fontSize: 15 }}>Turn off goal</LoomText>
+                <LoomText style={{ color: base.mutedForeground, fontFamily: fonts.semibold, fontSize: 15 }}>Turn off goal</LoomText>
               </Pressable>
             ) : null}
           </View>

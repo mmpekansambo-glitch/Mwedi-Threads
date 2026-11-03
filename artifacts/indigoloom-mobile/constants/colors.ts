@@ -51,6 +51,25 @@ const colors = {
     statActiveInk: '#5A7684',
     statFinished: '#E1EAE5',
     statFinishedInk: '#395B50',
+    // Stat numbers, and the plain second row (yarn brand, average days).
+    statAllValue: '#1F2F16',
+    statActiveValue: '#1F2F16',
+    statFinishedValue: '#1F2F16',
+    statBrand: '#DCE6F4',
+    statAverage: '#EEF2FA',
+    // Sewing room stat cards.
+    statSewActive: '#DCE6F4',
+    statSewActiveInk: '#5A7684',
+    statSewFabric: '#EEF2FA',
+    statSewFabricInk: '#92AFD7',
+    statSewFinished: '#F1EDF7',
+    // Chart bars by status, and per chart. Light mode keeps them all Granite.
+    chartPlanning: '#395B50',
+    chartInProgress: '#395B50',
+    chartPaused: '#395B50',
+    chartCompleted: '#395B50',
+    chartFinishedBar: '#395B50',
+    chartNotesBar: '#395B50',
   },
 
   // Slate night: Blue Slate pages and cards, Lavender-white text, and Powder
@@ -96,12 +115,32 @@ const colors = {
     chartBarSelected: '#C5D1EB',
     chartAxis: '#A6B5BE',
     chartGrid: '#33424A',
-    statAll: '#26343B',
+    // Each stat card has its own deep palette tint (Powder Blue, Lavender,
+    // Granite), with the number and doodle in the matching light shade.
+    statAll: '#22324A',
     statAllInk: '#92AFD7',
-    statActive: '#2B3A42',
-    statActiveInk: '#A6B5BE',
-    statFinished: '#26343B',
-    statFinishedInk: '#C5D1EB',
+    statActive: '#2C2F4A',
+    statActiveInk: '#B9BFEA',
+    statFinished: '#21352F',
+    statFinishedInk: '#8DBBA9',
+    statAllValue: '#C9D8EE',
+    statActiveValue: '#D9DCF7',
+    statFinishedValue: '#BFDDD0',
+    statBrand: '#26343B',
+    statAverage: '#26343B',
+    statSewActive: '#2C2F4A',
+    statSewActiveInk: '#B9BFEA',
+    statSewFabric: '#22324A',
+    statSewFabricInk: '#92AFD7',
+    // The Sewing room's Finished card is deep mauve, never Granite green.
+    statSewFinished: '#312A42',
+    // One color per status, and each chart its own bar color.
+    chartPlanning: '#B9BFEA',
+    chartInProgress: '#92AFD7',
+    chartPaused: '#7E9AA6',
+    chartCompleted: '#8DBBA9',
+    chartFinishedBar: '#8DBBA9',
+    chartNotesBar: '#B9BFEA',
   },
 
   // The Sewing room's own look: mauve, in both light and dark. Fills use
@@ -128,6 +167,36 @@ const colors = {
       accent: '#7A6898',
       accentForeground: '#F1EDF7',
       accentIcon: '#F1EDF7',
+      statFinishedValue: '#DDD3EE',
+    },
+  },
+
+  // "This week" is the one bright block on a dark Overview: Lavender (mauve
+  // in the Sewing room) with dark text. These override the tokens inside it.
+  weekBright: {
+    yarn: {
+      card: '#C5D1EB',
+      border: '#C5D1EB',
+      foreground: '#182126',
+      mutedForeground: '#33424A',
+      primary: '#2E4A63',
+      primaryText: '#2E4A63',
+      muted: '#AEBEDD',
+      accent: '#2E4A63',
+      selectedWash: '#DCE4F3',
+      destructive: '#8E2F2C',
+    },
+    sewing: {
+      card: '#D9D0EA',
+      border: '#D9D0EA',
+      foreground: '#182126',
+      mutedForeground: '#3D3550',
+      primary: '#5B4A7A',
+      primaryText: '#5B4A7A',
+      muted: '#C5B9DC',
+      accent: '#5B4A7A',
+      selectedWash: '#EAE4F3',
+      destructive: '#8E2F2C',
     },
   },
 

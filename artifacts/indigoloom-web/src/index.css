@@ -1066,11 +1066,70 @@ a.stat-card:active { transform: scale(.98); box-shadow: none; }
 .dark .portal-topbar { background: rgba(24,33,38,.88); }
 .dark .home-sewing .portal-topbar { background: rgba(24,33,38,.88); }
 .dark .top-avatar { background: var(--lavender-soft); color: var(--evergreen); }
-.dark .stat-card-all { background: #26343B; border-color: #26343B; }
-.dark .stat-card-active { background: #2B3A42; border-color: #2B3A42; }
-.dark .stat-card-finished { background: #26343B; border-color: #26343B; }
-.dark .stat-doodle-hook { stroke: #A6B5BE; }
-.dark .stat-doodle-square { stroke: #C5D1EB; }
+/* Each stat card gets its own deep palette tint, like light mode's tints:
+   Powder Blue, Lavender and Granite. Numbers and doodles take the matching
+   light shade. The second row (yarn brand, average days) stays plain slate. */
+.dark .stat-card-all { background: #22324A; border-color: #22324A; }
+.dark .stat-card-active { background: #2C2F4A; border-color: #2C2F4A; }
+.dark .stat-card-finished { background: #21352F; border-color: #21352F; }
+.dark .stat-card-all > strong { color: #C9D8EE; }
+.dark .stat-card-active > strong { color: #D9DCF7; }
+.dark .stat-card-finished > strong { color: #BFDDD0; }
+.dark .stat-card-all .stat-label { color: #A9BCD8; }
+.dark .stat-card-active .stat-label { color: #B5B9DD; }
+.dark .stat-card-finished .stat-label { color: #A3C2B5; }
+.dark .stat-card-all .stat-detail { color: #A9BCD8; }
+.dark .stat-doodle-yarn,.dark .stat-doodle-swatch { stroke: #92AFD7; }
+.dark .stat-doodle-hook,.dark .stat-doodle-spool { stroke: #B9BFEA; }
+.dark .stat-doodle-square,.dark .stat-doodle-scissors { stroke: #8DBBA9; }
+.dark .stat-row-second .stat-card { background: #26343B; border-color: #26343B; }
+.dark .stat-row-second .stat-card > strong { color: var(--evergreen); }
+.dark .stat-row-second .stat-card .stat-label,.dark .stat-row-second .stat-card .stat-detail { color: var(--slate); }
+/* Sewing room: mauve takes Granite's place, so nothing there turns green. */
+.dark .home-sewing .stat-card-finished { background: #312A42; border-color: #312A42; }
+.dark .home-sewing .stat-card-finished > strong { color: #DDD3EE; }
+.dark .home-sewing .stat-card-finished .stat-label { color: #BBADD6; }
+.dark .home-sewing .stat-doodle-scissors { stroke: #A595C2; }
+/* Charts: one color per status, and each chart its own bar color. */
+.dark {
+  --chart-planning: #B9BFEA;
+  --chart-in_progress: #92AFD7;
+  --chart-paused: #7E9AA6;
+  --chart-completed: #8DBBA9;
+  --chart-finished-bar: #8DBBA9;
+  --chart-notes-bar: #B9BFEA;
+}
+/* "This week" is the one bright block on a dark Overview: Lavender with dark
+   text, so the palette variables inside it go back to light-page meanings. */
+.dark .weekly-goal {
+  --evergreen: #182126;
+  --slate: #3D4E57;
+  --slate-deep: #33424A;
+  --granite: #2E4A63;
+  --granite-deep: #243B50;
+  --powder: #2E4A63;
+  --powder-wash: #DCE4F3;
+  --white: #DCE4F3;
+  --lavender-wash: rgba(24,33,38,.1);
+  --lavender-soft: #A9B8D6;
+  --lavender-deep: #8FA0C2;
+  background: #C5D1EB;
+  border-color: #C5D1EB;
+  color: #182126;
+}
+.dark .weekly-goal .button-primary { background: #2E4A63; color: #F1F5FB; }
+.dark .home-sewing .weekly-goal {
+  --granite: #5B4A7A;
+  --granite-deep: #4A3C66;
+  --powder: #5B4A7A;
+  --powder-wash: #EAE4F3;
+  --white: #EAE4F3;
+  --lavender-soft: #C3B6DB;
+  --lavender-deep: #AE9FCB;
+  background: #D9D0EA;
+  border-color: #D9D0EA;
+}
+.dark .home-sewing .weekly-goal .button-primary { background: #5B4A7A; color: #F1EDF7; }
 .dark .star-button { background: var(--white); }
 .dark .empty-projects { background: rgba(33,44,50,.6); }
 .dark .status-completed { color: #FFFFFF; background: #395B50; }

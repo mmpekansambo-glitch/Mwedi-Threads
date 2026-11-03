@@ -17,10 +17,15 @@ const weekFormat = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric
 
 type Row = { label: string; detail: string; count: number; status?: ProjectStatus };
 
-function BarChartCard({ title, rows, unit, emptyText, note, edgeLabelsOnly = false, onPick }: {
-  title: string; rows: Row[]; unit: [string, string]; emptyText: string; note?: string; edgeLabelsOnly?: boolean; onPick?: (row: Row) => void;
+function BarChartCard({ title, rows, unit, emptyText, note, edgeLabelsOnly = false, onPick, barColor }: {
+  title: string; rows: Row[]; unit: [string, string]; emptyText: string; note?: string; edgeLabelsOnly?: boolean; onPick?: (row: Row) => void; barColor?: string;
 }) {
   const colors = useColors();
+  // Dark mode gives each status, and each chart, its own palette color; light mode keeps Granite.
+  const statusColor: Record<ProjectStatus, string> = {
+    planning: colors.chartPlanning, in_progress: colors.chartInProgress, paused: colors.chartPaused, completed: colors.chartCompleted,
+  };
+  const colorFor = (row: Row) => (row.status ? statusColor[row.status] : barColor ?? colors.chartBar);
   const [selected, setSelected] = useState<number | null>(null);
   const max = Math.max(...rows.map((row) => row.count));
   const describe = (row: Row) => `${row.detail}: ${row.count} ${row.count === 1 ? unit[0] : unit[1]}`;
@@ -45,7 +50,7 @@ function BarChartCard({ title, rows, unit, emptyText, note, edgeLabelsOnly = fal
                     styles.bar,
                     {
                       height: row.count ? Math.max(4, (row.count / max) * plotHeight) : 0,
-                      backgroundColor: selected === index ? colors.chartBarSelected : colors.chartBar,
+                      backgroundColor: selected === index ? colors.chartBarSelected : colorFor(row),
                     },
                   ]}
                 />
@@ -89,15 +94,16 @@ export function DashboardCharts({ charts, onPickStatus }: { charts: Charts; onPi
   });
   const undated = charts.completedWithoutDate;
 
+  const colors = useColors();
   return (
     <View>
       <BarChartCard title="Projects by status" rows={statusRows} unit={['project', 'projects']}
         onPick={(row) => row.status && onPickStatus(row.status)}
         emptyText="Add your first project and it will show up here." />
-      <BarChartCard title="Finished, last 12 months" rows={monthRows} unit={['project', 'projects']} edgeLabelsOnly
+      <BarChartCard title="Finished, last 12 months" rows={monthRows} unit={['project', 'projects']} edgeLabelsOnly barColor={colors.chartFinishedBar}
         emptyText="Nothing finished in the last year yet. Your first finish will land here."
         note={undated ? `${undated} finished ${undated === 1 ? 'project has' : 'projects have'} no completed date, so ${undated === 1 ? 'it isn’t' : 'they aren’t'} counted here.` : undefined} />
-      <BarChartCard title="Notes, last 12 weeks" rows={weekRows} unit={['note', 'notes']} edgeLabelsOnly
+      <BarChartCard title="Notes, last 12 weeks" rows={weekRows} unit={['note', 'notes']} edgeLabelsOnly barColor={colors.chartNotesBar}
         emptyText="No progress notes in the last 12 weeks. Add one from any project page." />
     </View>
   );
