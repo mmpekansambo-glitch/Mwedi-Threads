@@ -19,7 +19,10 @@ const project = (id: string, title: string, status: string) => ({
 const projects = [project("p1", "Granny square cardigan", "in_progress"), project("p2", "Cabled beanie", "planning"), project("p3", "Market tote", "completed")];
 
 const dashboard = {
-  totalProjects: 7, activeProjects: 4, completedProjects: 2, recentProjects: projects, recentProgress: [],
+  totalProjects: 7, activeProjects: 4, completedProjects: 2, recentProjects: projects, recentProgress: [
+    { projectId: "p1", projectTitle: "Granny square cardigan", notes: "Finished the second sleeve panel.", completionPercent: 40, createdAt: "2026-10-30T12:00:00.000Z" },
+    { projectId: "p2", projectTitle: "Cabled beanie", notes: "Swatched the cable pattern.", completionPercent: 5, createdAt: "2026-10-28T12:00:00.000Z" },
+  ],
   mostUsedYarnBrands: ["Caron"], mostUsedYarnBrandProjects: 3, averageDaysToFinish: 24,
   charts: {
     projectsByStatus: (["planning", "in_progress", "paused", "completed"] as const).map((status, index) => ({ status, count: [1, 4, 0, 2][index] })),
@@ -65,7 +68,11 @@ test("Yarn studio Overview in dark mode has tinted stat cards, status colors and
   await expect(bg(page, "card-stat-average-days")).toHaveCSS("background-color", "rgb(38, 52, 59)");
   const statusBars = page.getByTestId("chart-projects-by-status").locator("path.recharts-rectangle");
   await expect.poll(async () => new Set(await statusBars.evaluateAll((paths) => paths.map((path) => getComputedStyle(path).fill))).size).toBe(3);
-  if (shots) { await page.waitForTimeout(1600); await page.screenshot({ path: `${shots}/overview-dark-web.png` }); }
+  const projectsBox = await page.getByRole("heading", { name: "Recent projects" }).boundingBox();
+  const notesBox = await page.getByRole("heading", { name: "Recent notes" }).boundingBox();
+  expect(notesBox!.y).toBeGreaterThan(projectsBox!.y + 100);
+  expect(Math.abs(notesBox!.x - projectsBox!.x)).toBeLessThan(40);
+  if (shots) { await page.waitForTimeout(1600); await page.screenshot({ path: `${shots}/overview-dark-web.png` }); await page.screenshot({ path: `${shots}/overview-dark-web-full.png`, fullPage: true }); }
 });
 
 test("Sewing room Overview in dark mode keeps mauve and no green", async ({ page }) => {
@@ -81,5 +88,5 @@ test("light mode Overview is unchanged", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Projects by status" })).toBeVisible();
   await expect(bg(page, "link-stat-all")).toHaveCSS("background-color", "rgb(238, 242, 250)");
   await expect(bg(page, "card-weekly-goal-yarn")).not.toHaveCSS("background-color", "rgb(197, 209, 235)");
-  if (shots) { await page.waitForTimeout(1600); await page.screenshot({ path: `${shots}/overview-light-web.png` }); }
+  if (shots) { await page.waitForTimeout(1600); await page.screenshot({ path: `${shots}/overview-light-web.png` }); await page.screenshot({ path: `${shots}/overview-light-web-full.png`, fullPage: true }); }
 });
