@@ -60,12 +60,16 @@ export function StashYarnForm({ yarn }: { yarn?: StashYarn }) {
   const [brandLink, setBrandLink] = useState(yarn?.brandLink ?? '');
   const [skeinsPurchased, setSkeinsPurchased] = useState(yarn?.skeinsPurchased === null || !yarn ? '' : String(yarn.skeinsPurchased));
   const [skeinsLeft, setSkeinsLeft] = useState(yarn?.skeinsLeft === null || !yarn ? '' : String(yarn.skeinsLeft));
+  // Sub brand, link, blend and skeins sit behind "More details" so a new
+  // yarn only asks for a photo, brand and color up front.
+  const [moreOpen, setMoreOpen] = useState(() => Boolean(yarn && (yarn.subBrand || yarn.brandLink || yarn.blend.length || yarn.skeinsPurchased !== null || yarn.skeinsLeft !== null)));
   const [photo, setPhoto] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [reviewing, setReviewing] = useState<CatalogField | null>(null);
   const toggleReview = (field: CatalogField) => setReviewing((current) => current === field ? null : field);
   const reviews = useGetStashYarnReviews(yarn?.id ?? '', { query: { enabled: Boolean(yarn), queryKey: getGetStashYarnReviewsQueryKey(yarn?.id ?? '') } });
   const [message, setMessage] = useState('');
   const [blendError, setBlendError] = useState('');
+  const showMore = moreOpen || Boolean(blendError);
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [focused, setFocused] = useState<'brand' | 'subBrand' | 'color' | null>(null);
@@ -165,9 +169,9 @@ export function StashYarnForm({ yarn }: { yarn?: StashYarn }) {
     if (!brand.trim()) return setMessage('Enter the yarn’s brand.');
     if (!photo && !yarn?.photoPath) return setMessage('Add a photo of this yarn.');
     if (typeof blendForSave === 'string') return;
-    if (link && !isWebLink(link)) return setMessage('Enter a brand page link starting with http:// or https://.');
-    if (purchased === 'invalid' || left === 'invalid') return setMessage('Enter skeins in whole or half skeins, like 3 or 2.5.');
-    if (left !== null && purchased !== null && left > purchased) return setMessage('Skeins left can’t be more than skeins purchased.');
+    if (link && !isWebLink(link)) { setMoreOpen(true); return setMessage('Enter a brand page link starting with http:// or https://.'); }
+    if (purchased === 'invalid' || left === 'invalid') { setMoreOpen(true); return setMessage('Enter skeins in whole or half skeins, like 3 or 2.5.'); }
+    if (left !== null && purchased !== null && left > purchased) { setMoreOpen(true); return setMessage('Skeins left can’t be more than skeins purchased.'); }
 
     setSaving(true);
     let photoPath = yarn?.photoPath;
@@ -258,10 +262,6 @@ export function StashYarnForm({ yarn }: { yarn?: StashYarn }) {
           {yarn && reviewing === 'brand' ? <NameReviewForm yarnId={yarn.id} field="brand" currentName={yarn.brand} onDone={() => setReviewing(null)} /> : null}
           <TextInput {...inputProps} value={brand} onChangeText={setBrand} onFocus={() => setFocused('brand')} maxLength={80} placeholder="e.g. Lion Brand" style={inputStyle} autoCorrect={false} testID="input-stash-brand" />
           <CatalogChoices options={focused === 'brand' ? catalog?.brands ?? [] : []} typed={brand} suggestion={catalog?.suggestions.brand} renamingFrom={yarn?.brand} onPick={setBrand} testID="stash-brand" />
-          <ReviewableLabel field="sub_brand" canReview={Boolean(yarn?.subBrand)} open={reviewing === 'sub_brand'} onToggle={() => toggleReview('sub_brand')}>Sub brand</ReviewableLabel>
-          {yarn?.subBrand && reviewing === 'sub_brand' ? <NameReviewForm yarnId={yarn.id} field="sub_brand" currentName={yarn.subBrand} onDone={() => setReviewing(null)} /> : null}
-          <TextInput {...inputProps} value={subBrand} onChangeText={setSubBrand} onFocus={() => setFocused('subBrand')} maxLength={80} placeholder="e.g. Wool-Ease" style={inputStyle} autoCorrect={false} testID="input-stash-sub-brand" />
-          <CatalogChoices options={focused === 'subBrand' ? catalog?.subBrands.map((line) => line.name) ?? [] : []} typed={subBrand} suggestion={catalog?.suggestions.subBrand} renamingFrom={yarn?.subBrand} onPick={setSubBrand} testID="stash-sub-brand" />
           <ReviewableLabel field="color" canReview={Boolean(yarn?.color)} open={reviewing === 'color'} onToggle={() => toggleReview('color')}>Color</ReviewableLabel>
           {yarn?.color && reviewing === 'color' ? <NameReviewForm yarnId={yarn.id} field="color" currentName={yarn.color} onDone={() => setReviewing(null)} /> : null}
           <NameReviewList reviews={reviews.data ?? []} />
@@ -270,25 +270,38 @@ export function StashYarnForm({ yarn }: { yarn?: StashYarn }) {
 
           <GeneralColorPicker value={generalColor} onChange={setGeneralColor} />
           <WeightWheelField value={weight} onChange={setWeight} />
-          <BlendFields value={blend} onChange={(next) => { setBlend(next); setBlendError(''); }} fibers={catalog?.fibers ?? []} error={blendError} />
-          <FormFieldLabel>Brand page link</FormFieldLabel>
-          <TextInput {...inputProps} value={brandLink} onChangeText={setBrandLink} placeholder="https://" autoCapitalize="none" autoCorrect={false} keyboardType="url" style={inputStyle} testID="input-stash-link" />
-          <View style={styles.skeinRow}>
-            <View style={{ flex: 1 }}>
-              <FormFieldLabel>Skeins purchased</FormFieldLabel>
-              <TextInput {...inputProps} value={skeinsPurchased} onChangeText={changePurchased} keyboardType="decimal-pad" placeholder="e.g. 4" style={inputStyle} testID="input-skeins-purchased" />
+          <Pressable accessibilityRole="button" accessibilityState={{ expanded: showMore }} onPress={() => setMoreOpen((open) => !open)} style={[styles.moreRow, { borderColor: colors.border }]} testID="button-stash-more">
+            <LoomText style={{ color: colors.foreground, fontFamily: fonts.semibold, fontSize: 15 }}>More details</LoomText>
+            <View style={styles.moreHint}>
+              <LoomText style={{ color: colors.primary, fontFamily: fonts.semibold, fontSize: 14 }}>{showMore ? 'Hide' : 'Sub brand, link, blend, skeins'}</LoomText>
+              <Feather name={showMore ? 'chevron-up' : 'chevron-down'} size={16} color={colors.primary} />
             </View>
-            <View style={{ flex: 1 }}>
-              <FormFieldLabel>Skeins left</FormFieldLabel>
-              <TextInput {...inputProps} value={skeinsLeft} onChangeText={(value) => { setLeftTouched(true); setLeftNudge(null); setSkeinsLeft(value); }} keyboardType="decimal-pad" placeholder={skeinsPurchased || 'Same'} style={inputStyle} testID="input-skeins-left" />
+          </Pressable>
+          {showMore ? <>
+            <ReviewableLabel field="sub_brand" canReview={Boolean(yarn?.subBrand)} open={reviewing === 'sub_brand'} onToggle={() => toggleReview('sub_brand')}>Sub brand</ReviewableLabel>
+            {yarn?.subBrand && reviewing === 'sub_brand' ? <NameReviewForm yarnId={yarn.id} field="sub_brand" currentName={yarn.subBrand} onDone={() => setReviewing(null)} /> : null}
+            <TextInput {...inputProps} value={subBrand} onChangeText={setSubBrand} onFocus={() => setFocused('subBrand')} maxLength={80} placeholder="e.g. Wool-Ease" style={inputStyle} autoCorrect={false} testID="input-stash-sub-brand" />
+            <CatalogChoices options={focused === 'subBrand' ? catalog?.subBrands.map((line) => line.name) ?? [] : []} typed={subBrand} suggestion={catalog?.suggestions.subBrand} renamingFrom={yarn?.subBrand} onPick={setSubBrand} testID="stash-sub-brand" />
+            <BlendFields value={blend} onChange={(next) => { setBlend(next); setBlendError(''); }} fibers={catalog?.fibers ?? []} error={blendError} />
+            <FormFieldLabel>Brand page link</FormFieldLabel>
+            <TextInput {...inputProps} value={brandLink} onChangeText={setBrandLink} placeholder="https://" autoCapitalize="none" autoCorrect={false} keyboardType="url" style={inputStyle} testID="input-stash-link" />
+            <View style={styles.skeinRow}>
+              <View style={{ flex: 1 }}>
+                <FormFieldLabel>Skeins purchased</FormFieldLabel>
+                <TextInput {...inputProps} value={skeinsPurchased} onChangeText={changePurchased} keyboardType="decimal-pad" placeholder="e.g. 4" style={inputStyle} testID="input-skeins-purchased" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <FormFieldLabel>Skeins left</FormFieldLabel>
+                <TextInput {...inputProps} value={skeinsLeft} onChangeText={(value) => { setLeftTouched(true); setLeftNudge(null); setSkeinsLeft(value); }} keyboardType="decimal-pad" placeholder={skeinsPurchased || 'Same'} style={inputStyle} testID="input-skeins-left" />
+              </View>
             </View>
-          </View>
-          {leftNudge ? (
-            <View style={[styles.nudge, { backgroundColor: colors.selectedWash }]} testID="skeins-left-nudge">
-              <LoomText style={{ color: colors.foreground, fontSize: 14, lineHeight: 20, flex: 1 }}>Skeins left is now {leftNudge.to} (was {leftNudge.from}). Look right?</LoomText>
-              <LoomText accessibilityRole="button" onPress={() => setLeftNudge(null)} style={{ color: colors.primary, fontFamily: fonts.semibold, fontSize: 14 }} testID="button-skeins-left-ok">Looks right</LoomText>
-            </View>
-          ) : null}
+            {leftNudge ? (
+              <View style={[styles.nudge, { backgroundColor: colors.selectedWash }]} testID="skeins-left-nudge">
+                <LoomText style={{ color: colors.foreground, fontSize: 14, lineHeight: 20, flex: 1 }}>Skeins left is now {leftNudge.to} (was {leftNudge.from}). Look right?</LoomText>
+                <LoomText accessibilityRole="button" onPress={() => setLeftNudge(null)} style={{ color: colors.primary, fontFamily: fonts.semibold, fontSize: 14 }} testID="button-skeins-left-ok">Looks right</LoomText>
+              </View>
+            ) : null}
+          </> : null}
           {message ? <LoomText accessibilityRole="alert" style={[styles.error, { color: colors.destructive }]}>{message}</LoomText> : null}
           <LoomButton title={yarn ? 'Save changes' : 'Add to stash'} icon="arrow-right" onPress={() => { void save(); }} busy={saving} testID="button-save-yarn" />
         </View>}
@@ -311,6 +324,8 @@ const styles = StyleSheet.create({
   photoDot: { position: 'absolute', right: 9, bottom: 9, borderWidth: 2, borderColor: '#FFFFFF' },
   changePhoto: { fontFamily: fonts.semibold, fontSize: 14, marginBottom: 14 },
   skeinRow: { flexDirection: 'row', gap: 10 },
+  moreRow: { minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, borderTopWidth: 1, borderBottomWidth: 1, paddingVertical: 10, marginBottom: 14 },
+  moreHint: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 1 },
   error: { fontSize: 15, lineHeight: 22, marginBottom: 12 },
   confirm: { borderWidth: 1, borderRadius: 14, padding: 14, marginBottom: 14 },
   confirmActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 10 },

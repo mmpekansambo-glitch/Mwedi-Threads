@@ -126,6 +126,7 @@ test("adding a yarn that's in the Archive brings it back instead of making a cop
   await page.goto("/stash/new");
   await page.getByTestId("input-stash-photo").setInputFiles({ name: "skein.png", mimeType: "image/png", buffer: photo });
   await page.getByTestId("input-stash-brand").fill("Lion Brand");
+  await page.getByTestId("button-stash-more").click();
   await page.getByTestId("input-stash-sub-brand").fill("Wool-Ease");
   await page.getByTestId("input-stash-color").fill("sea glass");
   await page.getByTestId("input-skeins-purchased").fill("3");
