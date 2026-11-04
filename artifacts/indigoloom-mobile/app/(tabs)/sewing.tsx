@@ -39,13 +39,13 @@ export default function SewingOverviewScreen() {
         <>
           <View style={styles.stats}>
             {([
-              ['In progress', data.inProgress, 'spool', '#DCE6F4', '#5A7684', () => openProjects('in_progress'), 'in-progress'],
-              ['Finished', data.finished, 'scissors', colors.selectedWash, colors.primaryText, () => openProjects('completed'), 'finished'],
-              ['Fabric', data.fabricPieces, 'swatch', '#EEF2FA', '#92AFD7', () => router.navigate('/(tabs)/fabric'), 'fabric'],
-            ] as const).map(([label, value, doodle, tint, ink, onPress, id]) => (
+              ['In progress', data.inProgress, 'spool', colors.statSewActive, colors.statSewActiveInk, colors.statActiveValue, () => openProjects('in_progress'), 'in-progress'],
+              ['Finished', data.finished, 'scissors', colors.statSewFinished, colors.primaryText, colors.statFinishedValue, () => openProjects('completed'), 'finished'],
+              ['Fabric', data.fabricPieces, 'swatch', colors.statSewFabric, colors.statSewFabricInk, colors.statAllValue, () => router.navigate('/(tabs)/fabric'), 'fabric'],
+            ] as const).map(([label, value, doodle, tint, ink, ink2, onPress, id]) => (
               <Pressable key={label} accessibilityRole="button" accessibilityLabel={`${label}: ${value}`} onPress={onPress} style={({ pressed }) => [styles.stat, { backgroundColor: tint, borderColor: tint }, pressed && styles.statPressed]} testID={`button-sewing-stat-${id}`}>
                 <LoomText style={[styles.statLabel, { color: colors.mutedForeground }]}>{label}</LoomText>
-                <LoomText serif style={[styles.statValue, { color: colors.foreground }]}>{value}</LoomText>
+                <LoomText serif style={[styles.statValue, { color: ink2 }]}>{value}</LoomText>
                 <View style={styles.statDoodle}><StatDoodle kind={doodle} color={ink} size={40} /></View>
               </Pressable>
             ))}

@@ -1,12 +1,15 @@
 import type { DashboardCharts as Charts, ProjectStatus } from '@workspace/api-client-react';
 import { useLocation } from 'wouter';
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 // PLAN.md palette: Granite for the bars, Blue Slate for axis text, Lavender for the grid.
 // They're CSS variables so dark mode can swap them (see index.css).
 const barColor = 'var(--granite)';
 const axisColor = 'var(--slate)';
 const gridColor = 'var(--chart-grid)';
+// Dark mode gives each status, and each chart, its own palette color (index.css).
+// Light mode leaves these unset, so every bar falls back to Granite.
+const statusBarColor = (status: ProjectStatus) => `var(--chart-${status}, ${barColor})`;
 
 const statusLabels: Record<ProjectStatus, string> = {
   planning: 'Planning', in_progress: 'In progress', paused: 'On pause', completed: 'Finished',
@@ -27,8 +30,8 @@ function WrappedTick({ x, y, payload }: { x?: number; y?: number; payload?: { va
   </text>;
 }
 
-function ChartCard({ title, rows, emptyText, unit, note, testId, onPick }: {
-  title: string; rows: Row[]; emptyText: string; unit: [string, string]; note?: string; testId: string; onPick?: (row: Row) => void;
+function ChartCard({ title, rows, emptyText, unit, note, testId, onPick, color = barColor }: {
+  title: string; rows: Row[]; emptyText: string; unit: [string, string]; note?: string; testId: string; onPick?: (row: Row) => void; color?: string;
 }) {
   const hasData = rows.some((row) => row.count > 0);
   return <figure className="chart-card loom-card" data-testid={testId}>
@@ -50,7 +53,9 @@ function ChartCard({ title, rows, emptyText, unit, note, testId, onPick }: {
               return <div className="chart-tooltip"><b>{row.detail}</b><span>{row.count} {row.count === 1 ? unit[0] : unit[1]}</span></div>;
             }}
           />
-          <Bar dataKey="count" fill={barColor} radius={[4, 4, 0, 0]} maxBarSize={36}/>
+          <Bar dataKey="count" fill={color} radius={[4, 4, 0, 0]} maxBarSize={36}>
+            {rows.map((row) => <Cell key={row.detail} fill={row.status ? statusBarColor(row.status) : color}/>)}
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
     </div> : <p className="chart-empty">{emptyText}</p>}
@@ -79,9 +84,11 @@ export function DashboardCharts({ charts }: { charts: Charts }) {
       onPick={(row) => setLocation(`/projects?status=${row.status}`)}
       emptyText="Add your first project and it will show up here."/>
     <ChartCard testId="chart-completed-per-month" title="Finished, last 12 months" rows={monthRows} unit={['project', 'projects']}
+      color={`var(--chart-finished-bar, ${barColor})`}
       emptyText="Nothing finished in the last year yet. Your first finish will land here."
       note={undated ? `${undated} finished ${undated === 1 ? 'project has' : 'projects have'} no completed date, so ${undated === 1 ? 'it isn’t' : 'they aren’t'} counted here.` : undefined}/>
     <ChartCard testId="chart-progress-per-week" title="Notes, last 12 weeks" rows={weekRows} unit={['note', 'notes']}
+      color={`var(--chart-notes-bar, ${barColor})`}
       emptyText="No progress notes in the last 12 weeks. Add one from any project page."/>
   </section>;
 }
