@@ -21,6 +21,7 @@ test("a maker who works in the Yarn studio", async ({ page }) => {
       await page.goto("/stash/new");
       await page.getByTestId("input-stash-photo").setInputFiles({ name: "skein.png", mimeType: "image/png", buffer: photo });
       await page.getByTestId("input-stash-brand").fill(brand);
+      await page.getByTestId("button-stash-more").click();
       await page.getByTestId("input-stash-sub-brand").fill(subBrand);
       await page.getByTestId("input-stash-color").fill(color);
       await page.getByTestId("input-skeins-purchased").fill(skeins);
@@ -170,6 +171,7 @@ test("a maker who works in the Yarn studio", async ({ page }) => {
     await page.goto("/stash/new");
     await page.getByTestId("input-stash-photo").setInputFiles({ name: "skein.png", mimeType: "image/png", buffer: photo });
     await page.getByTestId("input-stash-brand").fill("Lion Brand");
+    await page.getByTestId("button-stash-more").click();
     await page.getByTestId("input-stash-sub-brand").fill("Wool-Ease");
     await page.getByTestId("input-stash-color").fill("fisherman cream");
     await page.getByTestId("input-skeins-purchased").fill("5");

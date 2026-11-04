@@ -98,6 +98,7 @@ test("adds a yarn with a photo, Did you mean, weight wheel and blend", async ({ 
   await page.getByTestId("input-stash-brand").fill("Lion Brnad");
   await page.getByTestId("button-did-you-mean-brand").click();
   await expect(page.getByTestId("input-stash-brand")).toHaveValue("Lion Brand");
+  await page.getByTestId("button-stash-more").click();
   await page.getByTestId("input-stash-sub-brand").fill("Wool-Ease");
   await expect(page.getByTestId("select-blend-fiber-0")).toHaveValue("Acrylic");
   await expect(page.getByTestId("input-stash-link")).toHaveValue("https://www.lionbrand.com/wool-ease");
@@ -126,4 +127,30 @@ test("adds a yarn with a photo, Did you mean, weight wheel and blend", async ({ 
   });
   expect(sent.upload).toMatchObject({ contentType: "image/png", name: "skein.png" });
   await expect(page).toHaveURL(/\/stash$/);
+});
+
+test("a new yarn asks for photo, brand and color first, with the rest under More details", async ({ page }) => {
+  await mockApi(page, { catalog: [] });
+  await page.goto("/stash/new");
+  await expect(page.getByTestId("input-stash-brand")).toBeVisible();
+  await expect(page.getByTestId("input-stash-color")).toBeVisible();
+  await expect(page.getByTestId("input-stash-sub-brand")).toHaveCount(0);
+  await expect(page.getByTestId("input-stash-link")).toHaveCount(0);
+  await expect(page.getByTestId("input-skeins-purchased")).toHaveCount(0);
+
+  await page.getByTestId("button-stash-more").click();
+  await expect(page.getByTestId("button-stash-more")).toHaveAttribute("aria-expanded", "true");
+  await expect(page.getByTestId("input-stash-sub-brand")).toBeVisible();
+  await expect(page.getByTestId("input-stash-link")).toBeVisible();
+  await expect(page.getByTestId("input-skeins-purchased")).toBeVisible();
+
+  await page.getByTestId("button-stash-more").click();
+  await expect(page.getByTestId("input-stash-sub-brand")).toHaveCount(0);
+});
+
+test("editing a yarn that has more details shows them open", async ({ page }) => {
+  await mockApi(page, { catalog: [] });
+  await page.goto(`/stash/${stash[0].id}`);
+  await expect(page.getByTestId("input-stash-sub-brand")).toHaveValue("Wool-Ease");
+  await expect(page.getByTestId("input-skeins-purchased")).toHaveValue("4");
 });

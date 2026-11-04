@@ -1255,6 +1255,10 @@ function StashYarnFormPage({ yarnId }: { yarnId?: string }) {
   return <StashYarnForm yarn={existing.data} key={existing.data?.id ?? 'new'}/>;
 }
 
+function stashHasMoreDetails(draft: StashDraft) {
+  return Boolean(draft.subBrand.trim() || draft.brandLink.trim() || draft.skeinsPurchased.trim() || draft.skeinsLeft.trim() || draft.blend.some((part) => part.fiber || part.percent));
+}
+
 function StashYarnForm({ yarn }: { yarn?: StashYarn }) {
   const [, setLocation] = useLocation();
   const client = useQueryClient();
@@ -1268,6 +1272,10 @@ function StashYarnForm({ yarn }: { yarn?: StashYarn }) {
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [reviewing, setReviewing] = useState<CatalogField | null>(null);
+  // Sub brand, link, blend and skeins sit behind "More details" so a new
+  // yarn only asks for a photo, brand and color up front.
+  const [moreOpen, setMoreOpen] = useState(() => stashHasMoreDetails(draft));
+  const showMore = moreOpen || Boolean(errors.link || errors.blend || errors.skeins);
   const reviews = useGetStashYarnReviews(yarn?.id ?? '', { query: { enabled: Boolean(yarn), queryKey: getGetStashYarnReviewsQueryKey(yarn?.id ?? '') } });
   const errorFor: Partial<Record<keyof StashDraft, keyof typeof errors>> = { brand: 'brand', blend: 'blend', brandLink: 'link', skeinsPurchased: 'skeins', skeinsLeft: 'skeins' };
   const set = (change: Partial<StashDraft>) => {
@@ -1440,20 +1448,23 @@ function StashYarnForm({ yarn }: { yarn?: StashYarn }) {
         </div>
         <div className="stash-names">
           <div className="field-block"><span className="label-row"><label htmlFor="stash-brand">Brand <b>*</b></label>{reviewButton('brand')}</span>{reviewForm('brand', yarn?.brand ?? null)}<input id="stash-brand" list="stash-brand-options" maxLength={80} placeholder="e.g. Lion Brand" value={draft.brand} onChange={(event) => set({ brand: event.target.value })} autoComplete="off" data-testid="input-stash-brand"/><datalist id="stash-brand-options">{catalog.data?.brands.map((name) => <option key={name} value={name}/>)}</datalist><DidYouMean suggestion={catalog.data?.suggestions.brand} typed={draft.brand} renamingFrom={yarn?.brand} onAccept={(brand) => set({ brand })} testId="button-did-you-mean-brand"/>{errors.brand && <span className="field-error">{errors.brand}</span>}</div>
-          <div className="field-block"><span className="label-row"><label htmlFor="stash-sub-brand">Sub brand</label>{reviewButton('sub_brand')}</span>{reviewForm('sub_brand', yarn?.subBrand ?? null)}<input id="stash-sub-brand" list="stash-sub-brand-options" maxLength={80} placeholder="e.g. Wool-Ease" value={draft.subBrand} onChange={(event) => set({ subBrand: event.target.value })} autoComplete="off" data-testid="input-stash-sub-brand"/><datalist id="stash-sub-brand-options">{catalog.data?.subBrands.map((line) => <option key={line.name} value={line.name}/>)}</datalist><DidYouMean suggestion={catalog.data?.suggestions.subBrand} typed={draft.subBrand} renamingFrom={yarn?.subBrand} onAccept={(subBrand) => set({ subBrand })} testId="button-did-you-mean-sub-brand"/></div>
           <div className="field-block"><span className="label-row"><label htmlFor="stash-color">Color</label>{reviewButton('color')}</span>{reviewForm('color', yarn?.color ?? null)}<input id="stash-color" list="stash-color-options" maxLength={80} placeholder="e.g. Fisherman" value={draft.color} onChange={(event) => set({ color: event.target.value })} autoComplete="off" data-testid="input-stash-color"/><datalist id="stash-color-options">{catalog.data?.colors.map((item) => <option key={item.name} value={item.name}/>)}</datalist><DidYouMean suggestion={catalog.data?.suggestions.color} typed={draft.color} renamingFrom={yarn?.color} onAccept={(color) => set({ color })} testId="button-did-you-mean-color"/></div>
         </div>
       </div>
       <div className="form-grid stash-form-grid">
         <GeneralColorPicker value={draft.generalColor} onChange={(generalColor) => set({ generalColor })}/>
         <WeightWheelField value={draft.weight} onChange={(weight) => set({ weight })}/>
-        <div className="field-block"><label htmlFor="stash-link">Brand page link</label><input id="stash-link" type="url" placeholder="https://" value={draft.brandLink} onChange={(event) => set({ brandLink: event.target.value })} data-testid="input-stash-link"/>{errors.link && <span className="field-error">{errors.link}</span>}</div>
-        <BlendFields value={draft.blend} onChange={(blend) => set({ blend })} fibers={fibers} error={errors.blend ?? ''}/>
-        <div className="field-block"><label htmlFor="stash-skeins-purchased">Skeins purchased</label><input id="stash-skeins-purchased" inputMode="decimal" placeholder="e.g. 4" value={draft.skeinsPurchased} onChange={(event) => changePurchased(event.target.value)} data-testid="input-skeins-purchased"/></div>
-        <div className="field-block"><label htmlFor="stash-skeins-left">Skeins left</label><input id="stash-skeins-left" inputMode="decimal" placeholder={draft.skeinsPurchased || 'Same as purchased'} value={draft.skeinsLeft} onChange={(event) => { setLeftTouched(true); setLeftNudge(null); set({ skeinsLeft: event.target.value }); }} data-testid="input-skeins-left"/>
-          {leftNudge && <span className="gentle-nudge" role="status" data-testid="skeins-left-nudge">Skeins left is now {leftNudge.to} (was {leftNudge.from}). Look right? <button type="button" onClick={() => setLeftNudge(null)} data-testid="button-skeins-left-ok">Looks right</button></span>}
-        </div>
-        {errors.skeins && <span className="field-error field-wide">{errors.skeins}</span>}
+        <div className="tap-rows field-wide"><div className="tap-row"><button type="button" className="tap-row-trigger" aria-expanded={showMore} onClick={() => setMoreOpen((open) => !open)} data-testid="button-stash-more"><b>More details</b><span className="tap-row-add">{showMore ? 'Hide' : 'Sub brand, link, blend, skeins'} {showMore ? <ChevronUp size={15}/> : <ChevronDown size={15}/>}</span></button></div></div>
+        {showMore && <>
+          <div className="field-block"><span className="label-row"><label htmlFor="stash-sub-brand">Sub brand</label>{reviewButton('sub_brand')}</span>{reviewForm('sub_brand', yarn?.subBrand ?? null)}<input id="stash-sub-brand" list="stash-sub-brand-options" maxLength={80} placeholder="e.g. Wool-Ease" value={draft.subBrand} onChange={(event) => set({ subBrand: event.target.value })} autoComplete="off" data-testid="input-stash-sub-brand"/><datalist id="stash-sub-brand-options">{catalog.data?.subBrands.map((line) => <option key={line.name} value={line.name}/>)}</datalist><DidYouMean suggestion={catalog.data?.suggestions.subBrand} typed={draft.subBrand} renamingFrom={yarn?.subBrand} onAccept={(subBrand) => set({ subBrand })} testId="button-did-you-mean-sub-brand"/></div>
+          <div className="field-block"><label htmlFor="stash-link">Brand page link</label><input id="stash-link" type="url" placeholder="https://" value={draft.brandLink} onChange={(event) => set({ brandLink: event.target.value })} data-testid="input-stash-link"/>{errors.link && <span className="field-error">{errors.link}</span>}</div>
+          <BlendFields value={draft.blend} onChange={(blend) => set({ blend })} fibers={fibers} error={errors.blend ?? ''}/>
+          <div className="field-block"><label htmlFor="stash-skeins-purchased">Skeins purchased</label><input id="stash-skeins-purchased" inputMode="decimal" placeholder="e.g. 4" value={draft.skeinsPurchased} onChange={(event) => changePurchased(event.target.value)} data-testid="input-skeins-purchased"/></div>
+          <div className="field-block"><label htmlFor="stash-skeins-left">Skeins left</label><input id="stash-skeins-left" inputMode="decimal" placeholder={draft.skeinsPurchased || 'Same as purchased'} value={draft.skeinsLeft} onChange={(event) => { setLeftTouched(true); setLeftNudge(null); set({ skeinsLeft: event.target.value }); }} data-testid="input-skeins-left"/>
+            {leftNudge && <span className="gentle-nudge" role="status" data-testid="skeins-left-nudge">Skeins left is now {leftNudge.to} (was {leftNudge.from}). Look right? <button type="button" onClick={() => setLeftNudge(null)} data-testid="button-skeins-left-ok">Looks right</button></span>}
+          </div>
+          {errors.skeins && <span className="field-error field-wide">{errors.skeins}</span>}
+        </>}
       </div>
       <NameReviewList reviews={reviews.data ?? []}/>
       {errors.save && <p className="mutation-error" role="alert">{errors.save}</p>}
