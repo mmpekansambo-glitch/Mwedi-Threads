@@ -72,6 +72,10 @@ test("Yarn studio Overview in dark mode has tinted stat cards, status colors and
   const notesBox = await page.getByRole("heading", { name: "Recent notes" }).boundingBox();
   expect(notesBox!.y).toBeGreaterThan(projectsBox!.y + 100);
   expect(Math.abs(notesBox!.x - projectsBox!.x)).toBeLessThan(40);
+  // "This week" runs the full width, like Recent notes.
+  const weekBox = await bg(page, "card-weekly-goal-yarn").boundingBox();
+  const notesCard = await page.locator(".recent-panel").boundingBox();
+  expect(Math.abs(weekBox!.width - notesCard!.width)).toBeLessThan(2);
   if (shots) { await page.waitForTimeout(1600); await page.screenshot({ path: `${shots}/overview-dark-web.png` }); await page.screenshot({ path: `${shots}/overview-dark-web-full.png`, fullPage: true }); }
 });
 

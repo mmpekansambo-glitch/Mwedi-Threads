@@ -8,6 +8,7 @@ Built with Claude Code in a cloud session from my Mwedi Threads project (thread 
 2. "The outlook in Light mode is so much more pretty."
 3. Picked "A + C mix" from four options: A palette tints, B moonlight gold, C fewer boxes, or A + C.
 4. "Can we move recent notes to directly under recent projects instead of off to the side?"
+5. "Make the crafting goal take up the whole length similar to recent notes"
 
 ## Decisions
 
@@ -18,4 +19,5 @@ Built with Claude Code in a cloud session from my Mwedi Threads project (thread 
 - **Sewing room:** mauve takes Granite's place, so the Finished card is deep mauve and nothing turns green.
 - **Light mode colors are unchanged.**
 - **Recent notes** moved directly under Recent projects at full width on the web Overview, in both modes. The phone already had it there.
+- **This week** runs the full width of the web Overview too, in both studios and both modes, like Recent notes.
 - Web and phone. No database change.
