@@ -6,6 +6,7 @@ import { publishableKeyFromHost } from "@clerk/shared/keys";
 import router from "./routes";
 import healthRouter from "./routes/health";
 import { logger } from "./lib/logger";
+import { serveAppFiles } from "./lib/appFiles";
 import {
   CLERK_PROXY_PATH,
   clerkProxyMiddleware,
@@ -55,6 +56,9 @@ app.use(
 );
 
 app.use("/api", router);
+
+// On Railway this same server also hands out the website and phone app.
+serveAppFiles(app);
 
 const handleApiError: ErrorRequestHandler = (error, req, res, next) => {
   logger.error(
