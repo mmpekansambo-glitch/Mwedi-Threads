@@ -1,6 +1,7 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import * as schema from "./schema";
+import { poolConfig } from "./connection";
 
 const { Pool } = pg;
 
@@ -10,7 +11,7 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+export const pool = new Pool(poolConfig(process.env.DATABASE_URL));
 
 // An idle connection the database drops (a restart, a migration, an idle
 // timeout) is reported here. Without a listener Node treats it as an
