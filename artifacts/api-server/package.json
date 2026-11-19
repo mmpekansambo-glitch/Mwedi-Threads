@@ -11,7 +11,8 @@
     "test:postgres": "node -e \"if (!process.env.PROJECTS_AUTH_TEST_DATABASE_URL) { console.error('Set PROJECTS_AUTH_TEST_DATABASE_URL to a non-production PostgreSQL URL'); process.exit(1); }\" && vitest run src/routes/projects.postgres.test.ts src/routes/yarnStash.postgres.test.ts src/routes/stashLinks.postgres.test.ts src/routes/fabricStash.postgres.test.ts src/routes/sewingProjects.postgres.test.ts src/routes/sewingTools.postgres.test.ts src/routes/yarnTools.postgres.test.ts src/routes/weeklyGoal.postgres.test.ts src/routes/sewingPatterns.postgres.test.ts",
     "test:scenarios": "node -e \"if (!process.env.PROJECTS_AUTH_TEST_DATABASE_URL) { console.error('Set PROJECTS_AUTH_TEST_DATABASE_URL to a non-production PostgreSQL URL'); process.exit(1); }\" && vitest run src/scenarios",
     "scenario-api": "node ./scenario-api.mjs",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "copy-photos": "node ./scripts/copy-photos.mjs"
   },
   "dependencies": {
     "@clerk/express": "^2.1.78",
