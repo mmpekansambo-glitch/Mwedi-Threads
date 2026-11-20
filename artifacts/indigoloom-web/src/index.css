@@ -68,7 +68,7 @@
   --destructive-foreground: 0 0% 100%;
   --ring: 161 23% 29%;
   --app-font-sans: 'Figtree', system-ui, sans-serif;
-  --app-font-serif: 'Lora', Georgia, serif;
+  --app-font-serif: 'EB Garamond', Georgia, serif;
   --app-font-mono: 'Figtree', system-ui, sans-serif;
   --radius: 1rem;
   --sidebar: 100 36% 14%;
@@ -1188,3 +1188,203 @@ a.stat-card:active { transform: scale(.98); box-shadow: none; }
 .confirm-banner.finish-up { align-items: flex-end; background: var(--white); border-color: var(--lavender-soft); border-left: 4px solid var(--powder); }
 .confirm-banner.finish-up b { color: var(--evergreen); font-size: 15px; }
 .confirm-banner.finish-up span { color: inherit; font-size: inherit; }
+
+/* ------------------------------------------------------------------------
+   New look (#118): Mist & moss with Lydia violet.
+   Fog paper pages and Slate ink words. Moss is the Yarn studio's color and
+   Lydia violet (the brand color, after Lydia of Philippi's purple cloth) is
+   the Sewing room's. Each room sits on its own paper-hill backdrop under a
+   frosted, words-only nav. Headings are EB Garamond, body text Figtree.
+
+   The --n-* tokens hold the new palette for each mode and room. The older
+   names the rest of this stylesheet paints with (--lavender, --granite,
+   --evergreen …) are pointed at them below, and pointed again wherever an
+   earlier rule reset them (the dark sidebar, menus and "This week").
+   ------------------------------------------------------------------------ */
+:root {
+  --n-page: #F3F2EE; --n-paper: #FBFAF7; --n-wash: #ECEAE3; --n-line: #E0DED5; --n-line-deep: #C8C5B9;
+  --n-ink: #1E2421; --n-sub: #5B635E; --n-sub-deep: #3F4743; --n-sub-light: #8A918C;
+  --n-acc: #5F7A4E; --n-acc-deep: #4C6440; --n-acc-soft: #C7D3BB; --n-acc-wash: #E6ECDF; --n-on-acc: #FFFFFF;
+  --n-glass: rgba(243,242,238,.72); --n-stitch: rgba(30,36,33,.22);
+  --n-hill-1: #E5EADE; --n-hill-2: #D6DFCB; --n-hill-3: #C6D3B8;
+  --n-tone-0: #EFE6D6; --n-tone-1: #E3E9DF; --n-tone-2: #F0E2DC; --n-tone-3: #E6E0EE;
+  --n-ink-0: #5B3A7E; --n-ink-1: #5F7A4E; --n-ink-2: #B86B4B; --n-ink-3: #A0761C;
+  --violet: #5B3A7E; --moss: #5F7A4E; --clay: #B86B4B; --lichen: #D9B45A; --ochre: #C9902E;
+}
+.home-sewing {
+  --n-acc: #5B3A7E; --n-acc-deep: #4A2F68; --n-acc-soft: #D9CFEA; --n-acc-wash: #EEE9F5;
+  --n-hill-1: #EAE6F1; --n-hill-2: #DFD7EC; --n-hill-3: #D0C5E4;
+}
+.dark {
+  --n-page: #141917; --n-paper: #1C2320; --n-wash: #222A26; --n-line: #2C3530; --n-line-deep: #3A443F;
+  --n-ink: #E8EAE5; --n-sub: #A5ADA8; --n-sub-deep: #C4CAC6; --n-sub-light: #7D8580;
+  --n-acc: #9DB88A; --n-acc-deep: #B2C9A2; --n-acc-soft: #34442C; --n-acc-wash: #222D1F; --n-on-acc: #141917;
+  --n-glass: rgba(20,25,23,.74); --n-stitch: rgba(255,255,255,.18);
+  --n-hill-1: #19201B; --n-hill-2: #1E2820; --n-hill-3: #243125;
+  --n-tone-0: #2B2A24; --n-tone-1: #232B25; --n-tone-2: #2E2526; --n-tone-3: #29253A;
+  --n-ink-0: #C3ADE4; --n-ink-1: #9DB88A; --n-ink-2: #E3B48F; --n-ink-3: #E8CD86;
+}
+.dark .home-sewing {
+  --n-page: #15131B; --n-paper: #1E1B26; --n-wash: #24202E; --n-line: #2F2A3B; --n-line-deep: #3E384C;
+  --n-acc: #C3ADE4; --n-acc-deep: #D3C2EC; --n-acc-soft: #3A2E52; --n-acc-wash: #261F36;
+  --n-glass: rgba(21,19,27,.74);
+  --n-hill-1: #1B1726; --n-hill-2: #211B31; --n-hill-3: #29203D;
+}
+:root, .dark, .home-sewing, .dark .home-sewing,
+.dark .side-rail, .dark .home-sewing .side-rail,
+.dark .profile-menu-list, .dark .home-sewing .profile-menu-list,
+.dark .weekly-goal, .dark .home-sewing .weekly-goal {
+  --lavender: var(--n-page); --lavender-wash: var(--n-wash); --lavender-soft: var(--n-line); --lavender-deep: var(--n-line-deep);
+  --powder: var(--n-acc-soft); --powder-wash: var(--n-acc-wash);
+  --slate: var(--n-sub); --slate-deep: var(--n-sub-deep); --slate-light: var(--n-sub-light); --slate-wash: var(--n-wash);
+  --granite: var(--n-acc); --granite-deep: var(--n-acc-deep);
+  --evergreen: var(--n-ink); --evergreen-soft: var(--n-wash); --evergreen-line: var(--n-line);
+  --white: var(--n-paper); --chart-grid: var(--n-line);
+  --sewing-wash: var(--n-acc-wash); --sewing-line: var(--n-line); --sewing-dash: var(--n-acc-soft);
+}
+:root { --background: 48 15% 94%; --foreground: 150 9% 13%; --card: 45 33% 98%; --card-foreground: 150 9% 13%; --border: 48 13% 86%; --input: 48 13% 86%; --primary: 97 22% 39%; --ring: 97 22% 39%; --muted: 48 13% 91%; --muted-foreground: 140 4% 37%; --secondary: 48 13% 91%; --accent: 92 21% 78%; --radius: .25rem; }
+.dark { --background: 150 9% 9%; --foreground: 90 8% 90%; --card: 150 9% 12%; --card-foreground: 90 8% 90%; --border: 150 9% 19%; --input: 150 9% 19%; --primary: 96 24% 63%; --primary-foreground: 150 9% 9%; --ring: 96 24% 63%; --muted: 150 9% 15%; --muted-foreground: 140 4% 66%; --secondary: 150 9% 15%; --accent: 96 24% 63%; }
+
+body { background: var(--n-page); color: var(--n-ink); }
+.portal-shell, .portal-shell.home-sewing, .dark .portal-shell, .dark .portal-shell.home-sewing { background: var(--n-page); color: var(--n-ink); }
+
+/* Room backdrop: paper hills fixed behind the page. */
+.room-backdrop { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+.room-backdrop svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.room-hill-1 { fill: var(--n-hill-1); }
+.room-hill-2 { fill: var(--n-hill-2); }
+.room-hill-3 { fill: var(--n-hill-3); }
+.portal-main { position: relative; z-index: 1; }
+
+/* Words-only nav: a slim frosted strip, the page you're on underlined with a
+   dashed running stitch in the room's color. */
+.side-rail, .dark .side-rail, .home-sewing .side-rail, .dark .home-sewing .side-rail { width: 200px; padding: 30px 22px 18px; color: var(--n-ink); background: var(--n-glass); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); border-right: 0; }
+.portal-main { margin-left: 200px; width: calc(100% - 200px); }
+.brand-lockup, .brand-light { color: var(--n-ink); }
+.brand-name { font-family: var(--app-font-serif); font-weight: 500; font-size: 1.05em; letter-spacing: -.01em; }
+.rail-brand { padding: 0 0 34px; }
+.rail-brand .brand-lockup { font-size: 22px; }
+.rail-close { color: var(--n-ink); }
+.home-switcher, .dark .home-switcher { display: flex; gap: 12px; margin: -16px 0 28px; padding: 0; background: none; border-radius: 0; }
+.home-switcher a, .home-switcher a:hover { display: inline; min-height: 0; padding-bottom: 2px; border-radius: 0; background: none; color: var(--n-sub); font: 400 15px var(--app-font-serif); }
+.home-switcher a.selected, .home-sewing .home-switcher a.selected { background: none; color: var(--n-ink); border-bottom: 2px dashed var(--n-acc); }
+.rail-nav { gap: 14px; }
+.rail-link, .home-sewing .rail-link { min-height: 0; padding: 0 0 2px; border-radius: 0; display: inline-flex; justify-self: start; color: var(--n-sub); font: 400 19px var(--app-font-serif); background: none; box-shadow: none; }
+.rail-link:hover { background: none; color: var(--n-ink); }
+.rail-link.selected, .home-sewing .rail-link.selected, .dark .home-sewing .rail-link.selected { background: none; box-shadow: none; color: var(--n-ink); border-bottom: 2px dashed var(--n-acc); }
+.rail-bottom, .home-sewing .rail-bottom { border-top: 2px dashed var(--n-stitch); }
+.profile-chip:hover, .profile-chip[aria-expanded="true"], .home-sewing .profile-chip:hover, .home-sewing .profile-chip[aria-expanded="true"], .dark .home-sewing .profile-chip:hover, .dark .home-sewing .profile-chip[aria-expanded="true"] { background: var(--n-wash); }
+.profile-chip > svg { color: var(--n-sub); }
+.profile-initial, .top-avatar, .dark .top-avatar { background: var(--n-acc-soft); color: var(--n-ink); }
+.portal-topbar, .home-sewing .portal-topbar, .dark .portal-topbar, .dark .home-sewing .portal-topbar { background: transparent; border-bottom: 0; }
+.breadcrumbs b { font-family: var(--app-font-serif); font-weight: 500; font-size: 16px; color: var(--n-ink); }
+.page-title, .section-heading h2, .chart-card figcaption h2 { font-family: var(--app-font-serif); letter-spacing: -.01em; }
+.page-title { font-size: clamp(36px, 4vw, 48px); }
+
+/* Paper instead of boxes: no outlines, square corners, a soft shadow. */
+.loom-card, .stat-card, .stat-row-second .stat-card, .dark .stat-row-second .stat-card, .stat-card-all, .stat-card-active, .stat-card-finished,
+.dark .stat-card-all, .dark .stat-card-active, .dark .stat-card-finished, .dark .home-sewing .stat-card-finished { background: var(--n-paper); border: 0; border-radius: 3px; box-shadow: 0 1px 2px rgba(20,25,23,.06), 0 6px 18px rgba(20,25,23,.05); }
+.dark .loom-card, .dark .stat-card { box-shadow: 0 1px 2px rgba(0,0,0,.3); }
+/* Stat cards keep a tint each (from "dark mode less monotonous", #109), now
+   from the new palette: oat, the room's color and madder clay. */
+.stat-card-all, .dark .stat-card-all { background: var(--n-tone-0); }
+.stat-card-active, .dark .stat-card-active { background: var(--n-acc-wash); }
+.stat-card-finished, .dark .stat-card-finished, .dark .home-sewing .stat-card-finished { background: var(--n-tone-2); }
+.stat-card > strong, .dark .stat-card-all > strong, .dark .stat-card-active > strong, .dark .stat-card-finished > strong, .dark .home-sewing .stat-card-finished > strong { font-family: var(--app-font-serif); color: var(--n-ink); }
+.stat-card-active > strong { color: var(--n-acc); }
+.stat-label, .dark .stat-card-all .stat-label, .dark .stat-card-active .stat-label, .dark .stat-card-finished .stat-label, .dark .home-sewing .stat-card-finished .stat-label { color: var(--n-sub); }
+.lift:hover { border-color: transparent; box-shadow: 0 2px 4px rgba(20,25,23,.08), 0 10px 26px rgba(20,25,23,.08); }
+.button { border-radius: 2px; font-weight: 600; }
+.button-primary, .dark .button-primary, .dark .home-sewing .button-primary, .dark .home-sewing .counter-plus { background: var(--n-acc); color: var(--n-on-acc); }
+.button-primary:hover, .dark .home-sewing .button-primary:hover { background: var(--n-acc-deep); }
+.button-outline { background: transparent; border: 0; border-bottom: 2px dashed var(--n-ink); border-radius: 0; color: var(--n-ink); padding: 0 4px; }
+.button-outline:hover { background: transparent; border-color: var(--n-acc); color: var(--n-acc); }
+.dark .home-sewing .switch-track.on, .dark .home-sewing .progress-track > span, .switch-track.on, .progress-track > span { background: var(--n-acc); }
+.status-pill { border-radius: 2px; background: var(--n-wash); color: var(--n-sub-deep); font-weight: 600; }
+.status-in_progress { background: var(--n-acc-wash); color: var(--n-acc); }
+.status-completed, .dark .status-completed { background: var(--n-acc); color: var(--n-on-acc); }
+.search-box, .select-wrap, .starred-filter { border-radius: 2px; border-color: var(--n-line); background: var(--n-paper); }
+.starred-filter.is-active { background: var(--n-acc-soft); border-color: var(--n-acc-soft); }
+.star-button, .dark .star-button { background: var(--n-paper); border-color: var(--n-line); }
+.empty-projects, .dark .empty-projects, .query-problem { border: 2px dashed var(--n-stitch); border-radius: 0; background: transparent; }
+.note-row { border-bottom: 2px dashed var(--n-line); }
+.note-dot { background: var(--n-acc); box-shadow: none; border-radius: 50%; }
+.dark .weekly-goal, .dark .home-sewing .weekly-goal { background: var(--n-paper); color: var(--n-ink); }
+.dark .weekly-goal .button-primary, .dark .home-sewing .weekly-goal .button-primary { background: var(--n-acc); color: var(--n-on-acc); }
+.weekly-goal-days i { border-radius: 2px; }
+:root, .dark { --chart-planning: #D9B45A; --chart-in_progress: var(--n-acc); --chart-paused: #8A918C; --chart-completed: #B86B4B; --chart-finished-bar: #B86B4B; --chart-notes-bar: #5B3A7E; }
+.dark { --chart-notes-bar: #C3ADE4; --chart-completed: #E3B48F; --chart-finished-bar: #E3B48F; }
+
+/* Project name placeholders: no photo, so the tile shows the name in a font
+   from the project's craft (crochet, knitting or sewing). */
+.name-tile { display: flex; align-items: center; justify-content: center; text-align: center; padding: 14px; line-height: 1.05; overflow: hidden; container-type: inline-size; }
+.name-tile > span { overflow-wrap: anywhere; }
+.name-tone-0 { background: var(--n-tone-0); color: var(--n-ink-0); }
+.name-tone-1 { background: var(--n-tone-1); color: var(--n-ink-1); }
+.name-tone-2 { background: var(--n-tone-2); color: var(--n-ink-2); }
+.name-tone-3 { background: var(--n-tone-3); color: var(--n-ink-3); }
+.name-tile > span { font-size: calc(var(--name-size, 1) * min(15cqi, 46px)); }
+.name-font-gluten { font-family: 'Gluten', cursive; font-weight: 500; }
+.name-font-pacifico { font-family: 'Pacifico', cursive; }
+.name-font-pacifico > span { font-size: calc(var(--name-size, 1) * min(12.5cqi, 38px)); line-height: 1.25; }
+.name-font-silkscreen { font-family: 'Silkscreen', monospace; text-transform: uppercase; letter-spacing: .04em; }
+.name-font-silkscreen > span { font-size: calc(var(--name-size, 1) * min(10.5cqi, 32px)); }
+.name-font-rampart { font-family: 'Rampart One', cursive; }
+.name-font-rampart > span { font-size: calc(var(--name-size, 1) * min(13cqi, 40px)); }
+.name-font-special-elite { font-family: 'Special Elite', monospace; }
+.name-font-special-elite > span { font-size: calc(var(--name-size, 1) * min(12.5cqi, 38px)); }
+.name-font-playfair { font-family: 'Playfair Display', serif; font-style: italic; font-weight: 500; }
+.project-card { display: flex; flex-direction: column; }
+.project-card-tile { aspect-ratio: 16 / 9; flex: none; }
+.sewing-card-swatch .name-tile { position: absolute; inset: 0; }
+
+/* Landing: watercolor frames cross-fade on the right while three threads
+   draw slowly across the page; the headline rises in word by word. */
+.landing, .dark .landing { background: var(--n-page); color: var(--n-ink); }
+.landing::before { display: none; }
+.landing-motion { position: absolute; inset: 0; z-index: -1; overflow: hidden; }
+.landing-frame { position: absolute; top: 0; right: 0; width: min(72vw, 1100px); height: 100%; object-fit: cover; opacity: 0; transition: opacity 1.4s ease; }
+.landing-frame.is-showing { opacity: 1; }
+.landing-frame-fade { position: absolute; inset: 0; background: linear-gradient(90deg, var(--n-page) 28%, rgba(243,242,238,0) 56%); }
+.landing-threads { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.landing-thread { fill: none; stroke-linecap: round; }
+.landing-thread-violet { stroke: var(--violet); stroke-width: 3; }
+.landing-thread-moss { stroke: var(--moss); stroke-width: 2.5; }
+.landing-thread-clay { stroke: var(--clay); stroke-width: 2; }
+.landing-frame-dots { position: absolute; left: 6.1vw; bottom: 96px; display: flex; gap: 10px; }
+.landing-frame-dots i { width: 30px; border-top: 2px dashed rgba(30,36,33,.3); }
+.landing-frame-dots i.is-showing { border-top: 2px solid var(--violet); }
+.landing-caption { position: absolute; right: 56px; bottom: 96px; margin: 0; font: italic 400 20px var(--app-font-serif); color: #fff; text-shadow: 0 1px 8px rgba(0,0,0,.4); animation: settle .8s ease both; }
+.landing-nav { display: flex; align-items: baseline; justify-content: space-between; }
+.landing-nav-links { display: flex; gap: 28px; font-size: 16px; }
+.landing-nav-signup { color: var(--violet); border-bottom: 2px dashed var(--violet); }
+.landing-hero { grid-template-columns: minmax(0, 560px); min-height: 640px; }
+.hero-copy h1 { color: var(--n-ink); font-size: clamp(50px, 5.6vw, 76px); line-height: 1.02; letter-spacing: -.02em; }
+.hero-copy h1 em { color: var(--violet); }
+.hero-word { display: inline-block; animation: rise .9s cubic-bezier(.2,.7,.2,1) both; }
+.hero-word:nth-child(2) { animation-delay: .25s; }
+.hero-copy h1 em.hero-word { animation-delay: .6s; }
+.hero-lede { color: var(--n-sub); animation: rise 1s 1.2s both; }
+.hero-actions { animation: rise 1s 1.6s both; }
+.hero-actions .button-primary { background: var(--violet); color: #fff; }
+.hero-actions .button-outline { border-color: var(--n-ink); }
+.hero-actions .button:hover, .hero-actions .button:focus-visible { box-shadow: none; }
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.landing-footer { border-top: 2px dashed var(--n-stitch); color: var(--n-sub); }
+.landing-footer-links a { color: var(--violet); }
+.landing-footer-links a:hover, .landing-footer-links a:focus-visible { text-shadow: none; }
+.auth-screen { background: var(--n-page); }
+@media (max-width: 900px) {
+  .landing-frame { width: 100%; opacity: 0; }
+  .landing-frame.is-showing { opacity: .35; }
+  .landing-frame-fade { background: linear-gradient(180deg, rgba(243,242,238,.4), var(--n-page) 85%); }
+  .landing-caption, .landing-frame-dots { display: none; }
+  .landing-nav-links { gap: 16px; font-size: 15px; }
+  .landing-nav-links a:first-child { display: none; }
+  .landing-threads { inset: auto 0 110px 0; height: 40%; }
+  .landing-hero { min-height: 0; }
+}
+@media (max-width: 767px) {
+  .portal-main { margin-left: 0; width: 100%; }
+  .side-rail, .dark .side-rail, .home-sewing .side-rail, .dark .home-sewing .side-rail { width: min(280px, 84vw); background: var(--n-page); }
+}
