@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type MutableRefObject } from 'react';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -10,8 +10,12 @@ import { useColors } from '@/hooks/useColors';
 
 const SAVE_DELAY_MS = 400;
 
+export type CounterControl = { plusOne: () => void };
+
 // A plain counter saved with the project. It never changes progress.
-export function ProjectCounter({ projectId, initial }: { projectId: string; initial: number }) {
+// The project page's floating bar (#120) shows the count and taps +1 through
+// `control`; `onCount` tells it the count after each change.
+export function ProjectCounter({ projectId, initial, control, onCount }: { projectId: string; initial: number; control?: MutableRefObject<CounterControl | null>; onCount?: (count: number) => void }) {
   const colors = useColors();
   const client = useQueryClient();
   const [count, setCount] = useState(initial);
@@ -35,6 +39,7 @@ export function ProjectCounter({ projectId, initial }: { projectId: string; init
 
   const show = (value: number) => {
     setCount(value);
+    onCount?.(value);
     pending.current = value;
     clearTimeout(timer.current);
     timer.current = setTimeout(save, SAVE_DELAY_MS);
@@ -55,6 +60,8 @@ export function ProjectCounter({ projectId, initial }: { projectId: string; init
     setHistory((past) => past.slice(0, -1));
     show(previous);
   };
+
+  if (control) control.current = { plusOne: () => change(count + 1) };
 
   // Save whatever is waiting when the screen closes.
   useEffect(() => save, []);
@@ -88,12 +95,12 @@ export function ProjectCounter({ projectId, initial }: { projectId: string; init
 }
 
 const styles = StyleSheet.create({
-  card: { borderWidth: 1, borderRadius: 16, padding: 17, marginBottom: 13 },
+  card: { borderWidth: 0, borderRadius: 3, padding: 17, marginBottom: 13 },
   title: { fontSize: 20 },
   count: { fontSize: 96, lineHeight: 110, textAlign: 'center', fontFamily: fonts.displayBold, marginVertical: 4 },
   buttons: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 18 },
-  minus: { width: 54, height: 54, borderRadius: 27, alignItems: 'center', justifyContent: 'center' },
-  plus: { width: 104, height: 104, borderRadius: 52, alignItems: 'center', justifyContent: 'center' },
+  minus: { width: 54, height: 54, borderRadius: 2, alignItems: 'center', justifyContent: 'center' },
+  plus: { width: 104, height: 104, borderRadius: 3, alignItems: 'center', justifyContent: 'center' },
   links: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 14 },
   link: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6, paddingHorizontal: 4 },
   linkText: { fontFamily: fonts.semibold, fontSize: 15 },

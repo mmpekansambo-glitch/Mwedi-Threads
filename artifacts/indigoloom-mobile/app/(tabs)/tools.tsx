@@ -48,8 +48,8 @@ export default function ToolsScreen() {
   return (
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
-      style={{ backgroundColor: colors.background }}
-      contentContainerStyle={[styles.content, { paddingTop: Platform.OS === 'web' ? 67 : insets.top + 18, paddingBottom: 104 }]}
+      style={{ backgroundColor: 'transparent' }}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + 22, paddingBottom: 104 }]}
       keyboardShouldPersistTaps="handled"
     >
       <View style={styles.topBar}>

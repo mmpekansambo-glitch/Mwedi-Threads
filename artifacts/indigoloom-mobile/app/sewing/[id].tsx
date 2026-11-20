@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Feather } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   getGetSewingOverviewQueryKey, getGetSewingProjectQueryKey, getGetSewingProjectsQueryKey, getGetStashFabricsQueryKey,
@@ -19,6 +19,7 @@ import { ColorDot, generalColors } from '@/components/YarnFields';
 import { SewingJournal } from '@/components/SewingJournal';
 import { FinishUpPrompt, HoursRow, SpendRow } from '@/components/ProjectTotals';
 import { useCrafts } from '@/components/Crafts';
+import { BarAction, FloatingBar, NameTile, PinnedSwatch } from '@/components/paper';
 import { useSewingColors } from '@/hooks/useColors';
 
 // What's still in the stash: a blank amount left means all of it.
@@ -91,6 +92,9 @@ function SewingProjectView({ project }: { project: SewingProject }) {
   const update = useUpdateSewingProject();
   const remove = useDeleteSewingProject();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const scroller = useRef<ScrollView>(null);
+  const noteInput = useRef<TextInput>(null);
+  const journalY = useRef(0);
   const [prompt, setPrompt] = useState(finished === '1');
   const [finishUp, setFinishUp] = useState(finished === '1');
   const saveTotals = (data: ProjectTotals) => setSewingProjectTotals(project.id, data).then((saved) => {
@@ -123,15 +127,14 @@ function SewingProjectView({ project }: { project: SewingProject }) {
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
-      <View style={[styles.nav, { paddingTop: insets.top + 9, borderBottomColor: colors.border }]}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={() => router.back()} style={styles.navButton}><Feather name="arrow-left" size={19} color={colors.primaryText} /></Pressable>
-        <LoomText numberOfLines={1} style={[styles.navTitle, { color: colors.foreground }]}>{project.title}</LoomText>
-        <View style={{ flexDirection: 'row' }}>
-          <Pressable accessibilityRole="button" accessibilityLabel="Edit project" onPress={() => router.push({ pathname: '/sewing/new', params: { id: project.id } })} style={styles.navButton} testID="button-edit-sewing-project"><Feather name="edit-2" size={17} color={colors.primaryText} /></Pressable>
-          <Pressable accessibilityRole="button" accessibilityLabel="Delete project" onPress={() => setConfirmDelete(true)} style={styles.navButton} testID="button-delete-sewing-project"><Feather name="trash-2" size={18} color={colors.destructive} /></Pressable>
+      <View style={[styles.nav, { paddingTop: insets.top + 9 }]}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={() => router.back()} style={styles.navText} testID="button-back"><LoomText serif style={[styles.navWord, { color: colors.primaryText }]}>Back</LoomText></Pressable>
+        <View style={styles.navActions}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Edit project" onPress={() => router.push({ pathname: '/sewing/new', params: { id: project.id } })} style={styles.navText} testID="button-edit-sewing-project"><LoomText serif style={[styles.navWord, { color: colors.primaryText }]}>Edit</LoomText></Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel="Delete project" onPress={() => setConfirmDelete(true)} style={styles.navText} testID="button-delete-sewing-project"><LoomText serif style={[styles.navWord, { color: colors.destructive }]}>Delete</LoomText></Pressable>
         </View>
       </View>
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 40 }]}>
+      <ScrollView ref={scroller} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 110 }]}>
         {confirmDelete ? (
           <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.destructive }]}>
             <LoomText style={{ color: colors.foreground, fontFamily: fonts.semibold, fontSize: 15 }}>Delete this project?</LoomText>
@@ -144,12 +147,21 @@ function SewingProjectView({ project }: { project: SewingProject }) {
         ) : null}
         {finishUp && project.status === 'completed' ? <FinishUpPrompt sewing hours={project.hoursSpent} cents={project.totalSpendCents} currency={currency} onSaveHours={(hours) => saveTotals({ hoursSpent: hours })} onSaveSpend={(cents) => saveTotals({ totalSpendCents: cents })} onDone={() => setFinishUp(false)} /> : null}
         {prompt && project.status === 'completed' ? <FabricLeftPrompt project={project} onDone={() => setPrompt(false)} /> : null}
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <LoomText serif style={[styles.title, { color: colors.foreground }]}>{project.title}</LoomText>
-          <View style={styles.statusRow}>
-            <StatusChip status={project.status} />
-            {project.completedAt ? <LoomText style={{ color: colors.mutedForeground, fontSize: 14 }}>Finished {new Date(`${project.completedAt}T12:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</LoomText> : null}
+        <View style={styles.heading}>
+          <View style={{ flex: 1 }}>
+            <LoomText serif accessibilityRole="header" style={[styles.title, { color: colors.foreground }]}>{project.title}</LoomText>
+            <View style={styles.statusRow}>
+              <StatusChip status={project.status} />
+              {project.completedAt ? <LoomText style={{ color: colors.mutedForeground, fontSize: 14 }}>Finished {new Date(`${project.completedAt}T12:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</LoomText> : null}
+            </View>
           </View>
+          <PinnedSwatch colors={colors} tilt={2} pin={3} style={styles.pinned}>
+            {project.fabrics[0]?.fabric && project.fabrics[0].fabric.photoCount !== 0
+              ? <FabricPhoto fabric={project.fabrics[0].fabric} index={0} style={{ width: 92, height: 92 }} />
+              : <NameTile name={project.title} craft="sewing" size={92} />}
+          </PinnedSwatch>
+        </View>
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.stages} accessibilityRole="radiogroup" accessibilityLabel="Stage">
             {sewingStages.map((item, index) => {
               const done = project.status === 'completed' || index < current;
@@ -196,7 +208,7 @@ function SewingProjectView({ project }: { project: SewingProject }) {
             </View>
           ) : null)}
         </View>
-        <SewingJournal project={project} />
+        <View onLayout={(event) => { journalY.current = event.nativeEvent.layout.y; }}><SewingJournal project={project} inputRef={noteInput} /></View>
         <LoomText serif style={[styles.section, { color: colors.foreground }]}>Supplies</LoomText>
         {!project.fabrics.length && !project.tools.length ? <LoomText style={{ color: colors.mutedForeground, fontSize: 15 }}>No supplies on this project yet.</LoomText> : null}
         {project.fabrics.length ? <LoomText style={[styles.supplyGroup, { color: colors.primaryText }]}>FABRIC</LoomText> : null}
@@ -223,6 +235,12 @@ function SewingProjectView({ project }: { project: SewingProject }) {
           </Pressable>
         ))}
       </ScrollView>
+      <FloatingBar colors={colors} label={`${project.title} · ${project.status === 'completed' ? 'Finished' : sewingStages[current]?.label ?? ''}`}>
+        {project.status !== 'completed' ? (current < sewingStages.length - 1
+          ? <BarAction title={`${sewingStages[current]?.label} done`} colors={colors} onPress={() => pickStage(sewingStages[current + 1]!.value)} testID="button-bar-next-stage" />
+          : <BarAction title="Mark finished" colors={colors} onPress={() => change({ status: 'completed' })} testID="button-bar-finish" />) : null}
+        <BarAction title="Add a note" strong colors={colors} onPress={() => { scroller.current?.scrollTo({ y: Math.max(0, journalY.current - 12), animated: true }); setTimeout(() => noteInput.current?.focus(), 350); }} testID="button-bar-add-sewing-note" />
+      </FloatingBar>
     </View>
   );
 }
@@ -245,20 +263,23 @@ export default function SewingProjectScreen() {
 const styles = StyleSheet.create({
   supplyGroup: { fontFamily: fonts.bold, fontSize: 12, letterSpacing: 0.7, marginTop: 6, marginBottom: 8 },
   screen: { flex: 1 },
-  nav: { minHeight: 48, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1 },
-  navButton: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
-  navTitle: { fontFamily: fonts.semibold, fontSize: 16, flex: 1, textAlign: 'center', marginHorizontal: 8 },
+  nav: { minHeight: 48, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  navText: { minHeight: 40, justifyContent: 'center', paddingHorizontal: 2 },
+  navWord: { fontSize: 19 },
+  navActions: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+  heading: { flexDirection: 'row', alignItems: 'flex-start', gap: 14, marginBottom: 16 },
+  pinned: { width: 118, padding: 6, paddingTop: 10, marginTop: 6 },
   content: { width: '100%', maxWidth: 650, alignSelf: 'center', padding: 20 },
-  card: { borderWidth: 1, borderRadius: 18, padding: 17, marginBottom: 14 },
-  title: { fontSize: 28, lineHeight: 34, marginBottom: 8 },
-  statusRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 },
+  card: { borderWidth: 0, borderRadius: 3, padding: 17, marginBottom: 14 },
+  title: { fontSize: 36, lineHeight: 40, letterSpacing: -0.4 },
+  statusRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 10 },
   stages: { flexDirection: 'row', gap: 5, marginBottom: 14 },
-  stage: { flex: 1, borderWidth: 1, borderRadius: 10, paddingVertical: 9, alignItems: 'center', gap: 5 },
+  stage: { flex: 1, borderWidth: 1, borderRadius: 2, paddingVertical: 9, alignItems: 'center', gap: 5 },
   stageDot: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   facts: { flexDirection: 'row', flexWrap: 'wrap', gap: 22, marginTop: 16 },
   section: { fontSize: 24, marginTop: 8, marginBottom: 10 },
-  fabric: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: 14, padding: 9, marginBottom: 10 },
-  fabricPhoto: { width: 72, height: 72, borderRadius: 10 },
+  fabric: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 0, borderRadius: 3, padding: 9, marginBottom: 10 },
+  fabricPhoto: { width: 72, height: 72, borderRadius: 2 },
   prompt: { borderWidth: 1, borderRadius: 14, padding: 14, marginBottom: 14 },
   promptActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 10 },
 });

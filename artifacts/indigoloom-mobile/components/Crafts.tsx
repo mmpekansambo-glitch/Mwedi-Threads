@@ -11,6 +11,7 @@ import type { Crafts, Currency } from '@workspace/api-client-react';
 import { ITEM_HEIGHT, Wheel } from '@/components/ProjectDateField';
 import { currencies } from '@/lib/money';
 import { Brand, LoomText, fonts } from '@/components/loom';
+import { Stitch } from '@/components/paper';
 import { useColors, useSewingColors } from '@/hooks/useColors';
 import { useAppearance } from '@/hooks/useAppearance';
 import type { AppearanceChoice } from '@/hooks/useAppearance';
@@ -72,12 +73,13 @@ export function HomeSwitcher() {
   const { home, setHome } = useHome();
   if (!crafts?.yarn || !crafts.sewing) return null;
   return (
-    <View style={[styles.switcher, { backgroundColor: colors.card, borderColor: colors.border }]} accessibilityRole="tablist">
+    <View style={styles.switcher} accessibilityRole="tablist">
       {(['yarn', 'sewing'] as const).map((craft) => {
         const selected = home === craft;
         return (
-          <Pressable key={craft} accessibilityRole="tab" accessibilityState={{ selected }} onPress={() => { if (!selected) goHome(setHome, craft); }} style={[styles.switcherOption, selected && { backgroundColor: colors.primary }]} testID={`button-home-${craft}`}>
-            <LoomText style={{ color: selected ? colors.primaryForeground : colors.mutedForeground, fontFamily: fonts.semibold, fontSize: 14 }}>{homeNames[craft]}</LoomText>
+          <Pressable key={craft} accessibilityRole="tab" accessibilityState={{ selected }} onPress={() => { if (!selected) goHome(setHome, craft); }} style={styles.switcherOption} testID={`button-home-${craft}`}>
+            <LoomText serif style={{ color: selected ? colors.foreground : colors.mutedForeground, fontSize: 17 }}>{homeNames[craft]}</LoomText>
+            {selected ? <Stitch color={colors.primary} dash={5} gap={3} /> : <View style={{ height: 2 }} />}
           </Pressable>
         );
       })}
@@ -236,9 +238,9 @@ export function CraftChoiceScreen() {
 }
 
 const styles = StyleSheet.create({
-  switcher: { flexDirection: 'row', borderWidth: 1, borderRadius: 12, padding: 4, gap: 4, marginBottom: 16 },
-  switcherOption: { flex: 1, minHeight: 36, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
-  avatar: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
+  switcher: { flexDirection: 'row', gap: 18, marginBottom: 6 },
+  switcherOption: { paddingVertical: 4, gap: 2 },
+  avatar: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   menu: { position: 'absolute', top: 48, right: 0, minWidth: 290, borderWidth: 1, borderRadius: 10, padding: 6, zIndex: 5 },
   settings: { paddingHorizontal: 8, paddingTop: 6, paddingBottom: 8, marginBottom: 4, borderBottomWidth: 1 },
   settingsHeading: { fontFamily: fonts.bold, fontSize: 11, letterSpacing: 1.4, marginBottom: 4 },

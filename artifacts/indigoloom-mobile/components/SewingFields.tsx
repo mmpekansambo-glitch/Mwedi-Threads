@@ -5,6 +5,7 @@ import { Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { LoomText, StatusChip, fonts } from '@/components/loom';
 import { FabricPhoto, fabricUnits } from '@/components/FabricFields';
+import { BoardTile } from '@/components/paper';
 import { ITEM_HEIGHT, Wheel } from '@/components/ProjectDateField';
 import { useSewingColors } from '@/hooks/useColors';
 
@@ -56,27 +57,23 @@ export function StageTrack({ project }: { project: Pick<SewingProject, 'stage' |
   );
 }
 
+// A sewing project on a board (#120): its first fabric's photo, or its name
+// in a sewing font, with the stage underneath.
 export function SewingProjectCard({ project }: { project: SewingProject }) {
   const colors = useSewingColors();
   const first = project.fabrics[0]?.fabric;
-  const meta = [project.patternName, project.sizeMade && `Size ${project.sizeMade}`].filter(Boolean).join(' · ');
+  const status = project.status === 'completed' ? 'Finished' : project.status === 'planning' ? 'Planning' : project.status === 'paused' ? 'On pause' : sewingStages[stageIndex(project.stage)]?.label ?? 'In progress';
   return (
-    <Pressable
-      accessibilityRole="button"
+    <BoardTile
+      title={project.title}
+      craft="sewing"
+      status={status}
+      detail={project.sizeMade ? `Size ${project.sizeMade}` : undefined}
+      art={first && first.photoCount !== 0 ? <FabricPhoto fabric={first} index={0} style={{ width: '100%', height: '100%' }} /> : undefined}
       onPress={() => router.push({ pathname: '/sewing/[id]', params: { id: project.id } })}
-      style={({ pressed }) => [styles.card, { backgroundColor: colors.card, borderColor: colors.border }, pressed && { opacity: 0.85 }]}
+      colors={colors}
       testID={`sewing-card-${project.id}`}
-    >
-      {first ? <FabricPhoto fabric={first} index={0} style={[styles.photo, { backgroundColor: colors.selectedWash }]} /> : (
-        <View style={[styles.photo, styles.noPhoto, { backgroundColor: colors.selectedWash }]}><Feather name="scissors" size={24} color={colors.primaryText} /></View>
-      )}
-      <View style={styles.body}>
-        <View style={{ flexDirection: 'row' }}><StatusChip status={project.status} /></View>
-        <LoomText serif numberOfLines={2} style={[styles.title, { color: colors.foreground }]}>{project.title}</LoomText>
-        {meta ? <LoomText numberOfLines={1} style={{ color: colors.mutedForeground, fontSize: 14 }}>{meta}</LoomText> : null}
-        <StageTrack project={project} />
-      </View>
-    </Pressable>
+    />
   );
 }
 

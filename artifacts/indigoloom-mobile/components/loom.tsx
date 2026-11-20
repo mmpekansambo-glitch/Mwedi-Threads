@@ -13,8 +13,8 @@ import {
   View,
   type ViewStyle,
 } from 'react-native';
-import { useColors } from '@/hooks/useColors';
-import { BrandMark } from '@/components/BrandMark';
+import { useColors, useRoomColors } from '@/hooks/useColors';
+import { BoardTile } from '@/components/paper';
 import { StarButton } from '@/components/StarButton';
 
 export const fonts = {
@@ -22,8 +22,8 @@ export const fonts = {
   medium: 'Figtree_500Medium',
   semibold: 'Figtree_600SemiBold',
   bold: 'Figtree_700Bold',
-  display: 'Lora_500Medium',
-  displayBold: 'Lora_600SemiBold',
+  display: 'EBGaramond_500Medium',
+  displayBold: 'EBGaramond_600SemiBold',
 };
 
 export function LoomText({
@@ -47,11 +47,7 @@ export function Brand() {
   const colors = useColors();
   return (
     <View style={styles.brand} accessibilityLabel="Mwedi Threads">
-      <BrandMark size={40} />
-      <View>
-        <LoomText style={[styles.brandName, { color: colors.foreground }]}>Mwedi</LoomText>
-        <LoomText style={[styles.brandSoft, { color: colors.mutedForeground }]}>THREADS</LoomText>
-      </View>
+      <LoomText style={[styles.brandName, { color: colors.foreground }]}>Mwedi Threads</LoomText>
     </View>
   );
 }
@@ -75,7 +71,7 @@ export function LoomButton({
   style?: ViewStyle;
   testID?: string;
 }) {
-  const colors = useColors();
+  const colors = useRoomColors();
   const palette = {
     primary: { backgroundColor: colors.primary, color: colors.primaryForeground, borderColor: colors.primary },
     secondary: { backgroundColor: colors.card, color: colors.primary, borderColor: colors.border },
@@ -133,7 +129,7 @@ export function PageHeader({
 }
 
 export function ProgressBar({ value }: { value: number }) {
-  const colors = useColors();
+  const colors = useRoomColors();
   const safeValue = Math.max(0, Math.min(100, value));
   return (
     <View
@@ -155,7 +151,7 @@ const statusLabels: Record<ProjectStatus, string> = {
 };
 
 export function StatusChip({ status }: { status: ProjectStatus }) {
-  const colors = useColors();
+  const colors = useRoomColors();
   const tone =
     status === 'completed'
       ? { bg: colors.completedChip, fg: colors.completedText }
@@ -171,37 +167,22 @@ export function StatusChip({ status }: { status: ProjectStatus }) {
   );
 }
 
+// A project on a board (#120): its name in a craft font, pinned at a slight
+// tilt, with the status underneath.
 export function ProjectCard({ project }: { project: Project }) {
   const colors = useColors();
-  const craft = project.craft === 'knitting' ? 'Knitting' : 'Crochet';
+  const showPercent = project.status !== 'completed' && project.completionPercent > 0;
   return (
-    <Pressable
-      accessibilityRole="button"
-      testID={`project-card-${project.id}`}
+    <BoardTile
+      title={project.title}
+      craft={project.craft === 'knitting' ? 'knitting' : 'crochet'}
+      status={statusLabels[project.status]}
+      detail={showPercent ? `${project.completionPercent}%` : undefined}
+      star={<StarButton project={project} />}
       onPress={() => router.push({ pathname: '/projects/[id]', params: { id: project.id } })}
-      style={({ pressed }) => [
-        styles.projectCard,
-        { backgroundColor: colors.card, borderColor: colors.border },
-        pressed && styles.pressed,
-      ]}
-    >
-      <View style={styles.cardBody}>
-        <View style={styles.cardActions}>
-          <StatusChip status={project.status} />
-          <StarButton project={project} />
-        </View>
-        <View>
-          <LoomText serif style={[styles.cardTitle, { color: colors.foreground }]} numberOfLines={2}>{project.title}</LoomText>
-          <LoomText numberOfLines={1} style={[styles.cardSub, { color: colors.mutedForeground }]}>
-            {[craft, project.patternName].filter(Boolean).join(' · ')}
-          </LoomText>
-        </View>
-        <View style={styles.cardFooter}>
-          <View style={{ flex: 1 }}><ProgressBar value={project.completionPercent} /></View>
-          <LoomText style={[styles.cardPercent, { color: colors.primary }]}>{project.completionPercent}%</LoomText>
-        </View>
-      </View>
-    </Pressable>
+      colors={colors}
+      testID={`project-card-${project.id}`}
+    />
   );
 }
 
@@ -216,12 +197,9 @@ export function EmptyState({
   actionTitle?: string;
   onAction?: () => void;
 }) {
-  const colors = useColors();
+  const colors = useRoomColors();
   return (
-    <View style={[styles.empty, { borderColor: colors.border, backgroundColor: colors.card }]}>
-      <View style={[styles.emptyMark, { backgroundColor: colors.selectedWash }]}>
-        <Feather name="feather" size={23} color={colors.primary} />
-      </View>
+    <View style={[styles.empty, { borderColor: colors.stitch }]}>
       <LoomText serif style={[styles.emptyTitle, { color: colors.foreground }]}>{title}</LoomText>
       <LoomText style={[styles.emptyBody, { color: colors.mutedForeground }]}>{body}</LoomText>
       {actionTitle && onAction ? <LoomButton title={actionTitle} icon="plus" onPress={onAction} style={{ marginTop: 18 }} /> : null}
@@ -230,7 +208,7 @@ export function EmptyState({
 }
 
 export function LoadingState({ label = 'Gathering your projects…' }: { label?: string }) {
-  const colors = useColors();
+  const colors = useRoomColors();
   return (
     <View style={styles.loading}>
       <ActivityIndicator color={colors.primary} />
@@ -240,10 +218,9 @@ export function LoadingState({ label = 'Gathering your projects…' }: { label?:
 }
 
 export function ErrorState({ onRetry }: { onRetry: () => void }) {
-  const colors = useColors();
+  const colors = useRoomColors();
   return (
     <View style={[styles.errorCard, { borderColor: colors.border, backgroundColor: colors.card }]}>
-      <Feather name="alert-circle" size={22} color={colors.destructive} />
       <LoomText serif style={styles.emptyTitle}>Something went wrong</LoomText>
       <LoomText style={[styles.emptyBody, { color: colors.mutedForeground }]}>Your work is safe. Please try again.</LoomText>
       <LoomButton title="Try again" icon="refresh-cw" variant="secondary" onPress={onRetry} style={{ marginTop: 14 }} />
@@ -259,7 +236,7 @@ export function SignedInGate({ children }: { children: ReactNode }) {
 }
 
 export function FormFieldLabel({ children }: { children: ReactNode }) {
-  const colors = useColors();
+  const colors = useRoomColors();
   return <LoomText style={{ color: colors.foreground, fontFamily: fonts.semibold, fontSize: 15, marginBottom: 7 }}>{children}</LoomText>;
 }
 
@@ -269,37 +246,28 @@ export function AuthFooter({ children }: { children: ReactNode }) {
 }
 
 export function AuthLink({ href, children }: { href: '/(auth)/sign-in' | '/(auth)/sign-up'; children: ReactNode }) {
-  const colors = useColors();
+  const colors = useRoomColors();
   return <Link href={href} style={{ color: colors.primary, fontFamily: fonts.semibold }}>{children}</Link>;
 }
 
 const styles = StyleSheet.create({
   brand: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  brandName: { fontSize: 22, lineHeight: 24, fontFamily: fonts.displayBold },
-  brandSoft: { fontSize: 10, letterSpacing: 2.2, fontFamily: fonts.bold, marginTop: 2 },
-  button: { minHeight: 48, paddingHorizontal: 18, borderRadius: 10, borderWidth: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9 },
+  brandName: { fontSize: 24, lineHeight: 28, fontFamily: fonts.display },
+  button: { minHeight: 48, paddingHorizontal: 18, borderRadius: 2, borderWidth: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9 },
   buttonText: { fontFamily: fonts.semibold, fontSize: 16 },
   pressed: { opacity: 0.82, transform: [{ scale: 0.985 }] },
   disabled: { opacity: 0.55 },
   pageHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 20 },
   pageHeaderCopy: { flex: 1, gap: 5 },
-  pageTitle: { fontSize: 29, letterSpacing: -0.6 },
+  pageTitle: { fontSize: 36, lineHeight: 40, letterSpacing: -0.4 },
   pageSubtitle: { fontSize: 16, lineHeight: 23 },
   progressTrack: { height: 5, borderRadius: 9, overflow: 'hidden', width: '100%' },
   progressFill: { height: '100%', borderRadius: 9 },
-  statusChip: { borderRadius: 999, paddingHorizontal: 9, paddingVertical: 5 },
-  projectCard: { overflow: 'hidden', borderWidth: 1, borderRadius: 12, marginBottom: 12 },
-  cardActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-  cardTitle: { fontSize: 23, maxWidth: 180 },
-  cardBody: { paddingHorizontal: 15, paddingVertical: 13, gap: 10 },
-  cardSub: { fontSize: 15 },
-  cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  cardPercent: { fontSize: 14, fontFamily: fonts.semibold },
-  empty: { alignItems: 'center', justifyContent: 'center', padding: 24, borderWidth: 1, borderStyle: 'dashed', borderRadius: 18, minHeight: 245 },
-  emptyMark: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', marginBottom: 13 },
+  statusChip: { borderRadius: 2, paddingHorizontal: 9, paddingVertical: 5 },
+  empty: { alignItems: 'center', justifyContent: 'center', padding: 24, borderWidth: 2, borderStyle: 'dashed', borderRadius: 1, minHeight: 200 },
   emptyTitle: { fontSize: 25, textAlign: 'center' },
   emptyBody: { textAlign: 'center', fontSize: 16, lineHeight: 23, marginTop: 7, maxWidth: 290 },
   loading: { flex: 1, minHeight: 180, alignItems: 'center', justifyContent: 'center' },
-  errorCard: { minHeight: 240, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: 18, padding: 22 },
+  errorCard: { minHeight: 200, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: 2, padding: 22 },
   authFooter: { marginTop: 20, borderTopWidth: 1, paddingTop: 18, flexDirection: 'row', justifyContent: 'center', gap: 5 },
 });
