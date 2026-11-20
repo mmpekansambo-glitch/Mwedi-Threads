@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { ArrowRight, Feather, Plus, X } from 'lucide-react';
 import { useAddSewingProjectEntry, useDeleteSewingProjectEntry, useUpdateSewingProjectEntry } from '@workspace/api-client-react';
 import type { SaveSewingProjectEntry, SewingProject, SewingProjectEntry } from '@workspace/api-client-react';
@@ -11,8 +11,20 @@ const localDay = (date: Date) => `${date.getFullYear()}-${pad2(date.getMonth() +
 const tooLong = 'Keep your note under 2,000 characters.';
 
 // A sewing project's dated notes, newest first, with add, edit and delete.
-export function SewingJournal({ project, onChanged }: { project: SewingProject; onChanged: () => void }) {
-  return <NoteEditingProvider><Journal project={project} onChanged={onChanged}/></NoteEditingProvider>;
+// renderBar puts the page's floating bar inside the journal, so its
+// "Add a note" opens the same new-note form (#119).
+export function SewingJournal({ project, onChanged, renderBar }: { project: SewingProject; onChanged: () => void; renderBar?: (addNote: () => void) => ReactNode }) {
+  return <NoteEditingProvider><Journal project={project} onChanged={onChanged}/>{renderBar && <JournalBar render={renderBar}/>}</NoteEditingProvider>;
+}
+
+function JournalBar({ render }: { render: (addNote: () => void) => ReactNode }) {
+  const notes = useNoteEditing();
+  const addNote = () => {
+    void notes.open(NEW_NOTE).then((opened) => {
+      if (opened) requestAnimationFrame(() => document.getElementById('sewing-note')?.focus());
+    });
+  };
+  return render(addNote);
 }
 
 function Journal({ project, onChanged }: { project: SewingProject; onChanged: () => void }) {

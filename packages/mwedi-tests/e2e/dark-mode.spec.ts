@@ -68,13 +68,14 @@ test("follows the computer's dark setting in the signed-in app", async ({ page }
   await page.goto("/dashboard");
   await expect(page.getByRole("heading", { name: "Projects by status" })).toBeVisible();
   expect(await isDark(page)).toBe(true);
-  await expect(page.locator("body")).toHaveCSS("background-color", "rgb(24, 33, 38)");
-  await expect(page.locator(".side-rail")).toHaveCSS("background-color", "rgb(16, 23, 27)");
+  await expect(page.locator("body")).toHaveCSS("background-color", "rgb(20, 25, 23)");
+  // Night mist under a frosted, see-through nav (#118).
+  await expect(page.locator(".side-rail")).toHaveCSS("background-color", "rgba(20, 25, 23, 0.74)");
   if (shots) await settle(page);
   if (shots) await page.screenshot({ path: `${shots}/dashboard-dark.png` });
 
   await page.goto("/projects");
-  await expect(page.getByText("Cabled beanie")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Cabled beanie" })).toBeVisible();
   if (shots) await settle(page);
   if (shots) await page.screenshot({ path: `${shots}/projects-dark.png` });
 
@@ -89,15 +90,16 @@ test("follows the computer's dark setting in the signed-in app", async ({ page }
   if (shots) await page.screenshot({ path: `${shots}/fabric-stash-dark.png` });
 });
 
-test("the Sewing room is mauve in light mode", async ({ page }) => {
+test("the Sewing room is Lydia violet in light mode", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 860 });
   await page.emulateMedia({ colorScheme: "light" });
   await mockApi(page);
   await page.goto("/sewing/fabric");
   await expect(page.getByText("Cotton, floral")).toBeVisible();
   expect(await isDark(page)).toBe(false);
-  await expect(page.locator(".portal-shell")).toHaveCSS("background-color", "rgb(228, 222, 239)");
-  await expect(page.locator(".side-rail")).toHaveCSS("background-color", "rgb(74, 60, 102)");
+  await expect(page.locator(".portal-shell")).toHaveCSS("background-color", "rgb(243, 242, 238)");
+  await expect(page.getByTestId("link-fabric")).toHaveCSS("border-bottom-color", "rgb(91, 58, 126)");
+  await expect(page.locator(".room-hill-3")).toHaveCSS("fill", "rgb(208, 197, 228)");
   if (shots) await settle(page);
   if (shots) await page.screenshot({ path: `${shots}/fabric-stash-light.png` });
 });

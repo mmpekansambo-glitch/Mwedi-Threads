@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useId, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import { ClerkProvider, SignIn, SignUp, useAuth, useClerk, useSignUp, useUser } from '@clerk/react';
@@ -31,16 +31,19 @@ import type { ProjectTotals } from '@workspace/api-client-react';
 import type { CatalogField, CatalogReview, CreateProject, CreateStashFabric, CreateProgress, Crafts, Currency, ProjectDetail, FabricConstruction, FabricPrint, FabricType, FabricUnit, GeneralColor, Project, ProjectStatus, SewingMachineSetting, SewingNeedleSize, SewingNeedleType, SewingPattern, SewingPatternFormat, SewingPatternType, SewingProject, SewingStage, SewingTool, SewingToolCategory, SewingToolSection, StashFabric, StashYarn, UpdateProject, YarnNotionType, YarnTool, YarnToolMaterial, YarnToolSection, YarnWeight, KnittingNeedleType } from '@workspace/api-client-react';
 import { FormProvider as Form, useForm, type UseFormReturn } from 'react-hook-form';
 import {
-  Archive, ArrowLeft, ArrowRight, ArrowUpDown, ArrowUpRight, BookOpen, Check,
-  Camera, ChevronDown, ChevronRight, ChevronUp, CircleHelp, Feather, Filter, Flower2,
-  Box, FileText, Layers3, LogOut, Menu, Palette, Plus, Ruler, Scissors, Search, Shirt, Sparkles, Spool, Star, Trash2, Wrench,
+  Archive, ArrowLeft, ArrowRight, ArrowUpDown, ArrowUpRight, Check,
+  Camera, ChevronDown, ChevronRight, ChevronUp, CircleHelp, Feather, Filter,
+  Box, FileText, Layers3, LogOut, Menu, Palette, Plus, Ruler, Scissors, Search, Shirt, Sparkles, Star, Trash2,
   X,
 } from 'lucide-react';
 import { projectSorts, sortProjects, sortStash, stashSorts, useSavedSort } from './lib/sorting';
 import {
   Link, Redirect, Route, Switch, useLocation, useSearch, Router as WouterRouter,
 } from 'wouter';
-import { StatDoodle } from '@/components/stat-doodles';
+import { NameTile, nameHash } from '@/components/name-tile';
+import { RoomBackdrop } from '@/components/room-backdrop';
+import { FloatingBar, PinnedSwatch, StitchDivider, greetingFor, tiltFor } from '@/components/paper';
+import { LandingMotion } from '@/components/landing-motion';
 import { DateWheelField as ProjectDateField, formatWheelDate } from '@/components/date-wheel-field';
 import {
   ProgressAmountField, ProgressMethodFields, amountDraftFor, defaultProgressSettings, progressAmountForApi,
@@ -140,16 +143,9 @@ const clerkAppearance = {
   },
 };
 
-function Mark({ light = false }: { light?: boolean }) {
-  const id = useId();
-  return <span className={`brand-mark ${light ? 'brand-mark-light' : ''}`} aria-hidden="true">
-    <svg viewBox="0 0 100 100"><clipPath id={`${id}-ring`}><circle cx="50" cy="50" r="42"/></clipPath><clipPath id={`${id}-ball`}><circle cx="50" cy="56" r="25"/></clipPath><circle cx="50" cy="50" r="44" className="bm-fill"/><g clipPath={`url(#${id}-ring)`}><path d="M21.3 79.8L76.2 27.3q2.5 -3.0 5.0 -0.5" fill="none" className="bm-hook" strokeWidth="4" strokeLinecap="round"/><circle cx="50" cy="56" r="25" className="bm-ball"/><g clipPath={`url(#${id}-ball)`} fill="none" className="bm-line" strokeWidth="2.6"><ellipse cx="27.5" cy="56" rx="7.0" ry="40.0" transform="rotate(-30 50 56)"/><ellipse cx="27.5" cy="56" rx="16.0" ry="40.0" transform="rotate(-30 50 56)"/><ellipse cx="27.5" cy="56" rx="25.0" ry="40.0" transform="rotate(-30 50 56)"/><ellipse cx="27.5" cy="56" rx="34.0" ry="40.0" transform="rotate(-30 50 56)"/><ellipse cx="27.5" cy="56" rx="43.0" ry="40.0" transform="rotate(-30 50 56)"/></g><path d="M65.0 76.0C75.0 89.8 79.0 71.7 94 74.2" fill="none" className="bm-thread" strokeWidth="2.2" strokeLinecap="round"/></g><circle cx="50" cy="50" r="44" fill="none" className="bm-ring" strokeWidth="5"/><circle cx="30.2" cy="22.7" r="5.5" className="bm-dot"/></svg>
-  </span>;
-}
-
 function Brand({ light = false }: { light?: boolean }) {
   return <Link href="/" className={`brand-lockup ${light ? 'brand-light' : ''}`} data-testid="link-brand-home">
-    <Mark light={light} /><span className="brand-words"><span className="brand-name">Mwedi</span><span className="brand-soft">Threads</span></span>
+    <span className="brand-words"><span className="brand-name">Mwedi Threads</span></span>
   </Link>;
 }
 
@@ -161,27 +157,16 @@ function HomeRoute() {
 
 function Landing() {
   return <main className="landing">
-    <nav className="landing-nav"><Brand /></nav>
+    <LandingMotion/>
+    <nav className="landing-nav"><Brand /><span className="landing-nav-links"><Link href="/about">About</Link><Link href="/sign-in">Sign in</Link><Link href="/sign-up" className="landing-nav-signup">Sign up</Link></span></nav>
     <section className="landing-hero">
       <div className="hero-copy">
-        <h1>Your hands are busy.<br/><em>Let your mind rest.</em></h1>
-        <p className="hero-lede">Keep every cast-on, color choice and almost-finished sleeve in one place. No streaks to keep and no pressure to finish, just a record of the things you make and the small steps that got you there.</p>
+        <h1><span className="hero-word">Your hands</span> <span className="hero-word">are busy.</span><br/><em className="hero-word">Let your mind rest.</em></h1>
+        <p className="hero-lede">Keep every cast-on, color choice and almost-finished hem in one place. No streaks to keep and no pressure to finish, just a record of the things you make and the small steps that got you there.</p>
         <div className="hero-actions">
           <Link href="/sign-up" className="button button-primary" data-testid="link-get-started">Sign up</Link>
           <Link href="/sign-in" className="button button-outline" data-testid="link-sign-in">Sign in</Link>
         </div>
-      </div>
-      <div className="hero-art" aria-hidden="true">
-        <div className="orbit orbit-one"/><div className="orbit orbit-two"/>
-        <div className="thread thread-a"/><div className="thread thread-b"/>
-        <div className="project-note">
-          <div className="note-top"><span className="note-tag">IN THE MAKING</span><span className="note-dots">•••</span></div>
-          <div className="swatch-art"><span/><span/><span/><span/><span/><span/><span/><span/><span/><span/><span/><span/><span/><span/><span/></div>
-          <div className="note-copy"><small>YOUR NEXT LITTLE WIN</small><strong>Juniper cardigan</strong><div className="mini-progress"><span/></div><div className="mini-progress-meta"><span>18 rows since Sunday</span><b>42%</b></div></div>
-        </div>
-        <div className="yarn-ball"><span/><span/><span/><span/></div>
-        <div className="floating-note"><Sparkles size={14}/><span>one row at a time</span></div>
-        <span className="hero-flower"><Flower2 size={38} strokeWidth={1.1}/></span>
       </div>
     </section>
     <LandingFooter/>
@@ -367,6 +352,7 @@ function PortalLayout({ children, active }: { children: ReactNode; active: keyof
   const appearance = useAppearance();
   const home: Craft = sewingPages.has(active) ? 'sewing' : 'yarn';
   return <div className={`portal-shell home-${home}`}>
+    <RoomBackdrop/>
     <aside className={`side-rail ${mobileOpen ? 'mobile-open' : ''}`}>
       <div className="rail-brand"><Brand light/><button className="rail-close" type="button" onClick={() => setMobileOpen(false)} aria-label="Close navigation" data-testid="button-close-navigation"><X size={19}/></button></div>
       {crafts?.yarn && crafts.sewing && <nav className="home-switcher" aria-label="Choose a home">
@@ -374,17 +360,17 @@ function PortalLayout({ children, active }: { children: ReactNode; active: keyof
       </nav>}
       <nav className="rail-nav">
         {home === 'yarn' ? <>
-          <Link href="/dashboard" className={`rail-link ${active === 'dashboard' ? 'selected' : ''}`} data-testid="link-dashboard"><Layers3 size={18}/><span>Overview</span></Link>
-          <Link href="/projects" className={`rail-link ${active === 'projects' ? 'selected' : ''}`} data-testid="link-projects"><BookOpen size={18}/><span>My projects</span></Link>
-          <Link href="/stash" className={`rail-link ${active === 'stash' ? 'selected' : ''}`} data-testid="link-stash"><Palette size={18}/><span>Yarn stash</span></Link>
-          <Link href="/tools" className={`rail-link ${active === 'yarnTools' ? 'selected' : ''}`} data-testid="link-yarn-tools"><Wrench size={18}/><span>Tools</span></Link>
-          {reviewAccess.data?.reviewer && <Link href="/reviews" className={`rail-link ${active === 'reviews' ? 'selected' : ''}`} data-testid="link-reviews"><CircleHelp size={18}/><span>Name reviews</span></Link>}
+          <Link href="/dashboard" className={`rail-link ${active === 'dashboard' ? 'selected' : ''}`} data-testid="link-dashboard"><span>Overview</span></Link>
+          <Link href="/projects" className={`rail-link ${active === 'projects' ? 'selected' : ''}`} data-testid="link-projects"><span>My projects</span></Link>
+          <Link href="/stash" className={`rail-link ${active === 'stash' ? 'selected' : ''}`} data-testid="link-stash"><span>Yarn stash</span></Link>
+          <Link href="/tools" className={`rail-link ${active === 'yarnTools' ? 'selected' : ''}`} data-testid="link-yarn-tools"><span>Tools</span></Link>
+          {reviewAccess.data?.reviewer && <Link href="/reviews" className={`rail-link ${active === 'reviews' ? 'selected' : ''}`} data-testid="link-reviews"><span>Name reviews</span></Link>}
         </> : <>
-          <Link href="/sewing" className={`rail-link ${active === 'sewing' ? 'selected' : ''}`} data-testid="link-sewing-overview"><Layers3 size={18}/><span>Overview</span></Link>
-          <Link href="/sewing/projects" className={`rail-link ${active === 'sewingProjects' ? 'selected' : ''}`} data-testid="link-sewing-projects"><BookOpen size={18}/><span>Projects</span></Link>
-          <Link href="/sewing/fabric" className={`rail-link ${active === 'fabric' ? 'selected' : ''}`} data-testid="link-fabric"><Scissors size={18}/><span>Fabric stash</span></Link>
-          <Link href="/sewing/patterns" className={`rail-link ${active === 'patterns' ? 'selected' : ''}`} data-testid="link-patterns"><FileText size={18}/><span>Patterns</span></Link>
-          <Link href="/sewing/tools" className={`rail-link ${active === 'tools' ? 'selected' : ''}`} data-testid="link-tools"><Spool size={18}/><span>Tools</span></Link>
+          <Link href="/sewing" className={`rail-link ${active === 'sewing' ? 'selected' : ''}`} data-testid="link-sewing-overview"><span>Overview</span></Link>
+          <Link href="/sewing/projects" className={`rail-link ${active === 'sewingProjects' ? 'selected' : ''}`} data-testid="link-sewing-projects"><span>Projects</span></Link>
+          <Link href="/sewing/fabric" className={`rail-link ${active === 'fabric' ? 'selected' : ''}`} data-testid="link-fabric"><span>Fabric stash</span></Link>
+          <Link href="/sewing/patterns" className={`rail-link ${active === 'patterns' ? 'selected' : ''}`} data-testid="link-patterns"><span>Patterns</span></Link>
+          <Link href="/sewing/tools" className={`rail-link ${active === 'tools' ? 'selected' : ''}`} data-testid="link-tools"><span>Tools</span></Link>
         </>}
       </nav>
       <div className="rail-bottom"><ProfileMenu initials={initials} displayName={displayName} crafts={crafts} appearance={appearance} onSignOut={() => signOut({ redirectUrl: basePath || '/' })}/></div>
@@ -499,10 +485,16 @@ function StarButton({ project, className = '' }: { project: Project; className?:
   return <button type="button" className={`star-button${project.starred ? ' is-starred' : ''}${className ? ` ${className}` : ''}`} aria-pressed={project.starred} aria-label={label} title={project.starred ? 'Starred' : 'Star this project'} onClick={toggle} disabled={star.isPending || unstar.isPending} data-testid={`button-star-${project.id}`}><Star size={16} fill={project.starred ? 'currentColor' : 'none'}/></button>;
 }
 
+const statusLabels: Record<ProjectStatus, string> = { planning: 'Planning', in_progress: 'In progress', paused: 'On pause', completed: 'Finished' };
+
+// A project on a board (#119): its photo, or its name in a craft font, pinned
+// at a slight tilt, with the status underneath.
 function ProjectCard({ project }: { project: Project }) {
-  const craftLabel = project.craft === 'knitting' ? 'Knitting' : 'Crochet';
-  return <div className="project-card-wrap"><StarButton project={project} className="card-star"/><Link href={`/projects/${project.id}`} className="project-card loom-card lift" data-testid={`card-project-${project.id}`}>
-    <div className="project-card-body"><div className="project-card-meta"><StatusPill status={project.status}/></div><h3>{project.title}</h3><p>{[craftLabel, project.patternName].filter(Boolean).join(' · ')}</p><div className="card-progress"><ProgressBar value={project.completionPercent}/><span>{project.completionPercent}%</span></div><div className="card-foot">{yarnSummary(project) && <span>{yarnSummary(project)}</span>}{project.updatedAt && <span className="updated-label">Updated {new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' }).format(new Date(project.updatedAt))}</span>}</div></div>
+  const style = { '--tilt': `${tiltFor(project.title)}deg` } as CSSProperties;
+  return <div className="board-tile-wrap" style={style}><StarButton project={project} className="card-star"/><Link href={`/projects/${project.id}`} className="board-tile" data-testid={`card-project-${project.id}`}>
+    <NameTile name={project.title} craft={project.craft === 'knitting' ? 'knitting' : 'crochet'} className={`board-tile-art board-shape-${nameHash(project.title) % 3}`}/>
+    <h3 className="visually-hidden">{project.title}</h3>
+    <span className="board-tile-meta"><span className={`board-status board-status-${project.status}`}>{statusLabels[project.status]}</span>{project.status !== 'completed' && project.completionPercent > 0 && <span>{project.completionPercent}%</span>}</span>
   </Link></div>;
 }
 
@@ -535,29 +527,52 @@ function DashboardPage() {
   const data = query.data;
   const { user } = useUser();
   const name = user?.firstName || 'maker';
+  const onTheHook = data ? [...data.recentProjects].sort((a, b) => Number(b.status === 'in_progress') - Number(a.status === 'in_progress')) : [];
+  const pickUp = data?.recentProjects.find((project) => project.status === 'in_progress');
   return <PortalLayout active="dashboard">
-    <PageHeading title={<>Hi, {name}</>} action={<Link href="/projects/new" className="button button-primary" data-testid="link-new-project"><Plus size={17}/> New project</Link>}/>
-    <WeeklyGoalCard studio="yarn"/>
+    <OverviewGreeting name={name} newProject={<Link href="/projects/new" className="button button-primary" data-testid="link-new-project"><Plus size={17}/> New project</Link>}>
+      {data && <>
+        <Link href="/projects" data-testid="link-stat-all">{data.totalProjects} {data.totalProjects === 1 ? 'project' : 'projects'}</Link>
+        <Link href="/projects?status=in_progress" data-testid="link-stat-in-progress">{data.activeProjects} in progress</Link>
+        <Link href="/projects?status=completed" data-testid="link-stat-finished">{data.completedProjects} finished</Link>
+      </>}
+    </OverviewGreeting>
+    <div className="overview-top">
+      <WeeklyGoalCard studio="yarn"/>
+      {pickUp && <PinnedSwatch tilt={-1.5} pin={0} tone={0} className="pick-up" testId="card-pick-up">
+        <small>Pick up where you left off</small>
+        <Link href={`/projects/${pickUp.id}`} className="pick-up-title" data-testid="link-pick-up">{pickUp.title}{pickUp.counter > 0 ? <> · row {pickUp.counter}</> : <> · {pickUp.completionPercent}%</>}</Link>
+      </PinnedSwatch>}
+    </div>
     {query.isLoading ? <div className="dashboard-loading"><div className="stat-skeleton"/><div className="stat-skeleton"/><div className="stat-skeleton"/></div> : query.isError || !data ? <QueryProblem retry={() => query.refetch()}/> : <>
-      <section className="stat-row" aria-label="Project totals">
-        <Link href="/projects" className="stat-card stat-card-all" data-testid="link-stat-all"><span className="stat-label">All projects</span><strong>{data.totalProjects}</strong><StatDoodle kind="yarn"/></Link>
-        <Link href="/projects?status=in_progress" className="stat-card stat-card-active" data-testid="link-stat-in-progress"><span className="stat-label">In progress</span><strong>{data.activeProjects}</strong><StatDoodle kind="hook"/></Link>
-        <Link href="/projects?status=completed" className="stat-card stat-card-finished" data-testid="link-stat-finished"><span className="stat-label">Finished</span><strong>{data.completedProjects}</strong><StatDoodle kind="square"/></Link>
+      <StitchDivider/>
+      <section className="overview-notes" aria-labelledby="overview-notes-title">
+        <h2 className="serif" id="overview-notes-title">Notes</h2>
+        {data.recentProgress.length ? <div className="note-swatches">{data.recentProgress.slice(0, 4).map((item, index) => <PinnedSwatch key={`${item.projectId}-${item.createdAt}`} tilt={[-1.5, 1, -0.5, 1.5][index]} pin={index} tone={index}>
+          <Link href={`/projects/${item.projectId}`} className="note-swatch" data-testid={`link-progress-note-${index}`}><b>{item.projectTitle}</b><span>{item.notes}</span><small>{new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' }).format(new Date(item.createdAt))} · now {item.completionPercent}%</small></Link>
+        </PinnedSwatch>)}</div> : <p className="overview-empty">No notes yet. Notes you add on a project show up here.</p>}
       </section>
+      <StitchDivider/>
+      <section className="overview-board" aria-labelledby="overview-board-title">
+        <div className="section-heading"><h2 className="serif" id="overview-board-title">On the hook</h2><Link href="/projects" className="quiet-link" data-testid="link-view-all-projects">All projects <ArrowRight size={15}/></Link></div>
+        {onTheHook.length ? <div className="floating-board floating-board-row">{onTheHook.slice(0, 5).map((project) => <ProjectCard key={project.id} project={project}/>)}</div> : <EmptyProjects compact/>}
+      </section>
+      <StitchDivider/>
       <YarnStats brands={data.mostUsedYarnBrands} brandProjects={data.mostUsedYarnBrandProjects} averageDays={data.averageDaysToFinish}/>
       <DashboardCharts charts={data.charts}/>
-      <section className="dashboard-grid">
-        <div className="dashboard-work">
-          <div className="section-heading"><div><h2 className="serif">Recent projects</h2></div><Link href="/projects" className="quiet-link" data-testid="link-view-all-projects">All projects <ArrowRight size={15}/></Link></div>
-          {data.recentProjects.length ? <div className="project-card-grid">{data.recentProjects.slice(0, 3).map((project) => <ProjectCard key={project.id} project={project}/>)}</div> : <EmptyProjects compact/>}
-        </div>
-        <aside className="recent-panel loom-card">
-          <div className="section-heading"><div><h2 className="serif">Recent notes</h2></div></div>
-          {data.recentProgress.length ? <div className="notes-list">{data.recentProgress.slice(0, 5).map((item, index) => <Link key={`${item.projectId}-${item.createdAt}`} href={`/projects/${item.projectId}`} className="note-row" data-testid={`link-progress-note-${index}`}><span className="note-dot"/><span className="note-row-copy"><b>{item.projectTitle}</b><span>{item.notes}</span><small>{new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' }).format(new Date(item.createdAt))} · now {item.completionPercent}%</small></span><ArrowUpRight size={14}/></Link>)}</div> : <div className="notes-empty"><p>No progress notes yet.</p></div>}
-        </aside>
-      </section>
     </>}
   </PortalLayout>;
+}
+
+// The Overview's greeting: "Evening, Ngwe." with the room's counts as links.
+function OverviewGreeting({ name, newProject, children }: { name: string; newProject: ReactNode; children?: ReactNode }) {
+  return <div className="overview-greeting">
+    <div>
+      <h1 className="page-title serif">{greetingFor()}, {name}.</h1>
+      <p className="overview-counts">{children}</p>
+    </div>
+    {newProject}
+  </div>;
 }
 
 function EmptyProjects({ compact = false }: { compact?: boolean }) {
@@ -565,6 +580,17 @@ function EmptyProjects({ compact = false }: { compact?: boolean }) {
 }
 
 const projectStatuses: ProjectStatus[] = ['planning', 'in_progress', 'paused', 'completed'];
+
+// Word filters above a board (#119): All, each status and Starred, the one
+// you're on underlined with a running stitch.
+function StatusWords({ status, onStatus, starred, onStarred, statuses = projectStatuses }: { status: string; onStatus: (value: string) => void; starred?: boolean; onStarred?: (value: boolean) => void; statuses?: ProjectStatus[] }) {
+  const word = (label: string, selected: boolean, onClick: () => void, testId: string) => <button key={testId} type="button" className={`status-word${selected ? ' selected' : ''}`} aria-pressed={selected} onClick={onClick} data-testid={testId}>{label}</button>;
+  return <div className="status-words" role="group" aria-label="Show projects">
+    {word('All', !status && !starred, () => { onStatus(''); onStarred?.(false); }, 'button-status-all')}
+    {statuses.map((value) => word(statusLabels[value], status === value, () => onStatus(status === value ? '' : value), `button-status-${value}`))}
+    {onStarred && word('Starred', Boolean(starred), () => onStarred(!starred), 'button-starred-filter')}
+  </div>;
+}
 
 function ProjectsPage() {
   // The Overview's yarn brand card links here with ?search= already filled in.
@@ -588,16 +614,15 @@ function ProjectsPage() {
   const query = useGetProjects(params, { query: { queryKey: getGetProjectsQueryKey(params) } });
   return <PortalLayout active="projects">
     <PageHeading title="My projects" action={<Link href="/projects/new" className="button button-primary" data-testid="link-add-project"><Plus size={17}/> Add a project</Link>}/>
+    <StatusWords status={status} onStatus={setStatus} starred={starredOnly} onStarred={setStarredOnly}/>
     <div className="catalog-tools">
       <label className="search-box"><Search size={17}/><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search by name, pattern or yarn…" aria-label="Search projects" data-testid="input-search-projects"/>{search && <button type="button" onClick={() => setSearch('')} aria-label="Clear search" data-testid="button-clear-search"><X size={15}/></button>}</label>
-      <label className="select-wrap"><Filter size={15}/><select aria-label="Filter by status" value={status} onChange={(event) => setStatus(event.target.value)} data-testid="select-status-filter"><option value="">Every status</option><option value="planning">Planning</option><option value="in_progress">In progress</option><option value="paused">On pause</option><option value="completed">Finished</option></select><ChevronDown size={14}/></label>
       <label className="select-wrap"><select aria-label="Filter by craft" value={craft} onChange={(event) => setCraft(event.target.value)} data-testid="select-craft-filter"><option value="">Every craft</option><option value="knitting">Knitting</option><option value="crochet">Crochet</option></select><ChevronDown size={14}/></label>
       <label className="select-wrap"><ArrowUpDown size={15}/><select aria-label="Sort projects" value={sort} onChange={(event) => setSort(event.target.value as typeof sort)} data-testid="select-project-sort">{projectSorts.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select><ChevronDown size={14}/></label>
-      <button type="button" className={`starred-filter${starredOnly ? ' is-active' : ''}`} aria-pressed={starredOnly} onClick={() => setStarredOnly(!starredOnly)} data-testid="button-starred-filter"><Star size={14} fill={starredOnly ? 'currentColor' : 'none'}/> Starred</button>
       {(search || status || craft || starredOnly) && <button className="clear-filters" onClick={clearFilters} data-testid="button-clear-filters">Clear filters</button>}
     </div>
     <div className="catalog-result-caption">{query.data ? <><b>{query.data.length}</b> {query.data.length === 1 ? 'project' : 'projects'}</> : null}</div>
-    {query.isLoading ? <div className="project-card-grid">{[0, 1, 2].map((item) => <div className="card-skeleton" key={item}/>)}</div> : query.isError ? <QueryProblem retry={() => query.refetch()}/> : query.data?.length ? <div className="project-card-grid catalog-grid">{sortProjects(query.data, sort).map((project) => <ProjectCard key={project.id} project={project}/>)}</div> : starredOnly && !search && !status && !craft ? <div className="no-results"><Star size={23}/><h3>No starred projects yet</h3><p>Tap the star on any project to keep your favorites here.</p><button className="button button-outline" onClick={clearFilters} data-testid="button-reset-filters">Show all projects</button></div> : search || status || craft || starredOnly ? <div className="no-results"><Search size={23}/><h3>No projects match</h3><p>Try a different search or clear a filter.</p><button className="button button-outline" onClick={clearFilters} data-testid="button-reset-filters">Reset filters</button></div> : <EmptyProjects/>}
+    {query.isLoading ? <div className="project-card-grid">{[0, 1, 2].map((item) => <div className="card-skeleton" key={item}/>)}</div> : query.isError ? <QueryProblem retry={() => query.refetch()}/> : query.data?.length ? <div className="floating-board">{sortProjects(query.data, sort).map((project) => <ProjectCard key={project.id} project={project}/>)}</div> : starredOnly && !search && !status && !craft ? <div className="no-results"><Star size={23}/><h3>No starred projects yet</h3><p>Tap the star on any project to keep your favorites here.</p><button className="button button-outline" onClick={clearFilters} data-testid="button-reset-filters">Show all projects</button></div> : search || status || craft || starredOnly ? <div className="no-results"><Search size={23}/><h3>No projects match</h3><p>Try a different search or clear a filter.</p><button className="button button-outline" onClick={clearFilters} data-testid="button-reset-filters">Reset filters</button></div> : <EmptyProjects/>}
   </PortalLayout>;
 }
 
@@ -1107,7 +1132,7 @@ function ProjectDetailView({ projectId }: { projectId: string }) {
   const craftLabel = project.craft === 'knitting' ? 'Knitting' : 'Crochet';
   return <PortalLayout active="projects">
     <Link href="/projects" className="back-link" data-testid="link-back-projects"><ArrowLeft size={16}/> Back to projects</Link>
-     <div className="detail-heading"><div><h1 className="serif">{project.title}</h1><div className="detail-status"><StatusPill status={project.status}/><span>{craftLabel}</span>{project.startedAt && <span>Started {formatProjectDate(project.startedAt, project.startedAtPrecision)}</span>}</div></div><div className="detail-actions"><StarButton project={project} className="detail-star"/><button className="button button-outline" onClick={() => setEditing(!editing)} data-testid="button-edit-project">{editing ? <X size={16}/> : <Feather size={16}/>} {editing ? 'Close edit' : 'Edit details'}</button><button className="icon-button danger-icon" aria-label="Delete project" title="Delete project" onClick={() => setConfirmDelete(true)} data-testid="button-delete-project"><Trash2 size={17}/></button></div></div>
+     <div className="detail-heading"><div className="detail-heading-copy"><div><h1 className="serif">{project.title}</h1><div className="detail-status"><StatusPill status={project.status}/><span>{craftLabel}</span>{project.startedAt && <span>Started {formatProjectDate(project.startedAt, project.startedAtPrecision)}</span>}</div></div><div className="detail-actions"><StarButton project={project} className="detail-star"/><button className="text-action" onClick={() => setEditing(!editing)} data-testid="button-edit-project">{editing ? 'Close edit' : 'Edit details'}</button><button className="text-action text-action-danger" aria-label="Delete project" onClick={() => setConfirmDelete(true)} data-testid="button-delete-project">Delete</button></div></div><PinnedSwatch tilt={2} pin={2} className="detail-pinned"><NameTile name={project.title} craft={project.craft === 'knitting' ? 'knitting' : 'crochet'}/></PinnedSwatch></div>
     {finishUp && <FinishUpPrompt hours={project.hoursSpent} cents={project.totalSpendCents} currency={currency} onSaveHours={(hours) => saveTotals({ hoursSpent: hours })} onSaveSpend={(cents) => saveTotals({ totalSpendCents: cents })} onDone={closeFinishUp}/>}
     <SkeinSuggestions projectId={project.id}/>
     {confirmDelete && <div className="confirm-banner"><div><b>Delete this project?</b><span>This will permanently remove the project and its progress notes.</span></div><button className="button button-quiet" onClick={() => setConfirmDelete(false)} data-testid="button-cancel-delete">Cancel</button><button className="button button-danger" onClick={deleteProject} disabled={remove.isPending} data-testid="button-confirm-delete">{remove.isPending ? 'Removing…' : 'Delete project'}</button></div>}
@@ -1136,7 +1161,7 @@ function ProjectDetailView({ projectId }: { projectId: string }) {
     <section className="detail-main-grid">
       <div className="detail-primary">
         <article className="progress-hero loom-card"><div className="progress-hero-copy"><h2 className="serif">Progress</h2>{progressDetail(project, latestProgressValue) && <p className="progress-detail" data-testid="text-progress-detail">{progressDetail(project, latestProgressValue)}</p>}<p>{progressSummary(project.progress)}</p></div><div className="progress-ring" style={{ '--progress': `${project.completionPercent * 3.6}deg` } as CSSProperties}><div><strong>{project.completionPercent}<small>%</small></strong><span>complete</span></div></div></article>
-        <ProjectCounter key={project.id} projectId={project.id} initial={project.counter}/>
+        <ProjectCounter key={project.id} projectId={project.id} initial={project.counter} bar={{ label: project.title, actions: <button type="button" className="button button-primary button-small" onClick={() => { startNote(); requestAnimationFrame(() => document.getElementById('progress-notes')?.focus()); }} data-testid="button-bar-add-note">Add a note</button> }}/>
         <div className="progress-log-heading"><div><h2 className="serif">Progress journal</h2></div><button className="button button-primary button-small" onClick={() => { if (showProgress) noteEditing.close(); else startNote(); }} data-testid="button-add-progress">{showProgress ? <X size={15}/> : <Plus size={15}/>} {showProgress ? 'Close note' : 'Add a note'}</button></div>
         {showProgress && <Form {...progressForm}><form className="progress-form loom-card" onSubmit={submitProgress} noValidate><div className="field-block"><label htmlFor="progress-notes">What did you work on?</label><textarea id="progress-notes" rows={3} placeholder="A few rows, a tricky bit figured out, a lovely color change…" {...progressForm.register('notes', { required: 'Add a note about this session.', maxLength: { value: 2000, message: 'Keep your note under 2,000 characters.' } })} data-testid="input-progress-notes"/>{progressForm.formState.errors.notes && <span className="field-error">{progressForm.formState.errors.notes.message}</span>}</div><div className="field-block progress-photo-field"><label htmlFor="progress-photo">Add a progress photo (optional)</label><input id="progress-photo" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { setProgressPhoto(event.target.files?.[0] ?? null); setProgressPhotoError(''); }} data-testid="input-progress-photo"/>{progressPhotoPreview && <div className="progress-photo-preview"><img src={progressPhotoPreview} alt="Selected progress photo preview"/><button type="button" className="button button-quiet" onClick={() => setProgressPhoto(null)}>Remove photo</button></div>}</div><div className="progress-form-row"><ProgressAmountField project={project} value={progressAmount} onChange={setProgressAmount}/>{progressAmountError && <span className="field-error" role="alert">{progressAmountError}</span>}</div>{(addProgress.isError || progressPhotoError) && <p className="mutation-error">{progressPhotoError || "Your note didn't stick this time. Please try again."}</p>}<div className="form-actions"><button type="button" className="button button-quiet" onClick={() => { noteEditing.close(); setProgressPhoto(null); }} data-testid="button-cancel-progress">Cancel</button><button type="submit" className="button button-primary" disabled={addProgress.isPending} data-testid="button-save-progress">{addProgress.isPending ? 'Saving note…' : 'Save progress'} <ArrowRight size={15}/></button></div></form></Form>}
         {photoRemovalError && <p className="mutation-error" role="alert">{photoRemovalError}</p>}
@@ -1743,15 +1768,15 @@ function FabricForm({ fabric }: { fabric?: StashFabric }) {
 
 function SewingProjectCard({ project }: { project: SewingProject }) {
   const first = project.fabrics[0]?.fabric;
-  return <Link href={`/sewing/projects/${project.id}`} className="sewing-card loom-card lift" data-testid={`card-sewing-project-${project.id}`}>
-    <span className="sewing-card-swatch">{first ? <FabricPrintImage fabric={first} alt={`${fabricName(first)} print`}/> : <Scissors size={26} aria-hidden="true"/>}</span>
-    <span className="sewing-card-body">
-      <span className="project-card-meta"><StatusPill status={project.status}/></span>
-      <h3>{project.title}</h3>
-      {(project.patternName || project.sizeMade) && <span className="sewing-card-meta">{[project.patternName, project.sizeMade && `Size ${project.sizeMade}`].filter(Boolean).join(' · ')}</span>}
-      <StageTrack project={project} compact/>
-    </span>
-  </Link>;
+  const style = { '--tilt': `${tiltFor(project.title)}deg` } as CSSProperties;
+  return <div className="board-tile-wrap" style={style}><Link href={`/sewing/projects/${project.id}`} className="board-tile" data-testid={`card-sewing-project-${project.id}`}>
+    {first
+      ? <span className={`board-tile-art board-tile-photo board-shape-${nameHash(project.title) % 3}`}><FabricPrintImage fabric={first} alt={`${fabricName(first)} print`}/></span>
+      : <NameTile name={project.title} craft="sewing" className={`board-tile-art board-shape-${nameHash(project.title) % 3}`}/>}
+    <h3 className="visually-hidden">{project.title}</h3>
+    <span className="board-tile-meta"><span className={`board-status board-status-${project.status}`}>{statusLabels[project.status]}</span>{project.status !== 'completed' && project.status !== 'planning' && <span>{labelFor(sewingStages, project.stage)}</span>}</span>
+    {(project.patternName || project.sizeMade) && <span className="board-tile-meta board-tile-detail">{[project.patternName, project.sizeMade && `Size ${project.sizeMade}`].filter(Boolean).join(' · ')}</span>}
+  </Link></div>;
 }
 
 function EmptySewingProjects({ compact = false }: { compact?: boolean }) {
@@ -1763,16 +1788,31 @@ function SewingOverviewPage() {
   const data = query.data;
   const { user } = useUser();
   const name = user?.firstName || 'maker';
+  const onTheTable = data ? [...data.recentProjects].sort((a, b) => Number(b.status === 'in_progress') - Number(a.status === 'in_progress')) : [];
+  const pickUp = data?.recentProjects.find((project) => project.status === 'in_progress');
   return <PortalLayout active="sewing">
-    <PageHeading title={<>Hi, {name}</>} action={<Link href="/sewing/projects/new" className="button button-primary" data-testid="link-new-sewing-project"><Plus size={17}/> New project</Link>}/>
-    <WeeklyGoalCard studio="sewing"/>
+    <OverviewGreeting name={name} newProject={<Link href="/sewing/projects/new" className="button button-primary" data-testid="link-new-sewing-project"><Plus size={17}/> New project</Link>}>
+      {data && <>
+        <Link href="/sewing/projects?status=in_progress" data-testid="link-sewing-stat-in-progress">{data.inProgress} in progress</Link>
+        <Link href="/sewing/projects?status=completed" data-testid="link-sewing-stat-finished">{data.finished} finished</Link>
+        <Link href="/sewing/fabric" data-testid="link-sewing-stat-fabric">{data.fabricPieces} {data.fabricPieces === 1 ? 'fabric' : 'fabrics'}{data.fabricPieces > 0 && <> (<span data-testid="text-fabric-length">{fabricAmount(data.fabricLength, data.fabricUnit)} in your stash</span>)</>}</Link>
+      </>}
+    </OverviewGreeting>
+    <div className="overview-top">
+      <WeeklyGoalCard studio="sewing"/>
+      {pickUp && <PinnedSwatch tilt={-1.5} pin={3} tone={3} className="pick-up" testId="card-pick-up">
+        <small>Pick up where you left off</small>
+        <Link href={`/sewing/projects/${pickUp.id}`} className="pick-up-title" data-testid="link-pick-up">{pickUp.title} · {labelFor(sewingStages, pickUp.stage)}</Link>
+      </PinnedSwatch>}
+    </div>
     {query.isLoading ? <div className="dashboard-loading"><div className="stat-skeleton"/><div className="stat-skeleton"/><div className="stat-skeleton"/></div> : query.isError || !data ? <QueryProblem retry={() => query.refetch()}/> : <>
-      <section className="stat-row" aria-label="Sewing totals">
-        <Link href="/sewing/projects?status=in_progress" className="stat-card stat-card-active" data-testid="link-sewing-stat-in-progress"><span className="stat-label">In progress</span><strong>{data.inProgress}</strong><StatDoodle kind="spool"/></Link>
-        <Link href="/sewing/projects?status=completed" className="stat-card stat-card-finished" data-testid="link-sewing-stat-finished"><span className="stat-label">Finished</span><strong>{data.finished}</strong><StatDoodle kind="scissors"/></Link>
-        <Link href="/sewing/fabric" className="stat-card stat-card-all" data-testid="link-sewing-stat-fabric"><span className="stat-label">Fabric pieces</span><strong>{data.fabricPieces}</strong>{data.fabricPieces > 0 && <span className="stat-detail" data-testid="text-fabric-length">{fabricAmount(data.fabricLength, data.fabricUnit)} in your stash</span>}<StatDoodle kind="swatch"/></Link>
+      <StitchDivider/>
+      <section className="overview-board" aria-labelledby="overview-table-title">
+        <div className="section-heading"><h2 className="serif" id="overview-table-title">On the table</h2><Link href="/sewing/projects" className="quiet-link" data-testid="link-view-all-sewing-projects">All projects <ArrowRight size={15}/></Link></div>
+        {onTheTable.length ? <div className="floating-board floating-board-row">{onTheTable.slice(0, 5).map((project) => <SewingProjectCard key={project.id} project={project}/>)}</div> : <EmptySewingProjects compact/>}
       </section>
-      <section className="stage-board loom-card" aria-labelledby="stage-board-title">
+      <StitchDivider/>
+      <section className="stage-board" aria-labelledby="stage-board-title">
         <h2 className="serif" id="stage-board-title">Projects by stage</h2>
         <ol className="stage-board-steps">
           {data.stages.map((entry) => <li key={entry.stage} className={entry.count ? 'has-projects' : ''} data-testid={`stage-count-${entry.stage}`}><strong>{entry.count}</strong><span>{labelFor(sewingStages, entry.stage)}</span></li>)}
@@ -1788,10 +1828,6 @@ function SewingOverviewPage() {
           </Link>
         </li>)}</ul>
       </section>}
-      <section className="dashboard-work">
-        <div className="section-heading"><div><h2 className="serif">Recent projects</h2></div><Link href="/sewing/projects" className="quiet-link" data-testid="link-view-all-sewing-projects">All projects <ArrowRight size={15}/></Link></div>
-        {data.recentProjects.length ? <div className="sewing-card-grid">{data.recentProjects.slice(0, 3).map((project) => <SewingProjectCard key={project.id} project={project}/>)}</div> : <EmptySewingProjects compact/>}
-      </section>
     </>}
   </PortalLayout>;
 }
@@ -1810,15 +1846,15 @@ function SewingProjectsPage() {
   const query = useGetSewingProjects(params, { query: { queryKey: getGetSewingProjectsQueryKey(params) } });
   return <PortalLayout active="sewingProjects">
     <PageHeading title="Projects" action={<Link href="/sewing/projects/new" className="button button-primary" data-testid="link-add-sewing-project"><Plus size={17}/> New project</Link>}/>
+    <StatusWords status={status} onStatus={setStatus}/>
     <div className="catalog-tools">
       <label className="search-box"><Search size={17}/><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search by name, pattern or size…" aria-label="Search sewing projects" data-testid="input-search-sewing-projects"/>{search && <button type="button" onClick={() => setSearch('')} aria-label="Clear search"><X size={15}/></button>}</label>
-      <label className="select-wrap"><Filter size={15}/><select aria-label="Filter by status" value={status} onChange={(event) => setStatus(event.target.value)} data-testid="select-sewing-status-filter"><option value="">Every status</option><option value="planning">Planning</option><option value="in_progress">In progress</option><option value="paused">On pause</option><option value="completed">Finished</option></select><ChevronDown size={14}/></label>
       {(search || status) && <button className="clear-filters" onClick={clearFilters} data-testid="button-clear-sewing-filters">Clear filters</button>}
     </div>
     <div className="catalog-result-caption">{query.data ? <><b>{query.data.length}</b> {query.data.length === 1 ? 'project' : 'projects'}</> : null}</div>
     {query.isLoading ? <div className="sewing-card-grid">{[0, 1, 2].map((item) => <div className="card-skeleton" key={item}/>)}</div>
       : query.isError ? <QueryProblem retry={() => query.refetch()}/>
-      : query.data?.length ? <div className="sewing-card-grid">{query.data.map((project) => <SewingProjectCard key={project.id} project={project}/>)}</div>
+      : query.data?.length ? <div className="floating-board">{query.data.map((project) => <SewingProjectCard key={project.id} project={project}/>)}</div>
       : search || status ? <div className="no-results"><Search size={23}/><h3>No projects match</h3><p>Try a different search or clear a filter.</p><button className="button button-outline" onClick={clearFilters}>Reset filters</button></div>
       : <EmptySewingProjects/>}
   </PortalLayout>;
@@ -2024,10 +2060,16 @@ function SewingProjectDetailPage({ projectId }: { projectId: string }) {
   const current = stageIndex(project.stage);
   return <PortalLayout active="sewingProjects">
     <Link href="/sewing/projects" className="back-link" data-testid="link-back-sewing-projects"><ArrowLeft size={16}/> Back to projects</Link>
-    <PageHeading title={project.title} action={<div className="heading-actions">
-      <Link href={`/sewing/projects/${project.id}/edit`} className="button button-outline" data-testid="link-edit-sewing-project">Edit</Link>
-      <button className="icon-button danger-icon" aria-label="Delete project" title="Delete project" onClick={() => setConfirmDelete(true)} data-testid="button-delete-sewing-project"><Trash2 size={17}/></button>
-    </div>}/>
+    <div className="detail-heading">
+      <div className="detail-heading-copy">
+        <h1 className="page-title serif">{project.title}</h1>
+        <div className="detail-actions">
+          <Link href={`/sewing/projects/${project.id}/edit`} className="text-action" data-testid="link-edit-sewing-project">Edit</Link>
+          <button className="text-action text-action-danger" aria-label="Delete project" onClick={() => setConfirmDelete(true)} data-testid="button-delete-sewing-project">Delete</button>
+        </div>
+      </div>
+      <PinnedSwatch tilt={2} pin={3} className="detail-pinned">{project.fabrics[0]?.fabric ? <span className="detail-pinned-photo"><FabricPrintImage fabric={project.fabrics[0].fabric} alt={`${fabricName(project.fabrics[0].fabric)} print`}/></span> : <NameTile name={project.title} craft="sewing"/>}</PinnedSwatch>
+    </div>
     {confirmDelete && <div className="confirm-banner"><div><b>Delete this project?</b><span>Your fabric stays in your stash.</span></div><button className="button button-quiet" onClick={() => setConfirmDelete(false)}>Cancel</button><button className="button button-danger" onClick={deleteProject} disabled={remove.isPending} data-testid="button-confirm-delete-sewing-project">{remove.isPending ? 'Deleting…' : 'Delete project'}</button></div>}
     {finishUp && <FinishUpPrompt hours={project.hoursSpent} cents={project.totalSpendCents} currency={currency} onSaveHours={(hours) => saveTotals({ hoursSpent: hours })} onSaveSpend={(cents) => saveTotals({ totalSpendCents: cents })} onDone={closeFinishUp}/>}
     {justFinished && project.status === 'completed' && <FabricLeftPrompt project={project} onDone={() => setLocation(`/sewing/projects/${project.id}`, { replace: true })}/>}
@@ -2063,7 +2105,12 @@ function SewingProjectDetailPage({ projectId }: { projectId: string }) {
       {project.fitChanges && <div className="sewing-text"><h2>Fit changes</h2><p>{project.fitChanges}</p></div>}
       {project.notes && <div className="sewing-text"><h2>Notes</h2><p>{project.notes}</p></div>}
     </section>
-    <SewingJournal project={project} onChanged={() => { void client.invalidateQueries({ queryKey: getGetSewingProjectQueryKey(project.id) }); }}/>
+    <SewingJournal project={project} onChanged={() => { void client.invalidateQueries({ queryKey: getGetSewingProjectQueryKey(project.id) }); }} renderBar={(addNote) => <FloatingBar label={<>{project.title} · {project.status === 'completed' ? 'Finished' : labelFor(sewingStages, project.stage)}</>}>
+      {project.status !== 'completed' && (current < sewingStages.length - 1
+        ? <button type="button" className="floating-bar-link" onClick={() => pickStage(sewingStages[current + 1]!.value)} disabled={update.isPending} data-testid="button-bar-next-stage">{labelFor(sewingStages, project.stage)} done</button>
+        : <button type="button" className="floating-bar-link" onClick={finish} disabled={update.isPending} data-testid="button-bar-finish">Mark finished</button>)}
+      <button type="button" className="button button-primary button-small" onClick={addNote} data-testid="button-bar-add-sewing-note">Add a note</button>
+    </FloatingBar>}/>
     <section className="sewing-detail-fabric" data-testid="sewing-detail-supplies">
       <div className="section-heading"><div><h2 className="serif">Supplies</h2></div></div>
       <SuppliesList fabrics={project.fabrics} tools={project.tools} projectId={project.id}/>
