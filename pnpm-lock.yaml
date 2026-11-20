@@ -6,60 +6,9 @@ settings:
 
 catalogs:
   default:
-    '@replit/vite-plugin-cartographer':
-      specifier: ^0.5.21
-      version: 0.5.21
-    '@replit/vite-plugin-dev-banner':
-      specifier: ^0.1.1
-      version: 0.1.2
-    '@replit/vite-plugin-runtime-error-modal':
-      specifier: ^0.0.6
-      version: 0.0.6
-    '@tailwindcss/vite':
-      specifier: 4.3.3
-      version: 4.3.3
     '@tanstack/react-query':
       specifier: ^5.90.21
       version: 5.102.8
-    '@types/node':
-      specifier: ^25.3.3
-      version: 25.9.6
-    '@vitejs/plugin-react':
-      specifier: 5.2.0
-      version: 5.2.0
-    class-variance-authority:
-      specifier: ^0.7.1
-      version: 0.7.1
-    clsx:
-      specifier: ^2.1.1
-      version: 2.1.1
-    drizzle-orm:
-      specifier: ^0.45.2
-      version: 0.45.2
-    framer-motion:
-      specifier: ^12.23.24
-      version: 12.43.0
-    lucide-react:
-      specifier: ^0.545.0
-      version: 0.545.0
-    react:
-      specifier: 19.1.0
-      version: 19.1.0
-    react-dom:
-      specifier: 19.1.0
-      version: 19.1.0
-    tailwind-merge:
-      specifier: ^3.3.1
-      version: 3.6.0
-    tailwindcss:
-      specifier: ^4.1.14
-      version: 4.3.3
-    tsx:
-      specifier: ^4.21.0
-      version: 4.23.13
-    vite:
-      specifier: 7.3.6
-      version: 7.3.6
     zod:
       specifier: ^3.25.76
       version: 3.25.76
@@ -248,13 +197,31 @@ importers:
     dependencies:
       '@clerk/expo':
         specifier: ^4.10.1
-        version: 4.10.1(@types/react@19.3.0)(expo-auth-session@57.0.15(expo@57.0.28)(react-native@0.86.3(@babel/core@7.29.7)(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.2.3))(react@19.2.3))(expo-constants@57.0.21)(expo-crypto@57.0.4(expo@57.0.28))(expo-secure-store@57.0.4(expo@57.0.28))(expo-web-browser@57.0.3(expo@57.0.28)(react-native@0.86.3(@babel/core@7.29.7)(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.2.3)))(expo@57.0.28)(react-dom@19.2.3(react@19.2.3))(react-native@0.86.3(@babel/core@7.29.7)(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.2.3))(react@19.2.3)(typescript@6.0.3)(use-sync-external-store@1.7.0(react@19.2.3))(zod@3.25.76)
+        version: 4.10.1(@types/react@19.3.0)(expo-auth-session@57.0.15(expo@57.0.28)(react-native@0.86.3(@babel/core@7.29.7)(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.2.3))(react@19.2.3))(expo-constants@57.0.21)(expo-crypto@57.0.4(expo@57.0.28))(expo-secure-store@57.0.4(expo@57.0.28))(expo-web-browser@57.0.3(expo@57.0.28)(react-native@0.86.3(@babel/core@7.29.7)(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.2.3)))(expo@57.0.28)(react-dom@19.2.3(react@19.2.3))(react-native@0.86.3(@babel/core@7.29.7)(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.2.3))(react@19.2.3)(typescript@6.0.3)(zod@3.25.76)
+      '@expo-google-fonts/eb-garamond':
+        specifier: ^0.4.3
+        version: 0.4.3
       '@expo-google-fonts/figtree':
         specifier: ^0.4.1
         version: 0.4.1
-      '@expo-google-fonts/lora':
+      '@expo-google-fonts/gluten':
         specifier: ^0.4.2
         version: 0.4.2
+      '@expo-google-fonts/pacifico':
+        specifier: ^0.4.1
+        version: 0.4.1
+      '@expo-google-fonts/playfair-display':
+        specifier: ^0.4.2
+        version: 0.4.2
+      '@expo-google-fonts/rampart-one':
+        specifier: ^0.4.2
+        version: 0.4.2
+      '@expo-google-fonts/silkscreen':
+        specifier: ^0.4.2
+        version: 0.4.2
+      '@expo-google-fonts/special-elite':
+        specifier: ^0.4.1
+        version: 0.4.1
       '@workspace/api-zod':
         specifier: workspace:*
         version: link:../../lib/api-zod
@@ -1373,17 +1340,35 @@ packages:
     cpu: [x64]
     os: [linux]
 
+  '@expo-google-fonts/eb-garamond@0.4.3':
+    resolution: {integrity: sha512-8HsDPKN6vDlzxZLgo3UFcyr4uvtY33TBpM65owySnF8cy8hq0ss8AWmBvT/lMRJ/wfcoaPP8gFQsizPRvr0nqg==}
+
   '@expo-google-fonts/figtree@0.4.1':
     resolution: {integrity: sha512-6IQQddGeR3yZBSwiIjy2kd1gA+5s2esF8JAFw6M1qqU4RUlj4Zxkw9J+gixAtZFgd+QIS875EPHqeYlpaRcCRw==}
+
+  '@expo-google-fonts/gluten@0.4.2':
+    resolution: {integrity: sha512-wFr7hbzdyjLl9CC/LpjoTSM8KlzjHPqqxxxzRdz9lnmuXpVYqsJmA//Ptes0kHdqhBbKMBrRG8olHBfE6IhcdQ==}
 
   '@expo-google-fonts/inter@0.4.2':
     resolution: {integrity: sha512-syfiImMaDmq7cFi0of+waE2M4uSCyd16zgyWxdPOY7fN2VBmSLKEzkfbZgeOjJq61kSqPBNNtXjggiQiSD6gMQ==}
 
-  '@expo-google-fonts/lora@0.4.2':
-    resolution: {integrity: sha512-Bnofh2mIOUKp4KUS48VjaBgug4lQOcw/ftU0NFv5OPtiutL422//G1v63xDZEMUEL6ft4fi5q94/uKcpDjbPag==}
-
   '@expo-google-fonts/material-symbols@0.4.50':
     resolution: {integrity: sha512-XNSgSfd+1p6wqRAzzhrckGngHJQ1/z+oCMdI5FN+x/VnDeMMFGkXsuRNPYcZTYYff1GwVwx4u6Gqnb30aALysw==}
+
+  '@expo-google-fonts/pacifico@0.4.1':
+    resolution: {integrity: sha512-w21ZIeNdwVWPH173HNszX8ML1deogOsHcxhJ0ghpbyBzr7R6PGSJ6yWL5jBixvWV/E34xDk28aNn/cX+gqzf3Q==}
+
+  '@expo-google-fonts/playfair-display@0.4.2':
+    resolution: {integrity: sha512-mWhBV59RUjSS3aYpytUb7UyHHTnXcHh7epAn7gq+M4XAEh5PuMKUrP8eiUfkJLb6UwHZCi7EhQpUzxHu5OL96w==}
+
+  '@expo-google-fonts/rampart-one@0.4.2':
+    resolution: {integrity: sha512-/m2O/TJTfUcmhX7w37275ZMt6GVY3wedsXts9M2ovi20CFt7bh7ZaS/5ckxv9JHzNCNpTr9yAu32dwkpkJ/3iA==}
+
+  '@expo-google-fonts/silkscreen@0.4.2':
+    resolution: {integrity: sha512-3btwlD7Yreei/7IbXmUWW9h9fH7q/GJTNqF2g52fAYbyGqq/nNqnIegD6Wi5ewTnWrD8ZBF1sRim8UHaZFZhNQ==}
+
+  '@expo-google-fonts/special-elite@0.4.1':
+    resolution: {integrity: sha512-LgMzSX6DwoJKtUK1ATA/jVNYu2KYq8bhjNI7XyaOUpjarp4C37w367jv2ORHfTUkcZq9h8enXetpHCuomEmNag==}
 
   '@expo/cli@57.0.29':
     resolution: {integrity: sha512-OBmtg+74j6dEEQjKTgRDjQBvLSkKyP2cDTuGIrJTdgG4gZ1HCEBZj18Kyk9UfdYRXgJdixSVAQMCZK6/Q6l2QQ==}
@@ -6375,7 +6360,7 @@ snapshots:
       '@babel/helper-string-parser': 7.29.7
       '@babel/helper-validator-identifier': 7.29.7
 
-  '@base-org/account@2.0.1(@types/react@19.3.0)(react@19.2.3)(typescript@6.0.3)(use-sync-external-store@1.7.0(react@19.2.3))(zod@3.25.76)':
+  '@base-org/account@2.0.1(@types/react@19.3.0)(react@19.2.3)(typescript@6.0.3)(zod@3.25.76)':
     dependencies:
       '@noble/hashes': 1.4.0
       clsx: 1.2.1
@@ -6384,7 +6369,7 @@ snapshots:
       ox: 0.6.9(typescript@6.0.3)(zod@3.25.76)
       preact: 10.24.2
       viem: 2.57.4(typescript@6.0.3)(zod@3.25.76)
-      zustand: 5.0.3(@types/react@19.3.0)(react@19.2.3)(use-sync-external-store@1.7.0(react@19.2.3))
+      zustand: 5.0.3(@types/react@19.3.0)(react@19.2.3)
     transitivePeerDependencies:
       - '@types/react'
       - bufferutil
@@ -6404,9 +6389,9 @@ snapshots:
       - react
       - react-dom
 
-  '@clerk/clerk-js@6.39.0(@types/react@19.3.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@6.0.3)(use-sync-external-store@1.7.0(react@19.2.3))(zod@3.25.76)':
+  '@clerk/clerk-js@6.39.0(@types/react@19.3.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@6.0.3)(zod@3.25.76)':
     dependencies:
-      '@base-org/account': 2.0.1(@types/react@19.3.0)(react@19.2.3)(typescript@6.0.3)(use-sync-external-store@1.7.0(react@19.2.3))(zod@3.25.76)
+      '@base-org/account': 2.0.1(@types/react@19.3.0)(react@19.2.3)(typescript@6.0.3)(zod@3.25.76)
       '@clerk/shared': 4.40.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@coinbase/wallet-sdk': 4.3.7(typescript@6.0.3)(zod@3.25.76)
       '@stripe/stripe-js': 5.6.0
@@ -6432,9 +6417,9 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@clerk/expo@4.10.1(@types/react@19.3.0)(expo-auth-session@57.0.15(expo@57.0.28)(react-native@0.86.3(@babel/core@7.29.7)(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.2.3))(react@19.2.3))(expo-constants@57.0.21)(expo-crypto@57.0.4(expo@57.0.28))(expo-secure-store@57.0.4(expo@57.0.28))(expo-web-browser@57.0.3(expo@57.0.28)(react-native@0.86.3(@babel/core@7.29.7)(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.2.3)))(expo@57.0.28)(react-dom@19.2.3(react@19.2.3))(react-native@0.86.3(@babel/core@7.29.7)(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.2.3))(react@19.2.3)(typescript@6.0.3)(use-sync-external-store@1.7.0(react@19.2.3))(zod@3.25.76)':
+  '@clerk/expo@4.10.1(@types/react@19.3.0)(expo-auth-session@57.0.15(expo@57.0.28)(react-native@0.86.3(@babel/core@7.29.7)(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.2.3))(react@19.2.3))(expo-constants@57.0.21)(expo-crypto@57.0.4(expo@57.0.28))(expo-secure-store@57.0.4(expo@57.0.28))(expo-web-browser@57.0.3(expo@57.0.28)(react-native@0.86.3(@babel/core@7.29.7)(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.2.3)))(expo@57.0.28)(react-dom@19.2.3(react@19.2.3))(react-native@0.86.3(@babel/core@7.29.7)(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.2.3))(react@19.2.3)(typescript@6.0.3)(zod@3.25.76)':
     dependencies:
-      '@clerk/clerk-js': 6.39.0(@types/react@19.3.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@6.0.3)(use-sync-external-store@1.7.0(react@19.2.3))(zod@3.25.76)
+      '@clerk/clerk-js': 6.39.0(@types/react@19.3.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@6.0.3)(zod@3.25.76)
       '@clerk/react': 6.17.8(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@clerk/shared': 4.40.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       base-64: 1.0.0
@@ -6536,13 +6521,25 @@ snapshots:
   '@esbuild/linux-x64@0.28.2':
     optional: true
 
+  '@expo-google-fonts/eb-garamond@0.4.3': {}
+
   '@expo-google-fonts/figtree@0.4.1': {}
+
+  '@expo-google-fonts/gluten@0.4.2': {}
 
   '@expo-google-fonts/inter@0.4.2': {}
 
-  '@expo-google-fonts/lora@0.4.2': {}
-
   '@expo-google-fonts/material-symbols@0.4.50': {}
+
+  '@expo-google-fonts/pacifico@0.4.1': {}
+
+  '@expo-google-fonts/playfair-display@0.4.2': {}
+
+  '@expo-google-fonts/rampart-one@0.4.2': {}
+
+  '@expo-google-fonts/silkscreen@0.4.2': {}
+
+  '@expo-google-fonts/special-elite@0.4.1': {}
 
   '@expo/cli@57.0.29(@expo/metro-runtime@57.0.16)(expo-constants@57.0.21)(expo-font@57.0.4)(expo-router@57.0.26)(expo@57.0.28)(react-dom@19.2.3(react@19.2.3))(react-native@0.86.3(@babel/core@7.29.7)(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.2.3))(react@19.2.3)(typescript@6.0.3)':
     dependencies:
@@ -12326,8 +12323,7 @@ snapshots:
 
   zod@3.25.76: {}
 
-  zustand@5.0.3(@types/react@19.3.0)(react@19.2.3)(use-sync-external-store@1.7.0(react@19.2.3)):
+  zustand@5.0.3(@types/react@19.3.0)(react@19.2.3):
     optionalDependencies:
       '@types/react': 19.3.0
       react: 19.2.3
-      use-sync-external-store: 1.7.0(react@19.2.3)

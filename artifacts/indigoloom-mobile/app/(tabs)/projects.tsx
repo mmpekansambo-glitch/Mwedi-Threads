@@ -6,6 +6,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EmptyState, ErrorState, LoadingState, LoomButton, LoomText, PageHeader, ProjectCard, fonts } from '@/components/loom';
+import { Board, WordFilters } from '@/components/paper';
 import { SortRow, projectSorts, sortProjects, useSavedSort } from '@/components/Sorting';
 import { useColors } from '@/hooks/useColors';
 
@@ -47,13 +48,22 @@ export default function ProjectsScreen() {
   return (
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
-      style={{ backgroundColor: colors.background }}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + 18, paddingBottom: 104 }]}
+      style={{ backgroundColor: 'transparent' }}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + 22, paddingBottom: 104 }]}
       keyboardShouldPersistTaps="handled"
     >
       <PageHeader title="My projects" action={<Pressable accessibilityRole="button" accessibilityLabel="Add a project" onPress={() => router.push('/projects/new')} style={[styles.addButton, { backgroundColor: colors.primary }]}><Feather name="plus" color={colors.primaryForeground} size={20} /></Pressable>} />
+      <WordFilters
+        colors={colors}
+        items={[...statusFilters.map((item) => ({ value: item.value as string, label: item.label, testID: `button-status-${item.value || 'all'}` })), { value: 'starred', label: 'Starred', testID: 'button-starred-filter' }]}
+        selected={(value) => value === 'starred' ? starredOnly : value === '' ? !status && !starredOnly : status === value}
+        onSelect={(value) => {
+          if (value === 'starred') setStarredOnly(!starredOnly);
+          else if (value === '') { setStatus(''); setStarredOnly(false); }
+          else setStatus(status === value ? '' : value as ProjectStatus);
+        }}
+      />
       <View style={[styles.searchWrap, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <Feather name="search" size={16} color={colors.mutedForeground} />
         <TextInput
           value={search}
           onChangeText={setSearch}
@@ -65,15 +75,7 @@ export default function ProjectsScreen() {
         />
         {search ? <Pressable accessibilityLabel="Clear search" onPress={() => setSearch('')}><Feather name="x" size={16} color={colors.mutedForeground} /></Pressable> : null}
       </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
-        <Pressable accessibilityRole="button" accessibilityState={{ selected: starredOnly }} onPress={() => setStarredOnly(!starredOnly)} style={[styles.filterChip, styles.starredChip, { backgroundColor: starredOnly ? colors.accent : colors.card, borderColor: starredOnly ? colors.accent : colors.border }]} testID="button-starred-filter"><Feather name="star" size={12} color={starredOnly ? colors.accentIcon : colors.mutedForeground} /><LoomText style={{ color: starredOnly ? colors.accentForeground : colors.mutedForeground, fontSize: 14, fontFamily: fonts.semibold }}>Starred</LoomText></Pressable>
-        {statusFilters.map((item) => {
-          const active = status === item.value;
-          return <Pressable key={item.value || 'all'} onPress={() => setStatus(item.value)} style={[styles.filterChip, { backgroundColor: active ? colors.accent : colors.card, borderColor: active ? colors.accent : colors.border }]}><LoomText style={{ color: active ? colors.accentForeground : colors.mutedForeground, fontSize: 14, fontFamily: fonts.semibold }}>{item.label}</LoomText></Pressable>;
-        })}
-      </ScrollView>
       <View style={styles.craftRow}>
-        <Feather name="filter" size={14} color={colors.mutedForeground} />
         {(['', 'knitting', 'crochet'] as const).map((item) => {
           const active = craft === item;
           return <Pressable key={item || 'craft-all'} onPress={() => setCraft(item)}><LoomText style={{ color: active ? colors.primary : colors.mutedForeground, fontFamily: active ? fonts.semibold : fonts.body, fontSize: 14 }}>{item ? item[0].toUpperCase() + item.slice(1) : 'All crafts'}</LoomText></Pressable>;
@@ -83,7 +85,7 @@ export default function ProjectsScreen() {
       {query.isLoading ? <LoadingState /> : query.isError ? <ErrorState onRetry={() => void query.refetch()} /> : query.data?.length ? (
         <>
           <LoomText style={[styles.count, { color: colors.mutedForeground }]}>{query.data.length} {query.data.length === 1 ? 'project' : 'projects'}</LoomText>
-          {sortProjects(query.data, sort).map((project) => <ProjectCard key={project.id} project={project} />)}
+          <Board testID="board-projects">{sortProjects(query.data, sort).map((project) => <ProjectCard key={project.id} project={project} />)}</Board>
         </>
       ) : starredOnly && !search && !status && !craft ? (
         <EmptyState title="No starred projects yet" body="Tap the star on any project to keep your favorites here." actionTitle="Show all projects" onAction={clearFilters} />
@@ -99,8 +101,8 @@ export default function ProjectsScreen() {
 
 const styles = StyleSheet.create({
   content: { paddingHorizontal: 20, maxWidth: 780, width: '100%', alignSelf: 'center', paddingBottom: 24 },
-  addButton: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 21 },
-  searchWrap: { minHeight: 46, borderWidth: 1, borderRadius: 11, flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: 12, marginBottom: 12 },
+  addButton: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 2 },
+  searchWrap: { minHeight: 46, borderWidth: 1, borderRadius: 2, flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: 12, marginBottom: 12 },
   searchInput: { flex: 1, paddingVertical: 10, fontSize: 16, fontFamily: fonts.body },
   filterRow: { gap: 7, paddingBottom: 6 },
   filterChip: { borderWidth: 1, paddingHorizontal: 12, minHeight: 31, borderRadius: 99, justifyContent: 'center' },

@@ -2,8 +2,8 @@ import { useGetSewingOverview } from '@workspace/api-client-react';
 import { useUser } from '@clerk/expo';
 import { Link, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { StatDoodle } from '@/components/StatDoodle';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Board, OverviewGreeting, PinnedSwatch, SectionTitle, StitchDivider } from '@/components/paper';
 import { EmptyState, ErrorState, LoadingState, LoomButton, LoomText, fonts } from '@/components/loom';
 import { WeeklyGoalCard } from '@/components/WeeklyGoal';
 import { HomeSwitcher, ProfileMenu } from '@/components/Crafts';
@@ -23,33 +23,41 @@ export default function SewingOverviewScreen() {
   const query = useGetSewingOverview();
   const data = query.data;
   const displayName = user?.firstName || user?.username || 'maker';
+  const pickUp = data?.recentProjects.find((project) => project.status === 'in_progress');
   return (
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
-      style={{ backgroundColor: colors.background }}
-      contentContainerStyle={[styles.content, { paddingTop: Platform.OS === 'web' ? 67 : insets.top + 18, paddingBottom: 104 }]}
+      style={{ backgroundColor: 'transparent' }}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + 22, paddingBottom: 120 }]}
     >
-      <View style={styles.topBar}>
-        <LoomText serif style={[styles.greeting, { color: colors.foreground }]}>Hi, {displayName}</LoomText>
-        <ProfileMenu />
-      </View>
-      <HomeSwitcher />
+      <OverviewGreeting
+        name={displayName}
+        colors={colors}
+        top={<View style={styles.topBar}><HomeSwitcher /><ProfileMenu /></View>}
+        counts={data ? [
+          { label: `${data.inProgress} in progress`, onPress: () => openProjects('in_progress'), testID: 'button-sewing-stat-in-progress' },
+          { label: `${data.finished} finished`, onPress: () => openProjects('completed'), testID: 'button-sewing-stat-finished' },
+          { label: `${data.fabricPieces} ${data.fabricPieces === 1 ? 'fabric' : 'fabrics'}`, onPress: () => router.navigate('/(tabs)/fabric'), testID: 'button-sewing-stat-fabric' },
+        ] : []}
+      />
       <WeeklyGoalCard studio="sewing" />
+      {pickUp ? (
+        <PinnedSwatch colors={colors} tilt={-1.5} pin={3} tone={3} style={styles.pickUp} testID="card-pick-up">
+          <LoomText style={[styles.small, { color: colors.mutedForeground }]}>Pick up where you left off</LoomText>
+          <Pressable accessibilityRole="link" onPress={() => router.push({ pathname: '/sewing/[id]', params: { id: pickUp.id } })} testID="link-pick-up">
+            <LoomText serif style={[styles.pickUpTitle, { color: colors.foreground }]}>{pickUp.title} · {sewingStages.find((item) => item.value === pickUp.stage)?.label.toLowerCase()}</LoomText>
+          </Pressable>
+        </PinnedSwatch>
+      ) : null}
       {query.isLoading ? <LoadingState label="Gathering your sewing…" /> : query.isError || !data ? <ErrorState onRetry={() => void query.refetch()} /> : (
         <>
-          <View style={styles.stats}>
-            {([
-              ['In progress', data.inProgress, 'spool', colors.statSewActive, colors.statSewActiveInk, colors.statActiveValue, () => openProjects('in_progress'), 'in-progress'],
-              ['Finished', data.finished, 'scissors', colors.statSewFinished, colors.primaryText, colors.statFinishedValue, () => openProjects('completed'), 'finished'],
-              ['Fabric', data.fabricPieces, 'swatch', colors.statSewFabric, colors.statSewFabricInk, colors.statAllValue, () => router.navigate('/(tabs)/fabric'), 'fabric'],
-            ] as const).map(([label, value, doodle, tint, ink, ink2, onPress, id]) => (
-              <Pressable key={label} accessibilityRole="button" accessibilityLabel={`${label}: ${value}`} onPress={onPress} style={({ pressed }) => [styles.stat, { backgroundColor: tint, borderColor: tint }, pressed && styles.statPressed]} testID={`button-sewing-stat-${id}`}>
-                <LoomText style={[styles.statLabel, { color: colors.mutedForeground }]}>{label}</LoomText>
-                <LoomText serif style={[styles.statValue, { color: ink2 }]}>{value}</LoomText>
-                <View style={styles.statDoodle}><StatDoodle kind={doodle} color={ink} size={40} /></View>
-              </Pressable>
-            ))}
-          </View>
+          <StitchDivider colors={colors} />
+          <SectionTitle title="On the table" colors={colors} action={<Link href="/(tabs)/sewing-projects" style={{ color: colors.primaryText, fontFamily: fonts.semibold, fontSize: 15 }}>All projects</Link>} />
+          {data.recentProjects.length ? <Board>{[...data.recentProjects].sort((a, b) => Number(b.status === 'in_progress') - Number(a.status === 'in_progress')).slice(0, 4).map((project) => <SewingProjectCard key={project.id} project={project} />)}</Board> : (
+            <EmptyState title="No sewing projects yet" body="Start a project to track it from prep to finish." actionTitle="Start a project" onAction={() => router.push('/sewing/new')} />
+          )}
+          {data.recentProjects.length ? <LoomButton title="New project" icon="plus" onPress={() => router.push('/sewing/new')} style={{ marginTop: 14 }} testID="button-new-sewing-project" /> : null}
+          <StitchDivider colors={colors} />
           {data.fabricPieces > 0 ? <LoomText style={[styles.length, { color: colors.mutedForeground }]} testID="text-fabric-length">{fabricAmount(data.fabricLength, data.fabricUnit)} of fabric in your stash</LoomText> : null}
           <View style={[styles.stageBoard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <LoomText serif style={[styles.sectionTitle, { color: colors.foreground, fontSize: 21, marginBottom: 10 }]}>Projects by stage</LoomText>
@@ -83,14 +91,6 @@ export default function SewingOverviewScreen() {
               ))}
             </View>
           ) : null}
-          <View style={styles.sectionHeading}>
-            <LoomText serif style={[styles.sectionTitle, { color: colors.foreground }]}>Recent projects</LoomText>
-            <Link href="/(tabs)/sewing-projects" style={{ color: colors.primaryText, fontFamily: fonts.semibold, fontSize: 15 }}>All projects</Link>
-          </View>
-          {data.recentProjects.length ? data.recentProjects.slice(0, 3).map((project) => <SewingProjectCard key={project.id} project={project} />) : (
-            <EmptyState title="No sewing projects yet" body="Start a project to track it from prep to finish." actionTitle="Start a project" onAction={() => router.push('/sewing/new')} />
-          )}
-          {data.recentProjects.length ? <LoomButton title="New project" icon="plus" onPress={() => router.push('/sewing/new')} style={{ marginTop: 6 }} testID="button-new-sewing-project" /> : null}
         </>
       )}
     </ScrollView>
@@ -99,18 +99,14 @@ export default function SewingOverviewScreen() {
 
 const styles = StyleSheet.create({
   content: { paddingHorizontal: 20, maxWidth: 780, width: '100%', alignSelf: 'center' },
-  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 21, zIndex: 2 },
-  greeting: { fontSize: 30, letterSpacing: -0.4 },
-  stats: { flexDirection: 'row', gap: 8, marginBottom: 8 },
-  stat: { flex: 1, minHeight: 108, justifyContent: 'space-between', borderWidth: 1, borderRadius: 14, padding: 11, overflow: 'hidden' },
-  statPressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
-  statDoodle: { position: 'absolute', right: 6, bottom: 6 },
-  statLabel: { fontFamily: fonts.semibold, fontSize: 14 },
-  statValue: { fontSize: 34, lineHeight: 39 },
+  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, zIndex: 2 },
+  small: { fontSize: 13, fontFamily: fonts.medium },
+  pickUp: { marginTop: 18, alignSelf: 'flex-start', maxWidth: '100%' },
+  pickUpTitle: { fontSize: 21, marginTop: 4 },
   length: { fontSize: 14, fontFamily: fonts.medium, marginBottom: 18 },
-  stageBoard: { borderWidth: 1, borderRadius: 16, padding: 14, marginBottom: 22, marginTop: 8 },
+  stageBoard: { borderWidth: 0, borderRadius: 3, padding: 14, marginBottom: 22, marginTop: 8 },
   stageRow: { flexDirection: 'row', gap: 6 },
-  stage: { flex: 1, borderWidth: 1, borderRadius: 10, paddingVertical: 9, alignItems: 'center' },
+  stage: { flex: 1, borderWidth: 0, borderRadius: 2, paddingVertical: 9, alignItems: 'center' },
   typeBar: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 36 },
   typeName: { width: 92, fontSize: 14, fontFamily: fonts.semibold },
   typeTrack: { flex: 1, height: 10, borderRadius: 5, overflow: 'hidden' },

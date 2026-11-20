@@ -6,8 +6,6 @@ import { checkInWeeklyGoal, getGetWeeklyGoalQueryKey, setWeeklyGoal, useGetWeekl
 import type { GetWeeklyGoalParams, Studio, WeeklyGoal } from '@workspace/api-client-react';
 import { LoomText, fonts } from '@/components/loom';
 import { ITEM_HEIGHT, Wheel } from '@/components/ProjectDateField';
-import colorTokens from '@/constants/colors';
-import { useScheme } from '@/hooks/useAppearance';
 import { useColors, useSewingColors } from '@/hooks/useColors';
 
 const dayLetters = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -31,8 +29,7 @@ export function WeeklyGoalCard({ studio }: { studio: Studio }) {
   const yarnColors = useColors();
   const sewingColors = useSewingColors();
   const base = studio === 'sewing' ? sewingColors : yarnColors;
-  // In dark mode the card itself turns bright; the goal picker sheet keeps the normal colors.
-  const colors = useScheme() === 'dark' ? { ...base, ...colorTokens.weekBright[studio] } : base;
+  const colors = base;
   const client = useQueryClient();
   const params = weekParams(studio);
   const key = getGetWeeklyGoalQueryKey(params);

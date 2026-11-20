@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type RefObject } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
@@ -10,8 +10,9 @@ import { showSignpost } from '@/components/Signpost';
 import { useSewingColors } from '@/hooks/useColors';
 
 // A sewing project's dated notes, newest first. Swipe right on a note to
-// edit it, left to delete it.
-export function SewingJournal({ project }: { project: SewingProject }) {
+// edit it, left to delete it. `inputRef` lets the floating bar's "Add a
+// note" focus the note box.
+export function SewingJournal({ project, inputRef }: { project: SewingProject; inputRef?: RefObject<TextInput | null> }) {
   const colors = useSewingColors();
   const client = useQueryClient();
   const add = useAddSewingProjectEntry();
@@ -63,7 +64,7 @@ export function SewingJournal({ project }: { project: SewingProject }) {
       </View>
       <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <FormFieldLabel>What did you work on?</FormFieldLabel>
-        <TextInput value={text} onChangeText={setText} placeholder="Cut the pieces, sewed the darts, tried on for fit…" placeholderTextColor={colors.mutedForeground} multiline numberOfLines={3} textAlignVertical="top" style={[styles.input, { color: colors.foreground, backgroundColor: colors.card, borderColor: colors.input }]} testID="input-sewing-note" />
+        <TextInput ref={inputRef} value={text} onChangeText={setText} placeholder="Cut the pieces, sewed the darts, tried on for fit…" placeholderTextColor={colors.mutedForeground} multiline numberOfLines={3} textAlignVertical="top" style={[styles.input, { color: colors.foreground, backgroundColor: colors.card, borderColor: colors.input }]} testID="input-sewing-note" />
         {message ? <LoomText accessibilityRole="alert" style={{ color: colors.destructive, fontSize: 15, marginBottom: 11 }}>{message}</LoomText> : null}
         <LoomButton title="Save note" icon="feather" onPress={() => { void save(); }} busy={add.isPending} disabled={!text.trim()} testID="button-save-sewing-note" />
       </View>

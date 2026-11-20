@@ -6,17 +6,22 @@ import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { SignpostHost } from '@/components/Signpost';
+import { OpeningThread } from '@/components/OpeningThread';
 import {
   Figtree_400Regular,
   Figtree_500Medium,
   Figtree_600SemiBold,
   Figtree_700Bold,
 } from '@expo-google-fonts/figtree';
-import {
-  Lora_500Medium,
-  Lora_600SemiBold,
-  Lora_700Bold,
-} from '@expo-google-fonts/lora';
+// Headings are EB Garamond; the six craft fonts are for project name tiles.
+import { EBGaramond_500Medium } from '@expo-google-fonts/eb-garamond/500Medium';
+import { EBGaramond_600SemiBold } from '@expo-google-fonts/eb-garamond/600SemiBold';
+import { Gluten_500Medium } from '@expo-google-fonts/gluten/500Medium';
+import { Pacifico_400Regular } from '@expo-google-fonts/pacifico/400Regular';
+import { Silkscreen_400Regular } from '@expo-google-fonts/silkscreen/400Regular';
+import { RampartOne_400Regular } from '@expo-google-fonts/rampart-one/400Regular';
+import { SpecialElite_400Regular } from '@expo-google-fonts/special-elite/400Regular';
+import { PlayfairDisplay_500Medium_Italic } from '@expo-google-fonts/playfair-display/500Medium_Italic';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -74,6 +79,7 @@ function RootLayoutNav() {
       <Stack.Screen name="yarn-tools/[id]" />
     </Stack>
     <SignpostHost />
+    <OpeningThread />
     </>
   );
 }
@@ -108,9 +114,14 @@ export default function RootLayout() {
     Figtree_500Medium,
     Figtree_600SemiBold,
     Figtree_700Bold,
-    Lora_500Medium,
-    Lora_600SemiBold,
-    Lora_700Bold,
+    EBGaramond_500Medium,
+    EBGaramond_600SemiBold,
+    Gluten_500Medium,
+    Pacifico_400Regular,
+    Silkscreen_400Regular,
+    RampartOne_400Regular,
+    SpecialElite_400Regular,
+    PlayfairDisplay_500Medium_Italic,
   });
 
   const [appearanceLoaded, setAppearanceLoaded] = useState(false);

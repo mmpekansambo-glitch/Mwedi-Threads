@@ -14,7 +14,8 @@ import { ProgressAmountInput, amountDraftFor, progressAmountForApi, progressDeta
 import { describeNeedle } from '@/components/NeedleFields';
 import { describeProjectYarn } from '@/components/ProjectYarns';
 import { SkeinSuggestions } from '@/components/SkeinSuggestions';
-import { ProjectCounter } from '@/components/ProjectCounter';
+import { ProjectCounter, type CounterControl } from '@/components/ProjectCounter';
+import { BarAction, FloatingBar, NameTile, PinnedSwatch } from '@/components/paper';
 import { FinishUpPrompt, HoursRow, SpendRow } from '@/components/ProjectTotals';
 import { useCrafts } from '@/components/Crafts';
 import type { ProjectDetail, ProjectTotals } from '@workspace/api-client-react';
@@ -53,6 +54,12 @@ export default function ProjectDetailScreen() {
   const [message, setMessage] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [removingPhotoEntryId, setRemovingPhotoEntryId] = useState('');
+  // The floating bar: the row count, +1 through the counter, and a jump to the note form.
+  const counter = useRef<CounterControl | null>(null);
+  const [row, setRow] = useState<number | null>(null);
+  const scroller = useRef<ScrollView>(null);
+  const noteInput = useRef<TextInput>(null);
+  const noteY = useRef(0);
   const project = query.data;
   const designerPageTitle = project?.designerPageTitle?.trim();
   const designerLinkLabel = project?.designerWebsite
@@ -161,25 +168,31 @@ export default function ProjectDetailScreen() {
   return (
     <SignedInGate>
       <View style={[styles.screen, { backgroundColor: colors.background }]}>
-        <View style={[styles.nav, { paddingTop: insets.top + 7, borderBottomColor: colors.border }]}>
-          <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={() => router.back()} style={styles.navButton}><Feather name="arrow-left" size={19} color={colors.primary} /></Pressable>
-          <LoomText style={[styles.navTitle, { color: colors.foreground }]} numberOfLines={1}>{project?.title || 'Project journal'}</LoomText>
-          {project ? <StarButton project={project} /> : null}
-          {project ? <Pressable accessibilityRole="button" accessibilityLabel="Edit project" onPress={() => router.push({ pathname: '/projects/[id]/edit', params: { id } })} style={styles.navButton}><Feather name="edit-2" size={17} color={colors.primary} /></Pressable> : <View style={styles.navButton} />}
+        <View style={[styles.nav, { paddingTop: insets.top + 7 }]}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={() => router.back()} style={styles.navText} testID="button-back"><LoomText serif style={[styles.navWord, { color: colors.primaryText }]}>Back</LoomText></Pressable>
+          <View style={styles.navActions}>
+            {project ? <StarButton project={project} /> : null}
+            {project ? <Pressable accessibilityRole="button" accessibilityLabel="Edit project" onPress={() => router.push({ pathname: '/projects/[id]/edit', params: { id } })} style={styles.navText} testID="button-edit-project"><LoomText serif style={[styles.navWord, { color: colors.primaryText }]}>Edit</LoomText></Pressable> : null}
+          </View>
         </View>
         {query.isLoading ? <LoomText style={[styles.loading, { color: colors.mutedForeground }]}>Loading…</LoomText> : query.isError || !project ? (
           <View style={styles.center}><LoomText serif style={{ color: colors.foreground, fontSize: 26 }}>Project not found</LoomText><LoomText style={{ color: colors.mutedForeground, marginTop: 7 }}>It may have been removed or moved.</LoomText><LoomButton title="Back to projects" onPress={() => router.replace('/(tabs)/projects')} variant="secondary" style={{ marginTop: 16 }} /></View>
         ) : (
-          <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 30 }]}>
+          <>
+          <ScrollView ref={scroller} contentInsetAdjustmentBehavior="automatic" contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 110 }]}>
           {finishUp ? <FinishUpPrompt hours={project.hoursSpent} cents={project.totalSpendCents} currency={currency} onSaveHours={(hours) => saveTotals({ hoursSpent: hours })} onSaveSpend={(cents) => saveTotals({ totalSpendCents: cents })} onDone={() => setFinishUp(false)} /> : null}
           <SkeinSuggestions projectId={project.id} />
-          <View style={[styles.hero, { backgroundColor: project.craft === 'knitting' ? colors.knitWash : colors.crochetWash }]}>
-              <LoomText serif style={[styles.title, { color: colors.foreground }]}>{project.title}</LoomText>
-              <View style={styles.statusLine}><StatusChip status={project.status} /><LoomText style={{ color: colors.mutedForeground, fontSize: 14 }}>{project.craft === 'knitting' ? 'Knitting' : 'Crochet'} · {project.completionPercent}% complete</LoomText></View>
-              <ProgressBar value={project.completionPercent} />
-              {progressDetail(project, latestProgressValue) ? <LoomText style={{ color: colors.primary, fontFamily: fonts.semibold, fontSize: 15, marginTop: 9 }} testID="text-progress-detail">{progressDetail(project, latestProgressValue)}</LoomText> : null}
+          <View style={styles.heading}>
+            <View style={{ flex: 1 }}>
+              <LoomText serif accessibilityRole="header" style={[styles.title, { color: colors.foreground }]}>{project.title}</LoomText>
+              <View style={styles.statusLine}><StatusChip status={project.status} /><LoomText style={{ color: colors.mutedForeground, fontSize: 14 }}>{project.craft === 'knitting' ? 'Knitting' : 'Crochet'} · {project.completionPercent}%</LoomText></View>
             </View>
-            <ProjectCounter key={project.id} projectId={project.id} initial={project.counter} />
+            <PinnedSwatch colors={colors} tilt={2} pin={2} style={styles.pinned}><NameTile name={project.title} craft={project.craft === 'knitting' ? 'knitting' : 'crochet'} size={92} /></PinnedSwatch>
+          </View>
+          <ProgressBar value={project.completionPercent} />
+          {progressDetail(project, latestProgressValue) ? <LoomText style={{ color: colors.primaryText, fontFamily: fonts.semibold, fontSize: 15, marginTop: 9 }} testID="text-progress-detail">{progressDetail(project, latestProgressValue)}</LoomText> : null}
+          <View style={{ height: 18 }} />
+            <ProjectCounter key={project.id} projectId={project.id} initial={project.counter} control={counter} onCount={setRow} />
             <View style={[styles.detailCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <LoomText style={[styles.sectionLabel, { color: colors.primary }]}>Details</LoomText>
               {[
@@ -213,10 +226,10 @@ export default function ProjectDetailScreen() {
               <SpendRow cents={project.totalSpendCents} currency={currency} onSave={(cents) => saveTotals({ totalSpendCents: cents })} />
               {project.description ? <LoomText style={[styles.description, { color: colors.foreground }]}>{project.description}</LoomText> : null}
             </View>
-            <View style={[styles.detailCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View onLayout={(event) => { noteY.current = event.nativeEvent.layout.y; }} style={[styles.detailCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <LoomText serif style={[styles.sectionTitle, { color: colors.foreground }]}>Add a progress note</LoomText>
               <FormFieldLabel>What did you work on?</FormFieldLabel>
-              <TextInput value={notes} onChangeText={setNotes} placeholder="Rows completed, a tricky section, a new color…" placeholderTextColor={colors.mutedForeground} multiline numberOfLines={3} textAlignVertical="top" style={[...inputStyle, styles.notesInput]} testID="input-progress-notes" />
+              <TextInput ref={noteInput} value={notes} onChangeText={setNotes} placeholder="Rows completed, a tricky section, a new color…" placeholderTextColor={colors.mutedForeground} multiline numberOfLines={3} textAlignVertical="top" style={[...inputStyle, styles.notesInput]} testID="input-progress-notes" />
               <FormFieldLabel>Progress photo (optional)</FormFieldLabel>
               <View style={styles.photoControls}>
                 <Pressable accessibilityRole="button" onPress={pickPhoto} style={[styles.photoButton, { borderColor: colors.border }]} testID="button-pick-progress-photo">
@@ -268,6 +281,11 @@ export default function ProjectDetailScreen() {
               ) : <LoomButton title="Delete project" icon="trash-2" variant="quiet" onPress={() => setConfirmDelete(true)} />}
             </View>
           </ScrollView>
+          <FloatingBar colors={colors} label={`Row ${row ?? project.counter}`}>
+            <BarAction title="+1 row" colors={colors} onPress={() => counter.current?.plusOne()} testID="button-bar-plus-one" />
+            <BarAction title="Add a note" strong colors={colors} onPress={() => { scroller.current?.scrollTo({ y: Math.max(0, noteY.current - 12), animated: true }); setTimeout(() => noteInput.current?.focus(), 350); }} testID="button-bar-add-note" />
+          </FloatingBar>
+          </>
         )}
       </View>
     </SignedInGate>
@@ -287,16 +305,21 @@ function designerHostname(website: string) {
 }
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  nav: { minHeight: 47, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1 },
+  nav: { minHeight: 47, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  navText: { minHeight: 40, justifyContent: 'center', paddingHorizontal: 2 },
+  navWord: { fontSize: 19 },
+  navActions: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  heading: { flexDirection: 'row', alignItems: 'flex-start', gap: 14, marginBottom: 14 },
+  pinned: { width: 118, padding: 6, paddingTop: 10, marginTop: 6 },
   navButton: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
   navTitle: { fontSize: 16, fontFamily: fonts.semibold, flex: 1, textAlign: 'center', marginHorizontal: 8 },
   content: { paddingHorizontal: 18, paddingTop: 18, maxWidth: 740, width: '100%', alignSelf: 'center' },
   loading: { textAlign: 'center', marginTop: 55 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 26 },
   hero: { borderRadius: 18, padding: 19, gap: 11, overflow: 'hidden', marginBottom: 13 },
-  title: { fontSize: 30, lineHeight: 36 },
-  statusLine: { flexDirection: 'row', alignItems: 'center', gap: 9 },
-  detailCard: { borderWidth: 1, borderRadius: 16, padding: 17, marginBottom: 13 },
+  title: { fontSize: 36, lineHeight: 40, letterSpacing: -0.4 },
+  statusLine: { flexDirection: 'row', alignItems: 'center', gap: 9, marginTop: 10 },
+  detailCard: { borderWidth: 0, borderRadius: 3, padding: 17, marginBottom: 13 },
   sectionLabel: { fontFamily: fonts.semibold, fontSize: 15, marginBottom: 12 },
   infoRow: { width: '100%', minWidth: 0, flexDirection: 'row', gap: 10, alignItems: 'center', paddingVertical: 9, borderBottomWidth: 1 },
   infoLabel: { fontSize: 14 },
@@ -312,7 +335,7 @@ const styles = StyleSheet.create({
   removePhotoButton: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
   photoPreview: { width: '100%', height: 190, borderRadius: 12, marginBottom: 12 },
   sectionHeading: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 10, marginBottom: 11 },
-  progressEntry: { borderWidth: 1, borderRadius: 13, padding: 13, flexDirection: 'row', gap: 10 },
+  progressEntry: { borderWidth: 0, borderRadius: 3, padding: 13, flexDirection: 'row', gap: 10 },
   entryMarker: { width: 7, height: 7, borderRadius: 4, marginTop: 5 },
   entryMeta: { fontFamily: fonts.semibold, fontSize: 13 },
   entryNotes: { fontSize: 15, lineHeight: 22, marginTop: 5 },

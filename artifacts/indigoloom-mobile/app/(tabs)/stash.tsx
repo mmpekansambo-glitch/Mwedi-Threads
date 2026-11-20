@@ -65,8 +65,8 @@ export default function StashScreen() {
   return (
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
-      style={{ backgroundColor: colors.background }}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + 18, paddingBottom: 104 }]}
+      style={{ backgroundColor: 'transparent' }}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + 22, paddingBottom: 104 }]}
       keyboardShouldPersistTaps="handled"
     >
       <PageHeader title="Yarn stash" action={<Pressable accessibilityRole="button" accessibilityLabel="Add yarn" onPress={() => router.push('/stash/new')} style={[styles.addButton, { backgroundColor: colors.primary }]}><Feather name="plus" color={colors.primaryForeground} size={20} /></Pressable>} />

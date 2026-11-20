@@ -1,114 +1,72 @@
 import React from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
 import { useColors, useSewingColors } from '@/hooks/useColors';
 import { useScheme } from '@/hooks/useAppearance';
-import { Feather } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
-import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import { Tabs } from 'expo-router';
-import { NativeTabs } from 'expo-router/unstable-native-tabs';
-import { SymbolView } from 'expo-symbols';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Redirect } from 'expo-router';
 import { useAuth } from '@clerk/expo';
-import { LoadingState } from '@/components/loom';
+import { LoadingState, LoomText } from '@/components/loom';
+import { RoomBackdrop, Stitch } from '@/components/paper';
+
+type BottomTabBarProps = Parameters<NonNullable<React.ComponentProps<typeof Tabs>['tabBar']>>[0];
 import { CraftChoiceScreen, HomeProvider, useCrafts, useHome } from '@/components/Crafts';
 
-// IMPORTANT: iOS 26 uses NativeTabs for native tabs with liquid glass support.
-// NativeTabs intentionally does NOT use custom design tokens — liquid glass
-// is a system-level appearance provided by iOS and cannot be overridden.
-// Custom brand colors are applied only on the ClassicTabLayout path (older iOS / Android / web).
+// Words-only tabs (#120): no icons, a frosted strip across the bottom, and
+// the tab you're on underlined with a running stitch in the room's color.
 // Each home shows only its own tabs: Overview, My projects, Yarn stash and
-// Tools in the Yarn studio; Overview, Projects, Fabric, Patterns and Tools in the Sewing room.
-function NativeTabLayout() {
+// Tools in the Yarn studio; Overview, Projects, Fabric, Patterns and Tools in
+// the Sewing room. (This replaces iOS 26's native tab bar, which needs icons.)
+function WordTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
+  const yarnColors = useColors();
+  const sewingColors = useSewingColors();
   const { home } = useHome();
-  const yarnHidden = home !== 'yarn';
+  const colors = home === 'yarn' ? yarnColors : sewingColors;
+  const dark = useScheme() === 'dark';
+  const insets = useSafeAreaInsets();
+  const isIOS = Platform.OS === 'ios';
   return (
-    <NativeTabs>
-      <NativeTabs.Trigger name="index" hidden={yarnHidden}>
-        <NativeTabs.Trigger.Icon
-          sf={{ default: 'house', selected: 'house.fill' }}
-        />
-        <NativeTabs.Trigger.Label>Overview</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="projects" hidden={yarnHidden}>
-        <NativeTabs.Trigger.Icon sf={{ default: 'square.grid.2x2', selected: 'square.grid.2x2.fill' }} />
-        <NativeTabs.Trigger.Label>My projects</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="stash" hidden={yarnHidden}>
-        <NativeTabs.Trigger.Icon sf={{ default: 'paintpalette', selected: 'paintpalette.fill' }} />
-        <NativeTabs.Trigger.Label>Yarn stash</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="yarn-tools" hidden={yarnHidden}>
-        <NativeTabs.Trigger.Icon sf={{ default: 'wrench.and.screwdriver', selected: 'wrench.and.screwdriver.fill' }} />
-        <NativeTabs.Trigger.Label>Tools</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="sewing" hidden={!yarnHidden}>
-        <NativeTabs.Trigger.Icon sf={{ default: 'house', selected: 'house.fill' }} />
-        <NativeTabs.Trigger.Label>Overview</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="sewing-projects" hidden={!yarnHidden}>
-        <NativeTabs.Trigger.Icon sf={{ default: 'square.grid.2x2', selected: 'square.grid.2x2.fill' }} />
-        <NativeTabs.Trigger.Label>Projects</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="fabric" hidden={!yarnHidden}>
-        <NativeTabs.Trigger.Icon sf={{ default: 'scissors', selected: 'scissors' }} />
-        <NativeTabs.Trigger.Label>Fabric</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="patterns" hidden={!yarnHidden}>
-        <NativeTabs.Trigger.Icon sf={{ default: 'doc.text', selected: 'doc.text.fill' }} />
-        <NativeTabs.Trigger.Label>Patterns</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="tools" hidden={!yarnHidden}>
-        <NativeTabs.Trigger.Icon sf={{ default: 'wrench.and.screwdriver', selected: 'wrench.and.screwdriver.fill' }} />
-        <NativeTabs.Trigger.Label>Tools</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
-    </NativeTabs>
+    <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, 10), backgroundColor: isIOS ? 'transparent' : colors.glass }]}>
+      {isIOS ? <BlurView intensity={70} tint={dark ? 'dark' : 'light'} style={[StyleSheet.absoluteFill, { backgroundColor: colors.glass }]} /> : null}
+      {state.routes.map((route, index) => {
+        const { options } = descriptors[route.key];
+        const hidden = (options as { href?: unknown }).href === null || (options.tabBarItemStyle as { display?: string } | undefined)?.display === 'none';
+        if (hidden) return null;
+        const focused = state.index === index;
+        const label = typeof options.title === 'string' ? options.title : route.name;
+        const onPress = () => {
+          const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
+          if (!focused && !event.defaultPrevented) navigation.navigate(route.name, route.params);
+        };
+        return (
+          <Pressable key={route.key} accessibilityRole="tab" accessibilityState={{ selected: focused }} accessibilityLabel={label} onPress={onPress} style={styles.tab} testID={`tab-${route.name}`}>
+            <LoomText serif numberOfLines={1} style={[styles.tabLabel, { color: focused ? colors.foreground : colors.mutedForeground }]}>{label}</LoomText>
+            {focused ? <Stitch color={colors.primary} dash={5} gap={3} style={styles.tabStitch} /> : <View style={styles.tabStitch} />}
+          </Pressable>
+        );
+      })}
+    </View>
   );
 }
 
+// Each room's paper hills sit behind every tab; the pages scroll over them.
 function ClassicTabLayout() {
   const yarnColors = useColors();
   const sewingColors = useSewingColors();
   const { home } = useHome();
   const yarnHidden = home !== 'yarn';
   const colors = yarnHidden ? sewingColors : yarnColors;
-  const colorScheme = useScheme();
-  const isDark = colorScheme === 'dark';
-  const isIOS = Platform.OS === 'ios';
-  const isWeb = Platform.OS === 'web';
 
   return (
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <RoomBackdrop colors={colors} />
     <Tabs
+      tabBar={(props) => <WordTabBar {...props} />}
       screenOptions={{
-        tabBarActiveTintColor: colors.primaryText,
-        tabBarInactiveTintColor: colors.mutedForeground,
-        headerShown: true,
-        headerStyle: { backgroundColor: colors.card },
-        headerTitleStyle: { color: colors.foreground },
-        headerShadowVisible: !isDark,
-        tabBarStyle: {
-          position: 'absolute',
-          backgroundColor: isIOS ? 'transparent' : colors.background,
-          borderTopWidth: isWeb ? 1 : 0,
-          borderTopColor: colors.border,
-          elevation: 0,
-          ...(isWeb ? { height: 84 } : {}),
-        },
-        tabBarBackground: () =>
-          isIOS ? (
-            <BlurView
-              intensity={100}
-              tint={isDark ? 'dark' : 'light'}
-              style={StyleSheet.absoluteFill}
-            />
-          ) : isWeb ? (
-            <View
-              style={[
-                StyleSheet.absoluteFill,
-                { backgroundColor: colors.background },
-              ]}
-            />
-          ) : null,
+        headerShown: false,
+        sceneStyle: { backgroundColor: 'transparent' },
+        tabBarStyle: { position: 'absolute' },
       }}
     >
       <Tabs.Screen
@@ -116,12 +74,6 @@ function ClassicTabLayout() {
         options={{
           title: 'Overview',
           href: yarnHidden ? null : undefined,
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="house" tintColor={color} size={24} />
-            ) : (
-              <Feather name="home" size={22} color={color} />
-            ),
         }}
       />
       <Tabs.Screen
@@ -129,12 +81,6 @@ function ClassicTabLayout() {
         options={{
           title: 'My projects',
           href: yarnHidden ? null : undefined,
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="square.grid.2x2" tintColor={color} size={23} />
-            ) : (
-              <Feather name="grid" size={21} color={color} />
-            ),
         }}
       />
       <Tabs.Screen
@@ -142,12 +88,6 @@ function ClassicTabLayout() {
         options={{
           title: 'Yarn stash',
           href: yarnHidden ? null : undefined,
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="paintpalette" tintColor={color} size={23} />
-            ) : (
-              <Feather name="droplet" size={21} color={color} />
-            ),
         }}
       />
       <Tabs.Screen
@@ -155,12 +95,6 @@ function ClassicTabLayout() {
         options={{
           title: 'Tools',
           href: yarnHidden ? null : undefined,
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="wrench.and.screwdriver" tintColor={color} size={23} />
-            ) : (
-              <Feather name="tool" size={21} color={color} />
-            ),
         }}
       />
       <Tabs.Screen
@@ -168,12 +102,6 @@ function ClassicTabLayout() {
         options={{
           title: 'Overview',
           href: yarnHidden ? undefined : null,
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="house" tintColor={color} size={24} />
-            ) : (
-              <Feather name="home" size={22} color={color} />
-            ),
         }}
       />
       <Tabs.Screen
@@ -181,12 +109,6 @@ function ClassicTabLayout() {
         options={{
           title: 'Projects',
           href: yarnHidden ? undefined : null,
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="square.grid.2x2" tintColor={color} size={23} />
-            ) : (
-              <Feather name="grid" size={21} color={color} />
-            ),
         }}
       />
       <Tabs.Screen
@@ -194,12 +116,6 @@ function ClassicTabLayout() {
         options={{
           title: 'Fabric',
           href: yarnHidden ? undefined : null,
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="scissors" tintColor={color} size={23} />
-            ) : (
-              <Feather name="scissors" size={21} color={color} />
-            ),
         }}
       />
       <Tabs.Screen
@@ -207,12 +123,6 @@ function ClassicTabLayout() {
         options={{
           title: 'Patterns',
           href: yarnHidden ? undefined : null,
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="doc.text" tintColor={color} size={23} />
-            ) : (
-              <Feather name="file-text" size={21} color={color} />
-            ),
         }}
       />
       <Tabs.Screen
@@ -220,15 +130,10 @@ function ClassicTabLayout() {
         options={{
           title: 'Tools',
           href: yarnHidden ? undefined : null,
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="wrench.and.screwdriver" tintColor={color} size={23} />
-            ) : (
-              <Feather name="tool" size={21} color={color} />
-            ),
         }}
       />
     </Tabs>
+    </View>
   );
 }
 
@@ -244,7 +149,14 @@ function CraftTabs() {
   if (crafts.isLoading) return <LoadingState label="Loading…" />;
   return (
     <HomeProvider initial={crafts.data && !crafts.data.yarn ? 'sewing' : 'yarn'}>
-      {crafts.data?.needsChoice ? <CraftChoiceScreen /> : isLiquidGlassAvailable() ? <NativeTabLayout /> : <ClassicTabLayout />}
+      {crafts.data?.needsChoice ? <CraftChoiceScreen /> : <ClassicTabLayout />}
     </HomeProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  bar: { position: 'absolute', left: 0, right: 0, bottom: 0, flexDirection: 'row', justifyContent: 'space-around', paddingTop: 12, paddingHorizontal: 8, overflow: 'hidden' },
+  tab: { flexShrink: 1, alignItems: 'center', paddingHorizontal: 4, paddingVertical: 4, gap: 3 },
+  tabLabel: { fontSize: 17 },
+  tabStitch: { alignSelf: 'stretch', height: 2 },
+});
