@@ -30,6 +30,17 @@ test("projects without a photo show their name in a font from their craft", asyn
   expect(await fontOf(page, "card-project-p2")).toMatch(/Silkscreen|Rampart One/);
 });
 
+test("status words filter the board (#119)", async ({ page }) => {
+  await mockApi(page);
+  await page.goto("/projects");
+  await expect(page.getByTestId("button-status-all")).toHaveAttribute("aria-pressed", "true");
+  await page.getByTestId("button-status-in_progress").click();
+  await expect(page).toHaveURL(/\/projects\?status=in_progress$/);
+  await expect(page.getByTestId("button-status-in_progress")).toHaveAttribute("aria-pressed", "true");
+  await page.getByTestId("button-status-all").click();
+  await expect(page).toHaveURL(/\/projects$/);
+});
+
 test("the nav is words only and each room has its own backdrop", async ({ page }) => {
   await mockApi(page);
   await page.goto("/projects");

@@ -566,3 +566,17 @@ test("moves a project through stages and offers to update the stash when it's fi
   expect(sent.fabricUpdates).toEqual([{ id: stash[0].id, amountLeft: 0.75 }]);
   await expect(page.getByTestId("button-reopen-sewing-project")).toBeVisible();
 });
+
+test("the floating bar moves a project on to its next stage and opens a new note (#119)", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const sent = newSent();
+  await mockApi(page, { yarn: false, sewing: true, needsChoice: false }, sent);
+  await page.goto("/sewing/projects/cccccccc-0000-4000-8000-000000000001");
+  const bar = page.getByTestId("floating-bar");
+  await expect(bar).toContainText("Linen shirt · Cut");
+  await page.getByTestId("button-bar-next-stage").click();
+  await expect(page.getByTestId("button-stage-sew")).toHaveAttribute("aria-pressed", "true");
+  expect(sent.projectSaves[0]).toEqual({ stage: "sew" });
+  await page.getByTestId("button-bar-add-sewing-note").click();
+  await expect(page.getByTestId("input-sewing-note")).toBeFocused();
+});

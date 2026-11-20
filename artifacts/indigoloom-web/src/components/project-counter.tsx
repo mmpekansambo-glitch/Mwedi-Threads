@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Minus, Plus, RotateCcw, Undo2 } from 'lucide-react';
 import { getGetProjectQueryKey, setProjectCounter } from '@workspace/api-client-react';
 import type { ProjectDetail } from '@workspace/api-client-react';
+import { FloatingBar } from './paper';
 
 const SAVE_DELAY_MS = 400;
 
@@ -12,7 +13,8 @@ function isTyping(target: EventTarget | null) {
 }
 
 // A plain counter saved with the project. It never changes progress.
-export function ProjectCounter({ projectId, initial }: { projectId: string; initial: number }) {
+// With a bar, the page's floating bar shows the count with a quick +1 (#119).
+export function ProjectCounter({ projectId, initial, bar }: { projectId: string; initial: number; bar?: { label: string; actions: ReactNode } }) {
   const client = useQueryClient();
   const [count, setCount] = useState(initial);
   const [history, setHistory] = useState<number[]>([]);
@@ -70,7 +72,7 @@ export function ProjectCounter({ projectId, initial }: { projectId: string; init
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  return <article className="counter-card loom-card" data-testid="card-project-counter">
+  return <><article className="counter-card loom-card" data-testid="card-project-counter">
     <div className="counter-count">
       <h2 className="serif">Counter</h2>
       <strong className="serif" aria-live="polite" data-testid="text-counter">{count}</strong>
@@ -87,5 +89,10 @@ export function ProjectCounter({ projectId, initial }: { projectId: string; init
       </div>
       {saveError && <p className="mutation-error" role="alert">We couldn’t save the count. It will try again on your next tap.</p>}
     </div>
-  </article>;
+  </article>
+  {bar && <FloatingBar label={<><span className="floating-bar-title">{bar.label} · </span>Row {count}</>}>
+    <button type="button" className="floating-bar-link" onClick={() => change(count + 1)} data-testid="button-bar-plus-one">+1 row</button>
+    {bar.actions}
+  </FloatingBar>}
+  </>;
 }

@@ -93,8 +93,10 @@ a { color: inherit; text-decoration: none; }
 .loom-card { background: hsl(var(--card)); border: 1px solid hsl(var(--border)); border-radius: 12px; }
 .lift { transition: border-color .18s ease; }
 .lift:hover { border-color: var(--slate); }
-.appear { animation: settle .45s cubic-bezier(.2,.7,.2,1) both; }
-@keyframes settle { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: translateY(0); } }
+/* backwards, not both: a transform left on the page after the animation would
+   pin the floating bar to the page instead of the window. */
+.appear { animation: settle .45s cubic-bezier(.2,.7,.2,1) backwards; }
+@keyframes settle { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; } }
 
 /* Mwedi Threads — Lavender pages, white cards, Granite buttons, Evergreen text */
@@ -1388,3 +1390,122 @@ body { background: var(--n-page); color: var(--n-ink); }
   .portal-main { margin-left: 0; width: 100%; }
   .side-rail, .dark .side-rail, .home-sewing .side-rail, .dark .home-sewing .side-rail { width: min(280px, 84vw); background: var(--n-page); }
 }
+
+/* ------------------------------------------------------------------------
+   New layouts (#119): open pages with no boxes. Pinned, pinked-edge swatches
+   for notes and the "pick up" card, running-stitch dividers, and floating,
+   slightly tilted tiles on the project boards.
+   ------------------------------------------------------------------------ */
+:root { --zigzag: polygon(0 4px,4% 0,8% 4px,12% 0,16% 4px,20% 0,24% 4px,28% 0,32% 4px,36% 0,40% 4px,44% 0,48% 4px,52% 0,56% 4px,60% 0,64% 4px,68% 0,72% 4px,76% 0,80% 4px,84% 0,88% 4px,92% 0,96% 4px,100% 0,100% calc(100% - 4px),96% 100%,92% calc(100% - 4px),88% 100%,84% calc(100% - 4px),80% 100%,76% calc(100% - 4px),72% 100%,68% calc(100% - 4px),64% 100%,60% calc(100% - 4px),56% 100%,52% calc(100% - 4px),48% 100%,44% calc(100% - 4px),40% 100%,36% calc(100% - 4px),32% 100%,28% calc(100% - 4px),24% 100%,20% calc(100% - 4px),16% 100%,12% calc(100% - 4px),8% 100%,4% calc(100% - 4px),0 100%); }
+.stitch-divider { height: 0; margin: 30px 0; border: 0; border-top: 2px dashed var(--n-stitch); }
+
+.overview-greeting { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 26px; }
+.overview-greeting .page-title { font-size: clamp(40px, 4.6vw, 56px); }
+.overview-counts { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 8px 0 0; color: var(--n-sub); font-size: 16px; }
+.overview-counts a { border-bottom: 1px dashed transparent; }
+.overview-counts a:hover { color: var(--n-ink); border-bottom-color: var(--n-acc); }
+.overview-top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, 340px); gap: 40px; align-items: start; }
+.overview-top > :only-child { grid-column: 1 / -1; }
+.overview-notes h2, .overview-board h2 { font: 500 26px/1.1 var(--app-font-serif); margin: 0 0 18px; }
+.overview-board .section-heading h2 { margin: 0; }
+.overview-empty { color: var(--n-sub); margin: 0; }
+
+/* Pinned swatch: paper with pinked edges and a round pin. */
+.pinned-swatch { position: relative; transform: rotate(var(--tilt, 0deg)); filter: drop-shadow(0 2px 2px rgba(20,25,23,.12)) drop-shadow(0 8px 14px rgba(20,25,23,.08)); }
+.dark .pinned-swatch { filter: drop-shadow(0 2px 3px rgba(0,0,0,.45)); }
+.pinned-swatch-body { padding: 18px 18px 16px; clip-path: var(--zigzag); background: var(--swatch-bg, var(--n-paper)); }
+.swatch-tone-0 { --swatch-bg: var(--n-tone-0); }
+.swatch-tone-1 { --swatch-bg: var(--n-tone-1); }
+.swatch-tone-2 { --swatch-bg: var(--n-tone-2); }
+.swatch-tone-3 { --swatch-bg: var(--n-tone-3); }
+.swatch-pin { position: absolute; z-index: 2; top: -6px; left: 50%; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; box-shadow: 0 2px 3px rgba(0,0,0,.35); }
+.pin-clay { background: var(--clay); }
+.pin-lichen { background: var(--lichen); }
+.pin-acc { background: var(--n-acc); }
+.pin-violet { background: var(--violet); }
+.dark .pin-violet { background: #C3ADE4; }
+.pick-up small { display: block; color: var(--n-sub); font-size: 13px; }
+.pick-up-title { display: inline-block; margin-top: 6px; font: 500 22px/1.2 var(--app-font-serif); color: var(--n-ink); border-bottom: 2px dashed var(--n-acc); }
+.note-swatches { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 22px; }
+.note-swatch { display: grid; gap: 6px; color: var(--n-sub); }
+.note-swatch b { color: var(--n-ink); font: 500 18px/1.2 var(--app-font-serif); }
+.note-swatch span { font-size: 14px; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.note-swatch small { font-size: 12px; }
+
+/* "This week" as a strand of yarn: each day is a stretch of the strand,
+   in the room's color once it's a crafting day. */
+.weekly-goal, .dark .weekly-goal, .dark .home-sewing .weekly-goal { margin: 0; padding: 0; background: none; border: 0; box-shadow: none; }
+.weekly-goal h2 { font: 500 26px/1.1 var(--app-font-serif); }
+.weekly-goal-count strong { font-size: 26px; }
+.weekly-goal-days { gap: 0; margin-top: 10px; }
+.weekly-goal-days i { height: 22px; border-radius: 0; background: var(--n-line-deep); -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 22' preserveAspectRatio='none'%3E%3Cpath d='M0 11 C15 2 15 2 30 11 S45 20 60 11' fill='none' stroke='black' stroke-width='3' stroke-dasharray='5 4'/%3E%3C/svg%3E") center / 100% 100% no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 22' preserveAspectRatio='none'%3E%3Cpath d='M0 11 C15 2 15 2 30 11 S45 20 60 11' fill='none' stroke='black' stroke-width='3' stroke-dasharray='5 4'/%3E%3C/svg%3E") center / 100% 100% no-repeat; }
+.weekly-goal-days li.is-done i { background: var(--n-acc); -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 22' preserveAspectRatio='none'%3E%3Cpath d='M0 11 C15 2 15 2 30 11 S45 20 60 11' fill='none' stroke='black' stroke-width='6' stroke-linecap='round'/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 22' preserveAspectRatio='none'%3E%3Cpath d='M0 11 C15 2 15 2 30 11 S45 20 60 11' fill='none' stroke='black' stroke-width='6' stroke-linecap='round'/%3E%3C/svg%3E"); }
+.weekly-goal-days li.is-today i { outline: 0; }
+.weekly-goal-days li.is-today span { color: var(--n-ink); font-weight: 700; border-bottom: 2px dashed var(--n-acc); }
+.weekly-goal-today, .weekly-goal-set { display: inline-flex; width: auto; margin-top: 12px; padding: 0 2px; background: none; color: var(--n-sub); }
+.weekly-goal-today { min-height: 0; }
+
+/* Boards of floating tiles. */
+.floating-board { columns: 5 150px; column-gap: 34px; padding-top: 8px; }
+.floating-board-row { columns: auto; display: flex; gap: 34px; overflow-x: auto; padding: 10px 4px 14px; }
+.floating-board-row .board-tile-wrap { flex: 0 0 170px; }
+.board-tile-wrap { position: relative; break-inside: avoid; margin: 0 0 34px; transform: rotate(var(--tilt, 0deg)); }
+.board-tile { display: block; color: var(--n-ink); }
+.board-tile-art { width: 100%; aspect-ratio: 1 / 1.15; box-shadow: 0 1px 2px rgba(20,25,23,.1), 0 10px 22px rgba(20,25,23,.08); transition: transform .18s ease, box-shadow .18s ease; }
+.board-shape-1 { aspect-ratio: 1 / 1.35; }
+.board-shape-2 { aspect-ratio: 1 / .95; }
+.board-tile:hover .board-tile-art { transform: translateY(-3px); box-shadow: 0 2px 4px rgba(20,25,23,.12), 0 16px 30px rgba(20,25,23,.12); }
+.dark .board-tile-art { box-shadow: 0 2px 6px rgba(0,0,0,.4); }
+.board-tile-meta { display: flex; justify-content: center; gap: 8px; margin-top: 8px; color: var(--n-sub); font-size: 13px; }
+.board-status-in_progress { color: var(--n-acc); font-weight: 600; }
+.board-tile-wrap .card-star { top: 8px; right: 8px; width: 30px; height: 30px; opacity: 0; transition: opacity .15s; }
+.board-tile-wrap:hover .card-star, .board-tile-wrap .card-star:focus-visible, .board-tile-wrap .card-star.is-starred { opacity: 1; }
+.status-words { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: -8px 0 18px; }
+.status-word { padding: 0 0 2px; border: 0; border-bottom: 2px dashed transparent; background: none; color: var(--n-sub); font: 400 18px var(--app-font-serif); cursor: pointer; }
+.status-word:hover { color: var(--n-ink); }
+.status-word.selected { color: var(--n-ink); border-bottom-color: var(--n-acc); }
+
+@media (max-width: 767px) {
+  .overview-greeting { align-items: flex-start; flex-direction: column; }
+  .overview-top { grid-template-columns: 1fr; gap: 28px; }
+  .note-swatches { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  .floating-board { columns: 2 140px; column-gap: 18px; }
+  .floating-board-row .board-tile-wrap { flex-basis: 140px; }
+}
+@media (hover: none) { .board-tile-wrap .card-star { opacity: 1; } }
+
+/* Project pages: title with text actions, the project pinned on the right,
+   facts without a box, and a floating bar for quick actions. */
+.detail-heading { display: grid; grid-template-columns: minmax(0, 1fr) 190px; align-items: start; gap: 30px; }
+.detail-heading-copy { display: grid; gap: 14px; align-content: start; }
+.detail-heading-copy h1 { margin: 14px 0 12px; }
+.detail-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 18px; }
+.text-action { padding: 0 0 2px; border: 0; border-bottom: 2px dashed var(--n-stitch); background: none; color: var(--n-ink); font: 600 15px var(--app-font-sans); cursor: pointer; }
+.text-action:hover { border-bottom-color: var(--n-acc); color: var(--n-acc); }
+.text-action-danger:hover { border-bottom-color: #a3413f; color: #a3413f; }
+.dark .text-action-danger:hover { border-bottom-color: #E8908C; color: #E8908C; }
+.detail-pinned .pinned-swatch-body { padding: 10px; }
+.detail-pinned .name-tile, .detail-pinned-photo { width: 100%; aspect-ratio: 1 / 1.15; }
+.detail-pinned-photo { display: block; }
+.detail-pinned-photo { position: relative; overflow: hidden; }
+.detail-pinned-photo img, .detail-pinned-photo > * { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.aside-card, .dark .aside-card { background: transparent; box-shadow: none; padding: 4px 0 0; }
+.detail-list > div { border-bottom: 2px dashed var(--n-line); }
+.floating-bar { position: fixed; z-index: 15; left: calc(200px + (100% - 200px) / 2); bottom: 22px; transform: translateX(-50%); width: min(640px, calc(100% - 248px)); display: flex; align-items: center; gap: 16px; padding: 10px 12px 10px 18px; background: var(--n-glass); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); box-shadow: 0 6px 24px rgba(20,25,23,.14); }
+.floating-bar-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 500 18px var(--app-font-serif); color: var(--n-ink); }
+.floating-bar-actions { margin-left: auto; display: flex; align-items: center; gap: 14px; flex: none; }
+.floating-bar-link { padding: 0 0 2px; border: 0; border-bottom: 2px dashed var(--n-acc); background: none; color: var(--n-ink); font: 600 14px var(--app-font-sans); cursor: pointer; }
+.floating-bar-link:disabled { opacity: .6; cursor: progress; }
+.portal-content:has(.floating-bar) { padding-bottom: 110px; }
+@media (max-width: 767px) {
+  .detail-heading { grid-template-columns: minmax(0, 1fr) 110px; gap: 16px; }
+  .floating-bar { left: 50%; width: calc(100% - 28px); bottom: 14px; }
+  .floating-bar-label { font-size: 16px; }
+  .floating-bar-title { display: none; }
+}
+.stage-board, .dark .stage-board { background: none; box-shadow: none; padding: 0; }
+.stage-board h2, .fabric-type-chart h2 { font: 500 26px/1.1 var(--app-font-serif); }
+.board-tile-photo { display: block; position: relative; overflow: hidden; }
+.board-tile-photo img, .board-tile-photo > * { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.board-tile-detail { margin-top: 2px; font-size: 12px; }
+.fabric-type-chart { margin-top: 30px; }

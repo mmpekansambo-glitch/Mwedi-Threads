@@ -67,3 +67,17 @@ test("the space bar doesn't count while typing a note", async ({ page }) => {
   await page.getByTestId("input-progress-notes").fill("Two rows done");
   await expect(page.getByTestId("text-counter")).toHaveText("24");
 });
+
+test("the floating bar shows the row and adds one, and opens a new note (#119)", async ({ page }) => {
+  const saved: number[] = [];
+  await mockApi(page, saved);
+  await page.goto(`/projects/${projectId}`);
+  const bar = page.getByTestId("floating-bar");
+  await expect(bar).toContainText("Granny square cardigan · Row 24");
+  await page.getByTestId("button-bar-plus-one").click();
+  await expect(bar).toContainText("Row 25");
+  await expect(page.getByTestId("text-counter")).toHaveText("25");
+  await expect.poll(() => saved).toEqual([25]);
+  await page.getByTestId("button-bar-add-note").click();
+  await expect(page.getByTestId("input-progress-notes")).toBeFocused();
+});

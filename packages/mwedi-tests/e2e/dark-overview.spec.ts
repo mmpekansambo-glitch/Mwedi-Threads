@@ -1,8 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
 
-// Dark mode Overview (issue: dark mode less monotonous). Each stat card has its
-// own palette tint and the status chart has one color per status. Since the
-// new look (#118) the tints come from Mist & moss with Lydia violet.
+// Dark mode Overview (issue: dark mode less monotonous), in the open layout
+// from #119: the counts are words, notes are pinned swatches with their own
+// tints, and the status chart has one color per status.
 const shots = process.env.OVERVIEW_SCREENSHOTS;
 
 const months = ["2025-11", "2025-12", "2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06", "2026-07", "2026-08", "2026-09", "2026-10"];
@@ -57,33 +57,28 @@ test.beforeEach(async ({ page }) => {
   await mockApi(page);
 });
 
-test("Yarn studio Overview in dark mode has tinted stat cards and status colors", async ({ page }) => {
+test("Yarn studio Overview in dark mode: counts, pick up, pinned notes and status colors", async ({ page }) => {
   await page.goto("/dashboard");
   await expect(page.getByRole("heading", { name: "Projects by status" })).toBeVisible();
-  await expect(bg(page, "card-weekly-goal-yarn")).toHaveCSS("background-color", "rgb(28, 35, 32)");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(/^(Morning|Afternoon|Evening), Sample\.$/);
+  await expect(page.getByTestId("link-stat-all")).toHaveText("7 projects");
+  await expect(page.getByTestId("link-stat-in-progress")).toHaveText("4 in progress");
+  await expect(page.getByTestId("link-pick-up")).toHaveText("Granny square cardigan · row 26");
+  // Each pinned note has its own tint from the palette, so dark mode isn't one flat color (#109).
+  const tints = await page.locator(".note-swatches .pinned-swatch-body").evaluateAll((notes) => notes.map((note) => getComputedStyle(note).backgroundColor));
+  expect(tints).toEqual(["rgb(43, 42, 36)", "rgb(35, 43, 37)"]);
   await expect(bg(page, "card-weekly-goal-yarn").getByRole("heading", { name: "This week" })).toHaveCSS("color", "rgb(232, 234, 229)");
-  await expect(bg(page, "link-stat-all")).toHaveCSS("background-color", "rgb(43, 42, 36)");
-  await expect(bg(page, "link-stat-in-progress")).toHaveCSS("background-color", "rgb(34, 45, 31)");
-  await expect(bg(page, "link-stat-finished")).toHaveCSS("background-color", "rgb(46, 37, 38)");
-  await expect(bg(page, "card-stat-average-days")).toHaveCSS("background-color", "rgb(28, 35, 32)");
+  await expect(page.locator(".weekly-goal-days li.is-done i").first()).toHaveCSS("background-color", "rgb(157, 184, 138)");
   const statusBars = page.getByTestId("chart-projects-by-status").locator("path.recharts-rectangle");
   await expect.poll(async () => new Set(await statusBars.evaluateAll((paths) => paths.map((path) => getComputedStyle(path).fill))).size).toBe(3);
-  const projectsBox = await page.getByRole("heading", { name: "Recent projects" }).boundingBox();
-  const notesBox = await page.getByRole("heading", { name: "Recent notes" }).boundingBox();
-  expect(notesBox!.y).toBeGreaterThan(projectsBox!.y + 100);
-  expect(Math.abs(notesBox!.x - projectsBox!.x)).toBeLessThan(40);
-  // "This week" runs the full width, like Recent notes.
-  const weekBox = await bg(page, "card-weekly-goal-yarn").boundingBox();
-  const notesCard = await page.locator(".recent-panel").boundingBox();
-  expect(Math.abs(weekBox!.width - notesCard!.width)).toBeLessThan(2);
   if (shots) { await page.waitForTimeout(1600); await page.screenshot({ path: `${shots}/overview-dark-web.png` }); await page.screenshot({ path: `${shots}/overview-dark-web-full.png`, fullPage: true }); }
 });
 
 test("Sewing room Overview in dark mode keeps Lydia violet and no green", async ({ page }) => {
   await page.goto("/sewing");
-  await expect(bg(page, "card-weekly-goal-sewing")).toHaveCSS("background-color", "rgb(30, 27, 38)");
-  await expect(bg(page, "link-sewing-stat-in-progress")).toHaveCSS("background-color", "rgb(38, 31, 54)");
+  await expect(page.getByTestId("link-sewing-stat-in-progress")).toHaveText("2 in progress");
   await expect(page.getByTestId("link-new-sewing-project")).toHaveCSS("background-color", "rgb(195, 173, 228)");
+  await expect(page.locator(".room-hill-3")).toHaveCSS("fill", "rgb(41, 32, 61)");
   if (shots) { await page.waitForTimeout(1600); await page.screenshot({ path: `${shots}/sewing-overview-dark-web.png` }); }
 });
 
@@ -91,7 +86,7 @@ test("light mode Overview has light tints", async ({ page }) => {
   await page.emulateMedia({ colorScheme: "light" });
   await page.goto("/dashboard");
   await expect(page.getByRole("heading", { name: "Projects by status" })).toBeVisible();
-  await expect(bg(page, "link-stat-all")).toHaveCSS("background-color", "rgb(239, 230, 214)");
-  await expect(bg(page, "card-weekly-goal-yarn")).toHaveCSS("background-color", "rgb(251, 250, 247)");
+  await expect(page.locator(".note-swatches .pinned-swatch-body").first()).toHaveCSS("background-color", "rgb(239, 230, 214)");
+  await expect(page.getByTestId("link-new-project")).toHaveCSS("background-color", "rgb(95, 122, 78)");
   if (shots) { await page.waitForTimeout(1600); await page.screenshot({ path: `${shots}/overview-light-web.png` }); await page.screenshot({ path: `${shots}/overview-light-web-full.png`, fullPage: true }); }
 });
