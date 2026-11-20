@@ -1,8 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
 
 // Dark mode Overview (issue: dark mode less monotonous). Each stat card has its
-// own palette tint, the status chart has one color per status, and "This week"
-// is the one bright Lavender block (mauve in the Sewing room).
+// own palette tint and the status chart has one color per status. Since the
+// new look (#118) the tints come from Mist & moss with Lydia violet.
 const shots = process.env.OVERVIEW_SCREENSHOTS;
 
 const months = ["2025-11", "2025-12", "2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06", "2026-07", "2026-08", "2026-09", "2026-10"];
@@ -57,15 +57,15 @@ test.beforeEach(async ({ page }) => {
   await mockApi(page);
 });
 
-test("Yarn studio Overview in dark mode has tinted stat cards, status colors and a Lavender This week", async ({ page }) => {
+test("Yarn studio Overview in dark mode has tinted stat cards and status colors", async ({ page }) => {
   await page.goto("/dashboard");
   await expect(page.getByRole("heading", { name: "Projects by status" })).toBeVisible();
-  await expect(bg(page, "card-weekly-goal-yarn")).toHaveCSS("background-color", "rgb(197, 209, 235)");
-  await expect(bg(page, "card-weekly-goal-yarn").getByRole("heading", { name: "This week" })).toHaveCSS("color", "rgb(24, 33, 38)");
-  await expect(bg(page, "link-stat-all")).toHaveCSS("background-color", "rgb(34, 50, 74)");
-  await expect(bg(page, "link-stat-in-progress")).toHaveCSS("background-color", "rgb(44, 47, 74)");
-  await expect(bg(page, "link-stat-finished")).toHaveCSS("background-color", "rgb(33, 53, 47)");
-  await expect(bg(page, "card-stat-average-days")).toHaveCSS("background-color", "rgb(38, 52, 59)");
+  await expect(bg(page, "card-weekly-goal-yarn")).toHaveCSS("background-color", "rgb(28, 35, 32)");
+  await expect(bg(page, "card-weekly-goal-yarn").getByRole("heading", { name: "This week" })).toHaveCSS("color", "rgb(232, 234, 229)");
+  await expect(bg(page, "link-stat-all")).toHaveCSS("background-color", "rgb(43, 42, 36)");
+  await expect(bg(page, "link-stat-in-progress")).toHaveCSS("background-color", "rgb(34, 45, 31)");
+  await expect(bg(page, "link-stat-finished")).toHaveCSS("background-color", "rgb(46, 37, 38)");
+  await expect(bg(page, "card-stat-average-days")).toHaveCSS("background-color", "rgb(28, 35, 32)");
   const statusBars = page.getByTestId("chart-projects-by-status").locator("path.recharts-rectangle");
   await expect.poll(async () => new Set(await statusBars.evaluateAll((paths) => paths.map((path) => getComputedStyle(path).fill))).size).toBe(3);
   const projectsBox = await page.getByRole("heading", { name: "Recent projects" }).boundingBox();
@@ -79,18 +79,19 @@ test("Yarn studio Overview in dark mode has tinted stat cards, status colors and
   if (shots) { await page.waitForTimeout(1600); await page.screenshot({ path: `${shots}/overview-dark-web.png` }); await page.screenshot({ path: `${shots}/overview-dark-web-full.png`, fullPage: true }); }
 });
 
-test("Sewing room Overview in dark mode keeps mauve and no green", async ({ page }) => {
+test("Sewing room Overview in dark mode keeps Lydia violet and no green", async ({ page }) => {
   await page.goto("/sewing");
-  await expect(bg(page, "card-weekly-goal-sewing")).toHaveCSS("background-color", "rgb(217, 208, 234)");
-  await expect(bg(page, "link-sewing-stat-finished")).toHaveCSS("background-color", "rgb(49, 42, 66)");
+  await expect(bg(page, "card-weekly-goal-sewing")).toHaveCSS("background-color", "rgb(30, 27, 38)");
+  await expect(bg(page, "link-sewing-stat-in-progress")).toHaveCSS("background-color", "rgb(38, 31, 54)");
+  await expect(page.getByTestId("link-new-sewing-project")).toHaveCSS("background-color", "rgb(195, 173, 228)");
   if (shots) { await page.waitForTimeout(1600); await page.screenshot({ path: `${shots}/sewing-overview-dark-web.png` }); }
 });
 
-test("light mode Overview is unchanged", async ({ page }) => {
+test("light mode Overview has light tints", async ({ page }) => {
   await page.emulateMedia({ colorScheme: "light" });
   await page.goto("/dashboard");
   await expect(page.getByRole("heading", { name: "Projects by status" })).toBeVisible();
-  await expect(bg(page, "link-stat-all")).toHaveCSS("background-color", "rgb(238, 242, 250)");
-  await expect(bg(page, "card-weekly-goal-yarn")).not.toHaveCSS("background-color", "rgb(197, 209, 235)");
+  await expect(bg(page, "link-stat-all")).toHaveCSS("background-color", "rgb(239, 230, 214)");
+  await expect(bg(page, "card-weekly-goal-yarn")).toHaveCSS("background-color", "rgb(251, 250, 247)");
   if (shots) { await page.waitForTimeout(1600); await page.screenshot({ path: `${shots}/overview-light-web.png` }); await page.screenshot({ path: `${shots}/overview-light-web-full.png`, fullPage: true }); }
 });
